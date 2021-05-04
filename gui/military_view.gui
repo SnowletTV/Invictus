@@ -1,0 +1,1906 @@
+@sidemargins = 2
+@topmargins = 14
+@maxwidth = 640
+@listbuttonwidth = 592
+@listbuttontall = 208
+@listbuttonshort = 78
+@mainpopwidth = 90
+template military_bonus
+{
+	tooltipwidget = {
+		player_tradition_pop_out = {
+			datacontext = "[BonusItem.GetBonus]"
+		}
+	}
+	
+	military_tradition_tree_node_owned = {
+		size = { 148 55 }
+		filter_mouse = all
+		blockoverride "texture" 
+		{
+			texture = "[GetTraditionIcon( BonusItem.GetBonus )]"
+		}
+		
+		visible = "[BonusItem.IsOwned]"
+		icon = {
+			size = { 48 48 }
+			parentanchor = top|right
+			position = { 2 -12 }
+			texture = "gfx/interface/icons/shared_icons/completed_task.dds"
+			visible = "[BonusItem.IsUnlocked]"			
+		}
+	}
+	
+	military_tradition_tree_button = {
+		size = { 148 55 }
+		using = tooltip_es
+		blockoverride "texture"
+		{
+			texture = "[GetTraditionIcon( BonusItem.GetBonus )]"
+		}
+
+		visible = "[Not( BonusItem.IsOwned )]"
+		blockoverride "onclick"
+		{
+			onclick = "[BonusItem.OnPurchaseClick]"
+		}
+		datacontext = "[BonusItem.GetBonus]"
+		enabled = "[BonusItem.CanPurchase]"
+		#blockoverride "VisibleState" { visible = "[CanEmbraceBonus( BonusItem.GetBonus )]" } #TODO is needed?
+	}
+}
+
+base_window = {
+	name = "military_view"
+	gfxtype = windowgfx
+	using = FadeStates
+	parentanchor = top|left
+	size = { 640 900 }
+	movable = no
+	using = main_window_template
+	allow_outside = yes
+	
+	### Audio ###
+	state = {
+		name = _show
+		start_sound = {
+			soundeffect = "event:/SFX/UI/Generic/2.0/sfx_ui_window_tab_close"
+		}
+	}
+	state = {
+		name = _hide
+		start_sound = {
+			soundeffect = "event:/SFX/UI/Generic/2.0/sfx_ui_window_tab_close"
+		}
+	}
+	
+	base_sub_window = {
+		size = { 640 894 }
+		position = { 640 4 } 
+		visible = "[MilitaryView.IsShowTraditions]"
+		blockoverride "Title_text" { text = "TRADITION_SUBWINDOW_TITLE" }
+		movable = no
+		widget = {
+			size = { 100% 890 }
+			scissor = yes
+			flowcontainer = {
+				alpha = 0.5
+				position = { 4 -3 }
+				ignoreinvisible = yes
+				margin_top = 34
+				datamodel = "[MilitaryView.GetTrees]"
+				item = {
+					flowcontainer = {
+						direction = vertical
+						datamodel = "[TraditionTreeItem.GetItems]"
+						ignoreinvisible = yes
+						visible = "[GetVariableSystem.HasValue( 'tradition_tabs', TraditionTreeItem.GetTraditionTree.GetName )]"
+						item = {
+							icon = {
+								visible = "[BonusNode.GetItem.IsOwned]"
+								name = "background_image"
+								texture = "[GetTraditionIcon( BonusNode.GetItem.GetBonus )]"
+								size = { 181 66 }
+								
+								#color = "[TraditionTreeItem.GetTraditionTree.GetColor]"
+								
+								modify_texture = {
+									name = "Alpha" 
+									spriteType = Corneredstretched
+									texture = "gfx/interface/base_parts/horizontal_gradient_stretch.dds"
+									blend_mode = alphamultiply 
+								}
+							}
+						}
+					}
+				}
+			}
+			flowcontainer = {
+				position = { -4 -3 }
+				parentanchor = right
+				ignoreinvisible = yes
+				margin_top = 34
+				datamodel = "[MilitaryView.GetTrees]"
+				item = {
+					flowcontainer = {
+						direction = vertical
+						datamodel = "[TraditionTreeItem.GetItems]"
+						ignoreinvisible = yes
+						visible = "[GetVariableSystem.HasValue( 'tradition_tabs', TraditionTreeItem.GetTraditionTree.GetName )]"
+						item = {
+							icon = {
+								name = "background_image"
+								texture = "[GetTraditionIcon( BonusNode.GetItem.GetBonus )]"
+								visible = "[BonusNode.GetItem.IsOwned]"
+								size = { 181 66 }
+								
+								#color = "[TraditionTreeItem.GetTraditionTree.GetColor]"
+								
+								modify_texture = {
+									name = "Alpha" 
+									spriteType = Corneredstretched
+									texture = "gfx/interface/base_parts/horizontal_gradient_stretch_inverted.dds"
+									blend_mode = alphamultiply 
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		zoomarea = {
+			name = "graph_zoomarea" # Do not change this name
+			size = { 632 859 }
+			position = { 0 -5 }
+			blockoverride "EdgeAlpha" {  }
+			blockoverride "Margins" { 
+				margin_right = 0
+				margin_left = 0
+				margin_bottom = 0
+				margin_top = 0
+			}
+			parentanchor = bottom|hcenter
+			state = {
+			  name = "_zoom_changed"
+			  duration = 0.15
+			}
+			draggable_by = left|middle
+			zoom = 0.8
+			zoom_step = 0.2
+			zoom_min = 0.2
+			zoom_max = 1.1
+			pan_position = { 30 160 }
+			zoom_indicator = {
+				parentanchor = bottom|right
+				position = { -8 -8 }
+				blockoverride "On_Click" {
+					onclick = "[MilitaryView.ResetZoomAreaPosition]"
+				}
+			}
+			
+			scissor = yes
+			zoomwidget = {
+				container  = {
+					min_width = 610
+					flowcontainer = {
+						parentanchor = "top|hcenter"
+						widgetanchor = "top|hcenter"
+						ignoreinvisible = yes
+						margin_top = 34
+						datamodel = "[MilitaryView.GetTrees]"
+						item = {
+							container = {	
+								datamodel = "[TraditionTreeItem.SetupDataContexts(PdxGuiWidget.AccessSelf)]" # don't remove this, it is needed for setting up the graph
+								visible = "[GetVariableSystem.HasValue( 'tradition_tabs', TraditionTreeItem.GetTraditionTree.GetName )]"
+								
+								tag = {
+									text = "[TraditionTreeItem.GetTraditionTree.GetName]"
+									parentanchor = hcenter
+									using = HeaderFont
+								}
+
+								# These two widgets determine the margin between graph nodes
+								widget = {
+									name = "margin_top_left" # Do not change this name
+									size = { 3 22 }
+								}
+								widget = {
+									name = "margin_bottom_right" # Do not change this name
+									size = { 3 22 }
+								}
+								# This widget tells the layout how to offset and space the lines
+								widget = {
+									name = "line_offset" # Do not change this name
+									position = { 1 -4 } # Fixed offset (i.e. to compensate for line width
+									size = { 10 0 } # Spacing between edges
+								}
+								
+								# Container for all the edges in the graph
+								container = {
+									name = "line_area" # Do not change this name
+								
+									position = { 8 36 }
+									datamodel = "[TraditionTreeItem.GetLineItems]"
+									item = {
+										container = {
+											position = "[BonusLineItem.GetPosition]"
+						
+											line = {
+												using = ArrowLine
+												line_type = BSpline
+												points = "[BonusLineItem.GetPointsInContainer]"
+											}
+										}
+									}
+								}
+
+								# Container for all the nodes in the graph
+								container = {
+									name = "node_area" # Do not change this name
+									position = { 8 36 }
+									datamodel = "[TraditionTreeItem.GetItems]"
+									
+									item = {
+										widget = {
+											size = { 145 60 }
+											widgetid = "[BonusNode.GetKey]"
+											position = "[BonusNode.GetPosition]"
+	
+											widget = {
+												size = { 100% 100% }
+												datacontext = "[BonusNode.GetItem]"
+												using = military_bonus
+											}
+										}
+									}
+								}
+								
+								# Extra container for all the arrow heads on edges
+								container = {
+									position = { 8 32 }
+									datamodel = "[TraditionTreeItem.GetLineItems]"
+									item = {
+										widget = {
+											position = "[BonusLineItem.GetTo]"
+											size = { 16 16 }
+											
+											visible = "[Not(BonusLineItem.IsToNodeVirtual)]"
+						
+											icon = {
+												name = "arrow_head"
+												position = { -13 -9 }
+												texture = "gfx/interface/missions/arrow_tip_d.dds"
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	base_sub_window = {
+		size = { 530 894 }
+		position = { 640 4 } 
+		movable = no
+		visible = "[And( MilitaryView.IsShowLegions, GetVariableSystem.HasValue( 'history_window', 'yes' ) )]"
+		blockoverride "Title_text" { text = "HISTORY" }
+		datacontext = "[MilitaryView.GetSelectedGovernorshipForLegion]"
+		
+		blockoverride "White_buttons"
+		{
+			button_close = {
+				onclick = "[GetVariableSystem.Set( 'history_window', 'no' )]"
+			}
+		}
+		
+		margin_widget = {
+			size = { 100% 100% }
+			margin_top = 38
+			margin_left = 12
+			margin_right = 12
+			scrollarea = {
+				scrollbarpolicy_horizontal = always_off
+				#using = VerticalScrollAreaCutOff
+				scrollbar_vertical = {
+					using = VerticalScrollBar
+				}
+				size = { 100% 238 }
+				dynamicgridbox = {
+					datamodel = "[LegionGovernorshipItem.GetGovernorship.GetLegion.GetDistinctions]"
+					flipdirection = yes
+					datamodel_wrap = 7
+					parentanchor = hcenter
+					item = {
+						widget = {
+							size = { 66 66 }
+							icon = {
+								texture = "[GetDistinctionIcon( Distinction.Self )]"
+								size = { 60 60 } 
+								parentanchor = center
+								datacontext = "[Distinction]"
+								tooltipwidget = distinction_tooltip
+							}
+						}
+					}
+				}
+			}
+			margin_widget = { 
+				size = { 100% 606 }
+				position = { 0 240 }
+				textbox = {
+					visible = "[StringIsEmpty( LegionGovernorshipItem.GetGovernorship.GetLegion.GetHistorySummary )]"
+					text = "DEEDS_NONE"
+					using = BaseFontM
+					using = Black_FontColor
+					autoresize = yes
+					parentanchor = hcenter
+					position = { 0 24 }
+					multiline = yes
+					max_width = 200
+					align = center
+					alpha = 0.6
+				}
+				scrollarea = {
+					position = { 0 0 }
+					size = { 100% 100% }
+					
+					scrollbarpolicy_horizontal = always_off
+					using = VerticalScrollAreaCutOff
+					scrollbar_vertical = {
+						using = VerticalScrollBar
+					}
+					
+					scrollwidget = {
+						textbox = { 
+							autoresize = yes
+							text = "[LegionGovernorshipItem.GetGovernorship.GetLegion.GetHistorySummary]"
+							multiline = yes
+							using = BaseFontS
+							using = Black_FontColor
+							max_width = 480
+							elide = right
+							position = { 12 0 }
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	vbox = {
+		using = MainWindowHeaderBox
+
+		blockoverride "FlagOrIcon"
+		{
+			icon = {
+				texture = "gfx/interface/base_parts/yellow_button_color_200fs.dds"
+				framesize = { 100 100 }
+				frame = 6
+				position = { -2 -2 }
+				size = { 32 32 }
+				modify_texture = {
+					texture = "gfx/interface/icons/menu_buttons/menu_military.dds"
+					blend_mode = alphamultiply
+				}
+			}
+		}
+
+		blockoverride "Title_text"
+		{
+			text = "MILITARY_MENU_HEADER"
+		}
+		blockoverride "White_buttons" 
+		{
+			button_back = { 
+				shortcut = "previous_window"
+				onclick = "[MilitaryView.OnPrevious]"
+				tooltip = "PREVIOUS_MILITARY_VIEW"
+			}
+			
+			button_close = {
+				onclick = "[MilitaryView.OnClose]"
+				tooltip = "CLOSE"
+				shortcut = "close_window"
+			}
+		}
+		
+		vbox = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+			
+			margin = { @sidemargins @topmargins }
+			
+			hbox = {
+				layoutpolicy_vertical = preferred
+				layoutpolicy_horizontal = expanding
+				spacing = 2
+				#margin_top = 20
+				@mincategorybuttonwidth = 194
+				@maxcategorybuttonwidth = 220
+				@mincategorybuttonheight = 28 
+				@maxcategorybuttonheight = 34
+				
+				hbox = { layoutpolicy_horizontal = expanding }
+				
+				category_tab = {
+					name = "show_levies"
+					blockoverride "MinSize" { size = { @mincategorybuttonwidth @mincategorybuttonheight } }
+					blockoverride "MaxSize" { size = { @maxcategorybuttonwidth @maxcategorybuttonheight } }
+					blockoverride "MinVisible" { visible = "[Not( MilitaryView.IsShowLevies )]" }
+					blockoverride "MaxVisible" { visible = "[MilitaryView.IsShowLevies]" }
+					######## Shared Overrides
+					blockoverride "Center_text" { text = "LEVIES" }
+					blockoverride "Icon" { visible = no }
+					######## Small Button Overrides
+					blockoverride "ClickFunction"
+					{
+						onclick = "[MilitaryView.ShowLevies]"
+					}
+				}
+				category_tab = {
+					name = "show_legions"
+					blockoverride "MinSize" { size = { @mincategorybuttonwidth @mincategorybuttonheight } }
+					blockoverride "MaxSize" { size = { @maxcategorybuttonwidth @maxcategorybuttonheight } }
+					blockoverride "MinVisible" { visible = "[Not( MilitaryView.IsShowLegions )]" }
+					blockoverride "MaxVisible" { visible = "[MilitaryView.IsShowLegions]" }
+					tooltip = "[MilitaryView.GetLegionTabTooltip]"
+					tooltip_enabled = "[Not(MilitaryView.IsLegionsAvailable)]"
+					enabled = "[MilitaryView.IsLegionsAvailable]"
+					visible = "[MilitaryView.IsLegionsVisible]"
+					######## Shared Overrides
+					blockoverride "Center_text" { text = "LEGIONS" }
+					blockoverride "Icon" { visible = no }
+					######## Small Button Overrides
+					blockoverride "ClickFunction"
+					{
+						onclick = "[MilitaryView.ShowLegions]"
+					}
+				}
+
+				category_tab = {
+					name = "show_trad"	
+					blockoverride "MinSize" { size = { @mincategorybuttonwidth @mincategorybuttonheight } }
+					blockoverride "MaxSize" { size = { @maxcategorybuttonwidth @maxcategorybuttonheight } }
+					blockoverride "MinVisible" { visible = "[Not( MilitaryView.IsShowTraditions )]" }
+					blockoverride "MaxVisible" { visible = "[MilitaryView.IsShowTraditions]" }
+					######## Shared Overrides
+					blockoverride "Center_text" { text = "TRADITIONS" }
+					blockoverride "Icon" { visible = no }
+					######## Small Button Overrides
+					blockoverride "ClickFunction"
+					{
+						onclick = "[MilitaryView.ShowTraditions]"
+					}
+				}
+				hbox = { layoutpolicy_horizontal = expanding }
+			}
+			
+			###########################
+			# Military Traditions
+			###########################
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				visible = "[MilitaryView.IsShowTraditions]"
+				margin_widget = {
+					size = { 620 0 }
+					margin = { 4 4 }
+					margin_right = 0
+					margin_left = 0
+					layoutpolicy_vertical = expanding
+
+					sub_header = {
+						size = { 622 24 }
+						parentanchor = hcenter
+						position = { 0 0 }
+						blockoverride "Title_text" { text = "MILITARY_TRADITIONS" }
+					}
+				}
+				
+				scrollarea = {
+					position = { 0 4 }
+					size = { 612 746 }
+					scrollbarpolicy_horizontal = always_off
+					
+					using = VerticalScrollAreaCutOff
+					scrollbar_vertical = {
+						using = VerticalScrollBar
+					}
+					
+					scrollwidget = {
+						dynamicgridbox = {
+							flipdirection = yes
+							position = { 0 4 }
+							datamodel = "[MilitaryView.GetTrees]"
+							datamodel_wrap = 2
+							
+							item = {
+								margin_widget = {
+									size = { 310 106 }
+									margin_widget = {
+										parentanchor = hcenter
+										size = { 264 96 }
+										#enabled = "[TraditionTreeItem.IsAllowed]"
+										using = DropShadow
+										button = {
+											using = ButtonBorderTear
+											using = border_slightly_torn_alpha
+											#tooltip = "[TraditionTreeItem.GetTraditionTree.GetName]"
+											tooltip = "[TraditionTreeItem.GetAllowTooltip]"
+											size = { 100% 100% }
+											#texture = "gfx/interface/base_parts/button_color_400fs.dds"
+											texture = "gfx/interface/base_parts/button_allframes.dds"
+											framesize = { 100 100 }
+											gfxtype = togglepushbuttongfx
+											upframe = 4
+											uphoverframe = 4
+											uppressedframe = 5
+											downframe = 10
+											downhoverframe = 9
+											downpressedframe = 9
+											down = "[GetVariableSystem.HasValue( 'tradition_tabs', TraditionTreeItem.GetTraditionTree.GetName )]"
+											margin_widget = {
+												size = { 100% 100% }
+												margin = { 4 4 }
+												icon = {
+													name = "background"
+													parentanchor = center
+													texture = "[GetTraditionTreeIcon( TraditionTreeItem.GetTraditionTree )]"
+													size = { 100% 100% }
+													#color = "[TraditionTreeItem.GetTraditionTree.GetColor]"
+													button = {
+														size = { 100% 100% }
+														onclick = "[GetVariableSystem.Set( 'tradition_tabs', TraditionTreeItem.GetTraditionTree.GetName )]"
+													}
+													#modify_texture = {
+													#	name = "Alpha" 
+													#	spriteType = Corneredstretched
+													#	texture = "gfx/interface/tooltip/tooltip_section_alpha_gradient_stretch.dds"
+													#	blend_mode = alphamultiply 
+													#	alpha = 0.5
+													#}
+													background = {
+														using = flat_background_white
+														shaderfile = "gfx/FX/pdxgui_default.shader"
+														using = border_slightly_torn_alpha
+														margin = { -1 -1 }
+														#modify_texture = {
+														#	name = "Alpha" 
+														#	spriteType = Corneredstretched
+														#	texture = "gfx/interface/base_parts/horizontal_gradient_stretch.dds"
+														#	blend_mode = alphamultiply 
+														#}
+														
+													}
+													using = border_slightly_torn_alpha
+												}
+											}
+										}
+										margin_widget = {	
+											size = { 100% 90 }
+											margin = { 4 0 }
+											position = { 0 4 }
+											icon = {
+												size = { 100% 100% }
+												texture = "gfx/interface/achievement/achievement_not_possible.dds"
+												position = { 0 0 }
+												spritetype = corneredstretched
+												spriteborder_left = -106
+												spriteborder_right = -106
+												spriteborder_top = 12
+												spriteborder_bottom = 12
+												alpha = 0.5
+												widgetanchor = hcenter
+												parentanchor = hcenter
+												visible = "[Not( TraditionTreeItem.IsAllowed )]"
+											}
+										}
+										##### TRADITIONS NAME BANNER
+										icon = {
+											parentanchor = hcenter|top
+											maximumsize = { 999 28 }
+											position = { 0 70 }
+											using = flat_background_white
+											alpha = 0.95
+											
+											background = {
+												shaderfile = "gfx/FX/pdxgui_default.shader"
+												#using = flat_background_black
+												using = beige_dark_background
+												modify_texture = {
+													name = "Alpha"
+													texture = "gfx/interface/base_parts/header_l_x60bd_right_cut_alpha.dds"
+													blend_mode = alphamultiply
+													spriteType = Corneredtiled
+													spriteborder = { 60 -10 }
+												}
+												margin = { 2 2 }
+												alpha = 0.3
+											}
+											modify_texture = {
+												name = "Alpha"
+												texture = "gfx/interface/base_parts/header_l_x60bd_right_cut_alpha.dds"
+												blend_mode = alphamultiply
+												spriteType = Corneredtiled
+												spriteborder = { 60 -10 }
+											}
+											
+											blockoverride "Margins"
+											{
+												alpha = 0.95
+											}
+											
+											textbox = {
+												position = { 0 0 }
+												using = HeaderFont
+												using = Black_FontColor
+												parentanchor = top|left
+												autoresize = yes
+												minimumsize = { -1 34 }
+												resizeparent = yes
+												align = center|nobaseline
+												elide = right
+												text = "[TraditionTreeItem.GetTraditionTree.GetName]"
+												margin_left = 30
+												margin_right = 30
+												margin_bottom = 3
+												fontsize = 16
+												max_width = 270
+												fontsize_min = 12
+											}
+										}
+										
+										### CHECKMARK ICON IF ALLOWED BY CULTURE
+										#widget = {
+										#	name = "allowed_indication"
+										#	size = { 36 36 }
+										#	position = { -6 8 }
+										#	parentanchor = bottom|left
+										#	visible = "[TraditionTreeItem.IsAllowed]"
+										#	background = {
+										#		using = flat_background_white
+										#		shaderfile = "gfx/FX/pdxgui_default.shader"
+										#		spriteType = corneredtiled
+										#		using = border_medium_torn_alpha
+										#	}
+										#
+										#	icon = {
+										#		parentanchor = center
+										#		texture = "gfx/interface/base_parts/white_button_color_200fs.dds"
+										#		framesize = { 100 100 }
+										#		frame = 8
+										#		size = { 20 20 }
+										#		alwaystransparent = yes
+										#		
+										#		modify_texture = {
+										#			name = "Alpha"
+										#			texture = "gfx/interface/base_parts/check_mark.dds"
+										#			framesize = { 50 50 }
+										#			frame = 2
+										#			blend_mode = alphamultiply
+										#		}
+										#	}
+										#}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			###########################
+			# Levies
+			###########################
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				visible = "[MilitaryView.IsShowLevies]"
+				margin_widget = { #Levies Top Details
+					size = { 0 126 }
+					layoutpolicy_horizontal = expanding
+
+					icon = {
+						texture = "gfx/interface/event_window/Event_local_life.dds"
+						scale = 0.32
+						alpha = 0.87
+						position = { 12 0 }
+					}
+					widget = {
+						size = { 132 48 }
+						position = { 0 4 }
+						parentanchor = bottom|right
+						#background = {
+						#	using = flat_background_white
+						#	shaderfile = "gfx/FX/pdxgui_default.shader"
+						#	spriteType = corneredtiled		
+						#	using = border_medium_torn_alpha
+						#	alpha = 0.8
+						#}
+
+						icon_and_text = {
+							size = { 110 0 }
+							position = { 10 0 }
+							blockoverride "Text" { text = "[MilitaryView.GetPlayer.GetModifierValue( 'levy_size_multiplier' )]" }
+							blockoverride "Icon" { texture = "gfx/interface/icons/modifiers/levy.dds" }
+							tooltip = "[MilitaryView.GetPlayer.GetModifierTooltip( 'levy_size_multiplier' )]"
+						}
+					}
+
+					icon_card = {
+						size = { 36 36 }
+						position = { 78 6 }
+						parentanchor = hcenter
+						blockoverride "Icon"
+						{
+							texture = "gfx/interface/base_parts/information.dds"
+							color = { 0.34 0.34 0.34 1 }
+							size = { 30 30 }
+						}
+						tooltip = "LEVY_EXPLANATION"
+					}
+					
+					icon_button_square = {
+						name = "select_on_map_button"
+						size = { 36 36 }
+						position = { 28 5 }
+						parentanchor = hcenter
+						tooltip = "levies_MAPMODE_DESC"
+						blockoverride "On_click"
+						{
+							onclick = "[SetMapMode('levies')]"
+						}
+						blockoverride "Icon"
+						{
+							
+							icon = {
+								parentanchor = center
+								using = button_tiled_texture
+								framesize = { 200 200 }
+								frame = 2
+								#alpha = 0.8
+								size = { 40 32 }
+								modify_texture = {
+									texture = "gfx/interface/icons/minimap/levies.dds"
+									blend_mode = alphamultiply
+								}
+							}
+							### When active	
+							icon = {
+								name = "select_on_map_toggle_active"
+								visible = "[IsMapMode('levies')]"
+								parentanchor = center
+								texture = "gfx/interface/base_parts/button_allframes.dds"
+								framesize = { 100 100 }
+								frame = 10
+								size = { 39 32 }
+								modify_texture = {
+									texture = "gfx/interface/icons/minimap/levies.dds"
+									blend_mode = alphamultiply
+								}
+							}
+						}
+					}
+					
+					text_button_square = {
+						size = { 200 0 }
+						parentanchor = right
+						blockoverride "Center_text" { text = "RAISE_ALL_LEVIES" }
+						blockoverride "On_click" { onclick = "[MilitaryView.RaiseAllLevies]" }
+						enabled = "[MilitaryView.CanRaiseAllLevies]"
+						tooltip = "[MilitaryView.CanRaiseAllLeviesTooltip]"
+						position = { -12 10 }
+					}
+					text_button_square = {
+						size = { 200 0 }
+						parentanchor = right
+						blockoverride "Center_text" { text = "DISBAND_ALL_LEVIES" }
+						blockoverride "On_click" { onclick = "[MilitaryView.DisbandAllLevies]" }
+						enabled = "[MilitaryView.CanDisbandAllLevies]"
+						tooltip = "[MilitaryView.CanDisbandAllLeviesTooltip]"
+						position = { -12 46 }
+					}
+				}
+				margin_widget = { #List sort and expand collapse buttons
+					size = { 0 32 }
+					layoutpolicy_horizontal = expanding
+
+					text_button_sort = {
+						parentanchor = vcenter
+						position = { 20 0 }
+						name = "sort_name"
+						size = { 70 32 }
+						tooltip = CHARACTER_VIEW_SORT_BY_NAME_TOOLTIP
+						blockoverride "Button_text"
+						{
+							text = "A_Z"
+						}
+						blockoverride "Icon"
+						{
+							visible = no
+						}
+
+						blockoverride "On_click"
+						{
+							onclick = "[MilitaryView.SortGovernorships('name')]"	
+						}
+						blockoverride "DownState"
+						{
+							down = "[MilitaryView.IsSorted('name')]"
+						}
+					}
+
+					text_button_sort = {
+						parentanchor = vcenter
+						name = "sort_by_strength"
+						size = { 70 32 }
+						position = { 100 0 }
+						tooltip = SORT_BY_STRENGTH_TT
+						blockoverride "On_click"
+						{
+							onclick = "[MilitaryView.SortGovernorships('levystrength')]"	
+						}
+						blockoverride "DownState"
+						{
+							down = "[MilitaryView.IsSorted('levystrength')]"
+						}
+						
+						blockoverride "Icon"
+						{
+							size = { 32 32 }
+							texture = "gfx/interface/icons/shared_icons/strength.dds"
+						}
+
+						blockoverride "Button_text"
+						{
+							visible = no
+						}
+					}
+
+					text_button_sort = {
+						parentanchor = vcenter
+						name = "sort_by_martial"
+						size = { 70 32 }
+						position = { 180 0 }
+						tooltip = SORT_BY_MARTIAL_SKILL_TT
+						blockoverride "On_click"
+						{
+							onclick = "[MilitaryView.SortGovernorships('martialskill')]"	
+						}
+						blockoverride "DownState"
+						{
+							down = "[MilitaryView.IsSorted('martialskill')]"
+						}
+						
+						blockoverride "Icon"
+						{
+							size = { 32 32 }
+							texture = "gfx/interface/icons/shared_icons/military.dds"
+						}
+
+						blockoverride "Button_text"
+						{
+							visible = no
+						}
+					}
+					
+					icon_button_square = {
+						size = { 28 28 }
+						position = { -12 0 }
+						parentanchor = top|right
+						blockoverride "Icon" 
+						{
+							size = { 22 22 }
+							using = button_tiled_texture
+							framesize = { 200 200 }
+							modify_texture = {
+								texture = "gfx/interface/base_parts/expand_collapse_button.dds" 
+								framesize = { 26 26 }
+								frame = 2
+								blend_mode = alphamultiply
+							}
+						}
+						blockoverride "On_click" 
+						{ 
+							onclick = "[MilitaryView.ExpandAll]" #TODO EW, probably should make it unique for Levies tab and not for whole MilitaryView
+						}
+						tooltip = "EXPAND_ALL_TT"
+					}
+					icon_button_square = {
+						size = { 28 28 }
+						position = { -44 0 }
+						parentanchor = top|right
+						blockoverride "Icon" 
+						{ 
+							size = { 22 22 }
+							using = button_tiled_texture
+							framesize = { 200 200 }
+							modify_texture = {
+								texture = "gfx/interface/base_parts/expand_collapse_button.dds" 
+								framesize = { 26 26 }
+								frame = 1
+								blend_mode = alphamultiply
+							}
+						}
+						blockoverride "On_click" 
+						{ 
+							onclick = "[MilitaryView.CollapseAll]" #TODO EW probably should make it unique for Levies tab and not for whole MilitaryView
+						}
+						tooltip = "COLLAPSE_ALL_TT"
+					}
+				}
+				
+				margin_widget = {
+					name = "Govenorships Scroll List"
+					size = { 0 622 }
+					layoutpolicy_horizontal = expanding
+					margin = { 12 0 }
+					
+					scrollarea = {
+						position = { 0 4 }
+						size = { 612 604 }
+						scrollbarpolicy_horizontal = always_off
+						
+						using = VerticalScrollAreaCutOff
+						scrollbar_vertical = {
+							using = VerticalScrollBar
+						}
+						
+						scrollwidget = {	
+							dynamicgridbox = {
+								name = "governorships_grid"
+								position = { 4 0 }	
+								datamodel = "[MilitaryView.GetAllGovernorships]"
+								
+								##########################
+								######### List Button Item
+								##########################						
+								item = {
+									widget = {
+										size = { @listbuttonwidth @listbuttontall }
+										state = {
+											name = ensmallen
+											duration = 0.05
+											
+											animation = {
+												size = {  @listbuttonwidth @listbuttonshort }
+												bezier = { 1 0 0 1 }
+											}
+											
+											trigger_when = "[Not(GovernorshipItem.IsExpanded)]" 
+											on_finish = "[PdxGuiWidget.FindChild('governorship_item_details').Hide]"
+											
+										}
+										
+										state = {
+											name = embiggen
+											duration = 0.05
+											
+											animation = {
+												size = {  @listbuttonwidth @listbuttontall }
+												bezier = { 1 0 0 1 }
+											}
+											
+											trigger_when = "[GovernorshipItem.IsExpanded]" 
+											on_start = "[PdxGuiWidget.FindChild('governorship_item_details').Show]"
+											
+										}
+										
+				
+										### levy_details
+										margin_widget = {
+											size = { 100% 100% }
+											name = "governorship_item_details"
+											visible = "[GovernorshipItem.IsExpanded]"
+											parentanchor = hcenter
+											margin = { 4 0 }
+											list_entry = {
+												size = { 100% 100% }
+												visible = yes
+											}
+											overlappingitembox = {
+												name = "armies"
+												position = { 0 66 }
+												size = { 200 36 }
+												#parentanchor = right
+												using = NoninteractableBG
+												blockoverride "Margins"
+												{
+													margin = { 4 2 }
+												}
+												datamodel = "[GovernorshipItem.GetLevies]" 
+												item = {
+													widget = { 
+														size = { 32 32 }
+														tooltip = "[Unit.GetName]"
+														button = {
+															parentanchor = bottom|hcenter
+															texture = "gfx/interface/icons/shared_icons/land_combat.dds"
+															size = { 28 28 }
+															inherit_visual_state = no
+															distribute_visual_state = no
+															onclick = "[PanToProvince( Unit.GetLocation )]"
+														}
+													}
+												}
+											}
+											overlappingitembox = {
+												name = "unit_types_grid"
+												position = { 6 102 }
+												righttoleft = yes
+												#parentanchor = right
+												size = { 370 102 }
+												#scale = 0.85
+												datamodel = "[GovernorshipItem.GetSubUnitCounts]" 
+												item = {
+													unit_card = {
+														blockoverride "Size" { size = { 70 98 } }
+														tooltip = "[SubUnitCounts.GetTooltip]"
+														alwaystransparent = no
+														filter_mouse = all
+													}
+												}
+											}
+											
+											textbox = {
+												multiline = yes
+												text = "[GovernorshipItem.GetLevyDescription]"
+												using = BaseFontS
+												using = Black_FontColor
+												autoresize = yes
+												parentanchor = right
+												position = { -16 70 }
+												maximumsize = { 200 92 }
+												fontsize_min = 12
+											}
+											
+											flowcontainer = {
+												parentanchor = bottom|right
+												position = { 0 -6 }
+												spacing = 6
+												ignoreinvisible = yes
+												
+												button_delete_item = {
+													parentanchor = vcenter
+													size = { 32 32 }
+													enabled = "[GovernorshipItem.CanDisbandLevy]"
+													blockoverride "On_click"
+													{
+														onclick = "[GovernorshipItem.OnDisbandLevy]"
+													}
+													tooltip = "[GovernorshipItem.CanDisbandLevyTooltip]"
+												}
+
+												text_button_square = {
+													parentanchor = vcenter
+													size = { 158 28 }
+													enabled = "[GovernorshipItem.CanRaiseAnyLevy]"
+													blockoverride "Center_text" 
+													{
+														text = "RAISE_LEVIES"
+													}
+													blockoverride "On_click"
+													{
+														onclick = "[GovernorshipItem.OnRaiseLevy]"
+													}
+													tooltip = "[GovernorshipItem.GetRaiseTooltip]"
+												} 
+											}
+										}
+										
+										category_drop = {
+											name = "collapse_governorship_item_button"
+											size = { 100% 66 }
+											blockoverride "On_click" { 
+												onclick = "[GovernorshipItem.OnClick]" 
+												onclick = "[PdxGuiWidget.AccessParent.FindChild('governorship_item_details').Show]"
+											}
+											
+											blockoverride "Right" { visible = "[Not( GovernorshipItem.IsExpanded )]" }
+											blockoverride "Down" { visible = "[GovernorshipItem.IsExpanded]" }
+											blockoverride "ArrowSize" { size = { 26 26 } }
+											cpt_button = {
+												datacontext = "[GovernorshipItem.GetGovernorship.GetGovernorOrRuler]"
+												size = { 46 68 }
+												parentanchor = vcenter
+												position = { 6 0 }
+												blockoverride "ShowIcons" { visible = no }
+											}
+											
+											widget = {
+												size = { 42 42 }
+												position = { 63 10 }
+												tooltip = "[GovernorshipItem.GetGovernorship.GetGovernorOrRuler.GetMartialToolTip]" 
+												
+												icon = {
+													size = { 48 48 }
+													texture = "gfx/interface/icons/shared_icons/military.dds"
+													parentanchor = center
+												}
+												
+												icon = {
+													framesize = { 60 32 }
+													visible = "[GovernorshipItem.GetGovernorship.GetGovernorOrRuler.IsValid]"
+													frame = "[GovernorshipItem.GetGovernorship.GetGovernorOrRuler.GetMartial]"
+													texture = "gfx/interface/map/ranking_nonzero_characteristic.dds"
+													parentanchor = center
+													widgetanchor = center
+												}
+											}
+											
+											flowcontainer = {
+												direction = horizontal
+												position = { 110 10 }
+												textbox = {
+													parentanchor = top|left
+													using = BaseFontS
+													using = Black_FontColor
+													text = "[GovernorshipItem.GetGovernorship.GetName]"	
+													align = left|nobaseline
+													autoresize = yes
+													#position = { 110 10 }
+												}
+												textbox = {
+													parentanchor = top|left
+													using = BaseFontS
+													using = Black_FontColor
+													text = "MILITARY_VIEW_LEVIED_COUNT"	
+													align = left|nobaseline
+													autoresize = yes
+													#position = { 180 10 }
+												}
+											}
+											textbox = {
+												parentanchor = top|left
+												#tooltip = "[GovernorshipItem.GetGovernorship.GetDescriptionTooltip]"
+												using = BaseFontS
+												using = Black_FontColor
+												autoresize = yes
+												text = "[GovernorshipItem.GetGovernorship.GetGovernorOrRuler.GetNameWithNoTooltip]"	
+												align = left|nobaseline
+												position = { 110 30 }
+											}
+										}
+										
+									}
+								}
+							}#item
+						}#dynamicgridbox
+					
+					}#scrollwidget
+			
+				}#scrollarea
+			}#margin widget
+			
+			###########################
+			# LEGIONS TAB
+			###########################
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				visible = "[MilitaryView.IsShowLegions]"
+				margin_top = 12
+				hbox = {
+					layoutpolicy_vertical = expanding
+					margin_widget = {
+						name = "LegionGovernorshipScrollList"
+						size = { 180 0 }
+						layoutpolicy_vertical = expanding
+						sub_header_v = {
+							size = { 100% 100% }
+							blockoverride "Title_text" { 
+								text = "LEGIONS"
+							}
+						}
+						icon_card = {
+							size = { 26 26 }
+							position = { 148 3 }
+							blockoverride "Icon"
+							{
+								texture = "gfx/interface/base_parts/information.dds"
+								color = { 0.34 0.34 0.34 1 }
+								size = { 24 24 }
+							}
+							tooltip = "LEGIONS_INFODUMP"
+						}
+						margin_widget = {
+							size = { 100% 100% }
+							margin_top = 42
+							scrollarea = {
+								size = { 98% 100% }
+								scrollbarpolicy_horizontal = always_off
+								
+								using = VerticalScrollAreaCutOff
+								scrollbar_vertical = {
+									using = VerticalScrollBar
+								}
+								
+								scrollwidget = {
+									flowcontainer = {
+										direction = vertical
+										dynamicgridbox = {
+											datamodel = "[MilitaryView.GetGovernorshipsWithLegion]"
+											item = {
+												margin_widget = {
+													size = { 170 80 }
+													list_button = {
+														size = { 100% 100% }
+														down = "[LegionGovernorshipItem.IsSelected]"
+														onclick = "[LegionGovernorshipItem.Select]" 
+													}
+													textbox = {
+														text = "[LegionGovernorshipItem.GetGovernorship.GetLegion.GetNameWithNoTooltip]" 
+														using = BaseFontS
+														using = Black_FontColor
+														autoresize = yes
+														align = left
+														position = { 12 4 }
+														elide = right
+														multiline = yes
+														max_width = 140
+													}
+													icon_and_text_dark = {
+														position = { -8 -8 }
+														parentanchor = right|bottom
+														size = { 80 0 }
+														blockoverride "Text" { text = "[LegionGovernorshipItem.GetUpkeep|-1]" tooltip="[LegionGovernorshipItem.GetUpkeepTooltip]" }
+														blockoverride "Icon" { texture = "gfx/interface/icons/shared_icons/treasury.dds" }
+													}
+													# price tooltip TODO
+													# tooltip = "[LegionGovernorshipItem.GetTooltip]"
+												}
+											}
+										}
+										
+										dynamicgridbox = {
+											name = "this_legion_governorship_grid"
+											datamodel = "[MilitaryView.GetGovernorshipsWithoutLegion]"
+											
+											item = {
+												margin_widget = {
+													size = { 170 80 }
+													#tooltip = "[LegionGovernorshipItem.GetCreateLegionTooltip]" #This doesn't do anything TODO
+													#tooltip = "[LegionGovernorshipItem.GetTooltip]" #This doesn't do anything either! TODO
+													list_entry = {
+														size = { 100% 100% }
+													}
+
+													icon_button_square = {
+														size = { 38 38 }
+														enabled = "[LegionGovernorshipItem.CanCreateLegion]"
+														blockoverride "On_click" { onclick = "[MilitaryView.OpenEditLegionWindow( LegionGovernorshipItem.Self )]" }
+														blockoverride "Icon" 
+														{ 
+															texture = "gfx/interface/icons/modifiers/legion.dds"
+															size = { 28 28 }
+															parentanchor = center 
+															position = { 5 0 }
+															icon = {
+																using = button_tiled_texture
+																size = { 24 24 }
+																position = { -12 2 }
+																parentanchor = left
+																modify_texture = {
+																	texture = "gfx/interface/base_parts/plus.dds"
+																	blend_mode = alphamultiply
+																}
+															}
+														}
+														datacontext = "[LegionGovernorshipItem]"
+														tooltip = "[LegionGovernorshipItem.GetCreateLegionTooltip]"
+														parentanchor = right
+														position = { -4 4 }
+													}
+
+													textbox = {
+														text = "[LegionGovernorshipItem.GetGovernorship.GetNameWithNoTooltip]" 
+														using = BaseFontS
+														using = Black_FontColor
+														autoresize = yes
+														align = left
+														position = { 10 4 }
+														elide = right
+														max_width = 116
+														multiline = yes
+													}
+
+													icon_and_text_dark = {
+														position = { 8 -8 }
+														parentanchor = left|bottom
+														size = { 92 0 }
+														scale = 0.8
+														blockoverride "Text" { text = "0/[LegionGovernorshipItem.GetMaximumSize]" }
+														blockoverride "Icon" { texture = "gfx/interface/icons/shared_icons/strength.dds" }
+														tooltip = "POTENTIAL_STRENGTH"
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					margin_widget = { size = { 6 0 } }
+					margin_widget = {
+						size = { 436 0 }
+						layoutpolicy_vertical = expanding
+						margin_widget = {
+							size = { 100% 100% }
+							margin = { 8 8 }
+							visible = "[IsDataModelEmpty( MilitaryView.GetGovernorshipsWithLegion )]"
+							textbox = {
+								size = { 100% 100% }
+								using = BaseFontM
+								using = Black_FontColor
+								text = "LEGIONS_INFODUMP"
+								multiline = yes
+								align = top
+							}
+						}
+						widget = {
+							datacontext = "[MilitaryView.GetSelectedGovernorshipForLegion]"
+							visible = "[MilitaryView.GetSelectedGovernorshipForLegion.HasLegion]"
+							size = { 100% 100% }
+							sub_header = {
+								size = { 100% 32 }
+								blockoverride "AdditionalIcons"
+								{
+									icon = {
+										framesize = { 50 50 }
+										size = { 28 28 }
+										texture = "gfx/interface/icons/unit_actions/unit_naming.dds"
+										frame = 1
+
+										datacontext = "[LegionGovernorshipItem.GetGovernorship.GetLegion]"
+										visible = "[Or(Legion.HasCustomName, LegionGovernorshipItem.HasModifiedName)]"
+										tooltip = "LEGION_CUSTOM_NAME_TT"
+									}
+
+									widget = { 
+										size = { 4 0 } 
+										datacontext = "[LegionGovernorshipItem.GetGovernorship.GetLegion]"
+										visible = "[Or(Legion.HasCustomName, LegionGovernorshipItem.HasModifiedName)]"
+									}
+
+									editbox = {
+										size = { 390 32 }
+										name = "legion_name"
+										using = SubHeaderFont
+										using = Sub_Header_FontColor
+										margin_bottom = 4
+										focuspolicy = click
+										alwaystransparent = no 
+										maxcharacters = 48
+										multiline = no	
+										tooltip = "UNIT_NAME_TT"
+										autoresize = yes
+										text = "[LegionGovernorshipItem.GetGovernorship.GetLegion.GetNameWithNoTooltip]"
+										onreturnpressed = "[LegionGovernorshipItem.SetLegionName]"
+									}
+
+								}
+								blockoverride "Title_text" {}
+							}
+							flowcontainer = {
+								position = { 7 40 }
+								datamodel = "[LegionGovernorshipItem.GetGovernorship.GetLegion.GetCommanders]"
+								item = {
+									textbox = {
+										autoresize = yes
+										elide = right
+										fontsize_min = 10
+										max_width = 220
+										multiline = no
+										using = BaseFontM
+										using = Black_FontColor
+										visible = "[And( Character.IsLegate, Character.IsValid )]"
+										text = "LEGION_LEGATE_TITLE" 
+									}
+								}
+							
+							}
+							icon_and_text_dark = {
+								position = { 6 66 }
+								parentanchor = left|top
+								size = { 102 0 }
+								scale = 1
+								blockoverride "Text" { text = "[LegionGovernorshipItem.GetCohortsSize]/[LegionGovernorshipItem.GetMaximumSize]" }
+								blockoverride "Icon" { texture = "gfx/interface/icons/shared_icons/strength.dds" }
+								tooltip = "POTENTIAL_STRENGTH"
+							}
+							margin_widget = {
+								size = { 100% 100% }
+
+								#### LEGION COMMANDERS & SUMMARY
+								margin_widget = { 
+									size = { 100% 100% }
+									# content
+									# commanders
+									
+									flowcontainer = {
+										position = { 10 110 }
+										direction = horizontal
+										name = "commanders_with_add"
+										dynamicgridbox = {
+											flipdirection = yes
+											datamodel = "[LegionGovernorshipItem.GetGovernorship.GetLegion.GetCommanders]"
+											item = {
+												flowcontainer = {
+													ignoreinvisible = yes
+													parentanchor = bottom
+													widget = {
+														size = { 63 90 }
+														visible = "[Character.IsLegate]"
+														cpt_button = {
+															size = { 60 90 }
+															blockoverride "HighlightShadow" { visible = "[EqualTo_int32( Character.GetID, LegionGovernorshipItem.GetSelectedUnit.GetCommander.GetID )]" }
+															icon_button_square = {
+																name = "replace_commander_button"
+																enabled = "[LegionGovernorshipItem.CanReplaceCommander( Character.Self )]"
+																tooltip = "[LegionGovernorshipItem.GetReplaceCommanderTooltip( Character.Self )]" 
+																size = { 30 30 }
+																parentanchor = bottom|right
+																blockoverride "On_click"
+																{
+																	onclick = "[LegionGovernorshipItem.ReplaceCommander( Character.Self )]"
+																}
+																blockoverride "Icon"
+																{
+																	size = { 26 26 }
+																	texture = "gfx/interface/icons/shared_icons/change.dds"
+																}
+															}
+														}
+														
+													}
+													widget = {
+														size = { 52 70 }
+														visible = "[Character.IsTribune]"
+														cpt_button = {
+															size = { 48 72 }
+															blockoverride "HighlightShadow" { visible = "[EqualTo_int32( Character.GetID, LegionGovernorshipItem.GetSelectedUnit.GetCommander.GetID )]" }
+															icon_button_square = {
+																name = "replace_commander_button"
+																enabled = "[LegionGovernorshipItem.CanReplaceCommander( Character.Self )]"
+																tooltip = "[LegionGovernorshipItem.GetReplaceCommanderTooltip( Character.Self )]"
+																size = { 26 26 }
+																parentanchor = bottom|right
+																blockoverride "On_click"
+																{
+																	onclick = "[LegionGovernorshipItem.ReplaceCommander( Character.Self )]"
+																}
+																blockoverride "Icon"
+																{
+																	size = { 22 22 }
+																	texture = "gfx/interface/icons/shared_icons/change.dds"
+																}
+															}
+														}
+													}
+												}
+											} 
+										}
+										icon_button_square = {
+											name = "add_commander_button"
+											visible = "[LegionGovernorshipItem.CanAddCommanders]"
+											blockoverride "Icon" { visible = no }
+											blockoverride "On_click" { onclick = "[LegionGovernorshipItem.AddCommander]" }
+											size = { 44 64 }
+											parentanchor = bottom
+											tooltip = "ADD_LEGION_COMMANDER"
+
+											icon = {
+												using = button_tiled_texture
+												size = { 30 30 }
+												position = { -10 2 }
+												parentanchor = center
+												modify_texture = {
+													texture = "gfx/interface/base_parts/plus.dds"
+													blend_mode = alphamultiply
+												}
+											}
+											icon = {
+												texture = "gfx/interface/icons/shared_icons/commander.dds"
+												size = { 34 34 }
+												parentanchor = center
+												position = { 6 0 }
+											}
+										}
+									}
+									dynamicgridbox = {
+										position = { 6 150 }
+										flipdirection = yes
+										datamodel = "[LegionGovernorshipItem.GetGovernorship.GetLegion.GetCommanders]"
+										item = {
+											flowcontainer = {
+												ignoreinvisible = yes
+												parentanchor = bottom
+												spacing = 0
+												
+												widget = {
+													size = { 64 90 }
+													visible = "[Character.IsLegate]"
+													
+													widget = {
+														size = { 42 42 }
+														parentanchor = hcenter|bottom
+														tooltip = "[Character.GetMartialToolTip]" 
+														
+														icon = {
+															size = { 42 42 }
+															texture = "gfx/interface/icons/shared_icons/military.dds"
+															parentanchor = center
+														}
+														
+														icon = {
+															framesize = { 60 32 }
+															visible = "[Character.IsValid]"
+															frame = "[Character.GetMartial]"
+															texture = "gfx/interface/map/ranking_nonzero_characteristic.dds"
+															parentanchor = center
+															widgetanchor = center
+														}
+													}
+												}
+												
+												widget = {
+													size = { 54 75 }
+													visible = "[Character.IsTribune]"
+													widget = {
+														size = { 42 42 }
+														position = { 0 2 }
+														parentanchor = hcenter|bottom
+														tooltip = "[Character.GetMartialToolTip]" 	
+														
+														icon = {
+															size = { 34 34 }
+															texture = "gfx/interface/icons/shared_icons/military.dds"
+															parentanchor = center
+														}
+														
+														icon = {
+															framesize = { 60 32 }
+															visible = "[Character.IsValid]"
+															frame = "[Character.GetMartial]"
+															texture = "gfx/interface/map/ranking_nonzero_characteristic.dds"
+															parentanchor = center
+															widgetanchor = center
+														}
+													}
+												}
+											}
+										} 
+									}
+									##### HISTORY 
+									margin_widget = {
+										size = { 190 194 }
+										parentanchor = right
+										position = { -10 36 }
+										using = NoninteractableBG
+										
+										margin_widget = {
+											size = { 144 60 }
+											scissor = yes
+											dynamicgridbox = {
+												datamodel = "[LegionGovernorshipItem.GetGovernorship.GetLegion.GetDistinctions]"
+												flipdirection = yes
+												item = {
+													widget = {
+														size = { 48 48 }
+														icon = {
+															texture = "[GetDistinctionIcon( Distinction.Self )]"
+															size = { 46 46 } 
+															parentanchor = center
+															datacontext = "[Distinction]"
+															tooltipwidget = distinction_tooltip
+														}
+													}
+												}
+												
+											}
+										}
+										margin_widget = { 
+											size = { 100% 130 }
+											position = { 0 12 }
+											textbox = {
+												visible = "[StringIsEmpty( LegionGovernorshipItem.GetGovernorship.GetLegion.GetHistorySummary )]"
+												text = "DEEDS_NONE"
+												using = BaseFontM
+												using = Black_FontColor
+												autoresize = yes
+												parentanchor = hcenter
+												position = { 0 54 }
+												multiline = yes
+												max_width = 160
+												align = center
+												alpha = 0.6
+											}
+											scrollarea = {
+												position = { 0 40 }
+												size = { 100% 100% }
+												
+												scrollbarpolicy_horizontal = always_off
+												using = VerticalScrollAreaCutOff
+												scrollbar_vertical = {
+													using = VerticalScrollBar
+												}
+												
+												scrollwidget = {
+													textbox = { 
+														autoresize = yes
+														text = "[LegionGovernorshipItem.GetGovernorship.GetLegion.GetHistorySummary]"
+														multiline = yes
+														using = BaseFontS
+														using = Black_FontColor
+														max_width = 204
+														maximumsize = { 188 120 }
+														elide = right
+													}
+												}
+											}
+										}
+										icon_badge_round = {
+											size = { 50 50 }
+											blockoverride "Icon" {}
+											parentanchor = right
+											position = { 4 0 }
+											visible = "[GreaterThan_int32( GetDataModelSize( LegionGovernorshipItem.GetGovernorship.GetLegion.GetDistinctions ), '(int32)3' )]"
+											textbox = {
+												using = BaseFontM
+												using = Black_FontColor
+												parentanchor = center
+												autoresize = yes
+												position = { 0 -3 }
+												text = "+[Subtract_int32( GetDataModelSize( LegionGovernorshipItem.GetGovernorship.GetLegion.GetDistinctions ), '(int32)3' )]"
+											}
+										}
+										text_button_square_highlighted = {
+											size = { 186 0 }
+											parentanchor = bottom|hcenter
+											blockoverride "Center_text" { text = "HISTORY" }
+											blockoverride "On_click" { onclick = "[GetVariableSystem.Set( 'history_window', 'yes' )]" }
+											visible = "[Not( GetVariableSystem.HasValue( 'history_window', 'yes' ) )]"
+										}
+										text_button_square_highlighted = {
+											size = { 186 0 }
+											parentanchor = bottom|hcenter
+											blockoverride "Center_text" { text = "HISTORY" }
+											blockoverride "On_click" { onclick = "[GetVariableSystem.Set( 'history_window', 'no' )]" }
+											visible = "[GetVariableSystem.HasValue( 'history_window', 'yes' )]"
+										}
+									}
+									#text_button_square = {
+									#	size = { 140 0 }
+									#	parentanchor = bottom|right
+									#	position = { -8 -32 }
+									#	blockoverride "Center_text" { text = "DISMISS_UNIT" }
+									#	blockoverride "On_click" { onclick = "[LegionGovernorshipItem.DismissSelection]" }
+									#	enabled = "[LegionGovernorshipItem.CanDismissUnit]"
+									#	tooltip = "[LegionGovernorshipItem.DismissUnitTooltip]"
+									#}
+								}
+
+								margin_widget = {
+									size = { 100% 534 }
+									position = { 0 240 }
+									margin_right = 4
+									sub_header_v = {
+										size = { 100% 100% }
+										position = { 3 0 }
+										blockoverride "Title_text" {
+											text = "ARMIES_IN_LEGION" 
+										}
+									}
+									overlappingitembox = {
+										position = { 6 29 }
+										size = { 350 42 }
+										using = NoninteractableBG
+										blockoverride "Margins"
+										{ 
+											margin = { 4 2 }
+										}
+										datamodel = "[LegionGovernorshipItem.GetGovernorship.GetLegion.GetArmies]"
+										item = {
+											widget = { 
+												size = { 32 40 }
+												tooltip = "[Unit.GetName]"
+												list_button_army = {
+													parentanchor = vcenter
+													size = { 32 32 }
+													onclick = "[LegionGovernorshipItem.SetSelectedUnit( Unit.Self )]"
+													down = "[LegionGovernorshipItem.IsSelectedUnit( Unit.Self )]"
+												}
+												#button = {
+												#	parentanchor = vcenter
+												#	texture = "gfx/interface/icons/icon_alpha/legions_army.dds"
+												#	size = { 32 32 }
+												#	inherit_visual_state = no
+												#	distribute_visual_state = no
+												#	position = { 4 4 }
+												#	onclick = "[LegionGovernorshipItem.SetSelectedUnit( Unit.Self )]"
+												#	glow = {
+												#		glow_radius = 2
+												#		color = { 0.9 0.8 0.2 1 }
+												#		visible = "[LegionGovernorshipItem.IsSelectedUnit( Unit.Self )]"
+												#	}
+												#}
+											}
+										} 
+									}
+									button_delete_item = {
+										parentanchor = right
+										position = { -34 32 }
+										size = { 32 32 }
+										blockoverride "On_click" { onclick = "[LegionGovernorshipItem.DismissSelection]" }
+										enabled = "[LegionGovernorshipItem.CanDismissUnit]"
+										tooltip = "[LegionGovernorshipItem.DismissUnitTooltip]"
+									}
+									goto_button = {
+										parentanchor = right
+										position = { -2 32 }
+										size = { 32 32 }
+										blockoverride "On_click" { onclick = "[PanToProvince( LegionGovernorshipItem.GetSelectedUnit.GetLocation )]" }
+										tooltip = "GOTO_UNIT"
+									}
+									tag = {
+										position = { 5 72 }
+										text = "[LegionGovernorshipItem.GetSelectedUnit.GetName]"
+									}
+
+									icon_and_text = {
+										size = { 110 0 }
+										parentanchor = right
+										position = { -12 70 }
+										blockoverride "Text" { text = "[LegionGovernorshipItem.GetSelectedUnit.GetVisualStrength]" }
+										blockoverride "Icon" 
+										{ 
+											texture = "gfx/interface/icons/shared_icons/strength.dds" 
+											size = { 34 34 }
+										}
+										tooltip = "[LegionGovernorshipItem.GetSelectedUnit.GetStrengthTooltip]"
+									}
+									overlappingitembox = {
+										position = { 4 114 }
+										size = { 418 110 }
+										list_entry = { 
+											size = { 100% 100% } 
+											parentanchor = vcenter
+											
+										} 
+										datamodel = "[LegionGovernorshipItem.GetSelectedUnit.GetSubUnitCounts]"
+										item = {
+											margin_widget = { 
+												size = { 78 110 }
+												visible = "[GreaterThan_int32( SubUnitCounts.GetCount, '(int32)0' )]"
+												margin = { 2 0 }
+												unit_card = {
+													size = { 100% 100% }
+												}
+											}
+										} 
+									}
+									
+									margin_widget = {
+										size = { 100% 280 }
+										using = NoninteractableBG
+										blockoverride "Margins" { margin = { 0 0 } }
+										position = { -2 0 }
+										parentanchor = bottom|hcenter
+										textbox = {
+											text = "EDIT_COMPOSITION"
+											position = { 12 16 }
+											using = HeaderFont
+											using = Black_FontColor
+										}
+										fixedgridbox = {
+											name = "unit_types_grid_legion"
+											alwaystransparent = no
+											flipdirection = yes
+											addcolumn = 60
+											addrow = 78 
+											datamodel = "[MilitaryView.GetSelectedGovernorshipForLegion.GetConstructions]"
+											size = { 100% 125 }
+											datamodel_wrap = 7
+											position = { 11 38 }
+											item = {
+												container = {
+													using = ConstructionCardTemplate
+													datacontext = "[SubUnitConstruction.GetDefinition]"
+													tooltip = "EDIT_COMPOSITION_SUBUNIT_DESC"
+												}
+											}
+										}
+									}
+									
+									textbox = {
+										text = "[LegionGovernorshipItem.GetReinforceCost]"
+										using = BaseFontM
+										using = Black_FontColor
+										autoresize = yes
+										parentanchor = top|hcenter
+										position = { 14 435 }
+									}
+									text_button_square = {
+										size = { 220 0 }
+										name = "dontrenamethisbutton"
+										parentanchor = top|hcenter
+										position = { 14 495 }
+										blockoverride "Center_text" { text = "EDIT_LEGION" }
+										blockoverride "On_click" { onclick = "[LegionGovernorshipItem.ConfirmLegionConstructions]" }
+										enabled = "[LegionGovernorshipItem.CanConfirmConstructions]"
+										tooltip = "[LegionGovernorshipItem.ConfirmConstructionsTooltip]"
+									}
+									
+								}
+							}
+						}
+					}
+				}
+				#container = {
+				#	# TODO: scrollcontainer
+				#	name = "legions Scroll List"
+				#	layoutpolicy_horizontal = expanding
+				#	layoutpolicy_vertical = expanding
+				#	direction = vertical
+				#	size = { 240 623 }
+				#
+				#	sub_header = {
+				#		size = { 240 32 }
+				#		blockoverride "Title_text" { text = "LEGIONS" } #TODO HEADING 
+				#	}
+				#
+				#	container = {
+				#		name = "Current Legions"
+				#		position = { 0 32 }
+				#		size = { 240 311 }
+				#		fixedgridbox = {
+				#			addrow = 32
+				#			addcolumn = 240
+				#			maxhorizontalslots = 1
+				#			size = { 100% 100% }
+				#			resizeparent = yes
+				#
+				#			datamodel = "[MilitaryView.GetGovernorshipsWithLegion]"
+				#			item = {
+				#				margin_widget = {
+				#					margin = { 8 8 }
+				#					size = { 240 32 }
+				#
+				#					text_button_square = {
+				#						parentanchor = hcenter
+				#						size = { 100% 32 } 
+				#					
+				#						blockoverride "Center_text" { visible = yes }
+				#
+				#						blockoverride "Button_text" { 
+				#							text = "[LegionGovernorshipItem.GetGovernorship.GetNameWithNoTooltip]" 
+				#						}
+				#						blockoverride "On_click" { 
+				#							onclick = "[LegionGovernorshipItem.Select]" 
+				#							enabled = "[Not(LegionGovernorshipItem.IsSelected)]"
+				#						}
+				#						icon_and_text = {
+				#							position = { 0 0 }
+				#							parentanchor = right
+				#							size = { 80 0 }
+				#							blockoverride "Text" { text = "[LegionGovernorshipItem.GetUpkeep|1-=]" }
+				#							blockoverride "Icon" { texture = "gfx/interface/icons/shared_icons/treasury.dds" }
+				#						}
+				#					}
+				#					# price tooltip TODO
+				#					# tooltip = "[LegionGovernorshipItem.GetTooltip]"
+				#				}
+				#			}
+				#		}
+				#	}
+				#}
+			}
+		}
+	}
+}

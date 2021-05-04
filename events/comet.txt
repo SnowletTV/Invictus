@@ -1,0 +1,686 @@
+﻿namespace = comet
+
+comet.1 = {
+	type = country_event
+	title = "comet.1.t"
+	desc = "comet.1.desc"
+	
+	left_portrait = current_ruler
+	right_portrait = scope:priest
+	
+	picture = natural_disaster
+	
+	trigger = {
+		has_land = yes
+		any_neighbour_country = {
+			has_land = yes
+		}
+		NOT = {
+			has_variable = comet_sighted
+		}
+		any_character = {
+			OR = {
+				has_office = office_high_priest_monarchy
+				has_office = office_augur
+				has_office = office_pontifex
+				has_office = office_high_priest
+			}
+		}
+	}
+	
+	fire_only_once = yes
+	
+	immediate = {
+		random_neighbour_country = {
+			limit = {
+				has_land = yes
+			} 
+			random_owned_province = {
+				save_scope_as = target
+			}
+		}
+		set_variable = {
+			name = comet_sighted
+			value = scope:target
+		}
+		random_character = {
+			limit = {
+				OR = {
+					has_office = office_high_priest_monarchy
+					has_office = office_augur
+					has_office = office_pontifex
+					has_office = office_high_priest
+				}
+			}
+			save_scope_as = priest
+		}
+		every_neighbour_country = {
+			limit = {
+				has_land = yes
+				any_neighbour_country = {
+					has_land = yes
+				}
+				NOT = {
+					has_variable = comet_sighted
+				}
+				any_character = {
+					OR = {
+						has_office = office_high_priest_monarchy
+						has_office = office_augur
+						has_office = office_pontifex
+						has_office = office_high_priest
+					}
+				}
+			}
+			trigger_event = {
+				id = comet.1
+				days = 2
+			}
+		}
+	}
+	
+	option = { 
+		name = "comet.1.a"
+		add_stability = 10
+		custom_tooltip = "comet_sighted_1_tt"
+	}
+	 
+}
+
+comet.2 = {
+	type = province_event
+	hidden = yes
+	
+	trigger = {
+		exists = owner
+		owner = {
+			has_variable = comet_sighted
+			var:comet_sighted = root
+		}
+	}
+	
+	immediate = {
+		save_scope_as = target
+		owner = {
+			trigger_event = {
+				id = comet.3
+			}
+		}
+	}
+	
+}
+
+comet.3 = {
+	type = country_event
+	title = "comet.3.t"
+	desc = "comet.3.desc"
+	
+	picture = farming
+	
+	option = {
+		name = "comet.3.a"
+		add_country_modifier = {
+			name = comet_sighted_modifier
+			duration = -1
+		}
+	}
+	
+}
+
+comet.4 = {
+	type = country_event
+	title = "comet.4.t"
+	desc = "comet.4.desc"
+	
+	picture = city_country
+	
+	trigger = {
+		has_country_modifier = comet_sighted_modifier
+		has_variable = comet_sighted
+		var:comet_sighted = {
+			has_owner = yes
+			owner = root
+			is_capital = no
+		}
+		war = yes
+		manpower >= 10
+		NOT = {
+			has_variable = comet_moved_toggle
+		}
+	}
+	
+	immediate = {
+		var:comet_sighted = {
+			save_scope_as = target
+		}
+		set_variable = {
+			name = comet_moved_toggle
+		}
+	}
+	
+	option = {
+		name = "comet.4.a"
+		add_manpower = -10
+		add_war_exhaustion = 4
+		add_stability = 20
+	}
+	
+	option = {
+		name = "comet.4.b"
+		remove_country_modifier = comet_sighted_modifier
+	}
+	
+}
+
+comet.5 = {
+	type = country_event
+	title = "comet.5.t"
+	desc = "comet.5.desc"
+	
+	picture = ship_in_storm
+	
+	left_portrait = current_ruler
+	right_portrait = scope:demodamas
+	
+	trigger = {
+		is_ai = no
+		current_date >= 470.1.1
+		current_date <= 530.1.1
+		any_owned_province = {
+			is_port = yes
+			total_population > 5
+			any_neighbor_province = { #don't select river harbors
+				is_sea = yes
+			}
+		}
+		NOT = {
+			has_global_variable = demodamas_appeared
+		}
+		NOT = {
+			tag = SEL
+		}
+	}
+	
+	immediate = {
+		set_global_variable = {
+			name = demodamas_appeared
+		}
+		hidden_effect = {
+			random_owned_province = {
+				limit = {
+					is_port = yes
+					total_population > 5
+					any_neighbor_province = { #don't select river harbors
+						is_sea = yes
+					}
+				}
+				save_scope_as = demodamas_port
+			}
+			c:REB = {
+				create_character = {
+					first_name = "Demodamas"
+					age = 32
+					culture = macedonian
+					religion = roman_pantheon
+					save_scope_as = demodamas
+				}
+				scope:demodamas = {
+					add_martial = 3
+					add_charisma = 3
+					add_finesse = 5
+					add_zeal = 2
+					add_trait = founder
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "comet.5.a"
+		scope:demodamas_port = {
+			custom_tooltip = pops_enslaved_away
+			hidden_effect = {
+				while = {
+					count = 3
+					random_pops_in_province = {
+						weight = {
+							modifier = {
+								factor = 100
+								pop_type = slaves
+							}
+						}
+						kill_pop = yes
+					}
+				}
+			}
+		}
+
+		create_country_treasure = {
+			key = "figurine_of_the_great_matriarch"
+			icon = "treasure_architecture"
+			
+			modifier = {
+				local_population_growth = 0.1
+			}
+		}
+		scope:demodamas = {
+			if = {
+				limit = {
+					NOT = {
+						has_trait = orator
+					}
+				}
+				add_trait = orator
+			}
+		}
+		custom_tooltip = "demodamas_goes_away"
+		hidden_effect = {
+			save_scope_as = demodamas_cl
+			random_country = {
+				limit = {
+					is_ai = no
+				}
+				weight = {
+					modifier = {
+						factor = 0.001
+						this = scope:demodamas_cl
+					}
+				}
+				trigger_event = {
+					id = comet.6
+					days = { 730 1450 }
+					#days = 1
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "comet.5.b"
+		add_stability = 4
+		scope:demodamas = {
+			if = {
+				limit = {
+					NOT = {
+						has_trait = cruel
+					}
+				} 
+				add_trait = cruel
+			}
+		}
+		custom_tooltip = "demodamas_goes_away"
+		hidden_effect = {
+			save_scope_as = demodamas_cl
+			random_country = {
+				limit = {
+					is_ai = no
+				}
+				weight = {
+					modifier = {
+						factor = 0.001
+						this = scope:demodamas_cl
+					}
+				}
+				trigger_event = {
+					id = comet.6
+					days = { 730 1450 }
+					#days = 1
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "comet.5.c"
+		scope:demodamas = {
+			move_country = root
+			set_as_minor_character = THIS
+		}
+		custom_tooltip = "demodamas_settles_down"
+	}
+}
+
+comet.6 = {
+	type = country_event
+	title = "comet.6.t"
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					exists = scope:demodamas_cl
+					root = scope:demodamas_cl
+				}
+				desc = "comet.6.repeat_desc"
+			}
+			triggered_desc = {
+				trigger = {
+					always = yes
+				}
+				desc = "comet.6.regular_desc"
+			}
+		}
+	}
+	picture = ship_in_storm
+	
+	left_portrait = current_ruler
+	right_portrait = scope:demodamas
+	
+	trigger = {
+		has_land = yes
+		exists = scope:demodamas
+		scope:demodamas = {
+			is_alive = yes
+			employer = c:REB
+		}
+	}
+	
+	option = {
+		name = "comet.6.a"
+		create_country_treasure = {
+			key = "candlestick_of_great_delights"
+			icon = "treasure_chest"
+			
+			modifier = {
+				local_unrest = -1
+			}
+		}
+		add_treasury = {
+			value = 0
+			subtract = has_monthly_income
+			multiply = 6
+		}
+		scope:demodamas = {
+			if = {
+				limit = {
+					NOT = {
+						has_trait = ambitious
+					}
+				}
+				add_trait = ambitious
+			}
+			else_if = {
+				limit = {
+					NOT = {
+						has_trait = scholar
+					}
+				}
+				add_trait = scholar
+			}
+		}
+		custom_tooltip = "demodamas_goes_away"
+		hidden_effect = {
+			save_scope_as = demodamas_cl2
+			random_country = {
+				limit = {
+					is_ai = no
+				}
+				weight = {
+					modifier = {
+						factor = 0.001
+						AND = {
+							exists = scope:demodamas_cl2
+							this = scope:demodamas_cl2
+						}
+					}
+					modifier = {
+						factor = 0.001
+						AND = {
+							exists = scope:demodamas_cl
+							this = scope:demodamas_cl
+						} 
+					}
+				}
+				trigger_event = {
+					id = comet.7
+					days = { 730 1450 }
+					#days = 1
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "comet.6.b"
+		current_ruler = {
+			add_popularity = subtract_popularity_large
+		}
+		scope:demodamas = {
+			if = {
+				limit = {
+					NOT = {
+						has_trait = lunatic
+					}
+				}
+				add_trait = lunatic
+			}
+			else_if = {
+				limit = {
+					NOT = {
+						has_trait = brain_damaged
+					}
+				}
+				add_trait = brain_damaged
+			}
+		}
+		custom_tooltip = "demodamas_goes_away"
+		hidden_effect = {
+			save_scope_as = demodamas_cl2
+			random_country = {
+				limit = {
+					is_ai = no
+				}
+				weight = {
+					modifier = {
+						factor = 0.001
+						AND = {
+							exists = scope:demodamas_cl2
+							this = scope:demodamas_cl2
+						}
+					}
+					modifier = {
+						factor = 0.001
+						AND = {
+							exists = scope:demodamas_cl
+							this = scope:demodamas_cl
+						} 
+					}
+				}
+				trigger_event = {
+					id = comet.7
+					days = { 730 1450 }
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "comet.6.c"
+		scope:demodamas = {
+			move_country = root
+			set_as_minor_character = THIS
+		}
+		if = {
+			limit = {
+				exists = scope:demodamas_cl
+				scope:demodamas_cl = {
+					is_ai = no
+					NOT = {
+						this = root
+					}
+				}
+			}
+			save_scope_as = took_in_demodamas
+			scope:demodamas_cl = {
+				trigger_event = {
+					id = comet.8
+					days = 1 #Correct
+				}
+			}
+		}
+		custom_tooltip = "demodamas_settles_down"
+	}
+	
+}
+
+comet.7 = {
+	type = country_event
+	title = "comet.7.t"
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					OR = {
+						AND = {
+							exists = scope:demodamas_cl
+							root = scope:demodamas_cl
+						}
+						AND = {
+							exists = scope:demodamas_cl2
+							root = scope:demodamas_cl2
+						}
+					}
+				}
+				desc = "comet.7.repeat_desc"
+			}
+			triggered_desc = {
+				trigger = {
+					always = yes
+				}
+				desc = "comet.7.regular_desc"
+			}
+		}
+	}
+	picture = ship_in_storm
+	
+	left_portrait = current_ruler
+	right_portrait = scope:demodamas
+	
+	trigger = {
+		has_land = yes
+		exists = scope:demodamas
+		scope:demodamas = {
+			is_alive = yes
+			employer = c:REB
+		}
+	}
+	
+	option = {
+		name = "comet.7.a"
+		create_country_treasure = {
+			key = "celtic_chainmail_from_ireland"
+			icon = "treasure_armor"
+			
+			modifier = {
+				local_defensive = 0.1
+			}
+		}
+		scope:demodamas = {
+			if = {
+				limit = {
+					NOT = {
+						has_trait = disciplined
+					}
+				}
+				add_trait = disciplined
+			}
+			else_if = {
+				limit = {
+					NOT = {
+						has_trait = brave
+					}
+				}
+				add_trait = brave
+			}
+		}
+		custom_tooltip = "demodamas_goes_away"
+	}
+	
+	option = {
+		name = "comet.7.b"
+		current_ruler = {
+			add_popularity = subtract_popularity_huge
+		}
+		scope:demodamas = {
+			if = {
+				limit = {
+					NOT = {
+						has_trait = coward
+					}
+				}
+				add_trait = coward
+			}
+			else_if = {
+				limit = {
+					NOT = {
+						has_trait = harsh
+					}
+				}
+				add_trait = harsh
+			}
+		}
+		custom_tooltip = "demodamas_goes_away"
+	}
+	
+	option = {
+		name = "comet.7.c"
+		scope:demodamas = {
+			move_country = root
+			set_as_minor_character = THIS
+		}
+		if = {
+			limit = {
+				exists = scope:demodamas_cl
+				scope:demodamas_cl = {
+					is_ai = no
+					NOT = {
+						this = root
+					}
+				}
+			} 
+			save_scope_as = took_in_demodamas
+			scope:demodamas_cl = {
+				trigger_event = {
+					id = comet.8
+					days = 1 #Correct
+				}
+			}
+		}
+		if = {
+			limit = {
+				exists = scope:demodamas_cl2
+				scope:demodamas_cl2 = {
+					is_ai = no
+					NOT = {
+						this = root
+					}
+				}
+			}
+			save_scope_as = took_in_demodamas
+			scope:demodamas_cl2 = {
+				trigger_event = {
+					id = comet.8
+					days = 1 #Correct
+				}
+			}
+		}
+		custom_tooltip = "demodamas_settles_down"
+	}
+	
+}
+
+comet.8 = {
+	type = country_event
+	title = "comet.8.t" 
+	desc = "comet.8.desc"
+	
+	picture = ship_in_storm
+	
+	
+	left_portrait = current_ruler
+	right_portrait = scope:demodamas
+	
+	option = {
+		name = "comet.8.a"
+		
+	}
+}

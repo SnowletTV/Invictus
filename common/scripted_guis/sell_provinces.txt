@@ -1,0 +1,285 @@
+sell_provinces = {
+	scope = country
+
+	saved_scopes = {
+		target
+	}
+
+	ai_is_valid = {
+		always = no
+	}
+
+	is_valid = {
+		in_diplomatic_range = scope:target
+		NOT = {
+			has_variable = sent_province_offer
+		}
+		NOT = {
+			scope:target = root
+		}
+	}
+
+	# is_shown = {
+	#
+	# }
+
+	effect = {
+		clear_variable_list = regions_list_to_sell
+		clear_variable_list = sell_province_to
+
+		set_variable = {
+			name = province_price_offer
+			value = 0
+		}
+
+		every_governorships = {
+			clear_variable_list = provinces_list_to_sell
+			root = {
+				add_to_variable_list = {
+					name = regions_list_to_sell
+					target = prev
+				}
+			}
+
+			every_governorship_state = {
+				save_scope_as = this_state
+				prev = {
+					add_to_variable_list = {
+						name = provinces_list_to_sell
+						target = scope:this_state
+					}
+				}
+			}
+		}
+
+		add_to_variable_list = { #what country we're selling to
+			name = sell_province_to
+			target = scope:target
+		}
+	}
+}
+
+select_region_to_sell = {
+	scope = country
+
+	saved_scopes = {
+		region
+	}
+
+	is_shown = {
+		has_variable_list = region_to_sell
+		is_target_in_variable_list = {
+			name = region_to_sell
+			target = scope:region
+		}
+	}
+
+	ai_is_valid = {
+		always = no
+	}
+
+	effect = {
+		if = {
+			limit = {
+				is_target_in_variable_list = {
+					name = region_to_sell
+					target = scope:region
+				}
+			}
+			remove_list_variable = {
+				name = region_to_sell
+				target = scope:region
+			}
+
+			scope:region = {
+				every_governorship_state = {
+					root = {
+						remove_list_variable = {
+							name = province_to_sell
+							target = prev
+						}
+					}
+				}
+			}
+
+		}
+
+		else = {
+			add_to_variable_list = {
+				name = region_to_sell
+				target = scope:region
+			}
+			scope:region = {
+				every_governorship_state = { # do we need a limit?
+					root = {
+						add_to_variable_list = {
+							name = province_to_sell
+							target = prev
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+select_province_to_sell = {
+	scope = country
+
+	saved_scopes = {
+		state
+	}
+
+	is_shown = {
+		has_variable_list = province_to_sell
+		is_target_in_variable_list = {
+			name = province_to_sell
+			target = scope:state
+		}
+	}
+
+	ai_is_valid = {
+		always = no
+	}
+
+	effect = {
+		if = {
+			limit = {
+				is_target_in_variable_list = {
+					name = province_to_sell
+					target = scope:state
+				}
+			}
+			remove_list_variable = {
+				name = province_to_sell
+				target = scope:state
+			}
+			if = {
+				limit = {
+					is_target_in_variable_list = {
+						name = region_to_sell
+						target = scope:state.governorship
+					}
+				}
+				remove_list_variable = {
+					name = region_to_sell
+					target = scope:state.governorship
+				}
+			}
+		}
+
+		else = {
+			add_to_variable_list = {
+				name = province_to_sell
+				target = scope:state
+			}
+		}
+	}
+}
+
+change_province_price = {
+	scope = country
+
+	ai_is_valid = {
+		always = no
+	}
+
+	is_shown = {
+		any_in_list = {
+			variable = sell_province_to
+			is_ai = no
+		}
+	}
+
+	is_valid = {
+		has_variable_list = province_to_sell
+		any_in_list = {
+			variable = sell_province_to
+			is_ai = no
+		}
+	}
+}
+
+confirm_sell_province = {
+	scope = country
+
+	ai_is_valid = {
+		always = no
+	}
+
+	is_valid = {
+		has_variable_list = province_to_sell
+	}
+
+	effect = {
+		set_variable = sent_province_offer
+		every_in_list = {
+			variable = sell_province_to
+
+			save_scope_as = buyer
+		}
+
+		###
+		save_scope_as = sender
+		scope:buyer = {
+			trigger_event = {
+				id = sell_province.1
+			}
+		}
+	}
+}
+
+cancel_sell_province = {
+	scope = country
+
+	ai_is_valid = {
+		always = no
+	}
+
+	is_valid = {
+		has_variable_list = province_to_sell
+	}
+
+	effect = {
+		clear_variable_list = province_to_sell
+		clear_variable_list = region_to_sell
+		set_variable = {
+			name = province_price_offer
+			value = 0
+		}
+	}
+}
+
+increase_province_price = {
+	scope = country
+
+	ai_is_valid = {
+		always = no
+	}
+
+	effect = {
+		change_variable = {
+			name = province_price_offer
+			add = 100
+		}
+	}
+}
+
+decrease_province_price = {
+	scope = country
+
+	ai_is_valid = {
+		always = no
+	}
+
+	is_valid = {
+		var:province_price_offer > 0
+	}
+
+	effect = {
+		change_variable = {
+			name = province_price_offer
+			add = -100
+		}
+	}
+}

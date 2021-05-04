@@ -1,0 +1,733 @@
+template character_health_bar
+{
+	progresstexture = "gfx/interface/tiles/health_bar.dds"
+	#	noprogresstexture = "gfx/interface/tiles/moral_bar_transparent.dds"
+	size = { 12 192 }
+	direction = vertical
+}
+
+template character_experience_bar
+{
+	progresstexture = "gfx/interface/placeholder.dds"
+	#	noprogresstexture = "gfx/interface/tiles/moral_bar_transparent.dds"
+	size = { 12 192 }
+	direction = vertical
+}
+
+@categoryBGalpha = 0.6
+
+base_window = {
+	name = "character_window"
+	
+	parentanchor = top|left
+	size = { 755 930 }
+	movable = no
+	using = main_window_template
+	
+	vbox = {
+		using = MainWindowHeaderBox
+		
+		blockoverride "Title_text" { text = "[CharacterWindow.GetCharacter.GetName]"  }
+		
+		blockoverride "White_buttons"
+		{
+			container = {
+				button = {
+					position = { 0 -1 }
+					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_click"
+					oversound = "event:/SFX/UI/Generic/sfx_ui_generic_mouse_over"
+					framesize = { 50 50 }
+					size = { 26 26 }
+					texture = "gfx/interface/icons/shared_icons/star.dds"
+					onclick = "[CharacterWindow.FavoriteToggle]"
+					frame = "[Select_int32(CharacterWindow.IsFavorite,'(int32)2','(int32)1'))]"
+					tooltip = "[CharacterWindow.GetTooltip]"
+					color = { 1 1 1 1 }
+				}
+			}
+			button_back = {
+				name = "previous_button"
+				shortcut = "previous_window"
+				onclick = "[CharacterWindow.OnPrevious]"
+				tooltip = "PREVIOUS_CHARACTER_WINDOW"
+			}
+			
+			button_close = {
+				name = "close_button"
+				onclick = "[CharacterWindow.OnClose]"
+				tooltip = "CLOSE"
+			}
+		}
+		
+		hbox = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+			
+			margin_widget = { 
+				size = { 0 0 }
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+				margin_left = 4
+				
+				margin_top = 10
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					vbox = {
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+						margin_right = 8
+						margin_widget = {
+							size = { 0 318 }
+							layoutpolicy_horizontal = expanding
+							margin_right = 5
+							margin_left = 5
+							charpt_button_large_with_data = {
+								blockoverride "ShowIcons" { visible = no }
+								blockoverride "traits" {}
+								scissor = yes
+								scale = 1.08
+								blockoverride "Size" { size = { 683 256 } }
+								blockoverride "Context" { datacontext = "[CharacterWindow.GetCharacter]" }
+								blockoverride "BottomPortraitPosition" { position = { -10 45 } }
+								blockoverride "portrait_button_template_tooltip" {}
+								blockoverride "PartyIconVisibility" 
+								{
+									visible = no
+								}
+								dynamicgridbox = {
+									#using = NoninteractableBG
+									datamodel = "[CharacterWindow.GetTraitItems]"
+									datamodel_wrap = 15
+									parentanchor = bottom|left
+									position = { 8 -2 }
+									flipdirection = yes
+									item = {
+										icon = {
+											size = { 30 30 }
+											texture = "[TraitItem.GetIcon]"
+											tooltip = "[TraitItem.GetTooltip]"
+										}
+										
+									}
+								}
+							}
+							icon_and_text_progress = {
+								parentanchor = bottom
+								position = { 0 0 }
+								blockoverride "Icon" { using = icon_health }
+								blockoverride "Value" { value = "[FixedPointToFloat( CharacterWindow.GetCharacter.GetHealth )]" }
+								blockoverride "Text" { text = "[FixedPointToFloat( CharacterWindow.GetCharacter.GetHealth )]%" }
+								tooltip = "[CharacterWindow.GetCharacter.GetHealthInformation]"
+							}
+							
+							
+							icon_and_text = {
+								size = { 128 0 }
+								parentanchor = bottom|hcenter
+								position = { -10 -3 }
+								blockoverride "Icon" { texture = "gfx/interface/icons/shared_icons/leader.dds" }
+								blockoverride "Text" { text = "[CharacterWindow.GetCharacter.GetSuccessionScore]" }
+								tooltip = "[CharacterWindow.GetCharacter.GetSuccessionScoreInfo]"
+								visible = "[And( CharacterWindow.GetCharacter.CanHavePreferredHeir, GreaterThan_CFixedPoint( CharacterWindow.GetCharacter.GetSuccessionScore, '(CFixedPoint)3' ) )]"
+							}
+							icon_and_text = {
+								size = { 90 0 }
+								#using = NoninteractableBG
+								#blockoverride "Margins" { margin = { 9 3 } margin_bottom = 7 }
+								parentanchor = bottom
+								position = { 184 -2 }
+								blockoverride "Icon" 
+								{ 
+									texture = "gfx/interface/icons/shared_icons/senate_seat.dds" 
+									size = { 29 29 }
+								}
+								blockoverride "Text" { text = "[CharacterWindow.GetCharacter.GetSenatorialInfluence|1]" }
+								tooltip = "[CharacterWindow.GetCharacter.GetSenatorialInfluenceTooltip]"
+								visible = "[CharacterWindow.GetCharacter.GetEmployer.GetGovernment.IsRepublic]"
+							}
+
+							dynamicgridbox = {
+								datamodel = "[CharacterWindow.GetConvictions]"
+								visible = "[CharacterWindow.GetCharacter.GetEmployer.GetGovernment.IsRepublic]"
+								flipdirection = yes
+								parentanchor = bottom
+								using = NoninteractableBG
+								blockoverride "Margins" { margin = { 8 3 } margin_bottom = 7 }
+								position = { 294 -3 }
+								item = {
+									widget = {
+										size = { 82 32 }
+										icon_and_text_dark = {
+											size = { 80 0 }
+											parentanchor = center
+											position = { 0 0 }
+											blockoverride "Icon" 
+											{ 
+												texture = "[GetPartyIcon( ConvictionGlue.GetType )]" 
+												size = { 31 31 }
+												glow = {
+													glow_radius = 3
+													color = { 1 0.8 0 0.66 }
+													visible = "[EqualTo_string( ConvictionGlue.GetType.GetName, CharacterWindow.GetCharacter.GetParty.GetName )]"
+												}
+											}
+											blockoverride "Text" 
+											{ 
+												text = "[ConvictionGlue.GetValue]" 
+											}
+											tooltip = "[ConvictionGlue.GetTooltip]"
+											
+										}
+									}
+								}
+							}
+
+							icon_and_text_progress = {
+								parentanchor = bottom|right
+								position = { -2 0 }
+								blockoverride "Icon" { using = icon_statesmanship }
+								blockoverride "Value" { value = "[FixedPointToFloat( CharacterWindow.GetCharacter.GetExperience )]" }
+								blockoverride "Text" { text = "[CharacterWindow.GetCharacter.GetExperience|1]%" }
+								tooltip = "[CharacterWindow.GetCharacter.GetExperienceInformation]"
+							}
+							
+						}
+					
+						
+						margin_widget = {
+							size = { 0 538 }
+							layoutpolicy_horizontal = expanding
+							margin_left = 10
+							allow_outside = yes
+							container = {
+								name = "Family and Relationships"
+								sub_header_v = {
+									size = { 478 100% }
+									position = { -2 0 }
+									blockoverride "Title_text" { text = "FAMILY" }
+								}
+								
+								margin_widget = {
+									size = { 478 106 }
+									position = { 0 32 }
+									margin_top = 6
+									@immediate_family_width = 50
+									@immediate_family_height = 76
+									icon = {
+										name = "background_banner_spouse"
+										size = { 148 106 }
+										texture = "gfx/interface/base_parts/background_noninteractable_texture.dds"
+										alpha = @categoryBGalpha
+										modify_texture = {
+											texture = "gfx/interface/character_banners/character_spouse.dds"
+											blend_mode = alphamultiply
+											spriteType = Corneredtiled
+											spriteborder = { 90 0 }
+										}
+										using = border_slightly_torn_alpha
+									}
+
+									textbox = {
+										position = { 6 -2 }
+										size = { 82 30 }
+										autoresize = yes
+										text = "FAM_SPOUSE"
+										font = HeaderFont
+										fontsize = 20
+										using = Button_FontColor
+										alpha = 0.8
+									}
+
+									cpt_button = {
+										position = { 78 24 }
+										name = "Spouse"
+										blockoverride "ShowIcons" { visible = no }
+										size = { @immediate_family_width @immediate_family_height }
+										blockoverride "Context" { datacontext = "[CharacterWindow.GetCharacter.GetSpouse]" }
+										visible = "[Character.IsValid]"
+									}
+									icon = {
+										name = "background_banner_children"
+										position { 158 0 }
+										size = { 304 106 }
+										texture = "gfx/interface/base_parts/background_noninteractable_texture.dds"
+										alpha = @categoryBGalpha
+										modify_texture = {
+											texture = "gfx/interface/character_banners/character_kid.dds"
+											blend_mode = alphamultiply
+											spriteType = Corneredtiled
+											spriteborder = { 90 0 }
+										}
+										using = border_slightly_torn_alpha
+									}
+
+									textbox = {
+										size = { 82 30 }
+										position = { 164 -2 }
+										autoresize = yes
+										text = "CHILDREN"
+										font = HeaderFont
+										fontsize = 20
+										using = Button_FontColor
+										alpha = 0.8
+									}
+
+									overlappingitembox = {
+										margin_top = 6
+										name = "Children"
+										position = { 218 18 }
+										datamodel = "[CharacterWindow.GetCharacter.GetChildren]"
+										size = { 238 80 }
+										spacing = 6
+										
+										item = {
+											cpt_button = {
+												name = "Child"
+												size = { @immediate_family_width @immediate_family_height }
+												blockoverride "ShowIcons" { visible = no }
+											}
+										}
+									}
+								}
+								margin_widget = {
+									size = { 478 106 }
+									position = { 0 144 }
+									margin_top = 6
+									@extended_family_width = 50
+									@extended_family_height = 76
+									icon = {
+										name = "background_banner_parents"
+										size = { 212 106 }
+										texture = "gfx/interface/base_parts/background_noninteractable_texture.dds"
+										alpha = @categoryBGalpha
+										modify_texture = {
+											texture = "gfx/interface/character_banners/character_parents.dds"
+											blend_mode = alphamultiply
+											#spriteType = Corneredtiled
+											#spriteborder = { 90 0 }
+										}
+										using = border_slightly_torn_alpha
+									}
+
+									textbox = {
+										size = { 82 30 }
+										position = { 6 -2 }
+										autoresize = yes
+										text = "PARENTS_LABEL"
+										font = HeaderFont
+										fontsize = 20
+										using = Button_FontColor
+										alpha = 0.8
+									}
+
+									flowcontainer = {
+										spacing = 6
+										position = { 76 24 }
+										cpt_button = {
+											name = "Father"
+											blockoverride "ShowIcons" { visible = no }
+											size = { @extended_family_width @extended_family_height }
+											blockoverride "Context" { datacontext = "[CharacterWindow.GetCharacter.GetFather]" }
+											visible = "[Character.IsValid]"
+										}
+										cpt_button = {
+											name = "Mother"
+											blockoverride "ShowIcons" { visible = no }
+											size = { @extended_family_width @extended_family_height }
+											blockoverride "Context" { datacontext = "[CharacterWindow.GetCharacter.GetMother]" }
+											visible = "[Character.IsValid]"
+										}
+									}
+									icon = {
+										name = "background_banner_siblings"
+										position = { 222 0 }
+										size = { 240 106 }
+										texture = "gfx/interface/base_parts/background_noninteractable_texture.dds"
+										alpha = @categoryBGalpha
+										modify_texture = {
+											texture = "gfx/interface/character_banners/character_siblings.dds"
+											blend_mode = alphamultiply
+											spriteType = Corneredtiled
+											spriteborder = { 90 0 }
+										}
+										using = border_slightly_torn_alpha
+									}
+
+									textbox = {
+										size = { 82 30 }
+										position = { 228 -2 }
+										autoresize = yes
+										text = "SIBLINGS"
+										font = HeaderFont
+										fontsize = 20
+										using = Button_FontColor
+										alpha = 0.8
+									}
+
+									overlappingitembox = {
+										name = "Siblings"
+										position = { 288 24 }
+										datamodel = "[CharacterWindow.GetSiblings]"
+										size = { 168 80 }
+										spacing = 6
+										
+										item = {
+											cpt_button = {
+												blockoverride "ShowIcons" { visible = no }
+												name = "Sibling"
+												size = { @extended_family_width @extended_family_height }
+											}
+										}
+									}
+									
+								}
+								margin_widget = {
+									size = { 478 106 }
+									position = { 0 262 }
+									@rival_portrait_width = 54
+									@rival_portrait_height = 80
+									icon = {
+										name = "background_banner_friends"
+										size = { 228 106 }
+										texture = "gfx/interface/base_parts/background_noninteractable_texture.dds"
+										alpha = @categoryBGalpha
+										modify_texture = {
+											texture = "gfx/interface/character_banners/character_friends.dds"
+											blend_mode = alphamultiply
+											spriteType = Corneredtiled
+											spriteborder = { 90 0 }
+										}
+										using = border_slightly_torn_alpha
+									}
+
+									textbox = {
+										size = { 82 30 }
+										position = { 6 -2 }
+										autoresize = yes
+										text = "FRIENDS_LABEL"
+										tooltip = "FRIENDS_TOOLTIP"
+										font = HeaderFont
+										fontsize = 20
+										using = Button_FontColor
+										alpha = 0.8
+									}
+
+									overlappingitembox = {
+										size = { 146 86 }
+										position = { 76 23 }
+										
+										datamodel = "[CharacterWindow.GetCharacter.GetFriends]"
+										
+										item = {
+											cpt_button = {
+												size = { @rival_portrait_width @rival_portrait_height }
+												blockoverride "ShowIcons" { visible = no }
+											}
+										}
+									}
+
+									icon = {
+										name = "background_banner_rivals"
+										position = { 238 0 }
+										size = { 224 100% }
+										texture = "gfx/interface/base_parts/background_noninteractable_texture.dds"
+										alpha = @categoryBGalpha
+										modify_texture = {
+											texture = "gfx/interface/character_banners/character_rival.dds"
+											blend_mode = alphamultiply
+											spriteType = Corneredtiled
+											spriteborder = { 88 0 }
+										}
+										using = border_slightly_torn_alpha
+									}
+
+									textbox = {
+										size = { 82 30 }
+										position = { 244 -2 }
+										tooltip = "RIVALS_TOOLTIP"
+										autoresize = yes
+										datacontext = "[CharacterWindow]"
+										text = "RIVALS_LABEL"
+										font = HeaderFont
+										fontsize = 20
+										using = Button_FontColor
+										alpha = 0.8
+									}
+
+									overlappingitembox = {
+										size = { 150 86 }
+										position = { 306 23 }
+										spacing = 6
+										datamodel = "[CharacterWindow.GetCharacter.GetRivals]"
+										
+										item = {
+											cpt_button = {
+												size = { @rival_portrait_width @rival_portrait_height }
+												blockoverride "ShowIcons" { visible = no }
+											}
+										}
+									}
+									
+								}
+							}
+							
+							margin_widget = {
+								size = { 478 170 }
+								parentanchor = bottom
+								margin_top = 6
+								#margin_left = 10
+								
+								sub_header_v = {
+									size = { 100% 100% }
+									position = { -2 0 }
+									blockoverride "Title_text" { text = "SCHEMES" }
+								}
+								flowcontainer = {
+									position = { 4 34 }
+									spacing = 8
+									widget = {
+										size = { 210 130 }
+
+										tag = {
+											maximumsize = { 190 32 }
+											visible = "[CharacterWindow.GetCharacter.HasActiveAmbition]"
+											text = "[CharacterWindow.GetCharacter.GetAmbitionName]"
+											position = { 0 0 }
+											tooltip = "[CharacterWindow.GetCharacter.GetAmbitionInformation]"
+										}
+										
+										cpt_button = {
+											visible = "[And(CharacterWindow.GetCharacter.HasCheckedAmbition, GreaterThan_int32(CharacterWindow.GetCharacter.GetAge, '(int32)15'))]" 
+											size = { @rival_portrait_width @rival_portrait_height }
+											position = { 0 30 }
+											datacontext = "[CharacterWindow.GetCharacter.MakeScope.GetVariable('ongoing_scheme_target').GetCharacter]"
+											blockoverride "ShowIcons" { visible = no }
+										}
+										
+										flowcontainer = {
+											position = { 68 54 }
+											spacing = 6
+											ignoreinvisible = yes
+											visible = "[CharacterWindow.GetCharacter.HasCheckedAmbition]"
+											icon_button_square = {
+												datacontext = "[GetScriptedGui('scheme_assist')]" 
+												visible = "[ScriptedGui.IsShown( GuiScope.SetRoot( CharacterWindow.GetCharacter.MakeScope ).AddScope('player', Player.MakeScope ).End )]"
+												enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( CharacterWindow.GetCharacter.MakeScope ).AddScope('player', Player.MakeScope ).End )]"
+												tooltip = "ASSIST_SCHEME_BUTTON_TOOLTIP"
+												blockoverride "On_click" { 
+													onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( CharacterWindow.GetCharacter.MakeScope ).AddScope('player', Player.MakeScope ).End )]"
+												}
+												blockoverride "Icon" 
+												{
+													texture = "gfx/interface/icons/shared_icons/assist_with_scheme.dds" 
+													size = { 34 34 }
+												}							
+											}
+											icon_button_square = {
+												datacontext = "[GetScriptedGui('scheme_interfere')]"
+												visible = "[ScriptedGui.IsShown( GuiScope.SetRoot( CharacterWindow.GetCharacter.MakeScope ).AddScope('player', Player.MakeScope ).End )]"
+												enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( CharacterWindow.GetCharacter.MakeScope ).AddScope('player', Player.MakeScope ).End )]"
+												tooltip = "SCHEME_INTERFERE_BUTTON_TOOLTIP"
+												blockoverride "On_click" { 
+													onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( CharacterWindow.GetCharacter.MakeScope ).AddScope('player', Player.MakeScope ).End )]"
+												}
+												blockoverride "Icon" 
+												{
+													texture = "gfx/interface/icons/shared_icons/interfere_in_scheme.dds"  
+													size = { 34 34 }
+												}							
+											}
+											icon_button_square = {
+												datacontext = "[GetScriptedGui('scheme_abort')]"
+												visible = "[ScriptedGui.IsShown( GuiScope.SetRoot( CharacterWindow.GetCharacter.MakeScope ).AddScope('player', Player.MakeScope ).End )]"
+												enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( CharacterWindow.GetCharacter.MakeScope ).AddScope('player', Player.MakeScope ).End )]"
+												tooltip = "SCHEME_ABORT_TOOLTIP"
+												blockoverride "On_click" { 
+													onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( CharacterWindow.GetCharacter.MakeScope ).AddScope('player', Player.MakeScope ).End )]"
+												}
+												blockoverride "Icon" 
+												{ 
+													texture = "gfx/interface/icons/shared_icons/persuade_to_drop_scheme.dds" 
+													size = { 34 34 }
+												}							
+											}
+										}
+										
+										container = {
+											position = { 64 100 }
+											visible = "[And(CharacterWindow.GetCharacter.HasCheckedAmbition, GreaterThan_int32(CharacterWindow.GetCharacter.GetAge, '(int32)15'))]"
+											
+											fixed_size_progressbar = {
+												blockoverride "size" { size = { 138 7 } }
+												blockoverride "Value" { value = "[FixedPointToFloat( CharacterWindow.GetCharacter.GetAmbitionProgress )]" }
+												tooltip = "[CharacterWindow.GetCharacter.GetAmbitionInformation]"
+											}
+										}
+									}
+									icon = {
+										texture = "gfx/interface/base_parts/vertical_line_y100bd_alpha.dds"
+										#texture = "gfx/interface/base_parts/start_menu_vertical_line.dds"
+										alpha = 0.7
+									}
+										
+									widget = {
+										size = { 256 130 }
+
+										tag = {
+											maximumsize = { 190 32 }
+											datacontext = "[CharacterWindow]"
+											text = "TARGETED_BY_SCHEME"
+										}
+										
+										overlappingitembox = {
+											size = { 218 78 }
+											position = { 2 30 }
+											datamodel = "[CharacterWindow.GetCharacter.MakeScope.GetList('targeted_by')]"
+											
+											item = {
+												cpt_button = {
+													size = { @rival_portrait_width @rival_portrait_height }
+													blockoverride "Context" 
+													{ 
+														datacontext = "[Scope.Char]" 
+													}
+													blockoverride "ShowIcons" 
+													{ 
+													visible = no 
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+							
+							container = {
+								parentanchor = right
+								position = { -8 0 }
+								sub_header = {
+									parentanchor = right
+									widgetanchor = right
+									position = { 0 0 }
+									size = { 250 0 }
+									blockoverride "Title_text" 
+									{
+										text = CHARACTER_INTERACTIONS_SUBTITLE
+									} 
+								}
+								margin_widget = { 
+									size = { 256 462 }
+									parentanchor = left
+									position = { 0 30 }
+									
+									vbox = {
+										using = vbox_item_grid_button
+										margin_bottom = 8
+										margin_top = 8
+										margin_left = 8
+										margin_right = 0
+										
+										blockoverride "DataModel" { datamodel = "[CharacterWindow.GetInteractions]" }
+										
+										blockoverride "On_click" {
+											onclick = "[InteractionItem.OnClick]"
+											enabled = "[InteractionItem.IsEnabled]"
+											tooltip = "[InteractionItem.GetTooltip]"
+											clicksound = "[InteractionItem.GetClickSound]"
+										}
+										blockoverride "ItemMargin"
+										{
+											margin_right = 11
+											margin_left = 5
+										}
+										blockoverride "Center_text"
+										{
+											text = "[InteractionItem.GetName]"
+										}
+									}
+									
+								}
+							}
+							
+							margin_widget = {
+								size = { 222 34 }
+								position = { -22 -8 }
+								parentanchor = bottom|right
+								background = {
+									name = "background_banner_tempmodifiers"
+									shaderfile = "gfx/FX/pdxgui_default.shader"
+									size = { 100% 100% }
+									texture = "gfx/interface/base_parts/background_noninteractable_texture.dds"
+									alpha = @categoryBGalpha
+									using = border_slightly_torn_alpha
+									margin = { 10 4 }
+								}
+								
+								overlappingitembox = {
+									size = { 100% 100% }
+									position = { 0 0 }
+									datamodel = "[CharacterWindow.GetCharacter.GetTemporaryModifiers]"
+									
+									item = {
+										container = {
+											icon = {
+												texture = "[TimedModifier.GetModifier.GetIcon]"  
+												size = { 32 32 }
+											}
+											
+											tooltip = "[TimedModifier.GetTooltip]"
+										}
+									}
+								}
+							}
+						}
+						vbox = { layoutpolicy_vertical = preferred }
+					}
+				}
+			}
+		}	
+	}
+	
+	dynamicgridbox = {
+		datamodel = "[CharacterWindow.GetHeirSupport]"
+		size = { 200 83 }
+		parentanchor = left
+		position = { 74 57 }
+		flipdirection = yes
+		item = {
+			widget = {
+				size = { 54 90 }
+				
+				cpt_button = {
+					size = { 38 55 }
+					datacontext = "[HeirSupportGlue.GetHeir]"
+					position = { 0 24 }
+				}
+				textbox = {
+					autoresize = yes
+					using = BaseFontM
+					using = Black_FontColor
+					text = "[HeirSupportGlue.GetValue|0]"
+					parentanchor = hcenter|top
+					align = center
+					alpha = 0.6
+					position = { -7 1 }
+					tooltip = "[HeirSupportGlue.GetTooltip]"
+				}
+				textbox = {
+					autoresize = yes
+					using = BaseFontM
+					text = "[HeirSupportGlue.GetValue|0]"
+					parentanchor = hcenter|top
+					align = center
+					alpha = 0.9
+					position = { -6 0 }
+					tooltip = "[HeirSupportGlue.GetTooltip]"
+				}
+			}
+		}
+		visible = "[And( And( CharacterWindow.GetCharacter.CanHavePreferredHeir, LessThanOrEqualTo_CFixedPoint( CharacterWindow.GetCharacter.GetSuccessionScore, '(CFixedPoint)3' ) ), CharacterWindow.GetCharacter.IsAlive )]"
+	}
+	
+}
+

@@ -1,0 +1,99 @@
+namespace = sell_province
+
+sell_province.1 = {
+	type = country_event
+	title = "sell_province_title"
+	desc = "sell_province_desc"
+	left_portrait = scope:sender.current_ruler
+	picture = council_country
+
+	option = {
+		name = "sell_province.agree"
+		ai_chance = { factor = 100 }
+		scope:sender = {
+			add_treasury = scope:sender.var:province_price_offer
+			remove_variable = sent_province_offer
+			trigger_event = {
+				id = sell_province.3
+			}
+		}
+		add_treasury = province_price_buyer
+
+		scope:sender = {
+			every_in_list = {
+				variable = province_to_sell
+				every_state_province = {
+					set_owned_by = root
+				}
+			}
+			clear_variable_list = province_to_sell
+
+			### remake the list, in case the player reopened it:
+
+			clear_variable_list = regions_list_to_sell
+
+			set_variable = {
+				name = province_price_offer
+				value = 0
+			}
+
+			every_governorships = {
+				clear_variable_list = provinces_list_to_sell
+				scope:sender = {
+					add_to_variable_list = {
+						name = regions_list_to_sell
+						target = prev
+					}
+				}
+
+				every_governorship_state = {
+					save_scope_as = this_state
+					prev = {
+						add_to_variable_list = {
+							name = provinces_list_to_sell
+							target = scope:this_state
+						}
+					}
+				}
+			}
+		}
+	}
+
+	option = {
+		name = "sell_province.refuse"
+		ai_chance = { factor = 0 }
+		scope:sender = {
+			remove_variable = sent_province_offer
+			trigger_event = {
+				id = sell_province.2
+			}
+		}
+	}
+}
+
+sell_province.2 = {
+	type = country_event
+	title = "sell_province_refused_title"
+	desc = "sell_province_refused_desc"
+	left_portrait = scope:buyer.current_ruler
+	picture = council_country
+
+	option = {
+		name = "CONFIRM"
+	}
+}
+
+sell_province.3 = {
+	type = minor_country_event
+
+	interface_lock = no
+
+	left_portrait = scope:buyer.current_ruler
+
+	title = "provinces_sold"
+	desc = "provinces_sold_desc"
+
+	option = {
+		name = "CONFIRM"
+	}
+}

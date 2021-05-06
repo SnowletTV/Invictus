@@ -1,8 +1,3 @@
-# Invictus - Commander Kings Commit
+# Invictus - Commander Kings + Spartan Diarchy Commit
 
-Missing
-
-Governements - will have to make extra governments to cover the hibernian governments in this mod.
-On Character Death Fix - Almost complete
-
-Couple other things need polishing and maybe any bugs after test
+Mods are more or less perfect, as always can be improved upon for sure, but more or less done. 

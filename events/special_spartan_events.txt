@@ -1,0 +1,297 @@
+﻿namespace = special_spartan_event
+
+### Game Start Events
+
+###EVENT 1: Spartan Government Setup to avoid Incompatibility. 
+
+special_spartan_event.1 = {
+	type = country_event
+	hidden = yes
+	
+	trigger = {
+		tag = SPA
+	}
+	
+	immediate = {
+		create_character = {
+			first_name="Archidamus"
+			family_name="Eurypontid"
+			birth_date=427.6.26
+			culture="peloponnesian"
+			religion="roman_pantheon"
+			no_stats=yes
+			add_martial=8
+			add_charisma=4
+			add_finesse=7
+			add_zeal=9
+			no_traits=yes
+			add_trait="ambitious"
+			add_popularity=65
+			dna="//8y1zWFoXbgo/DJAYACagKEAnwCowJ7AmsChwK2AnUBlwFbAowCcAJRAnQCdQJ1Aq0CfwKAAncCugKIAoMCaQJiAm4CfAJ4AEIALALPAo4BcQFOAuACmQJaAmsCdgKDAm0CZwKKAm0ClgJ1Am0CmQJ2ApABaQFlApgCiQOEA6cCjAJxAmMCmQKjAm0CpwJvAnUCawJ+Ao8CQQJqBM8E4gKtAnwCPwKQAjUCggLEAosARwAkAYwBYQKVApYCkAKRApECmQOnAmcDyQOaAhgClQKbAn0EbAJ9A2wCaAGqApIChQJ8AE0ALANXA/EBWgElAKMAogEFAUMALABcAAwARQArAIkAiQA7AHUAygDTADABIAEgAf8BLQCDAAABbAEYAHcAIQBsAO0AYgB2APoA+gBsAGwAmgDeAFoAWgCIAAABLgEuAF0AXQEWARYAtgAFAJIAogQABJ0BVQEKAm4C8QBSAHUAoABrAHkALQBdAIkF/weBAAAAAAE4AUcFkQUEAKoAywXRBZYCxQJ+AnYC+AAAAAAAAAAAAAAAAA=="
+			save_scope_as = spartan_co_ruler
+		}
+		
+		change_spartan_government_scripted_effect = yes
+		
+		#set_as_coruler = scope:spartan_co_ruler
+		
+		scope:spartan_co_ruler = {
+			add_loyalty = loyalty_sparta_co_ruler
+		}
+		
+		random_character = {
+			limit = {
+				NOT = { family = c:SPA.FAM:Euryclid }
+				NOT = { family = c:SPA.FAM:Agiad }
+				is_head_of_family = yes
+			}
+			save_scope_as = goodbye_generated_family
+		}
+		
+		every_character = {
+			limit = {
+				has_same_family = scope:goodbye_generated_family
+			}
+			set_as_minor_character = this
+		}
+
+		new_family_generation_effect = { FAMILY_CANDIDATE = spartan_co_ruler }
+		
+		trigger_event = {
+			id = special_spartan_event.2
+		}
+	}
+}
+
+###EVENT 2: Spartan Flavour Event to start the game off - triggered after 7 days for sparta player
+
+special_spartan_event.2 = {
+	type = country_event
+	title = "spartan_event.2.t"
+	desc = "spartan_event.2.desc"
+	picture = successors
+	
+	left_portrait = current_ruler
+	right_portrait = current_co_ruler
+	#right_portrait = scope:goodbye_generated_family
+	
+	immediate = {
+		scope:game_is_annoying = {
+			move_country = c:SPA
+		}
+	}
+	option = {
+		name = "spartan_event.2.a"
+	}
+
+}
+
+### New Rulers Flavour Events
+
+###EVENT 3: New Spartan Ruler Flavour Event
+
+special_spartan_event.3 = {
+	type = country_event
+	title = "spartan_event.3.t"
+	desc = "spartan_event.3.desc"
+	picture = hellenic_temple
+	
+	left_portrait = current_ruler
+	right_portrait = current_co_ruler
+	
+	option = {
+		name = "spartan_event.3.a"
+	}
+
+}
+
+###EVENT 4: New Spartan Ruler Flavour Event - If co-ruler was the primary heir - New co ruler but old co ruler gains prominence.
+
+special_spartan_event.4 = {
+	type = country_event
+	title = "spartan_event.4.t"
+	desc = "spartan_event.4.desc"
+	picture = hellenic_temple
+	
+	left_portrait = current_ruler
+	right_portrait = current_co_ruler
+	
+	option = {
+		name = "spartan_event.4.a"
+	}
+
+}
+
+###EVENT 5: New Spartan Co-Ruler Flavour Event
+
+special_spartan_event.5 = {
+	type = country_event
+	title = "spartan_event.5.t"
+	desc = "spartan_event.5.desc"
+	picture = hellenic_temple
+	
+	left_portrait = current_ruler
+	right_portrait = current_co_ruler
+	
+	option = {
+		name = "spartan_event.5.a"
+	}
+
+}
+
+###Events that Fix Succession and apply inheritance properly and accounting for some bugs that these events seem to cause.
+
+
+###EVENT 6: Start Fixing Place of Co-Ruler inside his Family by Saving Scopes and by setting a marker on Family members - CORULER was primary heir chain
+
+special_spartan_event.6 = {
+	type = country_event
+	hidden = yes		
+		
+	immediate = {
+		random_character = {
+			limit = {
+				is_co_ruler = yes
+			}
+			save_scope_as = new_head_of_family	
+		}
+		scope:new_head_of_family = {
+			family = {
+				every_family_member = {
+					add_character_modifier = {
+						name = family_reorganisation
+					}
+				}
+			}
+		}
+		trigger_event = {
+			id = special_spartan_event.7
+		}
+	}
+}
+
+###EVENT 7: Demote Family members of Co-ruler so he is automatically made the head of family. 
+
+special_spartan_event.7 = {
+	type = country_event
+	hidden = yes
+	
+	immediate = {
+		every_character = {
+			limit = {
+				NOT = { is_co_ruler = yes}
+				has_character_modifier = family_reorganisation
+			}
+			set_as_minor_character = this
+		}
+		trigger_event = {
+			id = special_spartan_event.8
+		}
+	}
+}
+
+###EVENT 8: Re-Adopt the family members
+
+special_spartan_event.8 = {
+	type = country_event
+	hidden = yes
+		
+	immediate = {
+		random_character = {
+			limit = {
+				is_co_ruler = yes
+			}
+			save_scope_as = coruler_head_of_family
+			remove_character_modifier = family_reorganisation
+		}
+		every_character = {
+			limit = {
+				has_character_modifier = family_reorganisation
+			}
+			set_family = scope:coruler_head_of_family.family
+			adapt_family_name = yes
+			set_home_country = ROOT
+			remove_character_modifier = family_reorganisation
+		}
+		trigger_event = {
+			id = special_spartan_event.4
+		}		
+	}
+}
+
+###EVENT 9: Start Fixing Place of Co-Ruler inside his Family by Saving Scopes and by setting a marker on Family members - Just a new co ruler chain
+
+special_spartan_event.9 = {
+	type = country_event
+	hidden = yes		
+		
+	immediate = {
+		random_character = {
+			limit = {
+				is_co_ruler = yes
+			}
+			save_scope_as = new_head_of_family	
+		}
+		scope:new_head_of_family = {
+			family = {
+				every_family_member = {
+					add_character_modifier = {
+						name = family_reorganisation
+					}
+				}
+			}
+		}
+		trigger_event = {
+			id = special_spartan_event.10
+		}
+	}
+}
+
+###EVENT 10: Demote Family members of Co-ruler so he is automatically made the head of family. 
+
+special_spartan_event.10 = {
+	type = country_event
+	hidden = yes
+	
+	immediate = {
+		every_character = {
+			limit = {
+				NOT = { is_co_ruler = yes}
+				has_character_modifier = family_reorganisation
+			}
+			set_as_minor_character = this
+		}
+		trigger_event = {
+			id = special_spartan_event.11
+		}
+	}
+}
+
+###EVENT 11: Re-Adopt the family members
+
+special_spartan_event.11 = {
+	type = country_event
+	hidden = yes
+		
+	immediate = {
+		random_character = {
+			limit = {
+				is_co_ruler = yes
+			}
+			save_scope_as = coruler_head_of_family
+			remove_character_modifier = family_reorganisation
+		}
+		every_character = {
+			limit = {
+				has_character_modifier = family_reorganisation
+			}
+			set_family = scope:coruler_head_of_family.family
+			adapt_family_name = yes
+			set_home_country = ROOT
+			remove_character_modifier = family_reorganisation
+		}
+		trigger_event = {
+			id = special_spartan_event.5
+		}		
+	}
+}

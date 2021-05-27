@@ -1,4 +1,4 @@
-namespace = galatian_invasion
+﻿namespace = galatian_invasion
 
 
 galatian_invasion.1 = { # AI gateway check
@@ -8,42 +8,50 @@ galatian_invasion.1 = { # AI gateway check
 	hidden = yes
 	
 	trigger = {
-		c:SDI = {
-			is_ai = yes
-		}
-		c:DRD = {
-			is_ai = yes
-		}
-		c:TBL = {
-			is_ai = yes
-		}
 		
-		# has_global_variable = fourth_war_triggered
-		# OR = {
-			# current_date > 1.1.470
-			# c:SEL = {
-				# any_owned_province = {
-					# is_in_region = galatia_region
+		# trigger_if = {
+			# limit = {
+				# OR = {
+					# tag = SDI
+					# tag = DRD
+					# tag = TBL
 				# }
 			# }
+			# is_ai = yes
 		# }
+		
+		# c:SDI = {
+			# is_ai = yes
+		# }
+		# c:DRD = {
+			# is_ai = yes
+		# }
+		# c:TBL = {
+			# is_ai = yes
+		# }
+		
+		# has_global_variable = fourth_war_triggered
+		OR = {
+			AND = {
+				current_date > 455.1.1
+				c:MAC = {
+					NOT = { owns = 379 }
+				}
+			}
+			c:SEL = {
+				any_owned_province = {
+					is_in_region = galatia_region
+				}
+			}
+			current_date > 470.1.1
+		}
 
 	}
 	
 	fire_only_once = yes
 	
 	immediate = {
-		c:SDI = { # Serdica
-			save_scope_as = pella_attacker
-		}
-		
-		c:DRD = { # Dardania
-			save_scope_as = delphi_attacker
-		}
-		
-		c:TBL = {
-			save_scope_as = phrygia_attacker
-		}
+
 	}	
 	
 	option = {
@@ -69,11 +77,84 @@ galatian_invasion.2 = { # Barbarian Rumblings
 	right_portrait = current_ruler
 	
 	trigger = {
-		country_culture_group = hellenic
+
 	}
 	
 	immediate = {
-
+		if ={
+			limit = {
+				c:TLT = { exists = yes }
+			}
+			c:TLT = { 
+				save_scope_as = pella_attacker
+			}
+		}
+		else = {
+			random_country = {
+				limit = {
+					country_culture_group = celto_pannonian_group
+					capital_scope = {
+						OR = {
+							is_in_region = macedonia_region
+							is_in_region = moesia_region
+							is_in_region = pannonia_region
+						}
+					}
+				}
+				save_scope_as = pella_attacker
+			}
+		}
+		if ={
+			limit = {
+				c:DND = { exists = yes }
+			}
+			c:DND = { # Dardania
+				save_scope_as = delphi_attacker
+			}
+		}
+		else = {
+			random_country = {
+				limit = {
+					country_culture_group = celto_pannonian_group
+					capital_scope = {
+						OR = {
+							is_in_region = macedonia_region
+							is_in_region = moesia_region
+							is_in_region = pannonia_region
+						}
+					}
+					NOT = { this = scope:pella_attacker }
+				}
+				save_scope_as = delphi_attacker
+			}
+		}
+		if ={
+			limit = {
+				c:SCD = { exists = yes }
+			}
+			c:SCD = {
+				save_scope_as = phrygia_attacker
+			}
+		}
+		else = {
+			random_country = {
+				limit = {
+					country_culture_group = celto_pannonian_group
+					capital_scope = {
+						OR = {
+							is_in_region = macedonia_region
+							is_in_region = moesia_region
+							is_in_region = pannonia_region
+						}
+					}
+					NOR = {
+						this = scope:pella_attacker
+						this = scope:delphi_attacker
+					}
+				}
+				save_scope_as = phrygia_attacker
+			}
+		}
 	}	
 	
 	option = {
@@ -81,15 +162,15 @@ galatian_invasion.2 = { # Barbarian Rumblings
 		
 		trigger_event = {
 			id = galatian_invasion.10
-			days = 1 #30
+			days = 30
 		}
 		trigger_event = {
 			id = galatian_invasion.20
-			days = 1 #60
+			days = 60
 		}
 		trigger_event = {
 			id = galatian_invasion.30
-			days = 1 #90
+			days = 90
 		}
 	}
 }
@@ -107,12 +188,8 @@ galatian_invasion.10 = {
 		owns = 379
 	}
 	
-	immediate = { # Serdicans invade
+	immediate = { # invade
 	
-		c:SDI = { # Serdica
-			save_scope_as = pella_attacker
-		}
-		
 		random_country = {
 			limit = {
 				owns = 379
@@ -122,8 +199,8 @@ galatian_invasion.10 = {
 		
 		scope:pella_attacker = {
 			declare_war_with_wargoal = {
-				war_goal = conquer_wargoal
-				province = p:379
+				war_goal = imperial_conquest_wargoal #conquer_wargoal
+				# province = p:379
 				target = scope:pella_defender
 			}
 			create_unit = {
@@ -139,6 +216,14 @@ galatian_invasion.10 = {
 				}
 			}
 			# save_scope_as = first_gauls
+		}
+		
+		random_current_war = {
+			limit = {
+				any_war_attacker = { this = scope:pella_attacker }
+				any_war_defender = { this = scope:pella_defender }
+			}
+			save_scope_as = first_galatian_war_scope
 		}
 	}
 	
@@ -180,14 +265,27 @@ galatian_invasion.11 = { # Help from Thrace
 	
 	trigger = {
 		tag = TRE 
+		is_ai = no
 	}
 	
 	# immediate = {
 
 	# }	
 	
-	option = {
+	option = {		
 		name = galatian_invasion.11.a
+		
+		add_to_war = {
+			target = scope:first_galatian_war_scope
+			leader = no 
+			attacker = no
+		}
+		
+	}
+	
+	option = {		
+		name = galatian_invasion.11.b
+		
 	}
 
 }
@@ -237,18 +335,54 @@ galatian_invasion.20 = { # Second Wave
 			}
 			save_scope_as = delphi_defender
 		}
+		if = {
+			limit = {
+				scope:delphi_defender = {
+					NOT = { owns = 475 }
+				}
+			}
+			random_country = {
+				limit = {
+					any_owned_province = { province_id = 475 }
+				}
+				save_scope_as = passerby_one
+			}
+		}
+		if = {
+			limit = {
+				NOR = {
+					scope:delphi_defender = { owns = 399 }
+					trigger_if = {
+						limit = {exists = scope:passerby_one }
+						scope:passerby_one = { owns = 399 }
+					}
+				}
+			}
+			random_country = {
+				limit = {
+					any_owned_province = { province_id = 399 }
+				}
+				save_scope_as = passerby_two
+			}
+		}
 		
 		scope:delphi_attacker = {
-			add_military_access = c:MAC
+			trigger_if = {
+				limit = { exists = scope:passerby_one }
+				add_military_access = scope:passerby_one
+			}
+			trigger_if = {
+				limit = { exists = scope:passerby_two }
+				add_military_access = scope:passerby_two
+			}
 			declare_war_with_wargoal = {
-				war_goal = conquer_wargoal
-				province = p:424
+				war_goal = imperial_conquest_wargoal #conquer_wargoal
+				# province = p:424
 				target = scope:delphi_defender
-				# save_scope_as = second_galatian_war
 			}
 			create_unit = {
 				navy = no
-				location = p:475 
+				location = p:469 
 				while = {
 					count = 39
 					add_subunit = light_infantry
@@ -259,6 +393,14 @@ galatian_invasion.20 = { # Second Wave
 				}
 			}
 			# save_scope_as = second_gauls	
+		}
+		
+		random_current_war = {
+			limit = {
+				any_war_attacker = { this = scope:delphi_attacker }
+				any_war_defender = { this = scope:delphi_defender }
+			}
+			save_scope_as = second_galatian_war_scope
 		}
 		
 	}
@@ -331,15 +473,6 @@ galatian_invasion.21 = { # Help from Greeks
 	}
 	
 	immediate = {
-		random_current_war = {
-			limit = {
-				AND = {
-					any_war_attacker = { this = scope:delphi_attacker }
-					any_war_defender = { this = scope:delphi_defender }
-				}
-			}
-			save_scope_as = second_galatian_war_scope
-		}
 		
 		# random_country = {
 			# limit = { this = root }
@@ -426,8 +559,8 @@ galatian_invasion.30 = { # Third Wave
 		scope:phrygia_attacker = {
 			# add_military_access = 
 			declare_war_with_wargoal = {
-				war_goal = conquer_wargoal
-				province = p:189
+				war_goal = imperial_conquest_wargoal #conquer_wargoal
+				# province = p:189
 				target = scope:phrygia_defender
 			}
 			create_unit = {
@@ -492,4 +625,175 @@ galatian_invasion.32 = { # Hellenic Notification of Invasion
 		name = galatian_invasion.32.a
 	}
 
+}
+
+galatian_invasion.35 = {
+	type = country_event
+	title = "galatian_invasion.35.t"
+	desc = "galatian_invasion.35.desc"
+	
+	left_portrait = scope:first_galatians.current_ruler
+	right_portrait = scope:other_galatians.current_ruler
+	
+	trigger = {
+		# any_country = {
+			country_culture_group = gallic
+			any_owned_province = {
+				is_in_region = galatia_region
+			}
+			is_ai = yes
+		# }
+	}
+	
+	immediate = {
+		
+		if = {
+			limit = {
+				NOT = { exists = c:GLT }
+			}
+			random_country = {
+				limit = {
+					country_culture_group = gallic
+					any_owned_province = {
+						is_in_region = galatia_region
+					}
+				}
+				save_scope_as = first_galatians
+			# c:TBL = {
+			# effect = {
+				# custom_tooltip = "tier_2_formable_tooltip"
+				tribal_formable_government_change_effect = yes
+				change_country_name = "GALATIA_NAME"
+				# hidden_effect = {
+					change_country_adjective = "GALATIA_ADJECTIVE"
+					change_country_color = "galatia_light_blue_color"
+					change_country_tag = GLT
+					change_country_flag = GALATIA_FLAG
+				# }
+				if = {
+					limit = {
+						p:194 = { is_capital = no }
+					}
+					set_capital = 194
+					hidden_effect = {
+						p:194.state = {
+							set_state_capital = 194
+						}
+					}
+					capital_scope = {
+						establish_city_effect = yes
+					}
+				}
+				p:194 = {
+					capital_formable_medium_effect = yes
+					formable_capital_modifier_normal_effect = yes
+				}
+				custom_tooltip = galatia_claims_tooltip
+				hidden_effect = {
+					region:galatia_region = { formable_region_province_effect = yes }
+					region:cappadocia_region = { formable_region_province_effect = yes }
+				}
+				add_3_free_province_investments = yes
+			}
+			scope:first_galatians = {
+				every_owned_province = {
+					every_pops_in_province = {
+						limit = {
+							pop_culture_group = gallic
+						}
+						move_pop = p:189 #scope:capital_scope
+					}
+				}
+			}
+		}
+		
+		if = {
+			limit = {
+				any_country = {
+					country_culture_group = gallic
+					any_owned_province = {
+						is_in_region = galatia_region
+					}
+					NOT = { tag = GLT }
+				}
+			}
+			random_country = {
+				limit = {
+					country_culture_group = gallic
+					any_owned_province = {
+						is_in_region = galatia_region
+					}
+					NOT = { tag = GLT }
+				}
+				save_scope_as = other_galatians
+			}
+				
+			scope:other_galatians = {
+				every_owned_province = {
+					# limit = { is_in_area = galatia_area }
+					set_owned_by = scope:first_galatians
+				}
+			}
+			scope:other_galatians = {
+				every_owned_province = {
+					every_pops_in_province = {
+						limit = {
+							pop_culture_group = gallic
+						}
+						move_pop = p:189 #scope:capital_scope
+					}
+				}
+			}
+		}
+		
+	}
+	
+	option = {
+		name = galatian_invasion.35.a
+		
+	}
+	
+	# option = {
+		
+	# }
+	
+}
+
+# galatian_invasion.36 = {
+	# type = country_event
+	# title = "galatian_invasion.36.t"
+	# desc = "galatian_invasion.36.desc"
+	
+	# left_portrait = c:GLT.current_ruler
+	
+	# immediate = {
+		
+	# }
+	
+	# option = {
+		# name = galatian_invasion.36.a
+		
+	# }
+	
+# }
+
+galatian_invasion.100 = {
+	hidden = yes
+	
+	immediate = {
+		
+		c:PRY = {
+			every_owned_province = {
+				limit = { is_in_area = galatia_area }
+				set_owned_by = c:SCD
+			}
+		}
+		
+		c:PRY = {
+			every_owned_province = {
+				limit = { is_in_area = phrygia_epiktetos }
+				set_owned_by = c:OTN
+			}
+		}
+	}
 }

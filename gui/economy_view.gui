@@ -1,0 +1,476 @@
+types economy_types {
+	type policy_button = container {
+		tooltip = "[EconomicPolicyGlue.GetTooltip]"
+		
+		button_radial = {
+			layoutpolicy_horizontal = expanding
+			block "transparency" {}
+			blockoverride "On_click"
+			{
+				#onclick = "[ClickHighlight(EconomicPolicyGlue.GetHighlightKey)]" #TODO Red King stuff?
+				onclick = "[EconomicPolicyGlue.OnClick]"
+			}
+			
+			blockoverride "ShowDot"
+			{
+				trigger_when = "[EconomicPolicyGlue.IsSelected]"
+			} 
+			
+			blockoverride "HideDot" 
+			{
+				trigger_when = "[Not(EconomicPolicyGlue.IsSelected)]"
+			} 
+			
+			#icon = { #TODO Red King stuff?
+			#	using = highlight_button_circle_45
+			#	visible = "[ShouldHighlight(EconomicPolicyGlue.GetHighlightKey)]"
+			#}
+			
+		} 
+	}
+}
+
+base_window = {
+	gfxtype = windowgfx
+	name = "economy_view"
+	parentanchor = top|left
+	size = { 640 900 }
+	widgetanchor = top|left
+	movable = no
+	using = main_window_template
+	using = FadeStates
+
+	using = advice_trigger_highlights
+	
+	### Audio ###
+	state = {
+		name = _show
+		start_sound = {
+			soundeffect = "event:/SFX/UI/Generic/2.0/sfx_ui_window_tab_close"
+		}
+	}
+	state = {
+		name = _hide
+		start_sound = {
+			soundeffect = "event:/SFX/UI/Generic/2.0/sfx_ui_window_tab_close"
+		}
+	}
+	
+	icon = {
+		texture = "gfx/interface/event_window/Event_open_chest.dds"
+		scale = 0.4
+		alpha = 0.85
+		parentanchor = top|right
+		position = { 0 70 }
+	}
+	
+	vbox = {
+		using = MainWindowHeaderBox
+
+		blockoverride "FlagOrIcon"
+		{
+			icon = {
+				texture = "gfx/interface/base_parts/yellow_button_color_200fs.dds"
+				framesize = { 100 100 }
+				frame = 6
+				position = { -2 -2 }
+				size = { 32 32 }
+				modify_texture = {
+					texture = "gfx/interface/icons/menu_buttons/menu_economy.dds"
+					blend_mode = alphamultiply
+				}
+			}
+		}
+
+		blockoverride "Title_text"
+		{
+			text = "ECONOMY_MENU_HEADER"
+		}
+
+		blockoverride "White_buttons" 
+		{
+			button_back = { 
+				shortcut = "previous_window"
+				onclick = "[EconomyView.OnPrevious]"
+				tooltip = "PREVIOUS_ECONOMY_VIEW"
+			}
+			
+			button_close = {
+				onclick = "[EconomyView.OnClose]"
+				tooltip = "CLOSE"
+				shortcut = "close_window"
+			}
+		}
+		
+		vbox = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+			
+			margin_widget = {
+				name = "Balance"
+				minimumsize = { 0 198 }
+				margin_top = 20
+				margin_left = 28
+				layoutpolicy_horizontal = expanding
+				
+				flowcontainer = {
+					direction = vertical 
+					spacing = 6
+
+					icon_and_text = {
+						tooltip = "BALANCE_TOOLTIP"
+						size = { 182 0 }
+						blockoverride "Icon" { texture = "gfx/interface/icons/shared_icons/treasury.dds" }
+						blockoverride "Text" { text = "[EconomyView.GetBalance]" }	
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						visible = "[EconomyView.HasDeficit]"
+						tooltip = "[EconomyView.GetDeficitTooltip]"
+						spacing = 6
+						icon_and_text = {
+							tooltip = "BALANCE_TOOLTIP"
+							size = { 182 0 }
+							blockoverride "Icon" { using = icon_bankruptcy }
+							blockoverride "Text" { text = "IN_DEFICIT" }	
+						}
+					}
+					flowcontainer = {
+						visible = "[Not(EconomyView.HasDeficit)]"
+						tooltip = "[EconomyView.GetNoDeficitTooltip]"
+						spacing = 6
+
+						icon_and_text = {
+							tooltip = "BALANCE_TOOLTIP"
+							size = { 182 0 }
+							blockoverride "Icon" { visible = no }
+							blockoverride "Text" { text = "NO_DEFICIT_TEXT" }	
+						}
+					}
+				}
+			}
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				container = {
+					container = {
+					
+						container = {
+							name = "income header"
+							position = { 5 0 }
+							using = NoninteractableBG
+							sub_header = {
+								size = { 206 0 }
+								position = { -8 -2 }
+								blockoverride "Title_text" { text = "INCOMES_HEADER" }
+							}
+							textbox = {
+								position = { 1 -2 }
+								parentanchor = top|right
+								autoresize = yes
+								text = "#g +#![EconomyView.GetTotalIncome|+2]@gold!"
+								using = BaseFontM
+							}
+							widget = {
+								position = { 273 0 }
+							}
+						}
+						
+						
+						dynamicgridbox = {
+							name = "income_grid"
+							position = { 0 47 }
+							size = { 180 200 }
+							datamodel = "[EconomyView.GetIncome]"
+							item = {
+								flowcontainer = {
+									direction = vertical
+									container = {
+										ignoreinvisible = yes
+										alpha = "[TransparentIfTrue( And( EqualTo_int32( EconomyView.GetPlayer.GetNumOfSubjects, '(int32)0' ), IncomeItem.IsTribute ) )]"
+										using = NoninteractableBG
+										
+										blockoverride "Margins" 
+										{
+											margin = { 4 4 }
+											margin_bottom = 0
+											margin_top = 6
+										}
+										
+										container = {
+											tooltip = "[IncomeItem.GetTooltip]"
+
+											textbox = {
+												position = { 12 2 }
+												autoresize = yes
+												using = BaseFontS
+												using = Black_FontColor
+												text = "[IncomeItem.GetName]"
+											}
+											
+											icon_and_text = {
+												position = { 152 -2 }
+												size = { 132 0 }
+												blockoverride "Text" { text = "[IncomeItem.GetValue|2]" }
+												blockoverride "Icon" { texture = "gfx/interface/icons/shared_icons/treasury.dds" }
+											}
+										}
+
+										icon_and_text = {
+											position = { 152 34 }
+											size = { 132 0 }
+											blockoverride "Text" { text = "[IncomeItem.GetModifierValue]" }
+											blockoverride "Icon" { texture = "[IncomeItem.GetModifierIcon]" }
+											tooltip = "[IncomeItem.GetModifierTooltip]"
+										}
+										
+										dynamicgridbox = {
+											position = { 12 40 }
+											datamodel = "[IncomeItem.GetPolicies]"
+											flipdirection = yes
+											item = {
+												widget = {
+													size = { 40 40 }
+													policy_button = {
+														enabled = "[And(EconomicPolicyGlue.CanClick, Not(And(EqualTo_int32( EconomyView.GetPlayer.GetNumOfSubjects, '(int32)0' ), IncomeItem.IsTribute)))]"
+														blockoverride "transparency" {
+															alpha = "[TransparentIfTrue( And( EqualTo_int32( EconomyView.GetPlayer.GetNumOfSubjects, '(int32)0' ), IncomeItem.IsTribute ) )]"
+														}
+													}
+												}
+											}
+										}
+									}
+									widget = { size = { 4 12 } } # Item Spacing
+								}
+							}
+						}
+					}
+					container = {
+						position = { 307 0 }
+						
+						container = {
+							name = "expenses header"
+							position = { 5 0 }
+							using = NoninteractableBG
+							sub_header = {
+								size = { 206 0 }
+								position = { -8 -2 }
+								blockoverride "Title_text" { text = "EXPENSES_HEADER" }
+							}
+							textbox = {
+								position = { 1 -2 }
+								parentanchor = top|right
+								autoresize = yes
+								text = "#r -#![EconomyView.GetTotalExpense|-2]@gold!"
+								using = BaseFontM
+							}
+							widget = {
+								position = { 273 0 }
+							}
+						}
+						
+						dynamicgridbox = {
+							name = "expense_grid"
+							position = { 0 47 }
+							size = { 180 200 }
+							datamodel = "[EconomyView.GetExpense]"
+							item = {
+								flowcontainer = {
+									direction = vertical
+									container = {
+										ignoreinvisible = yes
+										alpha = "[TransparentIfTrue(Not(ExpenseItem.IsEnabled))]"
+										using = NoninteractableBG
+										
+										blockoverride "Margins" 
+										{
+											margin = { 4 4 }
+											margin_bottom = 0
+											margin_top = 6
+										}
+										
+										container = {
+											tooltip = "[ExpenseItem.GetTooltip]"
+
+											textbox = {
+												position = { 12 2 }
+												autoresize = yes
+												using = BaseFontS
+												using = Black_FontColor
+												text = "[ExpenseItem.GetName]"
+											}
+											
+											icon_and_text = {
+												position = { 152 -4 }
+												size = { 132 0 }
+												blockoverride "Text" { text = "[ExpenseItem.GetValue|2]" }
+												blockoverride "Icon" { texture = "gfx/interface/icons/shared_icons/treasury.dds" }
+											}
+										}
+
+										icon_and_text = {
+											position = { 152 34 }
+											size = { 132 0 }
+											visible = "[ExpenseItem.HasModifier]"
+											blockoverride "Text" { text = "[ExpenseItem.GetModifierValue]" }
+											blockoverride "Icon" { texture = "[ExpenseItem.GetModifierIcon]" }
+											tooltip = "[ExpenseItem.GetModifierTooltip]"
+										}
+										
+										dynamicgridbox = {
+											position = { 12 40 }
+											datamodel = "[ExpenseItem.GetPolicies]"
+											flipdirection = yes
+											item = {
+												widget = {
+													size = { 40 40 }
+													policy_button = {
+														enabled = "[And(EconomicPolicyGlue.CanClick, ExpenseItem.IsEnabled)]"
+														blockoverride "transparency" {
+															alpha = "[TransparentIfTrue(Not(ExpenseItem.IsEnabled))]"
+														}
+													}
+												}
+											}
+										}
+									}
+									widget = { size = { 4 12 } } # Item Spacing
+								}
+							}
+						}
+					}
+				}
+				vbox = {
+					layoutpolicy_vertical = expanding
+				}
+			}
+		}
+	}
+	
+	### DEFICIT OPTIONS ###
+	
+	vbox = {
+		name = "Government Tab tab"
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		visible = "[GovernmentView.IsShowGovernment]"
+					
+		margin = { 9 0 }
+
+		margin_widget = { #
+			size = { 0 400 }
+			layoutpolicy_horizontal = expanding
+			##using = NoninteractableBG
+			visible = "[GovernmentView.GetPlayer.GetGovernment.IsMonarchy]"
+			# icon = {
+				# texture = "gfx/interface/event_window/Event_throneroom_king_on_throne_a_few_councilors_nearby.dds"
+				# scale = 0.46
+				# parentanchor = top|hcenter
+				# position = { 0 400 } #0 26
+			# }
+			flowcontainer = {
+				parentanchor = left
+				position = { 30 320 } #8 38
+				spacing = 20 #82
+				direction = horizontal #vertical
+				
+				icon_button_square = {
+					datacontext = "[GetScriptedGui('deficit_military_supplies_button')]"
+					visible = "[ScriptedGui.IsShown( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					blockoverride "On_click"
+					{
+						enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( Player.MakeScope ).End )]"
+						onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					}
+					tooltip = "DEFICIT_MILITARY_SUPPLIES_BUTTON_TOOLTIP"
+					
+					blockoverride "ClickSound" { clicksound = "event:/SFX/UI/Actions/sfx_ui_action_goverment_interactions" }
+					blockoverride "Icon" { texture = "gfx/interface/icons/modifiers/land_morale.dds" }
+				}
+				
+				icon_button_square = {
+					datacontext = "[GetScriptedGui('deficit_emergency_tax_button')]"
+					visible = "[ScriptedGui.IsShown( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					blockoverride "On_click"
+					{
+						enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( Player.MakeScope ).End )]"
+						onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					}
+					tooltip = "DEFICIT_EMERGENCY_TAX_BUTTON_TOOLTIP"
+					
+					blockoverride "ClickSound" { clicksound = "event:/SFX/UI/Actions/sfx_ui_action_goverment_interactions" }
+					blockoverride "Icon" { texture = "gfx/interface/icons/emergency_tax.dds" }
+				}
+				
+				icon_button_square = {
+					datacontext = "[GetScriptedGui('deficit_strong_armed_button')]"
+					visible = "[ScriptedGui.IsShown( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					blockoverride "On_click"
+					{
+						enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( Player.MakeScope ).End )]"
+						onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					}
+					tooltip = "DEFICIT_STRONG_ARMED_BUTTON_TOOLTIP"
+					
+					blockoverride "ClickSound" { clicksound = "event:/SFX/UI/Actions/sfx_ui_action_goverment_interactions" }
+					blockoverride "Icon" { texture = "gfx/interface/icons/shared_icons/loyalty_impact.dds" }
+				}
+			}
+			flowcontainer = {
+				parentanchor = left
+				position = { 30 380 } #8 38
+				spacing = 20 #82
+				direction = horizontal #vertical
+
+				icon_button_square = {
+					datacontext = "[GetScriptedGui('deficit_civic_neglect_button')]"
+					visible = "[ScriptedGui.IsShown( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					blockoverride "On_click"
+					{
+						enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( Player.MakeScope ).End )]"
+						onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					}
+					tooltip = "DEFICIT_CIVIC_NEGLECT_BUTTON_TOOLTIP"
+					
+					blockoverride "ClickSound" { clicksound = "event:/SFX/UI/Actions/sfx_ui_action_goverment_interactions" }
+					
+					blockoverride "Icon" { texture = "gfx/interface/icons/buildings/aqueduct_building.dds" }
+				}
+				
+				icon_button_square = {
+					datacontext = "[GetScriptedGui('deficit_research_neglect_button')]"
+					visible = "[ScriptedGui.IsShown( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					blockoverride "On_click"
+					{
+						enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( Player.MakeScope ).End )]"
+						onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					}
+					tooltip = "DEFICIT_RESEARCH_NEGLECT_BUTTON_TOOLTIP"
+					
+					blockoverride "ClickSound" { clicksound = "event:/SFX/UI/Actions/sfx_ui_action_goverment_interactions" }
+					blockoverride "Icon" { texture = "gfx/interface/icons/modifiers/research_points_modifier.dds" }
+				}
+				
+				# icon_button_square = {
+					# datacontext = "[GetScriptedGui('oaths_of_allegiance_button')]"
+					# visible = "[ScriptedGui.IsShown( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					# blockoverride "On_click"
+					# {
+						# enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( Player.MakeScope ).End )]"
+						# onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( Player.MakeScope ).End )]"
+					# }
+					# tooltip = "OATHS_OF_ALLEGIANCE_BUTTON_TOOLTIP"
+					
+					# blockoverride "ClickSound" { clicksound = "event:/SFX/UI/Actions/sfx_ui_action_goverment_interactions" }
+					
+					# blockoverride "Icon" { texture = "gfx/interface/icons/modifiers/omen_power.dds" }
+				# }
+				
+			}
+
+		}
+				
+	}
+}

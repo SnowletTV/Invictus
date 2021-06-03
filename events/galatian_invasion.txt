@@ -9,17 +9,6 @@ galatian_invasion.1 = { # AI gateway check
 	
 	trigger = {
 		
-		# trigger_if = {
-			# limit = {
-				# OR = {
-					# tag = SDI
-					# tag = DRD
-					# tag = TBL
-				# }
-			# }
-			# is_ai = yes
-		# }
-		
 		OR = {
 			AND = {
 				current_date > 455.1.1
@@ -348,9 +337,6 @@ galatian_invasion.11 = { # Help from Thrace
 	type = country_event
 	title = "galatian_invasion.11.t"
 	desc = "galatian_invasion.11.desc"
-	# picture = gallic_clan_chiefs_discussing # aka celtic_chiefs
-	# picture = gallic_village_scene # aka celtic_village # too serene
-	# picture = gauls_interacting_negotiating # out of place; maybe for peace deals
 	# picture = looting #soldiers look roman
 	picture = walled_city_under_siege #aka city_siege
 	# picture = elephant_battle
@@ -386,9 +372,6 @@ galatian_invasion.12 = { # Hellenic Notification of Invasion
 	type = country_event
 	title = "galatian_invasion.12.t"
 	desc = "galatian_invasion.12.desc"
-	# picture = gallic_clan_chiefs_discussing # aka celtic_chiefs
-	# picture = gallic_village_scene # aka celtic_village # too serene
-	# picture = gauls_interacting_negotiating # out of place; maybe for peace deals
 	# picture = looting #soldiers look roman
 	picture = walled_city_under_siege #aka city_siege
 	# picture = elephant_battle
@@ -411,6 +394,199 @@ galatian_invasion.12 = { # Hellenic Notification of Invasion
 	}
 
 }
+
+galatian_invasion.13 = { # Setting - Start Task
+	type = country_event
+	title = "galatian_invasion.13.t"
+	desc = "galatian_invasion.13.desc"
+	picture = gallic_village_scene # aka celtic_village # too serene
+	right_portrait = current_ruler
+	
+	fire_only_once = yes
+	
+	trigger = {
+		country_culture_group = gallic
+		any_owned_province = {
+			is_in_region = macedonia_region
+		}
+		is_ai = yes
+	}
+	
+	immediate = {
+		
+		random_country = {
+			limit = {
+				country_culture_group = gallic
+				any_owned_province = {
+					is_in_region = macedonia_region
+				}
+				is_ai = yes
+			}
+			save_scope_as = migrating_nation
+		}
+	}
+	
+	option = {
+		name = galatian_invasion.13.a
+		
+		scope:migrating_nation = {
+			while = {
+				count = { 20 }
+				if = {
+					limit = {
+						NOR = { has_variable = pella_chosen_city }
+						any_owned_province = {
+							OR = {
+								is_in_region = moesia_region
+								is_in_region = illyria_region
+								is_in_region = pannonia_region
+								is_in_region = dacia_region
+							}
+							province_dominant_culture_group = gallic
+						}
+					}
+					random_owned_province = {
+						limit = {
+							NOT = { has_variable = pella_chosen_city }
+							OR = {
+								is_in_region = moesia_region
+								is_in_region = illyria_region
+								is_in_region = pannonia_region
+								is_in_region = dacia_region
+							}
+							province_dominant_culture_group = gallic
+						}
+						set_variable = pella_chosen_city
+					
+						trigger_event = {
+							id = galatian_invasion.14
+							days = 3 
+						}
+					}
+				}
+			}
+		}
+	}
+	
+}
+
+
+galatian_invasion.14 = { # Settling
+    type = province_event
+    hidden = yes
+	
+
+	trigger = {
+
+	}
+	
+	immediate = {
+		
+		# scope:migrating_nation = {
+			# random_owned_province = {
+		random_ownable_province = {
+			limit = {
+				is_in_region = macedonia_region
+				trigger_if = {
+					limit = {
+						exists = owner
+					}
+					owner = scope:migrating_nation
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 15
+					total_population < 15
+				}
+				modifier = {
+					factor = 15
+					total_population < 10
+				}
+				modifier = {
+					factor = 5
+					is_capital = yes
+				}
+				modifier = {
+					factor = 5
+					is_state_capital = yes
+				}
+				modifier = {
+					factor = 3
+					total_population < population_cap
+				}
+				modifier = {
+					factor = 0.005
+					total_population > population_cap
+				}
+			}
+			save_scope_as = new_city
+		}
+	# }
+		
+		while = {
+			count = { 15 20 }
+			if = {
+				limit = {
+					any_pops_in_province = {
+						pop_culture_group = gallic
+					}
+				}
+				random_pops_in_province = {
+					limit = {
+						pop_culture_group = gallic
+					}
+					move_pop = scope:new_city
+				}
+				if = {
+					limit = {
+						has_variable = galatian_pop_move_variable
+					}
+					change_variable = {
+						name = galatian_pop_move_variable
+						add = 1
+					}
+				}
+				else = {
+					set_variable = {
+						name = galatian_pop_move_variable
+						value = 1
+					}
+				}
+				scope:new_city = {
+					if = {
+						limit = {
+							has_variable = galatian_pop_move_variable
+						}
+						change_variable = {
+							name = galatian_pop_move_variable
+							add = 1
+						}
+					}
+					else = {
+						set_variable = {
+							name = galatian_pop_move_variable
+							value = 1
+						}
+					}
+				}
+			}
+		}
+		if = {
+			limit = {
+				has_variable = pella_chosen_city
+			}
+			remove_variable = pella_chosen_city
+		}
+	
+	}
+	
+	option = {
+		name = galatian_invasion.14.a
+	}
+
+}
+
 
 galatian_invasion.20 = { # Second Wave
 	type = country_event
@@ -464,6 +640,23 @@ galatian_invasion.20 = { # Second Wave
 				save_scope_as = passerby_two
 			}
 		}
+		if = {
+			limit = {
+				NOR = {
+					scope:delphi_defender = { owns = 469 }
+					trigger_if = {
+						limit = {exists = scope:passerby_one }
+						scope:passerby_one = { owns = 469 }
+					}
+				}
+			}
+			random_country = {
+				limit = {
+					any_owned_province = { province_id = 469 }
+				}
+				save_scope_as = passerby_three
+			}
+		}
 		
 		scope:delphi_attacker = {
 			# trigger_if = {
@@ -475,6 +668,10 @@ galatian_invasion.20 = { # Second Wave
 			if = {
 				limit = { exists = scope:passerby_two }
 				add_military_access = scope:passerby_two
+			}
+			if = {
+				limit = { exists = scope:passerby_two }
+				add_military_access = scope:passerby_three
 			}
 			declare_war_with_wargoal = {
 				war_goal = conquer_wargoal
@@ -586,31 +783,16 @@ galatian_invasion.21 = { # Help from Greeks
 	
 	option = {
 		name = galatian_invasion.21.a
-		
-		# scope:friend_of_delphi = {
-		# every_country = {
-			# limit = { 
-				# capital_scope = {
-					# OR = {
-						# is_in_area = boeotia_area
-						# is_in_area = central_greece_area
-						# is_in_area = aetolia_area
-					# }
-				# }
-				# is_subject = no
-				# NOT = { owns = 424 }
-			# }
 			
-			add_to_war = {
-				target = scope:second_galatian_war_scope
-				leader = no 
-				attacker = no
-			}
-			set_variable = {
-				name = defender_of_delphi
-				value = 1
-			}
-		# }
+		add_to_war = {
+			target = scope:second_galatian_war_scope
+			leader = no 
+			attacker = no
+		}
+		set_variable = {
+			name = defender_of_delphi
+			value = 1
+		}
 	}
 	
 }
@@ -635,6 +817,198 @@ galatian_invasion.22 = { # Hellenic Notification of Invasion
 	
 	option = {
 		name = galatian_invasion.22.a
+	}
+
+}
+
+galatian_invasion.23 = { # Setting - Start Task
+	type = country_event
+	title = "galatian_invasion.23.t"
+	desc = "galatian_invasion.23.desc"
+	picture = gallic_village_scene # aka celtic_village # too serene
+	right_portrait = current_ruler
+	
+	fire_only_once = yes
+
+	trigger = {
+		country_culture_group = gallic
+		any_owned_province = {
+			is_in_region = greece_region
+		}
+		is_ai = yes
+	}
+	
+	immediate = {
+		
+		random_country = {
+			limit = {
+				country_culture_group = gallic
+				any_owned_province = {
+					is_in_region = greece_region
+				}
+				is_ai = yes
+			}
+			save_scope_as = migrating_nation
+		}
+	}
+	
+	option = {
+		name = galatian_invasion.23.a
+		
+		scope:migrating_nation = {
+			while = {
+				count = { 20 }
+				if = {
+					limit = {
+						NOR = { has_variable = delphi_chosen_city }
+						any_owned_province = {
+							OR = {
+								is_in_region = moesia_region
+								is_in_region = illyria_region
+								is_in_region = pannonia_region
+								is_in_region = dacia_region
+							}
+							province_dominant_culture_group = gallic
+						}
+					}
+					random_owned_province = {
+						limit = {
+							NOT = { has_variable = delphi_chosen_city }
+							OR = {
+								is_in_region = moesia_region
+								is_in_region = illyria_region
+								is_in_region = pannonia_region
+								is_in_region = dacia_region
+							}
+							province_dominant_culture_group = gallic
+						}
+						set_variable = delphi_chosen_city
+					
+						# trigger_event = {
+							# id = galatian_invasion.24
+							# days = 3 
+						# }
+					}
+				}
+			}
+		}
+	}
+	
+}
+
+
+galatian_invasion.24 = { # Settling - Settling
+    type = province_event
+    hidden = yes
+	
+	trigger = {
+
+	}
+	
+	immediate = {
+		
+		# scope:migrating_nation = {
+			# random_owned_province = {
+			random_ownable_province = {
+				limit = {
+					is_in_region = greece_region
+					trigger_if = {
+						limit = {
+							exists = owner
+						}
+						owner = scope:migrating_nation
+					}
+				}
+				weight = {
+					modifier = {
+						factor = 15
+						total_population < 15
+					}
+					modifier = {
+						factor = 15
+						total_population < 10
+					}
+					modifier = {
+						factor = 5
+						is_capital = yes
+					}
+					modifier = {
+						factor = 5
+						is_state_capital = yes
+					}
+					modifier = {
+						factor = 3
+						total_population < population_cap
+					}
+					modifier = {
+						factor = 0.005
+						total_population > population_cap
+					}
+				}
+				save_scope_as = new_city
+			}
+		# # }
+		
+		while = {
+			count = { 15 20 }
+			if = {
+				limit = {
+					any_pops_in_province = {
+						pop_culture_group = gallic
+					}
+				}
+				random_pops_in_province = {
+					limit = {
+						pop_culture_group = gallic
+					}
+					move_pop = scope:new_city
+				}
+				if = {
+					limit = {
+						has_variable = galatian_pop_move_variable
+					}
+					change_variable = {
+						name = galatian_pop_move_variable
+						add = 1
+					}
+				}
+				else = {
+					set_variable = {
+						name = galatian_pop_move_variable
+						value = 1
+					}
+				}
+				scope:new_city = {
+					if = {
+						limit = {
+							has_variable = galatian_pop_move_variable
+						}
+						change_variable = {
+							name = galatian_pop_move_variable
+							add = 1
+						}
+					}
+					else = {
+						set_variable = {
+							name = galatian_pop_move_variable
+							value = 1
+						}
+					}
+				}
+			}
+		}
+		if = {
+			limit = {
+				has_variable = pella_chosen_city
+			}
+			remove_variable = pella_chosen_city
+		}
+	
+	}
+	
+	option = {
+		name = galatian_invasion.24.a
+		
 	}
 
 }
@@ -722,7 +1096,7 @@ galatian_invasion.26 = { # Hellenic Notification of Invasion
 	type = country_event
 	title = "galatian_invasion.26.t"
 	desc = "galatian_invasion.26.desc"
-	picture = walled_city_under_siege #aka city_siege
+	picture = city_siege 
 
 	left_portrait = scope:tylis_attacker.current_ruler
 	right_portrait = scope:tylis_defender.current_ruler
@@ -742,13 +1116,200 @@ galatian_invasion.26 = { # Hellenic Notification of Invasion
 
 }
 
+galatian_invasion.27 = { # Setting - Start Task
+	type = country_event
+	title = "galatian_invasion.27.t"
+	desc = "galatian_invasion.27.desc"
+	picture = celtic_village 
+	right_portrait = current_ruler
+	
+	fire_only_once = yes
+
+	trigger = {
+		country_culture_group = gallic
+		any_owned_province = {
+			is_in_region = thrace_region
+		}
+		is_ai = yes
+	}
+	
+	immediate = {
+		
+		random_country = {
+			limit = {
+				country_culture_group = gallic
+				any_owned_province = {
+					is_in_region = thrace_region
+				}
+				is_ai = yes
+			}
+			save_scope_as = migrating_nation
+		}
+	}
+	
+	option = {
+		name = galatian_invasion.27.a
+		
+		scope:migrating_nation = {
+			while = {
+				count = { 15 20 }
+				if = {
+					limit = {
+						NOR = { has_variable = tylis_chosen_city }
+						any_owned_province = {
+							OR = {
+								is_in_region = moesia_region
+								is_in_region = illyria_region
+								is_in_region = pannonia_region
+								is_in_region = dacia_region
+							}
+							province_dominant_culture_group = gallic
+						}
+					}
+					random_owned_province = {
+						limit = {
+							NOT = { has_variable = tylis_chosen_city }
+							OR = {
+								is_in_region = moesia_region
+								is_in_region = illyria_region
+								is_in_region = pannonia_region
+								is_in_region = dacia_region
+							}
+							province_dominant_culture_group = gallic
+						}
+						set_variable = tylis_chosen_city
+					
+						trigger_event = {
+							id = galatian_invasion.28
+							days = 3 
+						}
+					}
+				}
+			}
+		}
+	}
+	
+}
+
+
+galatian_invasion.28 = { # Settling - Settling
+    type = province_event
+    hidden = yes
+	
+	trigger = {
+
+	}
+	
+	immediate = {
+		
+		random_ownable_province = {
+			limit = {
+				is_in_region = thrace_region
+				trigger_if = {
+					limit = {
+						exists = owner
+					}
+					owner = scope:migrating_nation
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 15
+					total_population < 15
+				}
+				modifier = {
+					factor = 15
+					total_population < 10
+				}
+				modifier = {
+					factor = 5
+					is_capital = yes
+				}
+				modifier = {
+					factor = 5
+					is_state_capital = yes
+				}
+				modifier = {
+					factor = 3
+					total_population < population_cap
+				}
+				modifier = {
+					factor = 0.005
+					total_population > population_cap
+				}
+			}
+			save_scope_as = new_city
+		}
+		
+		while = {
+			count = { 15 20 }
+			if = {
+				limit = {
+					any_pops_in_province = {
+						pop_culture_group = gallic
+					}
+				}
+				random_pops_in_province = {
+					limit = {
+						pop_culture_group = gallic
+					}
+					move_pop = scope:new_city
+				}
+				if = {
+					limit = {
+						has_variable = galatian_pop_move_variable
+					}
+					change_variable = {
+						name = galatian_pop_move_variable
+						add = 1
+					}
+				}
+				else = {
+					set_variable = {
+						name = galatian_pop_move_variable
+						value = 1
+					}
+				}
+				scope:new_city = {
+					if = {
+						limit = {
+							has_variable = galatian_pop_move_variable
+						}
+						change_variable = {
+							name = galatian_pop_move_variable
+							add = 1
+						}
+					}
+					else = {
+						set_variable = {
+							name = galatian_pop_move_variable
+							value = 1
+						}
+					}
+				}
+			}
+		}
+		if = {
+			limit = {
+				has_variable = tylis_chosen_city
+			}
+			remove_variable = tylis_chosen_city
+		}
+	
+	}
+	
+	option = {
+		name = galatian_invasion.28.a
+		
+	}
+
+}
+
 galatian_invasion.30 = { # Anatolia invasion
 	type = country_event
 	title = "galatian_invasion.30.t"
 	desc = "galatian_invasion.30.desc"
 	# picture = gallic_clan_chiefs_discussing # aka celtic_chiefs
-	# picture = gallic_village_scene # aka celtic_village # too serene
-	# picture = gauls_interacting_negotiating # out of place; maybe for peace deals
 	# picture = looting #soldiers look roman
 	# picture = walled_city_under_siege #aka city_siege
 	picture = elephant_battle
@@ -870,19 +1431,19 @@ galatian_invasion.30 = { # Anatolia invasion
 		scope:tavium_defender = {
 			trigger_event = {
 				id = galatian_invasion.32
-				days = 120
+				days = 180
 			}
 		}
 		scope:ankyra_defender = {
 			trigger_event = {
 				id = galatian_invasion.33
-				days = 120
+				days = 180
 			}
 		}
 		scope:pessinous_defender = {
 			trigger_event = {
 				id = galatian_invasion.34
-				days = 120
+				days = 180
 			}
 		}
 	}
@@ -942,7 +1503,6 @@ galatian_invasion.32 = { # Special Peace - Trocmeria
 	title = "galatian_invasion.32.t"
 	desc = "galatian_invasion.32.desc"
 	# picture = gallic_clan_chiefs_discussing # aka celtic_chiefs
-	# picture = gallic_village_scene # aka celtic_village # too serene
 	picture = gauls_interacting_negotiating # out of place; maybe for peace deals
 	# picture = looting #soldiers look roman
 	# picture = walled_city_under_siege #aka city_siege
@@ -994,22 +1554,35 @@ galatian_invasion.32 = { # Special Peace - Trocmeria
 			# make_subject
 		}
 		# ai_will_do = yes
+		# ai_chance = { factor = 95 }
 	}
 	
 	option = {
 		name = galatian_invasion.32.b
 		trigger = {
-			is_ai = no
+			# OR = {
+				# scope:tavium_defender = {
+					# OR = {
+						# tag = c:PRY
+						# tag = c:SEL
+						# tag = c:MAC
+						# tag = c:TRE
+						# tag = c:EGY
+					# }
+				# }
+				is_ai = no
+			# }
 		}
+		# ai_chance = { factor = 5 }
 	}
 
 }
+
 galatian_invasion.33 = { # Special Peace - Tectosagia
 	type = country_event
 	title = "galatian_invasion.33.t"
 	desc = "galatian_invasion.33.desc"
 	# picture = gallic_clan_chiefs_discussing # aka celtic_chiefs
-	# picture = gallic_village_scene # aka celtic_village # too serene
 	picture = gauls_interacting_negotiating # out of place; maybe for peace deals
 	# picture = looting #soldiers look roman
 	# picture = walled_city_under_siege #aka city_siege
@@ -1065,13 +1638,26 @@ galatian_invasion.33 = { # Special Peace - Tectosagia
 			# make_subject
 		}
 		# ai_will_do = yes
+		# ai_chance = { factor = 95 }
 	}
 	
 	option = {
 		name = galatian_invasion.33.b
 		trigger = {
-			is_ai = no
+			# OR = {
+				# scope:ankyra_defender = {
+					# OR = {
+						# tag = c:PRY
+						# tag = c:SEL
+						# tag = c:MAC
+						# tag = c:TRE
+						# tag = c:EGY
+					# }
+				# }
+				is_ai = no
+			# }
 		}
+		# ai_chance = { factor = 5 }
 	}
 
 }
@@ -1080,8 +1666,6 @@ galatian_invasion.34 = { # Special Peace - Tolistobogia
 	type = country_event
 	title = "galatian_invasion.34.t"
 	desc = "galatian_invasion.34.desc"
-	# picture = gallic_clan_chiefs_discussing # aka celtic_chiefs
-	# picture = gallic_village_scene # aka celtic_village # too serene
 	picture = gauls_interacting_negotiating # out of place; maybe for peace deals
 	# picture = looting #soldiers look roman
 	# picture = walled_city_under_siege #aka city_siege
@@ -1091,7 +1675,7 @@ galatian_invasion.34 = { # Special Peace - Tolistobogia
 	right_portrait = scope:pessinous_defender.current_ruler
 	
 	trigger = {
-		with_with = scope:pessinous_attacker
+		war_with = scope:pessinous_attacker
 	}
 	
 	# immediate = {
@@ -1147,13 +1731,26 @@ galatian_invasion.34 = { # Special Peace - Tolistobogia
 			# make_subject
 		}
 		# ai_will_do = yes
+		# ai_chance = { factor = 90 }
 	}
 	
 	option = {
 		name = galatian_invasion.34.b
 		trigger = {
-			is_ai = no
-		}
+			# OR = {
+				# scope:pessinous_defender = {
+					# NOR = {
+						# tag = c:PRY
+						# tag = c:SEL
+						# tag = c:MAC
+						# tag = c:TRE
+						# tag = c:EGY
+					# }
+				# }
+				is_ai = no
+			}
+		# }
+		# ai_chance = { factor = 10 }
 	}
 
 }
@@ -1162,9 +1759,7 @@ galatian_invasion.35 = { # Setting Galatia - Start Task
 	type = country_event
 	title = "galatian_invasion.35.t"
 	desc = "galatian_invasion.35.desc"
-	# picture = gallic_clan_chiefs_discussing # aka celtic_chiefs
-	picture = gallic_village_scene # aka celtic_village # too serene
-	# picture = gauls_interacting_negotiating # out of place; maybe for peace deals
+	picture = celtic_village
 
 	
 	right_portrait = current_ruler
@@ -1180,49 +1775,6 @@ galatian_invasion.35 = { # Setting Galatia - Start Task
 	
 	immediate = {
 		
-		# if = {
-			# limit = {
-				# NOT = { exists = c:GLT }
-			# }
-			# random_country = {
-				# limit = {
-					# country_culture_group = gallic
-					# any_owned_province = {
-						# is_in_region = galatia_region
-					# }
-				# }
-				# save_scope_as = first_galatians
-			# }
-		# }
-				
-		# if = {
-			# limit = {
-				# any_country = {
-					# country_culture_group = gallic
-					# any_owned_province = {
-						# is_in_region = galatia_region
-					# }
-					# NOR = {
-						# tag = GLT
-						# this = scope:first_galatians
-					# }
-				# }
-			# }
-			# random_country = {
-				# limit = {
-					# country_culture_group = gallic
-					# any_owned_province = {
-						# is_in_region = galatia_region
-					# }
-					# NOR = {
-						# tag = GLT
-						# this = scope:first_galatians
-					# }				
-				# }
-				# save_scope_as = other_galatians
-			# }
-		# }
-		
 	}
 	
 	option = {
@@ -1233,15 +1785,7 @@ galatian_invasion.35 = { # Setting Galatia - Start Task
 			if = {
 				limit = {
 					NOR = { has_variable = galatian_chosen_city }
-					# any_ownable_province = {
-						# trigger_if = {
-							# limit = {
-								# exists = owner
-							# }
-							# NOT = { owner = scope:seleukid_nation }
-						# }
 					any_owned_province = {
-						# total_population >= 20
 						OR = {
 							is_in_region = macedonia_region
 							is_in_region = moesia_region
@@ -1252,7 +1796,6 @@ galatian_invasion.35 = { # Setting Galatia - Start Task
 						province_dominant_culture_group = gallic
 					}
 				}
-				# random_ownable_province = {
 				random_owned_province = {
 					limit = {
 						NOT = { has_variable = galatian_chosen_city }
@@ -1289,11 +1832,6 @@ galatian_invasion.35 = { # Setting Galatia - Start Task
 galatian_invasion.36 = { # Settling Galatia - Settling
     type = province_event
     hidden = yes
-	# title = "galatian_invasion.37.t"
-	# desc = "galatian_invasion.37.desc"
-	
-	# left_portrait = scope:first_galatians.current_ruler
-	# right_portrait = scope:other_galatians.current_ruler
 	
 	trigger = {
 
@@ -1414,58 +1952,49 @@ galatian_invasion.36 = { # Settling Galatia - Settling
 	}
 	
 	option = {
-		name = galatian_invasion.37.a
+		name = galatian_invasion.36.a
 		
-				# every_owned_province = {
-					# every_pops_in_province = {
-						# limit = {
-							# pop_culture_group = gallic
-						# }
-						# move_pop = p:189 #scope:capital_scope
-					# }
-				# }
-			# }
-			
-			# trigger_if = {
-				# limit = { exists = scope: other_galatians }
-				# scope:other_galatians = {
-					# every_owned_province = {
-						# every_pops_in_province = {
-							# limit = {
-								# pop_culture_group = gallic
-							# }
-							# move_pop = p:189 #scope:capital_scope
-						# }
-					# }
-				# }
-			# }	
 	}
-	# option = {
-		
-	# }
+
 }
 
 galatian_invasion.38 = { # Forming Galatia
 	type = country_event
 	title = "galatian_invasion.38.t"
 	desc = "galatian_invasion.38.desc"
-	picture = gallic_clan_chiefs_discussing # aka celtic_chiefs
-	# picture = gallic_village_scene # aka celtic_village # too serene
-	# picture = gauls_interacting_negotiating # out of place; maybe for peace deals
-	# picture = looting #soldiers look roman
-	# picture = walled_city_under_siege #aka city_siege
-	# picture = elephant_battle
-	
+	# picture = celtic_chiefs
+	# picture = celtic_village 
+
 	# left_portrait = scope:pessinous_attacker.current_ruler
 	# left_portrait = scope:tavium_attacker.current_ruler
-	right_portrait = scope:new_galatians.current_ruler
+	# right_portrait = scope:new_galatians.current_ruler
+	
+	# fire_only_once = yes
 	
 	trigger = {
-		country_culture_group = gallic
-		any_owned_province = {
-			is_in_region = galatia_region
-		}
-		is_ai = yes
+		
+		# OR = {
+			# any_country = {
+				# owns = 194
+				# country_culture_group = gallic
+			# }
+			# AND = {
+				# NOT = {
+					# any_country = {
+						# owns = 194
+						# country_culture_group = gallic
+					# }
+				# }
+				country_culture_group = gallic
+				any_owned_province = {
+					is_in_region = galatia_region
+				}
+				is_ai = yes
+				# NOT = {
+					# tag = GLT
+				# }
+			# }
+		# }
 	}
 	
 	immediate = {
@@ -1490,6 +2019,14 @@ galatian_invasion.38 = { # Forming Galatia
 				}
 			}
 			else = {
+				# limit = {
+					# NOT = {
+						# any_country = {
+							# owns = 194
+							# country_culture_group = gallic
+						# }
+					# }
+				# }
 				random_country = {
 					limit = {
 						country_culture_group = gallic
@@ -1594,6 +2131,25 @@ galatian_invasion.38 = { # Forming Galatia
 			}
 		}
 		
+		scope:new_galatians = {
+			set_primary_culture = galatian
+			
+			every_owned_province = {
+				limit = {
+					is_in_region = galatia_region
+				}
+				ordered_pops_in_province = {
+					order_by = pop_hapiness
+				# every_pops_in_province = {
+					limit = {
+						pop_culture_group = gallic
+					}
+					set_pop_culture = galatian
+					max = 10
+				}
+			}
+		}
+		
 	}
 	
 	option = {
@@ -1622,16 +2178,13 @@ galatian_invasion.38 = { # Forming Galatia
 	}
 }
 
-galatian_invasion.39 = {
+galatian_invasion.39 = { #Notification of Galatia
 	type = country_event
 	title = "galatian_invasion.39.t"
 	desc = "galatian_invasion.39.desc"
-	# picture = gallic_clan_chiefs_discussing # aka celtic_chiefs
-	picture = gallic_village_scene # aka celtic_village # too serene
-	# picture = gauls_interacting_negotiating # out of place; maybe for peace deals
-	# picture = looting #soldiers look roman
-	# picture = walled_city_under_siege #aka city_siege
-	# picture = elephant_battle
+	# picture = celtic_chiefs 
+	# picture = celtic_village 
+
 	
 	left_portrait = scope:new_galatians.current_ruler
 	right_portrait = current_ruler
@@ -1646,6 +2199,37 @@ galatian_invasion.39 = {
 	
 	option = {
 		name = galatian_invasion.39.a
+	}
+}
+
+galatian_invasion.40 = {
+	type = country_event
+	title = "galatian_invasion.40.t"
+	desc = "galatian_invasion.40.desc"
+	
+	# right_portrait = c:GLT.current_ruler
+	
+	trigger = {
+		# tag = GLT
+	}
+	
+	immediate = {
+		# c:GLT = {
+			# set_primary_culture = galatian
+			
+			# every_owned_province = {
+				# every_pops_in_province = {
+					# limit = {
+						# pop_culture_group = gallic
+					# }
+					# set_pop_culture = galatian
+				# }
+			# }
+		# }
+	}
+	
+	option = {
+		name = galatian_invasion.40.a
 	}
 }
 	

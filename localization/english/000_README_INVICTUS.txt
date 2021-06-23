@@ -1,0 +1,1 @@
+BANKRUPTCY moved to interface_l_english

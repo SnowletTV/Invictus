@@ -1805,10 +1805,335 @@ me_greek_5_pontus.40 = {							#	23 - Enshrining the Goddess Protector End
 
     trigger = { has_land = yes }
 
-    option = {      # 
+    option = {
         name = me_greek_5_pontus.40.a
         custom_tooltip = me_greek_5_pontus.40.at
+		hidden_effect = {
+			set_variable = {
+				name = taurican_temple_quality
+				value = 1
+			}
+			set_variable = {
+				name = taurican_temple_progress
+				value = 1
+			}
+			trigger_event = {
+				id = me_greek_5_pontus.46
+				days = { 150 300 }
+			}
+			scope:taurican_temple_territory_scope = {
+				begin_great_work_construction = {
+					great_work = "colossus_of_rhodes"
+					locator = great_work
+					is_ancient = yes
+				}
+			}
+		}
     }
+}
+
+me_greek_5_pontus.46 = {							#	Maintaining the Wonder Build
+	type = country_event
+	hidden = yes
+
+	immediate = {
+		if = {	# Building progresses
+			limit = {
+				var:taurican_temple_progress < 3 
+				owns = scope:taurican_temple_territory_scope
+			}
+			random_list = {
+				1 = {	# Building progresses without any event
+					change_variable = {
+						name = taurican_temple_quality
+						add = 1
+					}
+				}
+				2 = {	# Complication event - Sunken ship with materials
+					trigger_event = {
+						id = me_greek_5_pontus.47
+					}
+				}
+				2 = {	# Complication event - Uninspired workers
+					trigger_event = {
+						id = me_greek_5_pontus.48
+					}
+				}
+				2 = {	# Complication event - Theft and sabotage
+					trigger_event = {
+						id = me_greek_5_pontus.49
+					}
+				}
+			}
+			change_variable = {
+				name = taurican_temple_progress
+				add = 1
+			}
+			trigger_event = {
+				id = me_greek_5_pontus.46
+				days = { 150 300 }
+			}
+		}
+		else_if = {	# Building finished
+			limit = {
+				var:taurican_temple_progress >= 3
+				owns = scope:taurican_temple_territory_scope
+			}
+			if = {	# Mediocre Temple
+				limit = {
+					var:taurican_temple_quality < 3
+				}
+				trigger_event = {
+					id = me_greek_5_pontus.50
+				}
+			}
+			else_if = {
+				limit = {
+					var:taurican_temple_quality >= 3
+				}
+				trigger_event = {
+					id = me_greek_5_pontus.51
+				}
+			}
+		}
+		else = {	# Fallback cleanup
+			hidden_effect = {
+				remove_variable = taurican_temple_quality
+				remove_variable = taurican_temple_progress
+			}
+		}
+	}
+}
+
+# Complication Event - Ship with materials sunk
+me_greek_5_pontus.47 = {
+	type = country_event
+	title = me_greek_5_pontus.47.t
+	desc = "me_greek_5_pontus.47.desc"
+	picture = ship_in_storm
+
+	left_portrait = current_ruler
+
+	goto_location = scope:taurican_temple_territory_scope
+
+	trigger = {
+		owns = scope:taurican_temple_territory_scope
+		any_owned_province = {
+			is_coastal = yes
+		}
+	}
+
+	immediate = {
+		random_owned_province = {
+			limit = {
+				is_coastal = yes
+			}
+			save_scope_as = random_coastal_province_scope
+		}
+	}
+
+	option = {
+		name = me_greek_5_pontus.47.a
+		custom_tooltip = me_greek_5_pontus.47.a.tt
+		add_treasury = {
+			subtract = root.has_monthly_income
+			multiply = 6
+			min = -500
+			max = -50
+		}
+		hidden_effect = {
+			change_variable = {
+				name = taurican_temple_quality
+				add = 1
+			}
+		}
+	}
+
+	option = {
+		name = me_greek_5_pontus.47.b
+		custom_tooltip = me_greek_5_pontus.47.b.tt
+	}
+}
+
+# Complication Event - Uninspired Workers
+me_greek_5_pontus.48 = {
+	type = country_event
+	title = me_greek_5_pontus.48.t
+	desc = "me_greek_5_pontus.48.desc"
+	picture = quarry
+
+	left_portrait = current_ruler
+
+	goto_location = scope:taurican_temple_territory_scope
+
+	trigger = {
+		owns = scope:taurican_temple_territory_scope
+	}
+
+	option = {
+		name = me_greek_5_pontus.48.a
+		custom_tooltip = me_greek_5_pontus.48.a.tt
+		add_treasury = {
+			subtract = root.has_monthly_income
+			multiply = 4
+			min = -400
+			max = -40
+		}
+		hidden_effect = {
+			change_variable = {
+				name = taurican_temple_quality
+				add = 1
+			}
+		}
+	}
+
+	option = {
+		name = me_greek_5_pontus.48.b
+		custom_tooltip = me_greek_5_pontus.48.b.tt
+		add_political_influence = subtract_influence_medium
+		hidden_effect = {
+			change_variable = {
+				name = taurican_temple_quality
+				add = 1
+			}
+		}
+	}
+
+	option = {
+		name = me_greek_5_pontus.47.c
+		custom_tooltip = me_greek_5_pontus.47.c.tt
+	}
+}
+
+# Complication Event - Theft and sabotage
+me_greek_5_pontus.49 = {
+	type = country_event
+	title = me_greek_5_pontus.49.t
+	desc = "me_greek_5_pontus.49.desc"
+	picture = revolt
+
+	left_portrait = current_ruler
+	right_portrait = scope:random_advisor_scope
+
+	goto_location = scope:taurican_temple_territory_scope
+
+	trigger = {
+		owns = scope:taurican_temple_territory_scope
+		any_character = {
+			has_any_office = yes
+			is_ruler = no
+		}
+	}
+
+	immediate = {
+		random_character = {
+			limit = {
+				has_any_office = yes
+				is_ruler = no
+			}
+			save_scope_as = random_advisor_scope
+		}
+	}
+
+	option = {
+		name = me_greek_5_pontus.49.a
+		custom_tooltip = me_greek_5_pontus.49.a.tt
+		add_treasury = {
+			subtract = root.has_monthly_income
+			multiply = 3
+			min = -300
+			max = -30
+		}
+		hidden_effect = {
+			change_variable = {
+				name = taurican_temple_quality
+				add = 1
+			}
+		}
+	}
+
+	option = {
+		name = me_greek_5_pontus.49.b
+		custom_tooltip = me_greek_5_pontus.49.b.tt
+		add_manpower = -5
+		hidden_effect = {
+			change_variable = {
+				name = taurican_temple_quality
+				add = 1
+			}
+		}
+	}
+
+	option = {
+		name = me_greek_5_pontus.49.c
+		custom_tooltip = me_greek_5_pontus.49.c.tt
+	}
+}
+
+# Building Finished - Mediocre Temple
+me_greek_5_pontus.50 = {
+	type = country_event
+	title = me_greek_5_pontus.50.t
+	desc = "me_greek_5_pontus.50.desc"
+	picture = great_city
+
+	left_portrait = current_ruler
+
+	goto_location = scope:taurican_temple_territory_scope
+
+	trigger = {
+		owns = scope:taurican_temple_territory_scope
+	}
+
+	option = {
+		name = me_greek_5_pontus.50.a
+		scope:taurican_temple_territory_scope = {
+			finish_great_work_construction = {
+				great_work = "colossus_of_rhodes"
+				locator = great_work
+			}
+			set_variable = {
+				name = built_taurican_temple
+			}
+		}
+		hidden_effect = {
+			remove_variable = taurican_temple_quality
+			remove_variable = taurican_temple_progress
+		}
+	}
+}
+
+# Building Finished - Great Temple
+me_greek_5_pontus.50 = {
+	type = country_event
+	title = me_greek_5_pontus.51.t
+	desc = "me_greek_5_pontus.51.desc"
+	picture = great_city
+
+	left_portrait = current_ruler
+
+	goto_location = scope:taurican_temple_territory_scope
+
+	trigger = {
+		owns = scope:taurican_temple_territory_scope
+	}
+
+	option = {
+		name = me_greek_5_pontus.51.a
+		scope:taurican_temple_territory_scope = {
+			finish_great_work_construction = {
+				great_work = "colossus_of_rhodes"
+				locator = great_work
+			}
+			set_variable = {
+				name = built_taurican_temple
+			}
+		}
+		hidden_effect = {
+			remove_variable = taurican_temple_quality
+			remove_variable = taurican_temple_progress
+		}
+	}
 }
 
 me_greek_5_pontus.41 = {							#	24 - Founding Manitra
@@ -1999,10 +2324,6 @@ me_greek_5_pontus.44 = {							#	25 - Scythian Traders - Owner of Tanais makes a
 				}
 			}
 			modifier = {
-				factor = 3
-				scope:gm_5_greek_scope.current_ruler = { is_friend = tanais_owner_scope.current_ruler }
-			}
-			modifier = {
 				factor = 5
 				scope:gm_5_greek_scope.var:gm_trade_offer = 1
 			}
@@ -2025,7 +2346,7 @@ me_greek_5_pontus.44 = {							#	25 - Scythian Traders - Owner of Tanais makes a
 			}
 			modifier = {
 				factor = 2
-				scope:gm_family_head_5.charisma >= 7
+				scope:gm_family_head_5.charisma >= 5
 			}
 			modifier = {
 				factor = 2
@@ -2035,10 +2356,6 @@ me_greek_5_pontus.44 = {							#	25 - Scythian Traders - Owner of Tanais makes a
 						value >= 0
 					}
 				}
-			}
-			modifier = {
-				factor = 3
-				scope:gm_5_greek_scope.current_ruler = { is_friend = tanais_owner_scope.current_ruler }
 			}
 			modifier = {
 				factor = 5
@@ -2063,11 +2380,7 @@ me_greek_5_pontus.44 = {							#	25 - Scythian Traders - Owner of Tanais makes a
 			base = 2
 			modifier = {
 				factor = 2
-				scope:gm_5_greek_scope = { is_ai = no }
-			}
-			modifier = {
-				factor = 2
-				scope:gm_family_head_5.charisma < 7
+				scope:gm_family_head_5.charisma < 5
 			}
 			modifier = {
 				factor = 2
@@ -2119,7 +2432,7 @@ me_greek_5_pontus.45 = {							#	25 - Scythian Traders - Response
     left_portrait = scope:gm_family_head_5
     right_portrait = scope:tanais_owner_scope.current_ruler
 	
-    goto_location = scope:tanais_owner_scope.capital_scope
+    goto_location = capital_scope
 
     trigger = { has_land = yes }
 

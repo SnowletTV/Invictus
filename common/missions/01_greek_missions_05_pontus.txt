@@ -97,6 +97,9 @@
 				set_variable = gm_family_head_5_flag
 			}
 		}
+		capital_scope.area = {
+			save_scope_as = gm_5_greek_area_scope
+		}
 		save_scope_as = gm_5_greek_scope
 		set_variable = gm_5_greek_country_flag
     	trigger_event = { id = me_greek_5_pontus.1 }
@@ -248,24 +251,8 @@
 		prevented_by = { greek_5_4 greek_5_6 }
 		duration = 60
 
-		allow = {
-			custom_tooltip = {
-				text = greek_5_5_allow_tt
-				any_neighbour_country = {
-					OR = {
-						AND = {
-							country_culture_group = hellenic
-							opinion = { target = root value <= -50 }
-						}
-						NOT = {	country_culture_group = hellenic }
-					}
-				}
-			}
-		}
-
 		on_start = {
 			trigger_event = { id = me_greek_5_pontus.9 }
-			# TODO : Find a neighbouring country to grant claims on
 			set_variable = {
 				name = me_gre_antagonize_bypass
 				days = 60
@@ -278,12 +265,14 @@
 
 		on_completion = {
 			trigger_event = { id = me_greek_5_pontus.10 }
+			scope:gm_5_greek_area_scope = {
+				add_provincial_claim_effect = yes
+			}
 			current_ruler = { add_popularity = popularity_small  }
 			add_country_modifier = {
 				name = me_gre_5_5_cmod
 				duration = 3650 # 10 years
-			}
-			# TODO : Grant claims in neighbouring areas
+			}	
 		}
 
 		bypass = {
@@ -422,35 +411,42 @@
 		duration = 60
 
 		allow = {
+			owns_or_subject_owns_area = scope:gm_5_greek_area_scope
 			custom_tooltip = {
 				text = greek_5_7_allow_tt
 				any_owned_province = {
+					area = scope:gm_5_greek_area_scope
 					AND = {
 						total_population >= 6
 						is_capital = no
 					}
-					any_pops_in_province = {
-						percent <= 0.50
-						pop_culture_group = root.culture 
+					NOT = {
+						dominant_province_culture = root.culture
 					}
 				}
 			}
 		}
 
+		highlight = {
+			scope:province = {
+				exists = area
+				this.area = scope:gm_5_greek_area_scope
+			}
+		}
+
 		on_start = {
-			trigger_event = { id = me_greek_5_pontus.15 }
 			random_owned_province = {
 				limit = {
-					AND = {
-						total_population >= 6
-						is_capital = no
-					}
-					any_pops_in_province = {
-						percent <= 0.50
-						pop_culture_group = root.culture 
+					area = scope:gm_5_greek_area_scope
+					total_population >= 6
+					is_capital = no
+					NOT = {
+						dominant_province_culture = root.culture
 					}
 				}
+				save_scope_as = temp_hellenizing_province_scope
 			}
+			trigger_event = { id = me_greek_5_pontus.15 }
 			set_variable = {
 				name = me_gre_hellenizing_bypass
 				days = 60
@@ -462,28 +458,6 @@
 		}
 
 		on_completion = {
-			random_owned_province = {
-				limit = {
-					AND = {
-						total_population >= 6
-						is_capital = no
-					}
-					any_pops_in_province = {
-						percent <= 0.50
-						pop_culture_group = root.culture 
-					}
-				}
-				random_pops_in_province = {
-					limit = {
-						NOT = { pop_culture_group = hellenic }
-					}
-					while = {
-						count = 4
-						set_pop_culture = root.culture
-						set_pop_religion = root.religion
-					}
-				}
-			}
 			add_party_approval = {
 				party_type = democratic_party
 				value = -10
@@ -495,6 +469,24 @@
 			add_party_approval = {
 				party_type = traditionalist_party
 				value = -5
+			}
+			scope:temp_hellenizing_province_scope = {
+				while = {
+					count = 4
+					random_pops_in_province = {
+						limit = {
+							NOT = { pop_culture_group = hellenic }
+						}
+						set_pop_culture = root.culture
+						set_pop_religion = root.religion
+						if = {
+							limit = {
+								pop_type = tribesmen
+							}
+							set_pop_type = freemen
+						}
+					}
+				}
 			}
 			trigger_event = { id = me_greek_5_pontus.16 } 
 		}
@@ -974,7 +966,7 @@
 		}   
 
 		on_completion = {
-			trigger_event = { id = me_greek_5_pontus.34 } 
+			trigger_event = { id = me_greek_5_pontus.34 }
 		}
 	}
 
@@ -1118,7 +1110,16 @@
 		}  
 
 		on_completion = {
-			trigger_event = { id = me_greek_5_pontus.36 } 
+			trigger_event = { id = me_greek_5_pontus.36 }
+			p:4533 = {
+				add_claim = root
+			}
+			p:4545 = {
+				add_claim = root
+			}
+			p:4546 = {
+				add_claim = root
+			}
 		}
 	}
 
@@ -1148,8 +1149,13 @@
 		}
 
 		on_completion = {
-			trigger_event = { id = me_greek_5_pontus.37 } 
-			me_gre_5_3_effect = yes	# ERROR : Unknown effect me_gre_5_3_effect at  file
+			trigger_event = { id = me_greek_5_pontus.37 }
+			p:4533.area = {
+				add_provincial_claim_effect = yes
+			}
+			p:4549.area = {
+				add_provincial_claim_effect = yes
+			}
 		}
 	}
 

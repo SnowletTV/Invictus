@@ -1,0 +1,773 @@
+﻿macedon_01_legacy = { # Antipatros' Legacy
+	icon = macedon_1
+	header = mission_image_macedon
+	
+	repeatable = no
+
+    chance = {
+		factor = 100
+	}
+	
+	ai_chance = { factor = 100 }
+
+	potential = { 
+		NOT = { has_variable = macedon_mission_01_legacy }
+		has_dlc = "Heirs of Alexander"
+		OR = {
+			tag = MAC
+			has_variable = me_mac_start_flag
+			AND = {
+				exists = current_ruler
+				current_ruler = { has_trait = antipatrid }
+			}
+		}
+		is_monarchy = yes
+		is_subject = no
+		has_civil_war = no
+	}
+	
+	abort = {	
+		OR = {
+			is_monarchy = no
+			NOT = { primary_culture = macedonian }
+			NOR = {
+				tag = MAC
+				has_variable = me_mac_start_flag
+				current_ruler = { has_trait = antipatrid }
+			}
+			ai_mission_back_out_trigger = yes
+		}
+	}
+
+    on_start = {
+    	start_mission_ai_effect = yes
+    	save_scope_as = me_macedon_scope
+    	show_as_tooltip = {
+    		add_country_modifier = {
+	            name = me_mac_1_cmod
+	            duration = 3650 # 10 years
+	        }
+    	}
+    	trigger_event = { id = me_macedon_1_legacy.1 }
+    }
+
+    on_abort = {
+    	custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+			name = macedon_mission_01_legacy
+			days = 7300
+		}
+    }
+
+    on_completion = {
+    	complete_mission_effect = yes #
+    	trigger_event = { id = me_macedon_1_legacy.2 }
+    }
+	
+	macedon_01_legacy_1 = { # Dominate Epirus
+		icon = task_expansion
+		requires = { macedon_01_legacy_13 }
+
+		allow = {
+			owns_or_subject_owns = 476
+			hidden:c:EPI = {
+				OR = {
+					custom_tooltip = {
+						text = macedon_01_legacy_1_allow_conquest_subject_tt
+						OR = {
+							has_land = no
+							is_subject_of = ROOT
+						}
+					}
+					custom_tooltip = {
+						text = antigonid_02_aspiration_2_allow_conquest_displaced_tt
+						NOT = {
+							any_owned_province = {
+								OR = {
+									is_in_region = greece_region
+									is_in_region = macedonia_region
+									is_in_region = illyria_region
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 476
+					AND = {
+						has_owner = yes
+						owner = c:EPI
+						NOT = {
+							c:EPI = { is_subject_of = ROOT }
+						}
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = me_macedon_1_legacy.11 }
+			add_country_modifier = {
+				name = me_ant_02_2_cmod
+				duration = 7300 # 20 years
+			}
+			if = {
+				limit = {
+					any_country_culture = { is_culture = epirote }
+				}
+				random_country_culture = {
+					limit = { is_culture = epirote }
+					add_country_culture_modifier = {
+						name = me_ant_02_2_culmod
+						duration = 9125 # 25 years
+					}
+					save_scope_as = epirote_culture
+				}
+			}
+			show_as_tooltip = {
+                p:476 = {
+                    if = {
+                        limit = {
+                            NOT = { has_province_modifier = mac_mountains }
+                        }
+                        add_permanent_province_modifier = {
+                            name = mac_mountains
+                            duration = -1
+                        }
+                    }
+                }
+            }
+		}
+	}
+	
+	macedon_01_legacy_2 = { # Paionia Makedonias
+		icon = task_expansion
+		requires = { macedon_01_legacy_1 }
+		duration = 180
+
+		allow = {
+			political_influence >= 50
+			manpower >= 5
+			OR = {
+				hidden:c:PAA = { is_subject_of = ROOT }
+				hidden:c:MAD = { is_subject_of = ROOT }
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					owner = c:PAA
+					owner = c:MAD
+				}
+			}
+		}
+
+		on_start = {
+			if = {
+	            limit = {
+	                c:PAA = { is_subject_of = ROOT }
+	            }
+	            c:PAA = { save_scope_as = paeonia_scope }
+	        }
+	        if = {
+	            limit = {
+	                c:MAD = { is_subject_of = ROOT }
+	            }
+	            c:MAD = { save_scope_as = maedia_scope }
+	        }
+			show_as_tooltip = {
+				add_political_influence = -50
+				add_manpower = -7.5
+			}
+			trigger_event = { id = me_macedon_1_legacy.21 }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_macedon_1_legacy.22 }
+			custom_tooltip = macedon_01_legacy_2_reward_tt
+		}
+
+		bypass = {
+			OR = {
+				NAND = {
+					c:PAA = { is_subject_of = ROOT }
+					c:MAD = { is_subject_of = ROOT }
+				}
+				AND = {
+					c:PAA = { has_variable = paeonian_revolt_flag }
+					c:MAD = { has_variable = paeonian_revolt_flag }
+				}
+				has_variable = macedon_01_legacy_2_bypass_flag
+			}
+		}
+
+		on_bypass = {
+			if = {
+				limit = {
+					NOT = { has_variable = macedon_01_legacy_2_bypass_flag }
+				}
+				trigger_event = { id = me_macedon_1_legacy.23 }
+			}
+			else = { remove_variable = macedon_01_legacy_2_bypass_flag }
+		}
+	}
+
+	macedon_01_legacy_3 = { # Agrianian Recruits
+		icon = task_diplomatic
+		duration = 365
+		requires = { macedon_01_legacy_2 }
+
+		allow = {
+			owns_or_subject_owns = 498
+			hidden:capital_scope.governorship = { has_legion_trigger = yes }
+		}
+
+		highlight = {
+			scope:province = { province_id = 498 }
+		}
+
+		on_start = {
+			trigger_event = { id = me_macedon_1_legacy.31 }
+			set_variable = {
+				name = macedon_01_legacy_3_bypass_flag
+				days = 365
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = me_macedon_1_legacy.32 }
+			if = {
+				limit = {
+					capital_scope.governorship = { has_legion_trigger = yes }
+					any_unit = { legion = ROOT.capital_scope.governorship.legion }
+				}
+				random_unit = {
+		            limit = { legion = ROOT.capital_scope.governorship.legion }
+		            add_unit_modifier = {
+		                name = mac_01_3_umod
+		                duration = -1
+		            }
+		        }
+	        }
+	        else = { custom_tooltip = macedon_01_legacy_3_reward_tt }
+		}
+
+		bypass = {
+			NOT = { owns_or_subject_owns = 4304 }
+			has_variable = macedon_01_legacy_3_bypass_flag
+		}
+
+		on_bypass = {
+			trigger_event = { id = me_macedon_1_legacy.33 }
+		}
+	}
+	
+	macedon_01_legacy_5 = { # Demetrios' Folly
+		icon = task_conquest
+
+		allow = { owns_or_subject_owns = 407 }
+
+		highlight = {
+			scope:province = { province_id = 407 }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_macedon_1_legacy.51 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = mac_01_5_cmod
+					duration = 1825 # 5 years
+				}
+			}
+		}
+	}
+	
+	macedon_01_legacy_6 = { # League of Korinthos
+		icon = task_political
+		requires = { macedon_01_legacy_5 }
+		duration = 180
+
+		potential = {
+			OR = {
+				NOT = { has_global_variable = league_of_korinthos_flag }
+				AND = {
+					has_global_variable = league_of_korinthos_flag
+					has_completed_mission_task = macedon_01_legacy_6
+				}
+			}
+		}
+
+		allow = {
+			political_influence > 100
+			owns_or_subject_owns = p:418
+			custom_tooltip = {
+				text = macedon_01_legacy_6_2_allow_tt
+				region:greece_region = {
+					any_region_province = {
+						count = 0
+						ant_hellas_trigger = yes
+						is_uninhabitable = no
+						has_owner = yes
+						owner = { ant_other_diad_owner_subject_trigger = yes }
+						NOR = {
+                        	province_id = 442 
+                        	province_id = 1903
+                        	province_id = 472
+                        	province_id = 443
+                        	province_id = 227 
+                        	province_id = 460
+                        	province_id = 471
+                        	province_id = 459
+                        	province_id = 470
+                        }
+					}
+				}
+			}
+			trigger_if = {
+				limit = { is_ai = no }
+				custom_tooltip = {
+					text = macedon_01_legacy_6_allow_tt
+					any_subject = {
+						count >= 3
+						ant_01_13_subject_trigger = yes # owns 3 cities, is Hellenic, capital in southern Greece
+					}
+				}
+			}
+			trigger_if = {
+				limit = {
+					p:418 = {
+						has_owner = yes
+						owner = { is_subject_of = ROOT }
+					}
+				}
+				custom_tooltip = {
+					text = antigonid_01_vision_13_allow_418_tt
+					p:418.owner = {
+						country_culture_group = hellenic
+					    capital_scope = {
+					    	OR = {
+			                    is_in_area = boeotia_area
+			                    is_in_area = euboea_area
+			                    is_in_area = central_greece_area
+			                    is_in_area = achaea_area
+			                    is_in_area = arcadia_area
+			                    is_in_area = south_peleponnesos_area
+			                }
+					    }
+					}
+				}
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				is_in_region = greece_region
+				ant_hellas_trigger = yes
+				has_owner = yes
+				owner = {
+					OR = {
+						ant_other_diad_owner_subject_trigger = yes
+						NOR = {
+							is_subject_of = ROOT
+							THIS = ROOT
+						}
+					}
+				}
+			}
+		}
+
+		on_start = {
+			set_variable = antigonid_01_vision_13_bypass_flag
+			trigger_event = { id = me_macedon_1_legacy.61 }
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				current_ruler = {
+					if = {
+						limit = { number_of_traits < 5 }
+						add_trait = benefactor
+					}
+				}
+			}
+			custom_tooltip = antigonid_01_vision_13_league_tt
+			trigger_event = { id = me_macedon_1_legacy.62 }
+			set_global_variable = league_of_korinthos_flag
+		}
+	}
+
+	macedon_01_legacy_7 = { # Athenian Machinations
+		icon = task_political
+		duration = 180
+
+		potential = {
+			c:ATH = {
+				NOT = { has_variable = ath_machinations_flag }
+			}
+		}
+
+		allow = {
+			treasury >= 50
+			custom_tooltip = {
+				text = macedon_01_legacy_7_allow_tt
+				has_global_variable = antigonus_the_failure
+			}
+			custom_tooltip = {
+				text = macedon_01_legacy_7_allow_tt_2
+				c:ATH = { has_land = yes }
+			}
+			OR = {
+				hidden:c:ATH = { is_subject = no }
+				hidden:c:ATH = {
+					NOT = { is_subject_of = c:MAC }
+				}
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				has_owner = yes
+				owner = c:ATH
+			}
+		}
+
+		on_start = {
+			show_as_tooltip = { add_treasury = -50 }
+			trigger_event = { id = me_macedon_1_legacy.71 }
+			set_variable = {
+				name = macedon_01_legacy_7_bypass_flag
+				days = 180
+			}
+		}
+
+		on_completion = {
+			c:ATH = {
+				trigger_event = { id = me_macedon_1_legacy.74 }
+			}
+			custom_tooltip = macedon_01_legacy_7_reward_tt
+		}
+
+		bypass = {
+			c:ATH = { has_land = no }
+		}
+
+		on_bypass = {
+			if = {
+				limit = { has_variable = macedon_01_legacy_7_bypass_flag }
+				trigger_event = { id = me_macedon_1_legacy.79 }
+				remove_variable = macedon_01_legacy_7_bypass_flag
+			}
+		}
+	}
+
+	macedon_01_legacy_8 = { # Formalize Monarchy
+		icon = task_economical
+		duration = 90
+		requires = { macedon_01_legacy_6 macedon_01_legacy_10 }
+		final = yes
+
+		allow = {
+			owns_or_subject_owns = 379
+			custom_tooltip = {
+				text = macedon_01_legacy_8_allow_tt
+				current_ruler = {
+					has_trait = antipatrid
+					NOT = { THIS = char:32 }
+				}
+			}
+		}
+
+		highlight = {
+			scope:province = { province_id = 379 }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_macedon_1_legacy.81 }
+			show_as_tooltip = {
+				current_ruler = {
+					add_popularity = popularity_medium
+					add_nickname = NICKNAME_ANIKETOS
+				}
+				add_country_modifier = {
+		            name = mac_01_8_cmod
+		            duration = 7300 # 20 years
+		        }
+		        add_stability_effect = yes
+			}
+		}
+	}
+	
+	macedon_01_legacy_9 = { # Thessalian Fetter
+		icon = task_diplomatic
+		requires = { macedon_01_legacy_12 }
+		duration = 365
+
+		allow = {
+			owns = 391
+			owns = 390
+			treasury >= 100
+			trigger_if = {
+				limit = {
+					p:391 = { has_province_modifier = me_ant_02_10_pmod }
+				}
+				p:391 = { has_province_modifier = me_ant_02_10_pmod }
+			}
+			trigger_if = {
+				limit = {
+					p:391 = { has_province_modifier = me_mac_01_9_pmod }
+				}
+				p:391 = { has_province_modifier = me_mac_01_9_pmod }
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 391
+					province_id = 390
+				}
+			}
+		}
+
+		on_start = {
+			show_as_tooltip = { add_treasury = -100 }
+			set_variable = {
+				name = macedon_01_legacy_9_bypass_flag
+				days = 365
+			}
+			trigger_event = { id = me_macedon_1_legacy.91 }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_macedon_1_legacy.92 }
+			show_as_tooltip = {
+				p:390 = {
+					if = {
+						limit = {
+		                    total_population > p:391.total_population
+		                    p:391.total_population > 3
+		                }
+						custom_tooltip = antigonid_02_aspiration_10_pop_tt
+						if = {
+							limit = { has_city_status = yes }
+							set_city_status = settlement
+						}
+					}
+				}
+				p:391 = {
+					if = {
+						limit = { has_city_status = no }
+						set_city_status = city
+					}
+					while = {
+                        limit = { num_of_fortress_building < 2 }
+                        if = {
+                            limit = { free_building_slots < 1 }
+                            destroy_building_effect = yes
+                        }
+                        add_building_level = fortress_building
+                    }
+					add_permanent_province_modifier = { name = me_mac_01_9_pmod }
+					change_province_name = "Antipatreia"
+				}
+			}
+		}
+
+		bypass = {
+			AND = {
+				has_variable = macedon_01_legacy_9_bypass_flag
+				NOT = { owns = 391 }
+			}
+		}
+
+		on_bypass = {
+			trigger_event = { id = me_macedon_1_legacy.93 }
+		}
+	}
+
+	macedon_01_legacy_10 = { # Western Hegemony
+		icon = task_diplomatic
+		requires = { macedon_01_legacy_1 }
+
+		allow = {
+			owns_or_subject_owns_area = aetolia_area
+		}
+
+		highlight = {
+			scope:province = { is_in_area = aetolia_area }
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+		            name = mac_01_10_cmod
+		            duration = 7300 # 20 years
+		        }
+			}
+			trigger_event = { id = me_macedon_1_legacy.101 }
+		}
+	}
+
+	macedon_01_legacy_11 = { # Dregs of Pangaion
+		icon = task_economical
+		duration = 365
+		
+		allow = {
+			owns = 365
+			manpower >= 3
+		}
+
+		highlight = {
+			scope:province = { province_id = 365 }
+		}
+
+		on_start = {
+			show_as_tooltip = {
+				add_manpower = -3
+			}
+			set_variable = {
+				name = macedon_01_legacy_11_bypass_flag
+				days = 365
+			}
+			trigger_event = { id = me_macedon_1_legacy.111 }
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				custom_tooltip = macedon_01_legacy_11_allow_tt
+				p:365 = { set_trade_goods = wood }
+				add_treasury = me_mac_1_11_svalue
+			}
+			trigger_event = { id = me_macedon_1_legacy.112 }
+		}
+
+		bypass = {
+			OR = {
+				AND = {
+					has_variable = macedon_01_legacy_11_bypass_flag
+					NOT = { owns = 365 }
+				}
+				has_variable = pangaion_flag
+			}
+		}
+
+		on_bypass = {
+			if = {
+				limit = { has_variable = pangaion_flag }
+				trigger_event = { id = me_macedon_1_legacy.113 }
+				remove_variable = pangaion_flag
+			}
+		}
+	}
+
+	macedon_01_legacy_12 = { # Last of the Argeads
+		icon = task_political
+		requires = { macedon_01_legacy_11 }
+
+		allow = {
+			custom_tooltip = {
+				text = macedon_01_legacy_12_allow_tt
+				current_ruler = { has_trait = argeads }
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				current_ruler = { add_popularity = popularity_large }
+		        add_country_modifier = {
+		            name = mac_01_12_cmod
+		            duration = 7300 # 20 years
+		        }
+			}
+			trigger_event = { id = me_macedon_1_legacy.121 }
+		}
+
+		bypass = {
+			current_ruler = { 
+				NOR = {
+					has_trait = argeads
+					AND = {
+						is_married = yes
+						spouse = { has_trait = argeads }
+					}
+					any_child = { has_trait = argeads }
+				}
+			}
+		}
+	}
+
+	macedon_01_legacy_13 = { # The Illyrian Question
+		icon = task_conquest
+
+		allow = {
+			owns_or_subject_owns = 415
+			owns_or_subject_owns = 422
+			custom_tooltip = {
+				text = macedon_01_legacy_13_allow_tt
+				OR = {
+					c:TLN = { has_land = no }
+					c:TLN = { is_subject_of = ROOT }
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+		            name = mac_01_13_cmod
+		            duration = 7300 # 20 years
+		        }
+		        if = {
+					limit = {
+						any_country_culture = { is_culture = taulantian }
+					}
+					random_country_culture = {
+						limit = { is_culture = taulantian }
+						add_country_culture_modifier = {
+							name = mac_01_13_culmod
+							duration = 9125 # 25 years
+						}
+						save_scope_as = taulantian_culture
+					}
+				}
+			}
+			trigger_event = { id = me_macedon_1_legacy.131 }
+		}
+
+		bypass = {
+			p:415  = {
+				has_owner = yes
+				NOR = {
+					owner = ROOT
+					owner = { is_subject_of = ROOT }
+				}
+			}
+			c:TLN = { has_land = no }
+		}
+	}
+	
+	macedon_01_legacy_14 = { # Illyrian Outpost
+		icon = task_expansion
+		requires = { macedon_01_legacy_13 }
+
+		allow = {
+		    custom_tooltip = {
+				text = macedon_01_legacy_14_allow_tt
+				owns_or_subject_owns = 415
+			    owns_or_subject_owns = 422
+				owns_or_subject_owns = 2336
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = macedon_cities.1 }
+			custom_tooltip = macedon_colony_reward_tt
+		}
+	}
+}

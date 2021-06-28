@@ -1,0 +1,217 @@
+﻿imprison = {
+
+	on_other_nation = no
+	on_own_nation = yes
+	needs_senate_approval = yes
+	
+	sound = "event:/SFX/UI/Character/Unique/sfx_ui_character_imprison"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			employer = scope:actor
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+			NOT = {
+				has_character_modifier = commander_king
+			}
+			is_alive = yes
+			is_mercenary = no
+			prisoner = no
+		}
+	}
+	
+	allowed_trigger = {
+		hidden:scope:target = {
+			NOT = {
+				has_character_modifier = disloyal_successor_cmod
+			}
+			prisoner = no
+			is_ruler = no
+			is_co_ruler = no
+			is_general = no
+			is_admiral = no
+			is_pretender = no
+			is_primary_heir = no
+			is_governor = no
+			has_any_office = no
+			has_tech_office = no
+			is_clan_chief = no
+			is_head_of_family = no
+			has_legion_trigger = no
+			NOT = {
+				employer = {
+					is_monarchy = yes
+					exists = consort
+					scope:target = scope:target.employer.consort
+				}
+			}
+		}
+		hidden:scope:actor = {
+			can_pay_price = price_imprison
+			stability > 25
+		}
+		scope:target = {
+			custom_tooltip = {
+				text = "family_favor_imprison"
+				NOT = { 
+					has_variable = cannot_imprison_family_favor
+				}
+			}
+		}
+	}
+
+	
+	effect = {
+		
+		scope:actor = {
+			if = {
+				limit = { scope:target.power_base < 2 }
+				pay_price = price_imprison
+			}
+			else = {
+				add_tyranny = {
+					value = scope:target.power_base
+					divide = 2
+					add = 3
+					min = 5
+				}
+			}
+		}
+		scope:actor = {
+			imprison = { target = scope:target }
+			if = {
+				limit = {
+					invention = global_slaves_output_inv_3
+					scope:target = {
+						OR = {
+							has_trait = corrupt
+							wealth < 0
+							has_character_modifier = secret_gambler
+						}
+					}
+				}
+			}
+			else = {
+				current_ruler = {
+					add_popularity = subtract_popularity_small
+				}
+			}
+			trigger_event = {
+				on_action = custom_on_action_imprison
+				days = { 30 360 }
+			}
+		}
+		scope:target = {
+			add_loyalty = imprisoned_l
+			hidden_effect = {
+				set_variable = {
+					name = imprisoned_manually
+				}
+				clear_ambition_effect_ci = yes
+			}
+			if = {
+				limit = {
+					has_variable = olympic_attendee
+				}
+				var:olympic_attendee = {
+					save_scope_as = imprisoned_athlete_country
+				}
+				if = {
+					limit = {
+						NOT = {
+							scope:imprisoned_athlete_country = scope:actor
+						}
+					}
+					remove_variable = olympic_attendee
+					save_scope_as = imprisoned_athlete
+					custom_tooltip = "imprison_olympic_ransom"
+					hidden_effect = {	
+						every_country = {
+							limit = {
+								has_variable = is_competing_in_olympics
+								NOT = {
+									this = scope:actor
+								}
+							}
+							add_opinion = {
+								modifier = olympic_outrage
+								target = scope:actor
+							}
+						}
+						scope:imprisoned_athlete_country = {
+							trigger_event = {
+								id = olympic.7
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+}
+
+flog = { #Give the people what they want
+	on_other_nation = no
+	on_own_nation = yes
+	
+	message = no
+	
+	sound = "event:/SFX/UI/Character/Unique/sfx_ui_character_give_free_hands"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			is_alive = yes
+			prisoner = yes
+		}
+	}
+	
+	allowed_trigger = {
+		scope:target = {
+			is_adult = yes
+			is_co_ruler = no
+			prisoner = yes
+		}
+	}
+	
+	effect = {
+		scope:actor.current_ruler = {
+			add_popularity = -2
+		}
+		scope:target = {
+			add_loyalty = flogged_l
+			if = {
+				limit = {
+					health >= 10
+				}
+				add_health = -10
+			}
+			else = {
+				death = {
+					death_reason = death_flogging
+				}
+				scope:actor = {
+					add_tyranny = 3
+				}
+			}
+			if = {
+				limit = {
+					num_of_rivals >= 1
+					any_rival = {
+						employer = scope:actor
+						is_ruler = no
+					}
+				}
+				custom_tooltip = rivals_gain_loyalty_flogging
+				every_rival = {
+					limit = {
+						employer = scope:actor
+						is_ruler = no
+					}
+					add_loyalty = flogged_rival_l
+				}
+			}
+		}
+	}
+	
+}

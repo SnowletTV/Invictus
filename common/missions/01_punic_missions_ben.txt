@@ -1,0 +1,444 @@
+punic_resurgence_mission = {
+    header = "mission_image_carthage"
+
+    icon = "carthage_1"
+
+
+
+    potential = {
+        c:CAR = {
+            NOT = {
+                has_variable = "punic_mission_taken"
+            }
+
+        }
+        is_subject_of = c:CAR
+        heritage = punic_heritage
+        NOT = {
+            has_variable = "punic_mission_cooldown"
+        }
+    }
+
+    abort = {
+        ai_mission_back_out_trigger = yes
+    }
+
+    on_start = {
+        start_mission_ai_effect = yes
+        c:CAR = {
+            set_variable = {
+                name = "punic_mission_taken"
+            }
+        }
+        root = { save_scope_as = mission_country }
+        random_province = {
+            limit = {
+                num_of_port_building > 1
+                has_city_status = yes
+            }
+            save_scope_as = shipyard_city
+        }
+    }
+
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = "punic_mission_cooldown"
+            days = 7300
+        }
+    }
+
+    on_completion = {
+        complete_mission_effect = yes
+    }
+
+    punic_mission_task_1 = { #Seek New Allies
+        icon = "task_diplomatic"
+
+    #    prevented_by = { punic_mission_task_3 }
+
+
+        highlight = {
+
+        }
+
+        allow = {
+           treasury > 200
+        }
+
+        bypass = {
+        	has_completed_mission_task = punic_mission_task_12
+        }
+
+        on_completion = {
+            add_treasury = -200
+            scope:mission_country = {
+               add_country_modifier = {
+                   name = punic_resurgent
+          #         days = 7300
+               }
+           }
+        }
+    }
+
+    punic_mission_task_2 = { # Envoys to numidia
+        icon = "task_political"
+
+        requires = { punic_mission_task_1 }
+    #    prevented_by = { punic_mission_task_4 }
+
+
+        duration = 365
+
+        allow = {
+            c:MSY = {
+                opinion = {
+                    target = root
+                    value > 100
+                }
+            }
+            c:MSL = {
+                opinion = {
+                    target = root
+                    value > 100
+                }
+            }
+
+        }
+        bypass = {
+            OR = {
+                has_completed_mission_task = punic_mission_task_4
+                has_completed_mission_task = punic_mission_task_12
+            }
+        }
+
+    }
+
+    punic_mission_task_3 = {
+        icon = "task_diplomatic"
+
+    #    exclusive = { punic_mission_task_1 }
+    #   prevented_by = { punic_mission_task_1 }
+
+
+        allow = {
+           c:CAR = {
+               opinion = {
+                   target = root
+                   value > 10
+               }
+           }
+        }
+
+        bypass = {
+            has_completed_mission_task = punic_mission_task_1
+        }
+
+
+    }
+
+    punic_mission_task_4 = { # envoys to the cities
+        icon = "task_diplomatic"
+        duration = 0
+        requires = { punic_mission_task_1 }
+   #     prevented_by = { punic_mission_task_2 }
+
+     #   duration = 365
+
+        allow = {
+            c:UTC = {
+                opinion = {
+                    target = root
+                    value > 100
+                }
+            }
+            c:KUA = {
+                opinion = {
+                    target = root
+                    value > 100
+                }
+            }
+            c:CAR = {
+                any_subject = {
+                    heritage = punic_heritage
+                    NOT = {
+                        OR = {
+                            this = c:UTC
+                            this = c:KUA
+                            this = root
+                        }
+                    }
+                    opinion = {
+                        target = root
+                        value > 100
+                    }
+                }
+            }
+        }
+
+        bypass = {
+            OR = {
+                has_completed_mission_task = punic_mission_task_12
+                has_completed_mission_task = punic_mission_task_6
+            }
+
+        }
+
+
+    }
+    punic_mission_task_5 = { # punic league
+        icon = "task_diplomatic"
+
+        requires = { punic_mission_task_4 }
+
+
+        allow = {
+            treasury >= 150
+        }
+
+
+
+        bypass = {
+            OR = {
+              has_completed_mission_task = punic_mission_task_6
+              has_completed_mission_task = punic_mission_task_12
+            }
+        }
+       on_completion = {
+            c:CAR = {
+               trigger_event = {
+                   id = punic_resurgence.4
+                   days = 0
+                }
+                every_subject = {
+                    limit = {
+                        NOT = {
+                            this = scope:mission_country
+                        }
+                        heritage = punic_heritage
+                    }
+                    trigger_event = {
+                        id = punic_resurgence.5
+                        days = 0
+                    }
+                }
+            }
+        }
+
+    }
+    punic_mission_task_6 = { # berber tribute
+        icon = "task_diplomatic"
+
+        requires = { punic_mission_task_2 }
+
+        allow = {
+            treasury > 300
+        }
+
+        bypass = {
+            OR = {
+                has_completed_mission_task = punic_mission_task_4
+                has_completed_mission_task = punic_mission_task_12
+            }
+        }
+        on_completion = {
+            add_treasury = -300
+
+            c:MSL = {
+                add_treasury = 150
+                trigger_event = {
+                    id = punic_resurgence.6
+                    days = 0
+                }
+            }
+            c:MSY = {
+                add_treasury = 150
+                trigger_event = {
+                    id = punic_resurgence.6
+                    days = 0
+                }
+            }
+        }
+
+    }
+    punic_mission_task_7 = { # prepare for war
+        icon = "task_conquest"
+        duration = 730
+        requires = {
+            punic_mission_task_6
+            punic_mission_task_5
+        }
+
+
+        allow = {
+           scope:mission_country = {
+               capital_scope = {
+                   OR = {
+                    is_importing_trade_good = iron
+                    is_importing_trade_good = elephants
+
+                   }
+               }
+
+           }
+           treasury > 100
+
+        }
+
+        bypass = {
+            has_completed_mission_task = punic_mission_task_12
+        }
+
+
+    }
+    punic_mission_task_8 = { # punic revolt
+        requires = { punic_mission_task_7 }
+        bypass = {
+            OR = {
+                has_completed_mission_task = punic_mission_task_10
+                has_completed_mission_task = punic_mission_task_12
+            }
+        }
+
+        on_completion = {
+            c:CAR = {
+                every_subject = {
+                    limit = {
+                        OR = {
+                            has_variable = is_in_punic_league
+                            has_variable = numidian_ally
+                        }
+
+                    }
+                    trigger_event = {
+                        id = punic_resurgence.9
+                        days = 0
+                    }
+                }
+            }
+            every_current_war = {
+                remove_from_war = root
+            }
+            c:CAR = {
+                release_subject = root
+            }
+            declare_war_with_wargoal = {
+                war_goal = independence_wargoal
+                province = root.capital_scope
+                target = CAR
+            }
+        }
+    }
+    punic_mission_task_9 = { # diplomatic autonomy
+        requires = { punic_mission_task_3 }
+        bypass = {
+            has_completed_mission_task = punic_mission_task_1
+        }
+
+        allow = {
+            c:CAR = {
+                opinion = {
+                     target = root
+                     value > 150
+                }
+            }
+        }
+
+        on_completion = {
+            scope:mission_country = {
+                add_country_modifier = {
+                    name = diplomatic_autonomy
+                }
+            }
+        }
+    }
+    punic_mission_task_10 = {
+        requires = { punic_mission_task_9 }
+
+        on_completion = {
+            c:CAR = {
+                trigger_event = {
+                    id = punic_resurgence.3
+                    days = 0
+                }
+            }
+
+        }
+
+        bypass = {
+            has_completed_mission_task = punic_mission_task_1
+        }
+    }
+    punic_mission_task_11 = {
+        requires = { punic_mission_task_9 }
+        bypass = {
+            has_completed_mission_task = punic_mission_task_1
+        }
+        on_completion = {
+            c:CAR = {
+				save_scope_as = carthage_scope
+			}
+            scope:carthage_scope = {
+                set_variable = boatsman
+            }
+        }
+    }
+    punic_mission_task_12 = {
+        requires = { punic_mission_task_10 }
+        bypass = {
+            has_completed_mission_task = punic_mission_task_1
+        }
+
+        allow = {
+            c:CAR = {
+                opinion = {
+                    target = root
+                    value > 150
+                }
+                war = no
+            }
+        }
+        on_completion = {
+            c:CAR = {
+                trigger_event = {
+                    id = punic_resurgence.19
+                    days = 0
+                }
+            }
+        }
+    }
+    punic_mission_task_13 = {
+        requires = { punic_mission_task_12 punic_mission_task_8 }
+
+        allow = {
+            scope:mission_country.capital_scope = {
+                is_importing_trade_good = dye
+                is_importing_trade_good = marble
+                is_importing_trade_good = stone
+
+                state = {
+                    incoming_trade_routes > 5
+                }
+
+            }
+            treasury > 300
+        }
+
+        on_completion = {
+            add_treasury = -300
+
+            scope:mission_country.capital_scope = {
+                add_province_modifier = {
+                    name = capitalpunic
+                }
+            }
+            c:CAR.capital_scope = {
+                add_province_modifier = {
+                    name = carthage_sad
+                }
+            }
+        }
+
+        final = yes
+    }
+}

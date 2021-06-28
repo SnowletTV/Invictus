@@ -1,0 +1,616 @@
+﻿namespace = slave_revolts
+
+#The slaves rise
+slave_revolts.1 = {
+	type = province_event
+	title = "slave_revolts.1.t"
+	desc = "slave_revolts.1.desc"
+	picture = revolt
+	goto_location = ROOT
+	
+	trigger = {
+		always = no
+		has_owner = yes
+		num_of_slaves >= 16
+		slaves_happiness <= 0.25 #Less than 10% Happiness
+		num_of_slaves >= slave_revolt_svalue #Ratio of slaves and minimum size
+		NOT = { has_province_modifier = recent_slave_revolt } #Safe for a bit
+		owner = {
+			NOT = { has_country_modifier = slave_revolt_succesful } #protected
+			NOT = { has_country_modifier = ongoing_slave_revolt } #only one snowball at a time
+			NOT = { has_variable = slave_moratorium } # Protected
+		}
+	}
+	
+	weight_multiplier = {
+		modifier = {
+			add = {
+				value = num_of_slaves
+				divide = 1.5
+				min = 1
+			}
+		}
+	}
+	
+	immediate = {
+		owner = {
+			add_country_modifier = {
+				name = "ongoing_slave_revolt" #Inspires other slaves
+				duration = 3650
+			}
+		}
+		random_pops_in_province = {
+			limit = { pop_type = slaves }
+			set_pop_type = freemen #You don't join but we do set you free!
+		}
+		c:REB = { #This is our snowball
+			create_unit = {
+				location = ROOT
+			}
+			random_unit = {
+				limit = {
+					unit_location = ROOT
+					unit_owner = c:REB
+				}
+				set_variable = {
+					name = slave_army_origin
+					value = root.owner
+				}
+				hidden_effect = {
+					while = { #One light infantry per slave.
+						limit = {
+							unit_location = {
+								num_of_slaves >= 1
+							}
+						}
+						unit_location = {
+							random_pops_in_province = {
+								limit = { pop_type = slaves }
+								kill_pop = yes
+							}
+						}
+						add_subunit = light_infantry
+					}
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "slave_revolts.1.a"
+		custom_tooltip = slave_revolts.1.a.tt
+		add_province_modifier = {
+			name = recent_slave_revolt #Blocks for this province
+			duration = 3650
+		}
+	}
+}
+
+#Slave revolt reaches X
+slave_revolts.2 = {
+	type = province_event
+	title = "slave_revolts.2.t"
+	desc = "slave_revolts.2.desc"
+	picture = revolt
+	
+	goto_location = root
+	
+	trigger = {
+		num_of_slaves > 1 #No slaves can join if there are no slaves
+		NOT = { has_province_modifier = recent_slave_revolt } #Let us spare the same place from being hit twice in short time.
+		is_capital = no
+		any_unit_in_province = { #Snowball was here
+			unit_owner = c:REB
+		}
+	}
+	
+	immediate = {
+		if = {
+			limit = {
+				owner = {
+					NOT = { has_country_modifier = ongoing_slave_revolt }
+				}
+			}
+			owner = {
+				add_country_modifier = {
+					name = "ongoing_slave_revolt" #Inspires other slaves
+					duration = 3650
+				}
+			}
+		}
+		if = {
+			limit = {
+				owner = {
+					any_character = {
+						is_at_location = root
+						is_governor = yes
+					}
+				}
+			}
+			owner = {
+				random_character = {
+					limit = {
+						is_at_location = root
+						is_governor = yes
+					}
+					death = {
+						death_reason = death_crucified
+					}
+				}
+			}
+		}
+		custom_tooltip = slave_army_growth_tooltip
+		hidden_effect = {
+			
+			random_pops_in_province = {
+				limit = { pop_type = slaves }
+				set_pop_type = freemen #You don't join but we do set you free!
+			}
+			random_unit_in_province = {
+				limit = {
+					unit_owner = c:REB
+				}
+				save_scope_as = rebel_army
+				while = {
+					limit = {
+						unit_location = {
+							num_of_slaves >= 1
+						}
+					}
+					unit_location = {
+						random_pops_in_province = {
+							limit = { pop_type = slaves }
+							kill_pop = yes
+						}
+					}
+					add_subunit = light_infantry #Now we add to the army
+				}
+			}
+		}
+	}
+	
+	#Reaction:
+	option = {
+		name = "slave_revolts.2.a" #We do not negotiate with slaves!
+		ai_chance = { #AI should play this very safe.
+			factor = 1
+			modifier = {
+				factor = 2
+				scope:rebel_army = {
+					unit_size < 15
+				}
+			}
+			modifier = {
+				factor = 0
+				scope:rebel_army = {
+					unit_size >= 15
+				}
+			}
+		}
+		add_province_modifier = {
+			name = recent_slave_revolt
+			duration = 3650
+		}
+		ordered_pops_in_province = { #Slaves kill masters
+			limit = {
+				NOT = { pop_type = slaves }
+			}
+			order_by = pop_hapiness
+			max = {
+				value = total_population
+				divide = 5
+			}
+			kill_pop = yes
+		}
+		hidden_effect = {
+			random_list = {
+				80 = {
+				
+				}
+				20 = {
+					trigger_event = { id = slave_revolts.4 }
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "slave_revolts.2.b" #Give in to demands
+		ai_chance = { #AI should play it safe
+			factor = 1
+			modifier = {
+				factor = 2
+				scope:rebel_army = {
+					unit_size >= 15
+				}
+			}
+			modifier = {
+				factor = 0
+				scope:rebel_army = {
+					unit_size < 15
+				}
+			}
+		}
+		owner = {
+			add_stability = -10 #Negotiation is not expected
+			add_treasury = -250 #Money to the slaves
+			custom_tooltip = allow_slaves_to_settle
+			if = {
+				limit = {
+					has_country_modifier = ongoing_slave_revolt
+				}
+				remove_country_modifier = ongoing_slave_revolt
+			}
+			hidden_effect = {
+				every_owned_province = {
+					limit = { controller = c:REB }
+					set_controller = owner
+				}
+			}
+			add_country_modifier = {
+				name = "slave_revolt_succesful"
+				duration = 5475
+			}
+		}
+		hidden_effect = {
+			scope:rebel_army = { #Freedom to the Slaves!
+				every_sub_unit = {
+					owning_unit.unit_location = {
+						owner = {
+							random_owned_province = {
+								limit = { is_in_region = owner.capital_scope }
+								create_state_pop = freemen									
+								weight = {
+									modifier = {
+										factor = 10
+										is_capital = yes
+									}
+									modifier = {
+										factor = 5
+										total_population > 10
+									}
+								}
+							}
+						}
+					}
+					destroy_subunit = yes
+				}
+				destroy_unit = yes
+			}
+		}
+	}
+}
+
+
+#Slaves defeated
+slave_revolts.3 = {
+	type = country_event
+	title = "slave_revolts.3.t"
+	desc = "slave_revolts.3.desc"
+	picture = crucifixion
+	
+	trigger = {
+		always = yes
+	}
+	
+	immediate = {
+		if = {
+			limit = {
+				has_country_modifier = ongoing_slave_revolt
+			}
+			remove_country_modifier = ongoing_slave_revolt
+		}
+		every_owned_province = {
+			limit = { controller = c:REB }
+			set_controller = scope:country_dealing_with_slave_revolt
+		}
+		c:REB = {
+			every_unit = {
+				limit = {
+					unit_location = { owner = scope:country_dealing_with_slave_revolt }
+					unit_owner = c:REB
+				}
+				every_sub_unit = {
+					destroy_subunit = yes
+				}
+				destroy_unit = yes
+			}
+		}
+	}
+	
+	option = {
+		name = "slave_revolts.3.a" #Time to make an example
+		set_variable = {
+			name = slave_moratorium
+			value = 1
+			days = 10950
+		}
+		custom_tooltip = slave_revolts.3.moratorium.a.tt
+		add_country_modifier = {
+			name = crucified_slaves
+			duration = 5475
+		}
+	}
+	
+	option = {
+		name = "slave_revolts.3.b" #Let us be lenient
+		custom_tooltip = slave_revolts.3.b.tt
+		set_variable = {
+			name = slave_moratorium
+			value = 1
+			days = 5475
+		}
+		custom_tooltip = slave_revolts.3.moratorium.b.tt
+		add_country_modifier = {
+			name = lenient_slave_handling
+			duration = 5475
+		}
+		hidden_effect = {
+			while = {
+				count = root.slaves_defeated_svalue #How many slaves remain to be resettled.
+				random_owned_province = {
+					limit = {
+						is_in_region = root.capital_scope
+					}
+					weight = {
+						modifier = {
+							factor = 10
+							is_capital = yes
+						}
+						modifier = {
+							factor = 5
+							total_population > 10
+						}
+					}
+					create_state_pop = slaves
+				}
+			}
+		}
+		
+	}
+}
+
+
+
+#Charismatic Slave revolt leader
+slave_revolts.4 = {
+	type = province_event
+	title = "slave_revolts.4.t"
+	desc = "slave_revolts.4.desc"
+	picture = gladiators
+	
+	left_portrait = scope:spartacus_character
+	
+	goto_location = scope:rebel_army
+	
+	trigger = {
+		total_population >= 1
+		any_unit_in_province = { #Snowball is here
+			unit_owner = c:REB
+			has_commander = no
+		}
+	}
+	
+	immediate = {
+		hidden_effect = {
+			owner = {
+				create_character = {
+					culture = root.dominant_province_culture
+					religion = root.dominant_province_religion
+					age = 35
+					save_scope_as = spartacus_character
+					force_add_trait = disciplined
+					force_add_trait = brave
+					add_martial = 1
+					add_charisma = 3
+				}
+			}
+			random_unit_in_province = {
+				limit = {
+					unit_owner = c:REB
+				}
+				save_scope_as = rebel_army
+			}
+		}
+	}
+	
+	#Reaction:
+	option = {
+		name = "slave_revolts.4.a" #We do not negotiate with slaves!
+		hidden_effect = {
+			scope:spartacus_character = {
+				move_country = REB
+				remove_character_modifier = foreign_citizen
+			}
+		}
+		scope:rebel_army = {
+			set_as_commander = scope:spartacus_character
+		}
+	}
+}
+
+
+#Slave revolt reaches capital
+slave_revolts.5 = {
+	type = province_event
+	title = "slave_revolts.5.t"
+	desc = "slave_revolts.5.desc"
+	picture = looting
+	
+	goto_location = scope:rebel_army
+	
+	trigger = {
+		num_of_slaves >= 1 #No slaves can join if there are no slaves
+		NOT = { has_province_modifier = recent_slave_revolt } #Let us spare the same place from being hit twice in short time.
+		is_capital = yes #This just got real
+		any_unit_in_province = { #Snowball was here
+			unit_owner = c:REB
+		}
+	}
+	
+	immediate = {
+		if = {
+			limit = {
+				owner = {
+					NOT = { has_country_modifier = ongoing_slave_revolt }
+				}
+			}
+			owner = {
+				add_country_modifier = {
+					name = "ongoing_slave_revolt" #Inspires other slaves
+					duration = 3650
+				}
+			}
+		}
+		custom_tooltip = slave_army_growth_tooltip
+		owner = {
+			ordered_character = {
+				limit = {
+					is_alive = yes
+					is_ruler = no
+					is_at_location = root
+				}
+				order_by = prominence
+				max = 5				
+				remove_all_positions = yes
+				death = {
+					death_reason = death_crucified
+				}
+			}
+		}
+		hidden_effect = {
+			random_pops_in_province = {
+				limit = { pop_type = slaves }
+				set_pop_type = freemen #You don't join but we do set you free!
+			}
+			random_unit_in_province = {
+				limit = {
+					unit_owner = c:REB
+				}
+				save_scope_as = rebel_army
+				while = {
+					limit = {
+						unit_location = {
+							num_of_slaves >= 1
+						}
+					}
+					unit_location = {
+						random_pops_in_province = {
+							limit = { pop_type = slaves }
+							kill_pop = yes
+						}
+					}
+					add_subunit = light_infantry #Now we add to the army
+				}
+			}
+		}
+	}
+	
+	#Reaction:
+	option = {
+		name = "slave_revolts.5.a" #We do not negotiate with slaves!
+		ai_chance = { #AI should play this very safe.
+			factor = 1
+			modifier = {
+				factor = 2
+				scope:rebel_army = {
+					unit_size < 15
+				}
+			}
+			modifier = {
+				factor = 0
+				scope:rebel_army = {
+					unit_size >= 15
+				}
+			}
+		}
+		owner = { add_stability = -2 }
+		add_province_modifier = {
+			name = recent_slave_revolt
+			duration = 3650
+		}
+		ordered_pops_in_province = { #Slaves kill masters
+			limit = {
+				NOT = { pop_type = slaves }
+			}
+			order_by = pop_hapiness
+			max = {
+				value = total_population
+				divide = 4
+			}
+			kill_pop = yes
+		}
+		hidden_effect = {
+			trigger_event = { id = slave_revolts.4 }
+		}
+	}
+	
+	option = {
+		name = "slave_revolts.5.b" #Give in to demands
+		ai_chance = { #AI should play it safe
+			factor = 1
+			modifier = {
+				factor = 2
+				scope:rebel_army = {
+					unit_size >= 15
+				}
+			}
+			modifier = {
+				factor = 0
+				scope:rebel_army = {
+					unit_size < 15
+				}
+			}
+		}
+		owner = {
+			add_stability = -30 #Negotiation is not expected
+			add_treasury = -250 #Money to the slaves
+			custom_tooltip = allow_slaves_to_settle
+			if = {
+				limit = {
+					has_country_modifier = ongoing_slave_revolt
+				}
+				remove_country_modifier = ongoing_slave_revolt
+			}
+			hidden_effect = {
+				every_owned_province = {
+					limit = { controller = c:REB }
+					set_controller = owner
+				}
+			}
+			add_country_modifier = {
+				name = "slave_revolt_succesful"
+				duration = 5475
+			}
+		}
+		hidden_effect = {
+			scope:rebel_army = { #Freedom to the Slaves!
+				every_sub_unit = {
+					owning_unit.unit_location = {
+						owner = {
+							random_owned_province = {
+								limit = { is_in_region = owner.capital_scope }
+								create_state_pop = freemen									
+								weight = {
+									modifier = {
+										factor = 10
+										is_capital = yes
+									}
+									modifier = {
+										factor = 5
+										total_population > 10
+									}
+								}
+							}
+						}
+					}
+					destroy_subunit = yes
+				}
+				destroy_unit = yes
+			}
+		}
+	}
+}
+
+
+

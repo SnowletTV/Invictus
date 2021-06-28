@@ -1,0 +1,225 @@
+﻿#AI scriptable budget logic.
+#
+#Logic: For each type of game currency (e.g. gold), there can be several constraints on how much the AI wants to spend in a particular expense cateogry.
+#
+#There are two sets of tracked values per category: Expenditures so far (exponentially decaying by NDefines::NAI::EXPENDITURE_DECAY_FACTOR) and budget allowance.
+#There is also a category representing savings. It is merely used to hold money temporarily, you can by modifying targets modulate this.
+#
+#When checking if money can be used for something: spendable money = treasury - savings
+#
+#if spendable money > sum(allowances) - savings: <=> if treasury > sum(allowances):
+#	reserves = spendable - (sum(allowances) - savings) = treasury - savings - sum(allowances) + savings = treasury - sum(allowances)
+#	look at decaying expenditures to figure out how to assign excess reserves:
+#		A(x) = actual part of expenditures for category x
+#		T(x) = target part of expenditures for category x
+#		W(x) = raw reserve weight for category x
+#		K = NDefines::NAI::EXPENDITURE_SOFT_FACTOR / numcategories
+#
+#		W(x) = (K + T(x)) / (K + A(x))
+#
+#		Normalized W(x) (N(x), so that sum(N) = 1) is then subject to expense constraints.
+#
+#AI is allowed to schedule expense in category x if allowance(x) >= 0. Upon spending in category x, allowance(x) is subtracted and decaying_expenditures(x)
+#added to a corresponding amount.
+#
+#What makes life non-trivial is circular dependencies. For instance, what happens if all expenditure categories are marked as overspent?
+#What happens if all but one category are marked as overspent, and external logic is refusing to spend?
+#
+#The meaning of categories depends on the constraint used. Most commonly it applies to the sum of all sub-categories of the category, though.
+#
+#Constraints are evaluated as follows (in order of decreasing priority):
+#Minimums. The largest minimum applies.
+#Maximums. The smallest maximum applies.
+
+#In script arithmetic, remember that min/max are inverted as binary operations. E.g. max is to be interpreted as "maximum/ceiling value" and not "the largest of the inputs".
+
+base_budget = {
+	#In case you want to have multiple budget sections for some reason you can add a trigger to decide if it applies to a country.
+	trigger = {
+		always = yes #Superfluous
+	}
+	
+	#savings = { #This was defined twice?
+	#	#General scaling for savings.
+	#	weight = 1
+	#}
+	
+	savings = {
+		#Let savings go from unchanged (value of 1) to 0 if near death in a war.
+		weight = {
+			base = 0.6
+			modifier = {
+				trigger = {
+					war = yes
+				}
+				add = {
+					value = -0.4	
+				}
+			}
+			modifier = {
+				trigger = {
+					distress_level = distressed
+				}
+				add = {
+					value = -0.1
+				}
+			}
+			modifier = {
+				trigger = {
+					distress_level = near_death
+				}
+				add = {
+					value = -0.1
+				}
+			}
+		}
+	}
+	
+	military = {
+		#General scaling for all military stuff.
+		weight = 1.5
+	}
+	
+	army = {
+		#Boost army slightly in wars (too much and we will disband a lot of troops after it...)
+		weight = {
+			base = 1
+			modifier = {
+				trigger = {
+					war = yes
+				}
+				add = {
+					value = 0.2
+				}
+			}
+		}
+	}
+	
+	army_construction = {
+		weight = {
+			base = 1.5
+			modifier = {
+				trigger = {
+					manpower < 2
+				}
+				add = -0.75
+			}
+		}
+		max = {
+			base = 50
+		}
+	}
+	
+	navy_construction = {
+		weight = {
+			base = 1
+		}
+		max = {
+			base = 100
+			modifier = {
+				trigger = {
+					always = yes
+				}
+				add = {
+					value = {
+						value = {
+							value = has_monthly_income
+							multiply = 6
+						}
+						min = 20
+					}
+					max = 500
+				}
+			}
+		}
+	}
+	
+	opinion_diplomacy = {
+		weight = {
+			base = 1
+			modifier = {
+				add = 0.2
+				any_subject = {
+					count > 0
+					exists = this
+				}
+			}
+		}
+		max = {
+			base = 10
+			modifier = {
+				trigger = {
+					always = yes
+				}
+				add = {
+					value = has_monthly_income
+					multiply = 4
+					max = 400
+				}
+			}
+		}
+	}
+	
+	colonization = {
+		weight = {
+			base = 1
+		}
+		max = {
+			base = 300
+		}
+	}
+	
+	gold = {
+		#Save more gold than other stuff.
+		savings = {
+			weight = 1
+		}
+		trade = {
+			max = 100
+			weight = {
+				base = 10
+			}
+		}
+	}
+	
+	tyranny = 
+	{
+		savings = {
+			weight = 0.25
+		}
+	}
+	
+	political_influence =
+	{
+		savings = {
+			weight = 0
+		}
+	}
+	military_experience =
+	{
+		savings = {
+			weight = 0
+		}
+	}
+	
+	stability =
+	{
+		savings = {
+			weight = 1.5
+		}
+	}
+	
+	building_construction = {
+		weight = {
+			base = 1.25
+			modifier = {
+				add = 0.25
+				trigger = {
+					war = no
+					has_civil_war = no
+				}
+			}
+		}
+	}
+
+}

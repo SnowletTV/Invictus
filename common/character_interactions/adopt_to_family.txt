@@ -1,0 +1,233 @@
+﻿adopt_to_family = {
+
+	on_other_nation = no
+	on_own_nation = yes
+	message = no
+	
+	sound = "event:/SFX/UI/Character/Unique/sfx_ui_character_give_free_hands"
+	
+	potential_trigger = {
+		hidden:scope:actor = {
+			NOT = { has_variable = regency_government }
+			OR = {
+				is_monarchy = yes
+				is_tribal = yes
+			}
+			current_ruler = {
+				is_minor_character = no
+			}
+		}
+		scope:target = {
+			employer = scope:actor
+			is_alive = yes
+			is_minor_character = yes
+			NOT = { spouse = scope:actor.current_ruler }
+			NOT = { has_variable = olympic_attendee }
+		}
+	}
+
+	allowed_trigger = {
+		hidden:scope:actor = {
+			legitimacy > 0
+		}
+		hidden:scope:target = {
+			NOT = {
+				has_character_modifier = foreign_citizen
+			}
+			prisoner = no
+			is_mercenary = no
+			NOT = { has_trait = proud }
+			NOT = { has_trait = selfish }
+			NOT = { has_trait = arrogant }
+			NOT = { has_trait = stubborn }
+			NOT = { has_variable = pyrrhus_travelling }
+			scope:actor.current_ruler.family = {
+				prestige > adoption_cost_svalue
+			}
+			trigger_if = {
+				limit = {
+					NOT = { has_culture = employer.culture }
+				}
+				custom_tooltip = {
+					text = not_state_culture
+					employer = {
+						any_country_culture = {
+							has_country_culture_modifier = citizenship_by_adoption
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	effect = {
+		scope:actor = {
+			if = {
+				limit = {
+					scope:actor = {
+						is_monarchy = yes
+					}
+				}
+				scope:actor = {
+					add_legitimacy = {
+						subtract = adoption_legitimacy_hit_svalue
+					}
+				}
+			}
+			scope:target = {
+				add_character_modifier = {
+					name = adopted_into_great_family
+					duration = -1
+				}
+				set_family = scope:actor.current_ruler.family				
+				save_scope_as = picked_adoption_candidate
+			}
+			current_ruler.family = {
+				add_prestige = adoption_cost_pay_svalue
+				if = { #Bastards are easier to make family members.
+					limit = { scope:target = { is_child_of = scope:actor.current_ruler } }
+					custom_tooltip = bastard_adoption_tooltip
+				}
+				else_if = { #Siblings are easier to make full family members.
+					limit = { scope:target = { is_sibling_of = scope:actor.current_ruler } }
+					custom_tooltip = sibling_adoption_tooltip
+				}
+				else_if = { #Extra Marital Relations are harder to make full family members.
+					limit = {
+						scope:target = {
+							any_child = {
+								scope:actor.current_ruler = { is_parent_of = PREV }
+							}
+						}
+					}
+					custom_tooltip = lover_adoption_tooltip
+				}
+				else_if = { #Friends are easier to make full family members.
+					limit = { scope:target = { is_friend = scope:actor.current_ruler } }
+					custom_tooltip = friend_adoption_tooltip
+				}
+				#else = {
+				#	custom_tooltip = adoption_explanation_tooltip
+				#}
+			}
+		}
+		scope:actor = {
+			trigger_event = { id = family_events.8 }
+		}
+	}
+	
+	ai_will_do = {
+		factor = 0 #Should use event instead.
+	}
+	
+}	
+
+adoption = {
+
+	on_other_nation = no
+	on_own_nation = yes
+	
+	sound = "event:/SFX/UI/Character/Unique/sfx_ui_character_give_free_hands"
+	
+	potential_trigger = {
+		hidden:scope:actor = {
+			OR = {
+				is_monarchy = yes
+				is_tribal = yes
+			}
+			legitimacy > 0
+		}
+		hidden:scope:target = {
+			is_alive = yes
+			employer = scope:actor
+			NOT = { spouse = scope:actor.current_ruler }
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+			is_ruler = yes
+			NOT = { has_variable = olympic_attendee }
+			is_minor_character = no
+		}
+	}
+
+	allowed_trigger = {
+		hidden:scope:target.family = {
+			prestige > 45
+		}
+	}
+	
+	character_actor_trigger = {
+		is_minor_character = yes
+		NOT = {
+			has_character_modifier = foreign_citizen
+		}
+		is_mercenary = no
+		prisoner = no
+		NOT = { has_trait = proud }
+		NOT = { has_trait = selfish }
+		NOT = { has_trait = arrogant }
+		NOT = { has_trait = stubborn }
+		trigger_if = {
+			limit = {
+				NOT = { has_culture = employer.culture }
+			}
+			custom_tooltip = {
+				text = not_state_culture
+				employer = {
+					any_country_culture = {
+						has_country_culture_modifier = citizenship_by_adoption
+					}
+				}
+			}
+		}
+	}
+	
+	effect = {
+		if = {
+			limit = {
+				exists = scope:recipient 
+			}			
+			scope:target.family = {
+				add_prestige = adoption_cost_pay_svalue
+			}
+			if = {
+				limit = {
+					scope:actor = {
+						is_monarchy = yes
+					}
+				}
+				scope:actor = {
+					add_legitimacy = {
+						subtract = adoption_legitimacy_hit_from_ruler_svalue
+					}
+				}
+			}
+			scope:recipient = {
+				set_family = scope:target.family
+				add_character_modifier = {
+					name = adopted_into_great_family
+					duration = -1
+				}
+				save_scope_as = picked_adoption_candidate
+			}
+			scope:actor = {
+				trigger_event = { id = family_events.8 }
+			}
+		}
+		else = {
+			custom_tooltip = adoption_prestige_tt
+			if = {
+				limit = {
+					scope:actor = { is_monarchy = yes }
+				}
+				custom_tooltip = adoption_legitimacy_tt
+			}
+			custom_tooltip = adoption_explanation_from_ruler_tooltip
+		}
+	}
+	
+	ai_will_do = {
+		factor = 0 #Should use event instead.
+	}
+	
+}
+

@@ -1,0 +1,186 @@
+﻿char_espionage = { 
+	on_other_nation = no
+	on_own_nation = yes
+	close_ui = no
+	
+	sound = "event:/SFX/UI/Character/Generic/sfx_ui_character_scholar"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			employer = scope:actor
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+			is_mercenary = no
+			prisoner_valid_for_country_events_trigger = yes
+			NOT = {
+				has_character_modifier = disloyal_successor_cmod
+			}
+			NOR = {
+				has_variable = on_espionage_mission_origin
+				has_variable = on_espionage_mission_recipient
+			}
+		}
+	}	
+	
+	allowed_trigger = {
+		scope:actor = { invention = inspire_disloyalty_cost_modifier_inv }
+		scope:actor = {
+			treasury >= 100
+			invention = inspire_disloyalty_cost_modifier_inv
+		}
+		scope:target = { 
+			is_adult = yes
+			is_ruler = no
+			is_co_ruler = no
+			custom_tooltip = {
+				text = has_any_position_tooltip
+				has_any_position = no
+			}
+			is_successor = no
+			prisoner = no
+			NAND = {
+				employer = {
+					is_monarchy = yes
+				}
+				is_co_ruler = yes
+			}
+			trigger_if = {
+				limit = {
+					is_female = yes
+					is_married = yes
+				}
+				custom_tooltip = {
+					text = prominent_spouse_tooltip
+					spouse = {
+						NOR = {
+							is_minor_character = no
+							is_ruler = yes
+							is_co_ruler = yes
+							is_successor = yes
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	country_target_trigger = {
+		in_diplomatic_range = scope:actor
+		NOT = {
+			this = scope:actor
+		}
+		NOT = {
+			any_character = {
+				has_variable = on_espionage_mission_origin
+				var:on_espionage_mission_origin = scope:actor
+			}
+		}
+	}
+	
+	effect = {
+		scope:actor = {
+			add_treasury = -100
+		}
+		scope:target = {
+			custom_tooltip = "espionage_effect_tooltip"
+			if = {
+				limit = {
+					exists = scope:recipient
+				}
+				move_country = scope:recipient
+				set_variable = {
+					name = on_espionage_mission_origin
+					value = scope:actor
+					days = -1
+				}
+				set_variable = {
+					name = on_espionage_mission_recipient
+					value = scope:recipient
+					days = -1
+				}
+				if = {
+					limit = {
+						is_minor_character = no
+					}
+					set_variable = {
+						name = on_espionage_mission_family
+						value = scope:target.family
+					}
+				}
+				trigger_event = { 
+					id = country_diplomacy.41
+					days = { 3 5 } 
+				}
+			}
+			add_character_modifier = {
+				name = on_espionage_mission_cmod
+				duration = -1
+			}
+			hidden_effect = {
+				set_as_minor_character = THIS
+			}
+		}
+	}
+	
+	
+	
+}
+
+char_espionage_return = {
+	on_other_nation = yes
+	close_ui = yes
+	
+	sound = "event:/SFX/UI/Character/Generic/sfx_ui_character_scholar"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+			is_mercenary = no
+			prisoner_valid_for_country_events_trigger = yes
+			NOT = {
+				has_character_modifier = disloyal_successor_cmod
+			}
+			is_adult = yes
+			has_variable = on_espionage_mission_origin
+			var:on_espionage_mission_origin = scope:actor
+		}
+	}	
+	
+	allowed_trigger = {
+		scope:target = {
+			has_any_position = no
+		}
+	}
+	
+	effect = {
+		scope:target = {
+			remove_espionage_variables_effect = yes
+			remove_all_positions = yes
+			move_country = scope:actor
+			hidden_effect = {
+				remove_character_modifier = foreign_citizen
+				if = {
+					limit = {
+						has_variable = on_espionage_mission_family
+					}
+					if = {
+						limit = {
+							exists = var:on_espionage_mission_family
+							scope:actor = {
+								any_family = { THIS = scope:target.var:on_espionage_mission_family }
+							}
+						}
+						set_family = var:on_espionage_mission_family
+					}
+					else = { set_as_minor_character = THIS }
+					remove_variable = on_espionage_mission_family
+				}
+				else = { set_as_minor_character = THIS }
+			}
+		}
+	}
+	
+	
+	
+}	

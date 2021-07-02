@@ -1,0 +1,322 @@
+﻿#AI will follow conquer missions with a highlight field set. It will hand in any task as long as the allow conditions are fulfilled, however, it will not understand especially complex triggers, especially those involving character manipulation. 
+
+cyrene_1_magas = {
+	icon = general_3
+	header = mission_image_general
+	
+	repeatable = no
+
+    chance = {
+		factor = 50
+	}
+
+	ai_chance = { factor = 100 }
+
+	potential = { 
+		NOT = { has_variable = cyrene_1_mission_magas }
+		tag = CYR
+		is_monarchy = yes
+		is_subject = no
+		has_civil_war = no
+	}
+	
+	abort = {
+		OR = {
+			is_monarchy = no
+			ai_mission_back_out_trigger = yes
+		}
+	}
+
+    on_start = {
+    	start_mission_ai_effect = yes
+    	save_scope_as = magas_mission_country
+    }
+
+    on_abort = {
+    	custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+			name = cyrene_1_mission_magas
+			days = 7300
+			value = 1
+		}
+    }
+
+    on_completion = {
+    	complete_mission_effect = yes #
+    }
+
+	cyrene_1_magas_task_1 = { # A New Governor
+
+		icon = task_diplomatic
+		monthly_on_action = cyrene_1_magas_task_1_pulse 
+		duration = 60
+
+		bypass = {
+			OR = {
+			char:46 = {is_alive = no}
+			has_variable = magas_appointed_flag
+			}
+		}
+
+		on_start = { 
+			trigger_event = { id = cyr_magas_01.1 } 
+		}
+
+		on_completion = {
+			trigger_event = { id = cyr_magas_01.3 }
+			set_variable = magas_appointed_flag
+		}
+	}
+
+	cyrene_1_magas_task_2 = {  # Consolidate Hold of Cyrene
+
+		icon = task_political
+		requires = {cyrene_1_magas_task_1}
+
+		allow = {
+			ROOT = {
+				NOT = {
+					any_character = {
+						AND = {
+							has_any_office = Yes
+							loyalty <= 70
+						}
+					}
+				}
+				Stability >= 55
+				p:3360.state = {
+	            	calc_true_if = {
+	              		amount >= 1
+	                	state_improvement_military_trigger = yes 
+	                	state_improvement_civic_trigger = yes
+	              		state_improvement_oratory_trigger = yes
+	                	state_improvement_religious_trigger = yes 
+	            	}
+	        	}
+       	}
+		}
+
+		on_completion = { 
+			ROOT = {
+				current_ruler = {
+					add_zeal = 2
+					add_finesse = 3
+				}
+			}
+		}
+
+	}
+
+
+	cyrene_1_magas_task_3 = {	# Alliance with Pyrrhus
+
+		icon = task_diplomatic
+		requires = { cyrene_1_magas_task_2 }
+
+		allow = {
+			char:115 = {
+				is_spouse_of = char:70
+			}
+			ROOT = {
+				current_ruler = {
+					is_close_relative = char:115
+				}
+			}
+
+		}
+
+		on_completion = {
+			c:CYR = {add_political_influence = 100}
+			set_variable = magas_pyrrhus_ties
+		}
+
+	}
+
+
+	cyrene_1_magas_task_4 = {	# Magas's Indian Ties
+
+		icon = task_economical
+		requires = { cyrene_1_magas_task_2 }
+
+		allow = {
+			current_ruler = char:46
+			any_character = {
+				Or = {
+					has_culture_group = aryan
+					has_culture_group = persia
+					has_culture_group = pracyan
+					has_culture_group = indian
+					has_culture_group = tibetan
+					has_culture_group = bactrian
+
+				}
+			}
+			p:3360 ={
+				num_of_academy_building >= 1
+				num_of_port_building >= 1
+				has_construction = no
+			}
+		}
+		on_completion = {
+			trigger_event = { id = cyr_magas_01.8 }
+		} 
+
+	}
+
+
+	cyrene_1_magas_task_5 = {	# Souring Ties with Egypt
+
+		icon = task_expansion
+		requires = {cyrene_1_magas_task_2}
+		duration = 365
+		monthly_on_action = cyrene_1_magas_task_5_pulse
+
+		allow = {
+			NOT = {
+				ROOT = {
+					current_ruler = {
+						is_close_relative = c:EGY.current_ruler.spouse
+					}
+				}
+			}
+		}
+
+		on_start = { 
+			trigger_event = { id = cyr_magas_01.10 } 
+		}
+	}
+
+
+	cyrene_1_magas_task_6 = {	# Alliance with the Seleucids
+
+		icon = task_diplomatic
+		requires = {cyrene_1_magas_task_5}
+		prevented_by = { cyrene_1_magas_task_7 cyrene_1_magas_task_8}
+		bypass = {
+			OR = {
+				has_completed_mission_task = cyrene_1_magas_task_7
+				has_completed_mission_task = cyrene_1_magas_task_8
+			}
+		}
+
+		allow = {
+			c:SEL = {
+				is_subject = no
+				opinion = {target = c:CYR value >= 100}
+			}
+		}
+
+		on_completion = {
+			c:SEL = {
+				save_scope_as = cyr_royal_marriage_country
+			}
+			trigger_event = { id = cyr_magas_01.7 }
+		}
+
+	}
+
+	cyrene_1_magas_task_7 = {	# Alliance with the Antigonids
+
+		icon = task_diplomatic
+		requires = {cyrene_1_magas_task_5}
+		prevented_by = { cyrene_1_magas_task_6 cyrene_1_magas_task_8}
+		bypass = {
+			OR = {
+				has_completed_mission_task = cyrene_1_magas_task_6
+				has_completed_mission_task = cyrene_1_magas_task_8
+			}
+		}
+
+		allow = {
+			c:PRY = {
+				is_subject = no
+				opinion = {target = c:CYR value >= 100}
+			}
+		}
+
+		on_completion = {
+			c:PRY = {
+				save_scope_as = cyr_royal_marriage_country
+			}
+			trigger_event = { id = cyr_magas_01.7 }
+		}
+
+	}
+
+	cyrene_1_magas_task_8 = {	# Alliance with Macedon
+
+		icon = task_diplomatic
+		requires = {cyrene_1_magas_task_5}
+		prevented_by = { cyrene_1_magas_task_6 cyrene_1_magas_task_7}
+		bypass = {
+			OR = {
+				has_completed_mission_task = cyrene_1_magas_task_6
+				has_completed_mission_task = cyrene_1_magas_task_7
+			}
+		}
+
+		allow = {
+			c:MAC = {
+				is_subject = no
+				opinion = {target = c:CYR value >= 100}
+			}
+		}
+
+		on_completion = {
+			c:MAC = {
+				save_scope_as = cyr_royal_marriage_country
+			}
+			trigger_event = { id = cyr_magas_01.7 }
+		}
+
+	}
+
+	cyrene_1_magas_task_9 = {	# Indepence War against Egypt
+
+		icon = task_conquest
+		requires = {
+				cyrene_1_magas_task_6
+				cyrene_1_magas_task_7
+				cyrene_1_magas_task_8
+		}
+
+		allow = {
+			war = no
+		}
+
+		on_completion = {
+			add_country_modifier = {
+                name = cyr_independence_fervor
+                duration = 3650
+        	}
+        trigger_event = { id = cyr_magas_01.9 }
+		} 
+	}
+
+	cyrene_1_magas_task_final = {	# King of Cyrene
+
+		icon = task_political
+		final = yes
+		requires = {cyrene_1_magas_task_9}
+
+		allow = {
+			has_variable = magas_appointed_flag
+			is_subject = no
+			war = no
+			owns_area = cyrenaica_superioris_area
+			owns_area = cyrenaica_inferioris_area
+		}
+
+		on_completion = {
+		trigger_event = { id = cyr_magas_01.11 }
+			add_country_modifier = {
+				name = cyr_king_of_cyrene
+				duration = -1
+			}
+			add_2_free_province_investments = yes
+		}
+
+	}
+
+
+}

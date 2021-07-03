@@ -1,0 +1,2263 @@
+﻿#AI will follow conquer missions with a highlight field set. It will hand in any task as long as the allow conditions are fulfilled, however, it will not understand especially complex triggers, especially those involving character manipulation. 
+
+generic_mission_conquer_region = { #Conquer Region
+	header = "mission_image_general"
+	icon = "general_1"
+
+	repeatable = yes #[Boolean] (Default no) Whether this mission is repeatable
+
+	chance = {}
+
+	ai_chance = {
+		factor = 1
+		modifier = {
+			factor = 0
+			is_tribal = yes
+		}
+		modifier = {
+    		current_ruler = char:70
+    		factor = 0
+    	}
+	}
+
+	potential = {
+		any_owned_province = {
+			any_neighbor_province = {
+				is_sea = no
+				has_owner = yes
+				NOT = { 
+					owner = root
+				} 
+				exists = region
+				region = {
+					any_region_province = {
+						percent < 0.75
+						has_owner = yes
+						OR = {
+							owner = ROOT
+							owner = { is_subject_of = ROOT }
+						}
+					}
+				}
+				generic_block_trigger = yes
+			}
+		}
+		has_civil_war = no
+	} 
+
+	abort = {
+		OR = {
+			NOT = {
+				exists = scope:region_target
+			}
+			ai_mission_back_out_trigger = yes
+		}			
+	}
+	on_abort = {
+		destroy_generic_mission_variables_effect = yes
+		add_stability = -5
+	} 
+	
+	on_potential = {
+		random_owned_province = {
+			limit = {
+				any_neighbor_province = {
+					is_sea = no
+					has_owner = yes
+					NOT = { 
+						owner = root
+					}
+					exists = region
+					region = {
+						any_region_province = {
+							percent < 0.75
+							has_owner = yes
+							OR = {
+								owner = ROOT
+								owner = { is_subject_of = ROOT }
+							}
+						}
+					}
+					generic_block_trigger = yes
+				}
+			} 
+			random_neighbor_province = {
+				limit = {
+					is_sea = no
+					has_owner = yes
+					NOT = { 
+						owner = root
+					}
+					exists = region
+					region = {
+						any_region_province = {
+							percent < 0.75
+							has_owner = yes
+							OR = {
+								owner = ROOT
+								owner = { is_subject_of = ROOT }
+							}
+						}
+					}
+					generic_block_trigger = yes
+				}
+				save_scope_as = conquer_region_target
+				region = {
+					save_scope_as = region_target
+				}
+			} 
+		} 
+		random_list = {
+			1 = {
+				trigger = {
+					NOT = {
+						has_variable = state_development_cooldown_gmiss
+					}
+				}
+				set_variable = {
+					name = side_branch_selector
+					value = 1
+				}
+				set_variable = {
+					name = state_development_cooldown_gmiss
+					days = 3650
+				}
+			}
+			1 = {
+				trigger = {
+					NOT = {
+						has_variable = colonize_target_cooldown_gmiss
+					}
+					any_country_state = {
+						any_state_province = {
+							any_neighbor_province = {
+								NOT = {
+									exists = owner
+								}
+								is_inhabitable = yes
+							}
+						}
+					}
+				}
+				set_variable = {
+					name = side_branch_selector
+					value = 2
+				}
+				set_variable = {
+					name = colonize_target_cooldown_gmiss
+					days = 3650
+				}
+				random_country_state = {
+					limit = {
+						any_state_province = {
+							any_neighbor_province = {
+								NOT = {
+									exists = owner
+								}
+								is_inhabitable = yes
+							}
+						}
+					}
+					random_state_province = {
+						limit = {
+							any_neighbor_province = {
+								NOT = {
+									exists = owner
+								}
+								is_inhabitable = yes
+							}
+						}
+						random_neighbor_province = {
+							limit = {
+								NOT = {
+									exists = owner
+								}
+								is_inhabitable = yes
+							}
+							save_scope_as = colonize_target
+						}
+					}
+				}
+			}
+			1 = {
+				trigger = {
+					NOT = {
+						has_variable = defend_borders_cooldown_gmiss
+					}
+					OR = {
+						is_republic = yes
+						is_monarchy = yes
+					}
+					any_country_state = {
+						any_state_province = {
+							count >= 3
+							exists = this
+						}
+						any_state_province = {
+							any_neighbor_province = {
+								exists = owner
+								owner = {
+									is_tribal = yes
+								}
+							}
+						}
+					}
+				}
+				set_variable = {
+					name = defend_borders_cooldown_gmiss
+					days = 3650
+				}
+				set_variable = {
+					name = side_branch_selector
+					value = 3
+				}
+				random_country_state = {
+					limit = {
+						any_state_province = {
+							count >= 3
+							exists = this
+						}
+						any_state_province = {
+							any_neighbor_province = {
+								exists = owner
+								owner = {
+									is_tribal = yes
+								}
+							}
+						}
+					}
+					save_scope_as = defend_target
+				}
+			}
+		}
+	}
+	
+	on_start = {
+		start_mission_ai_effect = yes
+		generic_conquest_modifier_cleanup_effect = yes
+		hidden_effect = {
+			if = {
+				limit = {
+					any_family = {
+						NOT = {
+							any_family_member = {
+								is_ruler = yes
+							}
+						}
+					}
+				}
+				random_family = {
+					limit = {
+						NOT = {
+							any_family_member = {
+								is_ruler = yes
+							}
+						}
+					}
+					save_scope_as = gov_fam
+				}
+			}
+			if = {
+				limit = {
+					any_family = {
+						NOR = {
+							any_family_member = {
+								is_ruler = yes
+							}
+							AND = {
+								exists = scope:gov_fam
+								this = scope:gov_fam
+							}
+						}
+					}
+				}
+				random_family = {
+					limit = {
+						NOR = {
+							any_family_member = {
+								is_ruler = yes
+							}
+							AND = {
+								exists = scope:gov_fam
+								this = scope:gov_fam
+							}
+						}
+					}
+					save_scope_as = gov_fam2
+				}
+			}
+			scope:region_target = {
+				every_region_area = {
+					limit = {
+						any_area_province = {
+							NOT = {
+								owner = ROOT
+							}
+						}
+						OR = {
+							any_area_province = {
+								owner = ROOT
+							}
+							any_area_province = {
+								any_neighbor_province = {
+									owner = ROOT
+								}
+							}
+						}
+					}
+					save_iterative_scope_effect = yes
+				}
+				every_region_area = {
+					limit = {
+						any_area_province = {
+							NOT = {
+								owner = ROOT
+							}
+						}
+					}
+					save_iterative_scope_effect = yes
+				}			
+			}
+			if = {
+				limit = {
+					scope:region_target = {
+						any_region_area = {
+							any_area_province = {
+								owner = root
+							}
+							any_area_province = {
+								count < 3
+								has_city_status = yes
+							}
+						}
+					}
+				}
+				scope:region_target = {
+					random_region_area = {
+						limit = {
+							any_area_province = {
+								owner = root
+							}
+							any_area_province = {
+								count < 3
+								has_city_status = yes
+							}
+						}
+						weight = {
+							modifier = {
+								factor = 10
+								any_area_province = {
+									count = all
+									owner = root
+								}
+							}
+						}
+						save_scope_as = development_branch_area
+					}
+				}
+			}
+			set_variable = {
+				name = reward_roll
+				value = {
+					integer_range = { min = 1 max = 3 }
+				}
+			}
+			if = {
+				limit = {
+					OR = {
+						exists = scope:first
+						exists = scope:second
+						exists = scope:third
+					}
+				}
+				if = {
+					limit = {
+						any_in_list = {
+							variable = iter
+							NOR = {
+								AND = {
+									exists = scope:first
+									this = scope:first
+								}
+								AND = {
+									exists = scope:second
+									this = scope:second
+								}
+								AND = {
+									exists = scope:third
+									this = scope:third
+								}
+							}
+							any_area_province = {
+								any_neighbor_province = {
+									exists = area
+									area = {
+										this = scope:first
+									}
+								}
+							}
+						}
+					}
+					random_in_list = {
+						variable = iter
+						limit = {
+							NOR = {
+								AND = {
+									exists = scope:first
+									this = scope:first
+								}
+								AND = {
+									exists = scope:second
+									this = scope:second
+								}
+								AND = {
+									exists = scope:third
+									this = scope:third
+								}
+							}
+							any_area_province = {
+								any_neighbor_province = {
+									exists = area
+									exists = scope:first
+									area = {
+										this = scope:first
+									}
+								}
+							}
+						}
+						save_scope_as = first_follow
+					}
+				}
+				if = {
+					limit = {
+						any_in_list = {
+							variable = iter
+							NOR = {
+								AND = {
+									exists = scope:first
+									this = scope:first
+								}
+								AND = { 
+									exists = scope:second
+									this = scope:second
+								}
+								AND = {
+									exists = scope:third
+									this = scope:third
+								}
+								AND = {
+									exists = scope:first_follow
+									this = scope:first_follow
+								}
+							}
+							any_area_province = {
+								any_neighbor_province = {
+									exists = area
+									exists = scope:second
+									area = {
+										this = scope:second
+									}
+								}
+							}
+						}
+					}
+					random_in_list = {
+						variable = iter
+						limit = {
+							NOR = {
+								AND = {
+									exists = scope:first
+									this = scope:first
+								}
+								AND = { 
+									exists = scope:second
+									this = scope:second
+								}
+								AND = {
+									exists = scope:third
+									this = scope:third
+								}
+								AND = {
+									exists = scope:first_follow
+									this = scope:first_follow
+								}
+							}
+							any_area_province = {
+								any_neighbor_province = {
+									exists = area
+									area = {
+										this = scope:second
+									}
+								}
+							}
+						}
+						save_scope_as = second_follow
+					}
+				}
+				if = {
+					limit = {
+						any_in_list = {
+							variable = iter
+							NOR = {
+								AND = {
+									exists = scope:first
+									this = scope:first
+								}
+								AND = { 
+									exists = scope:second
+									this = scope:second
+								}
+								AND = {
+									exists = scope:third
+									this = scope:third
+								}
+								AND = {
+									exists = scope:first_follow
+									this = scope:first_follow
+								}
+								AND = {
+									exists = scope:second_follow
+									this = scope:second_follow
+								}
+							}
+							any_area_province = {
+								any_neighbor_province = {
+									exists = area
+									area = {
+										AND = {
+											exists = scope:third
+											this = scope:third
+										}
+									}
+								}
+							}
+						}
+					}
+					random_in_list = {
+						variable = iter
+						limit = {
+							NOR = {
+								AND = {
+									exists = scope:first
+									this = scope:first
+								}
+								AND = { 
+									exists = scope:second
+									this = scope:second
+								}
+								AND = {
+									exists = scope:third
+									this = scope:third
+								}
+								AND = {
+									exists = scope:first_follow
+									this = scope:first_follow
+								}
+								AND = {
+									exists = scope:second_follow
+									this = scope:second_follow
+								}
+							}
+							any_area_province = {
+								any_neighbor_province = {
+									exists = area
+									area = {
+										this = scope:third
+									}
+								}
+							}
+						}
+						save_scope_as = third_follow
+					}
+				}
+			}
+		}
+	} 
+
+	on_completion = {
+		complete_mission_effect = yes
+	}
+
+	generic_mission_conquer_region_branch_1 = { 
+		icon = "task_political"
+
+		duration = 365
+
+		monthly_on_action = generic_1_pulse 
+
+		on_completion = {
+			trigger_event = {
+				id = generic_mission.3
+				days = 0
+			}
+			if = {
+				limit = {
+					exists = scope:first
+				}
+				scope:first = {
+					add_provincial_claim_effect = yes 
+				}
+			}
+			if = {
+				limit = {
+					exists = scope:second
+				}
+				scope:second = {
+					add_provincial_claim_effect = yes
+				}
+			}
+			if = {
+				limit = {
+					exists = scope:third
+				}
+				scope:third = {
+					add_provincial_claim_effect = yes
+				}
+			}
+		} 
+	}
+	
+	generic_mission_conquer_region_branch_1_b = { 
+		icon = "task_economical"
+
+		requires = { generic_mission_conquer_region_branch_1 }  
+
+		prevented_by = { generic_mission_conquer_region_branch_family2 }
+
+		potential = {
+			exists = scope:first
+		} 
+		allow = {
+			owns_or_subject_owns_area = scope:first
+		}  
+		
+		highlight = {
+			scope:province = {
+				exists = area
+				this.area = scope:first
+			}
+		}
+		
+		bypass = {
+			has_completed_mission_task = generic_mission_conquer_region_branch_family2 
+		}
+
+		on_completion = {
+			scope:first = {
+				if = {
+					limit = {
+						root.var:reward_roll = 1
+					}
+					ordered_area_province = {
+						order_by = total_population
+						max = 1
+						if = {
+							limit = {
+								any_pops_in_province = {
+									NOT = {
+										pop_culture = prev.owner.culture
+									}
+								}
+							}
+							custom_tooltip = assimilate_15_tt
+							ordered_pops_in_province = {
+								limit = {
+									NOT = {
+										pop_culture = prev.owner.culture
+									}
+								}
+								order_by = pop_hapiness
+								max = 14
+								check_range_bounds = no
+								hidden_effect = {
+									set_pop_culture = prev.owner.culture
+								}
+							}
+						}
+						else = {
+							while = {
+								count = 5
+								create_state_pop = citizen
+							}
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						root.var:reward_roll = 2
+					}
+					random_area_province = {
+						state = {
+							add_state_modifier = {
+								name = approved_occupation_smod
+								duration = 7300
+							} 
+						}
+					}
+				}
+				else = {
+					random_area_province = {
+						weight = {
+							modifier = {
+								add = total_population
+							}
+						}
+						if = {
+							limit = {
+								NOT = {
+									has_province_modifier = conquerors_temple_pmod
+								}
+							}
+							add_province_modifier = {
+								name = conquerors_temple_pmod
+								duration = -1
+							} 
+						}
+						else = {
+							root = {
+								add_stability = 5 
+							}
+						}
+					}
+				}
+			}
+			if = {
+				limit = {
+					exists = scope:first_follow
+					scope:first_follow = {
+						any_area_province = {
+							has_owner = yes
+							NOT = { owner = root }
+						}
+					}
+				}
+				scope:first_follow = {
+					add_provincial_claim_effect = yes
+				}
+			}
+			else_if = {
+				limit = {
+					exists = scope:first_follow
+					scope:first_follow = {
+						any_area_province = {
+							has_owner = yes
+							owner = root
+						}
+					}
+				}
+				scope:first_follow = {
+					ordered_area_province = {
+						order_by = total_population
+						limit = {
+							has_owner = yes
+							owner = root
+						}
+						max = 1
+						if = {
+							limit = {
+								root = { is_tribal = yes }
+							}
+							create_state_pop = tribesmen
+							create_state_pop = tribesmen
+						}
+						else = {
+							create_state_pop = freemen
+							create_state_pop = freemen
+						}
+					}
+				}
+			}
+			else_if = {
+				limit = {
+					exists = scope:first_follow
+					scope:first_follow = {
+						NOT = {
+							any_area_province = {
+								has_owner = yes
+							}
+						}
+					}
+				}
+				scope:first_follow = {
+					every_area_province = {
+						limit = {
+							any_neighbor_province = {
+								area = scope:first
+							}
+						}
+						set_owned_by = ROOT
+						if = {
+							limit = { total_population < 1 }
+							create_pop = citizen
+						}
+					}
+				}
+			}
+		} 
+	}
+	
+	generic_mission_conquer_region_branch_1_c = { 
+		icon = "task_political"
+
+		requires = { generic_mission_conquer_region_branch_1 }  
+
+		prevented_by = { generic_mission_conquer_region_branch_family2 }
+
+		potential = {
+			exists = scope:second
+		} 
+		allow = {
+			owns_or_subject_owns_area = scope:second
+		} 
+
+		bypass = {
+			has_completed_mission_task = generic_mission_conquer_region_branch_family2
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = area
+				this.area = scope:second
+			}
+		}
+
+		on_completion = {
+			scope:second = {
+				if = {
+					limit = {
+						root.var:reward_roll = 3
+					}
+					ordered_area_province = {
+						limit = {
+							exists = owner
+						}
+						order_by = total_population
+						max = 1
+						if = {
+							limit = {
+								any_pops_in_province = {
+									NOT = {
+										pop_culture = prev.owner.culture
+									}
+								}
+							}
+							custom_tooltip = assimilate_15_tt
+							ordered_pops_in_province = {
+								limit = {
+									NOT = {
+										pop_culture = prev.owner.culture
+									}
+								}
+								order_by = pop_hapiness
+								max = 14
+								check_range_bounds = no
+								hidden_effect = {
+									set_pop_culture = prev.owner.culture
+								}
+							}
+						}
+						else = {
+							while = {
+								count = 5
+								create_state_pop = citizen
+							}
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						root.var:reward_roll = 1
+					}
+					random_area_province = {
+						state = {
+							add_state_modifier = {
+								name = approved_occupation_smod
+								duration = 7300
+							} 
+						}
+					}
+				}
+				else = {
+					random_area_province = {
+						weight = {
+							modifier = {
+								add = total_population
+							}
+						}
+						if = {
+							limit = {
+								NOT = {
+									has_province_modifier = conquerors_temple_pmod
+								}
+							}
+							add_province_modifier = {
+								name = conquerors_temple_pmod
+								duration = -1
+							} 
+						}
+						else = {
+							root = {
+								add_stability = 5
+							}
+						}
+					}
+				}
+			} 
+			if = {
+				limit = {
+					exists = scope:second_follow
+				}
+				scope:second_follow = {
+					add_provincial_claim_effect = yes
+				}
+			}
+		} 
+	}
+	
+	generic_mission_conquer_region_branch_1_d = { 
+		icon = "task_conquest"
+
+		requires = { generic_mission_conquer_region_branch_1 }  
+
+		prevented_by = { generic_mission_conquer_region_branch_i_have_lost_track }
+
+		potential = {
+			exists = scope:third
+		} 
+		allow = { 
+			owns_or_subject_owns_area = scope:third
+			trigger_if = {
+				limit = {
+					var:reward_roll = 1
+					is_ai = no
+				}
+				custom_tooltip = {
+					text = generic_mission_conquer_region_branch_1_d_tt
+					scope:third = {
+						any_area_province = {
+							count >= 5 
+							dominant_province_religion = root.religion
+							owner = root
+						}
+					}
+				}
+			}
+		} 
+		
+		highlight = {
+			scope:province = {
+				exists = area
+				this.area = scope:third
+			}
+		}
+
+		bypass = {
+			has_completed_mission_task = generic_mission_conquer_region_branch_i_have_lost_track
+		}
+
+		on_completion = {
+			scope:third = {
+				if = {
+					limit = {
+						root.var:reward_roll = 2
+					}
+					ordered_area_province = {
+						order_by = total_population
+						max = 1
+						if = {
+							limit = {
+								any_pops_in_province = {
+									NOT = {
+										pop_culture = prev.owner.culture
+									}
+								}
+							}
+							custom_tooltip = assimilate_15_tt
+							ordered_pops_in_province = {
+								limit = {
+									NOT = {
+										pop_culture = prev.owner.culture
+									}
+								}
+								order_by = pop_hapiness
+								max = 14
+								check_range_bounds = no
+								hidden_effect = {
+									set_pop_culture = prev.owner.culture
+								}
+							}
+						}
+						else = {
+							while = {
+								count = 5
+								create_state_pop = citizen
+							}
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						root.var:reward_roll = 3
+					}
+					random_area_province = {
+						limit = {
+							exists = this.state
+						}
+						state = {
+							add_state_modifier = {
+								name = approved_occupation_smod
+								duration = 7300
+							} 
+						}
+					}
+				}
+				else = {
+					random_area_province = {
+						weight = {
+							modifier = {
+								add = total_population
+							}
+						}
+						if = {
+							limit = {
+								NOT = {
+									has_province_modifier = conquerors_temple_pmod
+								}
+							}
+							add_province_modifier = {
+								name = conquerors_temple_pmod
+								duration = -1
+							} 
+						}
+						else = {
+							root = {
+								add_stability = 5
+							}
+						}
+					}
+				}
+			} 
+			if = {
+				limit = {
+					exists = scope:third_follow
+					scope:third_follow = {
+						any_area_province = {
+							has_owner = yes
+						}
+					}
+				}
+				scope:third_follow = {
+					add_provincial_claim_effect = yes
+				}
+			}
+			else_if = {
+				limit = {
+					exists = scope:third_follow
+					scope:third_follow = {
+						NOT = {
+							any_area_province = {
+								has_owner = yes
+							}
+						}
+					}
+				}
+				scope:third_follow = {
+					every_area_province = {
+						limit = {
+							any_neighbor_province = {
+								area = scope:third
+							}
+						}
+						set_owned_by = ROOT
+						if = {
+							limit = { total_population < 1 }
+							create_pop = citizen
+						}
+					}
+				}
+			}
+		}		
+	}
+	
+	generic_mission_conquer_region_branch_1_e = { 
+		icon = "task_political"
+
+		requires = { generic_mission_conquer_region_branch_1_b }  
+
+		prevented_by = { generic_mission_conquer_region_branch_family2 }
+
+		potential = {
+			exists = scope:first_follow
+		} 
+		allow = { 
+			owns_or_subject_owns_area = scope:first_follow
+		} 
+		
+		highlight = {
+			scope:province = {
+				exists = area
+				this.area = scope:first_follow
+			}
+		}
+		
+		bypass = {
+			has_completed_mission_task = generic_mission_conquer_region_branch_family2
+		}
+
+		on_completion = {
+			add_political_influence = influence_medium
+		}
+	}
+	
+	generic_mission_conquer_region_branch_1_f = { 
+		icon = "task_expansion"
+
+		requires = { generic_mission_conquer_region_branch_1_d }  
+
+		prevented_by = { generic_mission_conquer_region_branch_i_have_lost_track }
+
+		potential = {
+			exists = scope:third_follow
+		} 
+		allow = { 
+			owns_or_subject_owns_area = scope:third_follow
+		} 
+		
+		highlight = {
+			scope:province = {
+				exists = area
+				this.area = scope:third_follow
+			}
+		}
+		
+		bypass = {
+			has_completed_mission_task = generic_mission_conquer_region_branch_i_have_lost_track
+		}
+
+		on_completion = {
+			if = {
+				limit = {
+					var:reward_roll = 2
+				}
+				add_1_free_province_investments = yes
+			}
+			else = {
+				scope:third_follow = {
+					ordered_area_province = {
+						order_by = total_population
+						max = 1
+						while = {
+							count = 5
+							create_state_pop = freemen
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	generic_mission_conquer_region_branch_1_g = { 
+		icon = "task_conquest"
+
+		requires = { generic_mission_conquer_region_branch_1_c }  
+
+		potential = {
+			exists = scope:second_follow
+		} 
+		allow = { 
+			owns_or_subject_owns_area = scope:second_follow
+		} 
+		
+		highlight = {
+			scope:province = {
+				exists = area
+				this.area = scope:second_follow
+			}
+		}
+		
+		bypass = {} 
+
+		on_completion = {
+			scope:second_follow = {
+				random_area_province = {
+					if = {
+						limit = {
+							exists = owner
+							state_loyalty < 90
+						}
+						add_state_loyalty = 25
+					}
+				}
+			}
+			current_ruler = {
+				add_popularity = popularity_large
+			}
+		}
+		
+		on_bypass  = {} 
+	}
+	
+	generic_mission_conquer_region_branch_1_h = { 
+		icon = "task_economical"
+
+		requires = { generic_mission_conquer_region_branch_1_b }  
+
+		prevented_by = { generic_mission_conquer_region_branch_family2 }
+
+		potential = {
+			NOT = {
+				exists = scope:first_follow
+			}
+			exists = scope:first
+		} 
+		allow = { 
+			trigger_if = {
+				limit = {
+					NOT = { owns_or_subject_owns_area = scope:first }
+					is_ai = no
+				}
+				custom_tooltip = {
+					text = "more_will_be_revealed_tt"
+				}
+				owns_or_subject_owns_area = scope:first
+				
+			}
+			trigger_if = {
+				limit = {
+					owns_or_subject_owns_area = scope:first
+					is_ai = no
+				}
+				hidden:scope:first = {
+					trigger_if = {
+						limit = {	
+							any_area_province = {
+								count = all
+								exists = owner
+								owner = {
+									is_subject_of = root
+								}
+							}
+						}
+						custom_tooltip = {
+							text = generic_mission_conquer_region_branch_1_h_tt_2
+							any_area_province = {
+								owner = {
+									has_subject_loyalty >= 90
+								}
+							}
+						}
+					}
+					trigger_else = {
+						custom_tooltip = {
+							text = generic_mission_conquer_region_branch_1_h_tt
+							any_area_province = {
+								owner = root
+								exists = state
+								state = {
+									state_level_loyalty >= 90
+								}
+							}
+						}
+					}
+				}
+			}
+			#Free pass for AI
+		} 
+
+		bypass = {
+			has_completed_mission_task = generic_mission_conquer_region_branch_family2
+		}
+
+		on_completion = {
+			if = {
+				limit = {
+					is_ai = no
+				}
+				add_political_influence = influence_small
+			}
+		}
+	}
+	
+	generic_mission_conquer_region_branch_1_i = { 
+		icon = "task_conquest"
+
+		requires = { generic_mission_conquer_region_branch_1_c }  
+
+		potential = {
+			NOT = {
+				exists = scope:second_follow
+			}
+			exists = scope:second
+		} 
+		allow = { 
+			trigger_if = {
+				limit = {
+					NOT = { owns_or_subject_owns_area = scope:second }
+					is_ai = no
+				}
+				custom_tooltip = {
+					text = "more_will_be_revealed_tt"
+				}
+				owns_or_subject_owns_area = scope:second
+			}
+			trigger_if = {
+				limit = {
+					owns_or_subject_owns_area = scope:second
+					is_ai = no
+				}
+				hidden:scope:second = {
+					trigger_if = {
+						limit = {	
+							any_area_province = {
+								count = all
+								exists = owner
+								owner = {
+									is_subject_of = root
+								}
+							}
+						}
+						custom_tooltip = {
+							text = generic_mission_conquer_region_branch_1_i_tt_2
+							any_area_province = {
+								owner = {
+									has_subject_loyalty >= 90
+								}
+							}
+						}
+					}
+					trigger_else = {
+						custom_tooltip = {
+							text = generic_mission_conquer_region_branch_1_i_tt
+							any_area_province = {
+								owner = root
+								exists = state
+								state = {
+									state_level_loyalty >= 90
+								}
+							}
+						}
+					}
+				}
+			}
+			#Free pass for AI
+		} 
+
+		bypass = {}
+
+		on_completion = {
+			if = {
+				limit = {
+					is_ai = no
+				}
+				scope:second = {
+					random_area_province = {
+						limit = {
+							exists = state
+						}
+						state = {
+							add_state_modifier = {
+								name = output_generic_mission_smod
+								duration = 3650
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		on_bypass  = {} 
+	}
+	
+	generic_mission_conquer_region_branch_1_j = { 
+		icon = "task_expansion"
+
+		requires = { generic_mission_conquer_region_branch_1_d }  
+
+		prevented_by = { generic_mission_conquer_region_branch_i_have_lost_track }
+
+		potential = {
+			NOT = {
+				exists = scope:third_follow
+			}
+			exists = scope:third
+		} 
+		allow = { 
+			trigger_if = {
+				limit = {
+					NOT = { owns_or_subject_owns_area = scope:third }
+					is_ai = no
+				}
+				custom_tooltip = {
+					text = "more_will_be_revealed_tt"
+				}
+				owns_or_subject_owns_area = scope:third
+			}
+			trigger_if = {
+				limit = {
+					owns_or_subject_owns_area = scope:third
+					is_ai = no
+				}
+				hidden:scope:third = {
+					trigger_if = {
+						limit = {	
+							any_area_province = {
+								count = all
+								exists = owner
+								owner = {
+									is_subject_of = root
+								}
+							}
+						}
+						custom_tooltip = {
+							text = generic_mission_conquer_region_branch_1_j_tt_2
+							any_area_province = {
+								owner = {
+									has_subject_loyalty >= 90
+								}
+							}
+						}
+					}
+					trigger_else = {
+						custom_tooltip = {
+							text = generic_mission_conquer_region_branch_1_j_tt
+							any_area_province = {
+								owner = root
+								exists = state
+								state = {
+									state_level_loyalty >= 90
+								}
+							}
+						}
+					}
+				}
+			}
+			#Free pass for AI
+		} 
+
+		bypass = {
+			has_completed_mission_task = generic_mission_conquer_region_branch_i_have_lost_track
+		}
+
+		on_completion = {
+			if = {
+				limit = {
+					is_ai = no
+				}
+				scope:first = {
+					random_area_province = {
+						limit = {
+							exists = state
+						}
+						state = {
+							if = {
+								limit = {
+									exists = governor_or_ruler
+									NOT = {
+										governor_or_ruler = {
+											is_ruler = yes
+										}
+									}
+								}
+								governor_or_ruler = { 
+									add_loyalty = loyalty_grateful_governor_generic
+								}
+							}
+							else = {
+								root = {
+									add_stability = 5
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		on_bypass  = {} 
+	}
+	
+	generic_mission_conquer_region_complete = {
+		icon = "task_political"
+
+		requires = { 
+			generic_mission_conquer_region_branch_family2
+			generic_mission_conquer_region_branch_i_have_lost_track
+			generic_mission_conquer_region_branch_1_i
+			generic_mission_conquer_region_branch_1_g
+		}  
+		
+		final = yes
+		
+		potential = {
+			
+		} 
+		allow = { 
+			custom_tooltip = {
+				text = "governor_exists_and_is_ours_tt"
+				scope:conquer_region_target.region = {
+					any_region_province = {
+						exists = governor_or_ruler
+						governor_or_ruler = {
+							employer = root
+						}
+					}
+				}
+			}
+			trigger_if = {
+				limit = {
+					scope:conquer_region_target.region = {
+						any_region_province = {
+							exists = governor_or_ruler
+							governor_or_ruler = {
+								employer = root
+								save_temporary_scope_as = sbgnq1
+							}
+						}
+					}
+				}
+				scope:sbgnq1 = {
+					loyalty > 33
+				}
+			}
+		} 
+
+		bypass = {}
+
+		on_completion = {
+			if = {
+				limit = {
+					scope:conquer_region_target.region = {
+						any_region_province = {
+							exists = governor_or_ruler
+							governor_or_ruler = {
+								employer = root
+								save_temporary_scope_as = sbgnq1
+							}
+						}
+					}
+				}
+				if = {
+					limit = {
+						scope:sbgnq1.location = {
+							has_owner = yes
+							owner = root
+						}
+					}
+					scope:sbgnq1.location = {
+						if = {
+							limit = {
+								has_city_status = no
+								NOT = { has_province_modifier = founding_city_in_progress }
+							}
+							show_as_tooltip = {
+								set_city_status = city
+							}
+							trigger_event = {
+								id = state_improvement.6
+							}
+						}
+						if = {
+							limit = {
+								NOT = {
+									has_province_modifier = triumph_generic_missions_pmod
+								}
+							}
+							add_province_modifier = {
+								name = triumph_generic_missions_pmod
+								duration = 3650
+							}
+						}
+						if = {
+							limit = {
+								root.var:reward_roll = 1
+							}
+							scope:sbgnq1 = {
+								add_charisma = 1
+							}
+						}
+						else_if = {
+							limit = {
+								root.var:reward_roll = 2
+							}
+							scope:sbgnq1 = {
+								add_finesse = 1
+							}
+						}
+						else_if = {
+							limit = {
+								root.var:reward_roll = 3
+							}
+							scope:sbgnq1 = {
+								add_martial = 1 
+							}
+						}
+					}
+				}
+				else = {
+					add_stability = 10
+				}
+			}
+			else = {
+				custom_tooltip = "reward_requires_governor_tt"
+			}
+		}
+		
+		on_bypass  = {} 
+	}
+	
+	generic_mission_conquer_region_branch_i_have_lost_track = { 
+		icon = "task_political"
+		
+		prevented_by = { generic_mission_conquer_region_branch_family2 }
+		
+		requires = {
+			generic_mission_conquer_region_branch_1_e
+			generic_mission_conquer_region_branch_1_h
+			generic_mission_conquer_region_branch_1_i
+			generic_mission_conquer_region_branch_1_g
+		}
+		
+		potential = {
+			is_ai = no #This is too esoteric for the AI to understand.
+			OR = {
+				AND = {
+					exists = scope:first_follow
+					NOT = {
+						scope:first_follow.region = root.capital_scope.region
+					}
+				}
+				AND = {
+					exists = scope:first
+					NOT = {
+						scope:first.region = root.capital_scope.region
+					}
+				}
+			}
+			is_ai = no
+		}
+		
+		allow = {
+			trigger_if = {
+				limit = {
+					exists = scope:gov_fam
+				}
+				trigger_if = {
+					limit = {
+						exists = scope:first_follow
+						NOT = {
+							scope:first_follow.region = root.capital_scope.region
+						}
+					}
+					custom_tooltip = {
+						text = favor_first_follow_gov_gn
+						scope:first_follow = {
+							any_area_province = {
+								exists = owner
+								owner = root
+								exists = governor_or_ruler
+								governor_or_ruler = {
+									family = scope:gov_fam
+								}
+							}
+						}
+					}
+				}
+				trigger_else = {
+					custom_tooltip = {
+						text = favor_first_gov_gn
+						scope:first = {
+							any_area_province = {
+								exists = owner
+								owner = root
+								exists = governor_or_ruler
+								governor_or_ruler = {
+									family = scope:gov_fam
+								}
+							}
+						}
+					}
+				}
+			}
+			trigger_else_if = {
+				limit = {
+					exists = scope:first_follow
+					NOT = {
+						scope:first_follow.region = root.capital_scope.region
+					}
+				}
+				scope:first_follow = {
+					any_area_province = {
+						exists = owner
+						owner = root
+						exists = governor_or_ruler
+					}
+				}
+			}
+			trigger_else = {
+				scope:first = {
+					any_area_province = {
+						exists = owner
+						owner = root
+						exists = governor_or_ruler
+					}
+				}
+			}
+		} 
+
+		bypass = {
+			OR = {
+				NOT = {
+					exists = scope:gov_fam
+				}
+				has_completed_mission_task = generic_mission_conquer_region_branch_family2
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = {
+					exists = scope:gov_fam
+				}
+				scope:gov_fam = {
+					add_prestige = 500
+					if = {
+						limit = {
+							exists = head_of_family
+						}
+						head_of_family = {
+							add_finesse = 1
+							add_popularity = 25
+						}
+					}
+				}
+			}
+		} 
+	}
+	
+	generic_mission_conquer_region_branch_family2 = { 
+		icon = "task_political" 
+		
+		prevented_by = { generic_mission_conquer_region_branch_i_have_lost_track }
+		
+		requires = {
+			generic_mission_conquer_region_branch_1_f
+			generic_mission_conquer_region_branch_1_j
+			generic_mission_conquer_region_branch_1_i
+			generic_mission_conquer_region_branch_1_g
+		}
+		
+		potential = {
+			is_ai = no #This is too esoteric for the AI to understand.
+			exists = scope:gov_fam2
+			OR = {
+				AND = {
+					exists = scope:third_follow
+					NOT = {
+						scope:third_follow.region = root.capital_scope.region
+					}
+				}
+				AND = {
+					exists = scope:third
+					NOT = {
+						scope:third.region = root.capital_scope.region
+					}
+				}
+			}
+			is_ai = no
+		}
+		
+		allow = {
+			trigger_if = {
+				limit = {
+					exists = scope:gov_fam2
+				}
+				trigger_if = {
+					limit = {
+						exists = scope:third_follow
+						NOT = {
+							scope:third_follow.region = root.capital_scope.region
+						}
+					}
+					custom_tooltip = {
+						text = favor_third_follow_gov_gn
+						scope:third_follow = {
+							any_area_province = {
+								exists = owner
+								owner = root
+								exists = governor_or_ruler
+								governor_or_ruler = {
+									family = scope:gov_fam2
+								}
+							}
+						}
+					}
+				}
+				trigger_else = {
+					custom_tooltip = {
+						text = favor_third_gov_gn
+						scope:third = {
+							any_area_province = {
+								exists = owner
+								owner = root
+								exists = governor_or_ruler
+								governor_or_ruler = {
+									family = scope:gov_fam2
+								}
+							}
+						}
+					}
+				}
+			}
+			trigger_else_if = {
+				limit = {
+					exists = scope:third_follow
+				}
+				scope:third_follow = {
+					any_area_province = {
+						exists = owner
+						owner = root
+						exists = governor_or_ruler
+					}
+				}
+			}
+			trigger_else = {
+				scope:third = {
+					any_area_province = {
+						exists = owner
+						owner = root
+						exists = governor_or_ruler
+					}
+				}
+			}
+		} 
+
+		bypass = {
+			OR = {
+				NOT = {
+					exists = scope:gov_fam2
+				}
+				has_completed_mission_task = generic_mission_conquer_region_branch_i_have_lost_track
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = {
+					exists = scope:gov_fam2
+				}
+				scope:gov_fam2 = {
+					add_prestige = 500
+					if = {
+						limit = {
+							exists = head_of_family
+						}
+						head_of_family = {
+							add_finesse = 1
+							add_popularity = 25
+						}
+					}
+				}
+			}
+		} 
+	}
+	
+	####################################
+	# Develop Area already under control
+	####################################
+	
+	generic_mission_conquer_region_branch_develop_owned = { 
+		icon = "task_economical"
+
+		potential = {
+			exists = scope:development_branch_area
+			has_variable = side_branch_selector
+			var:side_branch_selector = 1 
+		} 
+		allow = {
+			custom_tooltip = {
+				text = generic_mission_conquer_region_branch_develop_owned_tt
+				scope:development_branch_area = {
+					any_area_province = {
+						count >= 3
+						owner = root 
+						trigger_if = {
+							limit = {
+								ROOT = { is_ai = no }
+							}
+							has_city_status = yes
+						}
+						trigger_else = {
+							ROOT = { can_pay_price = price_found_city }
+							OR = {
+								has_city_status = yes
+								total_population >= 10
+							}
+						}
+					}
+				}
+			} 
+		} 
+
+		bypass = {
+			scope:development_branch_area = {
+				any_area_province = {
+					count = 0
+					owner = root
+				}
+			}
+		}
+
+		on_completion = {
+			scope:development_branch_area = {
+				every_area_province = {
+					limit = {
+						trigger_if = {
+							limit = {
+								ROOT = { is_ai = no }
+							}
+							has_city_status = yes
+						}
+						trigger_else = {
+							ROOT = { can_pay_price = price_found_city }
+							OR = {
+								has_city_status = yes
+								total_population >= 10
+							}
+						}
+						NOT = {
+							has_province_modifier = generic_development_branch_pmod
+						}
+					}
+					custom = "every_state_city_custom"
+					add_province_modifier = {
+						name = generic_development_branch_pmod
+						duration = 7300
+					}
+					if = {
+						limit = {
+							ROOT = {
+								is_ai = yes
+								can_pay_price = price_found_city
+							}
+							total_population >= 10
+							has_city_status = no
+							area = {
+								any_area_province = {
+									count < 3
+									has_city_status = yes
+								}
+							}
+						}
+						ROOT = { pay_price = price_found_city }
+						set_city_status = city
+					}
+				}
+			}
+		} 
+	}
+	
+	generic_mission_conquer_region_branch_develop_owned_follow_1 = { 
+		icon = "task_expansion"
+
+		requires = { generic_mission_conquer_region_branch_develop_owned } 
+
+		potential = {
+			exists = scope:development_branch_area
+			has_variable = side_branch_selector
+			var:side_branch_selector = 1
+		} 
+		allow = {
+			custom_tooltip = {
+				text = generic_mission_conquer_region_branch_develop_owned_follow_1_tt
+				scope:development_branch_area = {
+					any_area_province = {
+						count >= 3
+						owner = root
+						trigger_if = {
+							limit = {
+								ROOT = { is_ai = no }
+							}
+							has_city_status = yes
+							free_building_slots = 0
+							has_construction = no
+						}
+						trigger_else = {
+							total_population >= 10
+							ROOT = { can_pay_price = price_found_city }
+						}
+					}
+				}
+			}
+		} 
+
+		bypass = {
+			scope:development_branch_area = {
+				any_area_province = {
+					count = 0
+					owner = root
+				}
+			}
+		}
+
+		on_completion = {
+			add_1_free_province_investments = yes
+			scope:development_branch_area = {
+				if = {
+					limit = {
+						ROOT = {
+							is_ai = yes
+							can_pay_price = price_found_city
+						}
+						any_area_province = {
+							count < 3
+							owner = root
+							has_city_status = yes
+						}
+						
+					}
+					while = {
+						limit = {
+							ROOT = { can_pay_price = price_found_city }
+							any_area_province = {
+								count < 3
+								owner = root
+								has_city_status = yes
+							}
+						}
+						
+						ROOT = {
+							ordered_owned_province = {
+								limit = { has_city_status = no }
+								check_range_bounds = no
+								order_by = total_population
+								owner = { pay_price = price_found_city }
+								set_city_status = city
+							}
+						}
+					}
+				}
+			}
+		} 
+	}
+	
+	generic_mission_conquer_region_branch_develop_owned_follow_2 = { 
+		icon = "task_economical"
+
+		requires = { generic_mission_conquer_region_branch_develop_owned_follow_1 } 
+
+		potential = {
+			exists = scope:development_branch_area
+			has_variable = side_branch_selector
+			var:side_branch_selector = 1
+		} 
+		allow = {
+			trigger_if = {
+				limit = {
+					scope:development_branch_area = {
+						any_area_province = {
+							NOT = {
+								owner = root
+							}
+						}
+					}
+				}
+				owns_area = scope:development_branch_area
+			}
+			custom_tooltip = {
+				text = generic_mission_conquer_region_branch_develop_owned_follow_2_tt
+				scope:development_branch_area = {
+					any_area_province = {
+						calc_true_if = {
+							amount >= 2
+							is_importing_trade_good = grain
+							is_importing_trade_good = vegetables
+							is_importing_trade_good = salt
+							is_importing_trade_good = fish
+							is_importing_trade_good = cattle
+						}
+					}
+				}
+			}
+		} 
+
+		bypass = {
+			scope:development_branch_area = {
+				any_area_province = {
+					count = 0
+					owner = root
+				}
+			}
+		}
+
+		on_completion = {
+			scope:development_branch_area = {
+				random_area_province = {
+					limit = {
+						owner = root
+						exists = state
+					}
+					state = {
+						add_state_modifier = {
+							name = state_improvement_civic
+							duration = -1
+							mode = add
+						}
+					}
+				}
+			}
+		} 
+	}
+	
+	generic_mission_conquer_region_branch_colonize_area = { 
+		icon = "task_expansion"
+
+		potential = {
+			exists = scope:colonize_target
+			var:side_branch_selector = 2
+		} 
+		allow = {
+			owns_or_subject_owns_area = scope:colonize_target.area
+		} 
+		highlight = {
+			scope:province = {
+				exists = scope:colonize_target
+				this.area = scope:colonize_target.area
+			}
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = frontier_spirit
+				duration = 3650
+			}
+		} 
+	}
+	
+	generic_mission_conquer_region_branch_defend_area = { 
+		icon = "task_political"
+
+		potential = {
+			exists = scope:defend_target
+			var:side_branch_selector = 3
+		} 
+		allow = {
+			trigger_if = {
+				limit = {
+					exists = scope:defend_target
+				}
+				custom_tooltip = {
+					text = generic_mission_conquer_region_branch_defend_area_tt
+					scope:defend_target = {
+						any_state_province = {
+							count >= 3
+							fort_level >= 1 
+						}
+					}
+				}
+			}
+		} 
+
+		highlight = {
+			scope:province = {
+				trigger_if = {
+					limit = { exists = scope:defend_target.area }
+					area = scope:defend_target.area
+				}
+				trigger_else = { always = no }
+			}
+		}
+
+		bypass = {
+			NOT = {
+				exists = scope:defend_target
+			}
+		} 
+
+		on_completion = {
+			if = {
+				limit = {
+					exists = scope:defend_target
+				}
+				scope:defend_target = {
+					add_state_modifier = {
+						name = defend_target_gmiss_smod
+						duration = 3650
+					}
+				}
+			}
+		} 	
+	}
+	
+	generic_mission_placement_a = { 
+		icon = "task_conquest" 
+		
+		requires = {
+			generic_mission_conquer_region_branch_1_d
+		}
+		
+		potential = {
+			exists = scope:third
+			root.var:reward_roll = 2
+		}
+		
+		allow = {
+			custom_tooltip = {
+				text = "2irontt"
+				scope:third = {
+					any_area_province = {
+						exists = owner
+						owner = root
+						exists = state
+						state = {
+							trade_good_imports = {
+								target = iron
+								value >= 2
+							}
+						}
+					}
+				}
+			}
+		}
+	
+		bypass = {
+			
+		}
+	
+		on_completion = {
+			add_military_experience = 5
+		} 
+	}
+	
+	generic_mission_placement_b = { 
+		icon = "task_economical" 
+		
+		requires = {
+			generic_mission_conquer_region_branch_1_b
+		}
+		
+		potential = {
+			exists = scope:first
+			root.var:reward_roll = 1
+		}
+		
+		allow = {
+			scope:first = {
+				any_area_province = {
+					count >= 5
+					exists = owner
+					owner = root
+					dominant_province_religion = root.religion
+				}
+			}
+		}
+	
+		bypass = {
+			
+		}
+	
+		on_completion = {
+			add_aggressive_expansion = -2.5
+		} 
+	}
+	
+}

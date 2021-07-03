@@ -1,4 +1,4 @@
-generic_mission_subject_independence = {
+gm_subject_independence = {
 	icon = generic_greek_3
 	header = mission_image_generic_greek
 
@@ -10,10 +10,25 @@ generic_mission_subject_independence = {
 		has_civil_war = no
 	}
 
+	on_start = {
+		save_scope_as = unwilling_subject
+		overlord = {
+			save_scope_as = our_overlord
+		}
+	}
+
+	on_completion = {
+		# TODO give something
+		add_stability = 25
+	}
+
 	abort = {
 		OR = {
 			is_ai = yes
 			is_subject = no
+			any_countries_at_war_with = {
+				tag = scope:our_overlord
+			}
 		}
 	}
 	on_abort = {
@@ -23,147 +38,366 @@ generic_mission_subject_independence = {
 
 
 
-	generic_mission_subject_independence_1 = {	# 1 - Internal discussion of independence
+	gm_subject_independence_1 = {	# 1 - Internal discussion of independence
 		icon = "task_political"
 		duration = 180
+
+		allow = {
+			political_influence >= 20
+		}
+
+		on_start = {
+			add_political_influence = -20
+			random_character = {	# TODO tweaking
+				limit = {
+					has_any_office = yes
+					is_ruler = no
+				}
+				save_scope_as = random_left_advisor
+			}
+			random_character = {	# TODO tweaking
+				limit = {
+					has_any_office = yes
+					is_ruler = no
+				}
+				save_scope_as = random_right_advisor
+			}
+			hidden_effect = {
+				set_variable = {
+					name = discussion_progress
+					value = 0
+				}
+				set_variable = {
+					name = left_argument_points
+					value = 0
+				}
+				set_variable = {
+					name = right_argument_points
+					value = 0
+				}
+			}
+			trigger_event = {
+				id = me_subject_independence.1
+			}
+			trigger_event = {	# I want to trigger thise discussion events 5 times during this period (max can be 180/5 = 36)
+				id = me_subject_independence.2
+				days = { 26 36 }
+			}
+		}
+		
+		on_completion = {
+			hidden_effect = {
+				if = {	# Left side superior
+					limit = {
+						has_variable = left_won
+					}
+					trigger_event = {
+						id = me_subject_independence.10
+					}
+				}
+				else_if = {	# Right side superior
+					limit = {
+						has_variable = right_won
+					}
+					trigger_event = {
+						id = me_subject_independence.11
+					}
+				}
+				else = {	# Stalemate
+					trigger_event = {
+						id = me_subject_independence.12
+					}
+				}
+			}
+		}
 	}
 
 
 
-	generic_mission_subject_independence_2a = {	# 2 (Left) - Starting hostile posture against overlord
+	gm_subject_independence_2a = {	# 2 (Left) - Starting hostile posture against overlord
 		icon = "task_diplomatic"
 
-		requires = { generic_mission_subject_independence_1 }
+		requires = { gm_subject_independence_1 }
 
-		prevented_by = { generic_mission_subject_independence_2a }
+		prevented_by = { gm_subject_independence_2a }
+		
+		on_completion = {
+			if = {
+				limit = {
+					has_variable = right_won
+				}
+				# TODO add malus
+				add_stability = -50
+			}
+			else_if = {
+				limit = {
+					has_variable = stalemate_won
+				}
+				# TODO add malus
+				add_stability = -5
+			}
+			reverse_add_opinion = {
+				modifier = aggresive_stance_neg_opmod
+				target = scope:our_overlord
+			}
+			hidden_effect = {
+				set_variable = {
+					name = bad_boy_points
+					value = 0
+				}
+			}
+		}
 	}
 
-	generic_mission_subject_independence_3a = {	# 3 (Left) - Building Defenses
+	gm_subject_independence_3a = {	# 3 (Left) - Building Defenses
 		icon = "task_expansion"
 
-		requires = { generic_mission_subject_independence_2a }
+		requires = { gm_subject_independence_2a }
+
+		allow = {
+			capital_scope = {
+				has_building = fortress_building
+			}
+		}
+
+		on_completion = {
+			# TODO give pmod or cmod for defensiveness
+			hidden_effect = {
+				change_variable = {
+					name = bad_boy_points
+					add = 1
+				}
+			}
+		}
 	}
 
-	generic_mission_subject_independence_4a = {	# 4 (Left) - Preparing for war
+	gm_subject_independence_4a = {	# 4 (Left) - Preparing for war
 		icon = "task_expansion"
 
-		requires = { generic_mission_subject_independence_3a }
+		requires = { gm_subject_independence_3a }
+
+		allow = {
+			manpower_percentage >= 0.5
+		}
+
+		on_completion = {
+			# TODO give cmod for army buffs
+			hidden_effect = {
+				change_variable = {
+					name = bad_boy_points
+					add = 1
+				}
+			}
+		}
 	}
 
-	generic_mission_subject_independence_5a = {	# 5 (Left) - Preparing Characters
+	gm_subject_independence_5a = {	# 5 (Left) - Preparing Characters
 		icon = "task_political"
+		duration = 60
 
-		requires = { generic_mission_subject_independence_2a }
+		requires = { gm_subject_independence_2a }
+
+		allow = {
+			political_influence >= 50
+		}
+
+		on_start = {
+			add_political_influence = -50
+			# TODO go through all family heads and give loyalty boosts
+		}
+
+		on_completion = {
+			# TODO an event or reward
+			hidden_effect = {
+				change_variable = {
+					name = bad_boy_points
+					add = 1
+				}
+			}
+		}
 	}
 
-	generic_mission_subject_independence_6a = {	# 6 (Left) - Making Allies
+	gm_subject_independence_6a = {	# 6 (Left) - Making Allies
 		icon = "task_diplomatic"
 
-		requires = { generic_mission_subject_independence_5a }
+		requires = { gm_subject_independence_5a }
+
+		allow = {
+			treasury >= 100
+			# TODO make check for opinion with possible ally countries
+		}
+
+		on_completion = {
+			# TODO fire event sequence to try and befriend one or two nations
+			hidden_effect = {
+				change_variable = {
+					name = bad_boy_points
+					add = 1
+				}
+			}
+		}
 	}
 
-	generic_mission_subject_independence_7a = {	# 7 (Left) - Asking For Favours
+	gm_subject_independence_7a = {	# 7 (Left) - Asking For Favours
 		icon = "task_political"
+		duration = 60
 
-		requires = { generic_mission_subject_independence_5a }
+		requires = { gm_subject_independence_5a }
+
+		on_start = {
+			# TODO ask important characters for nation boons while giving them more longterm powers
+			add_treasury = -50
+		}
+
+		on_completion = {
+			# TODO an event or cmod
+			hidden_effect = {
+				change_variable = {
+					name = bad_boy_points
+					add = 1
+				}
+			}
+		}
 	}
 
 	
-	generic_mission_subject_independence_9a = {	# 9 (Left) - Making Final Preparations
+	gm_subject_independence_9a = {	# 9 (Left) - Making Final Preparations
 		icon = "task_expansion"
 		duration = 60
 
-		requires = { generic_mission_subject_independence_3a }
+		requires = { gm_subject_independence_3a }
+
+		on_start = {
+			# TODO start event sequence (like mission 1) for people to might back out i.e. losing modifiers and rewards you have gotten (possibly lose bad_boy_points)
+			add_treasury = -50
+		}
+
+		on_completion = {
+			# TODO define final modifier/reward (maybe combine the others...)
+			hidden_effect = {
+				change_variable = {
+					name = bad_boy_points
+					add = 1
+				}
+			}
+		}
 	}
 
-	generic_mission_subject_independence_10a = {	# 10 (Left) - Sending proposal with bad intentions
+	gm_subject_independence_10a = {	# 10 (Left) - Sending proposal with bad intentions
 		icon = "task_conquest"
 		final = yes
 
 		requires = {
-			generic_mission_subject_independence_9a
+			gm_subject_independence_9a
 		}
 	}
 
 	
 
-	generic_mission_subject_independence_2b = {	# 2 (Right) - Starting friendly posture against overlord
+	gm_subject_independence_2b = {	# 2 (Right) - Starting friendly posture against overlord
 		icon = "task_diplomatic"
 
-		requires = { generic_mission_subject_independence_1 }
+		requires = { gm_subject_independence_1 }
 
-		prevented_by = { generic_mission_subject_independence_2a }
+		prevented_by = { gm_subject_independence_2a }
+
+		on_completion = {
+			if = {
+				limit = {
+					has_variable = left_won
+				}
+				# TODO add malus
+				add_stability = -50
+			}
+			else_if = {
+				limit = {
+					has_variable = stalemate_won
+				}
+				# TODO add malus
+				add_stability = -5
+			}
+			reverse_add_opinion = {
+				modifier = diplomatic_stance_pos_opmod
+				target = scope:our_overlord
+			}
+			hidden_effect = {
+				set_variable = {
+					name = good_boy_points
+					value = 0
+				}
+			}
+		}
 	}
 
-	generic_mission_subject_independence_3b = {	# 3 (Right) - Building Relations
+	gm_subject_independence_3b = {	# 3 (Right) - Building Relations
 		icon = "task_diplomatic"
 
-		requires = { generic_mission_subject_independence_2b }
+		requires = { gm_subject_independence_2b }
 	}
 
-	generic_mission_subject_independence_4b = {	# 4 (Right) - Marriage/Character exchange
+	gm_subject_independence_4b = {	# 4 (Right) - Marriage/Character exchange
 		icon = "task_diplomatic"
 
-		requires = { generic_mission_subject_independence_3b }
+		requires = { gm_subject_independence_3b }
 	}
 
-	generic_mission_subject_independence_5b = {	# 5 (Right) - Building Capital
+	gm_subject_independence_5b = {	# 5 (Right) - Building Capital
 		icon = "task_economical"
 
-		requires = { generic_mission_subject_independence_2b }
+		requires = { gm_subject_independence_2b }
 	}
 
-	generic_mission_subject_independence_6b = {	# 6 (Right) - Sharing your wealth
+	gm_subject_independence_6b = {	# 6 (Right) - Sharing your wealth
 		icon = "task_economical"
 
-		requires = { generic_mission_subject_independence_5b }
+		requires = { gm_subject_independence_5b }
 	}
 
 
-	generic_mission_subject_independence_9b = {	# 9 (Right) - Drafting The Proposal
+	gm_subject_independence_9b = {	# 9 (Right) - Drafting The Proposal
 		icon = "task_political"
 		duration = 60
 
-		requires = { generic_mission_subject_independence_3b }
+		requires = { gm_subject_independence_3b }
 	}
 
-	generic_mission_subject_independence_10b = {	# 10 (Right) - Sending proposal with good intentions
+	gm_subject_independence_10b = {	# 10 (Right) - Sending proposal with good intentions
 		icon = "task_diplomatic"
 
-		requires = { generic_mission_subject_independence_9b }
+		requires = { gm_subject_independence_9b }
 	}
 
-	generic_mission_subject_independence_11b = {	# 11 (Right) - Overlord accepted granting independence
+	gm_subject_independence_11b = {	# 11a (Right) - Overlord accepted granting independence
 		icon = "task_diplomatic"
 		final = yes
 
-		requires = { generic_mission_subject_independence_10b }
+		requires = { gm_subject_independence_10b }
 	}
 
 
 
-	generic_mission_subject_independence_11c = {	# 11 (Right) - Overlord denied granting independence
+	gm_subject_independence_11c = {	# 11b (Right) - Overlord denied granting independence
 		icon = "task_political"
 
-		requires = { generic_mission_subject_independence_10b }
+		requires = { gm_subject_independence_10b }
 	}
 
-	generic_mission_subject_independence_12c = {	# 12 (Right) - Building up defenses
+	gm_subject_independence_12c = {	# 12 (Right) - Building up defenses
 		icon = "task_expansion"
 
-		requires = { generic_mission_subject_independence_11c }
+		requires = { gm_subject_independence_11c }
 	}
 
-	generic_mission_subject_independence_13c = {	# 13 (Right) - Allying rivaling powers of overlord
+	gm_subject_independence_13c = {	# 13 (Right) - Allying rivaling powers of overlord
 		icon = "task_diplomatic"
 
-		requires = { generic_mission_subject_independence_12c }
+		requires = { gm_subject_independence_12c }
 	}
 
-	generic_mission_subject_independence_14c = {	# 14 (Right) - Declaring war on your overlord
+	gm_subject_independence_14c = {	# 14 (Right) - Declaring war on your overlord
 		icon = "task_conquest"
 		final = yes
 
-		requires = { generic_mission_subject_independence_13c }
+		requires = { gm_subject_independence_13c }
 	}
 }

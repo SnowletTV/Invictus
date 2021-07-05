@@ -241,7 +241,7 @@ me_subject_independence.2 = {	# Discussion which path should be taken
 			}
 			trigger_event = {
 				id = me_subject_independence.2
-				days = { 26 36 }
+				days = { 25 30 }
 			}
 		}
 		else_if = {	# Discussion finished
@@ -340,7 +340,7 @@ me_subject_independence.4 = {	# Discussion event - A side objects
 			}
 		}
 		scope:selected_advisor = {
-			add_loyalty = loyalty_medium
+			add_loyalty = advisor_agree_pos_loyalty
 		}
 	}
 
@@ -368,7 +368,7 @@ me_subject_independence.4 = {	# Discussion event - A side objects
 			}
 		}
 		scope:selected_advisor = {
-			add_loyalty = subtract_loyalty_medium
+			add_loyalty = advisor_deny_neg_loyalty
 		}
 	}
 }
@@ -406,7 +406,7 @@ me_subject_independence.5 = {	# Discussion event - A side attempts a bribe
 		}
 		scope:selected_advisor = {
 			add_gold = -200
-			add_loyalty = loyalty_medium
+			add_loyalty = advisor_agree_pos_loyalty
 		}
 		current_ruler = {
 			add_gold = 200
@@ -419,7 +419,7 @@ me_subject_independence.5 = {	# Discussion event - A side attempts a bribe
 		name = me_subject_independence.5.b
 		custom_tooltip = me_subject_independence.5.bt
 		scope:selected_advisor = {
-			add_loyalty = subtract_loyalty_small
+			add_loyalty = advisor_deny_neg_loyalty
 			add_popularity = subtract_popularity_large
 		}
 		current_ruler = {
@@ -460,7 +460,7 @@ me_subject_independence.6 = {	# Discussion event - A side makes a brilliant spee
 			}
 		}
 		scope:selected_advisor = {
-			add_loyalty = loyalty_medium
+			add_loyalty = advisor_agree_pos_loyalty
 		}
 	}
 
@@ -488,10 +488,10 @@ me_subject_independence.6 = {	# Discussion event - A side makes a brilliant spee
 			}
 		}
 		scope:selected_advisor = {
-			add_loyalty = subtract_loyalty_medium
+			add_loyalty = advisor_deny_pos_loyalty
 		}
 		current_ruler = {
-			add_popularity = subtract_loyalty_large
+			add_popularity = subtract_popularity_large
 		}
 	}
 }
@@ -529,11 +529,6 @@ me_subject_independence.10 = {	# Resolution event - Left side wins
 	option = {
 		name = me_subject_independence.10.a
 		custom_tooltip = me_subject_independence.10.at
-		hidden_effect = {
-			set_variable = {
-				name = left_won
-			}
-		}
 	}
 }
 
@@ -548,11 +543,6 @@ me_subject_independence.11 = {	# Resolution event - Right side wins
 	option = {
 		name = me_subject_independence.11.a
 		custom_tooltip = me_subject_independence.11.at
-		hidden_effect = {
-			set_variable = {
-				name = right_won
-			}
-		}
 	}
 }
 
@@ -570,3 +560,206 @@ me_subject_independence.12 = {	# Resolution event - Stalemate
 	}
 }
 ## Mission 1 - Internal discussion of independence - end
+
+## Mission 5 (Left) - Preparing Character - start
+me_subject_independence.15 = {
+	type = country_event
+	title = me_subject_independence.15.t
+	desc = me_subject_independence.15.desc
+	picture = senate_debate	# TODO adjust for different governments and cultures
+	left_portrait = current_ruler
+
+	option = {
+		name = me_subject_independence.15.a
+		custom_tooltip = me_subject_independence.15.at
+	}
+}
+
+me_subject_independence.16 = {	# Choice of Price maintenance event
+	type = country_event
+	hidden = yes
+
+	immediate = {
+		if = {
+			limit = {
+				AND = {
+					var:fh_progress < 3
+					list_size = {
+						name = family_heads_list
+						value > 0
+					}
+				}
+			}
+			random_in_list = {
+				list = family_heads_list
+				save_scope_as = selected_family_head
+				remove_from_list = family_heads_list
+			}
+			random_list = {
+				2 = {	# Asking for a bribe
+					trigger_event = {
+						id = me_subject_independence.17
+					}
+				}
+				2 = {	# Asking for holdings
+					trigger = {
+						total_holdings >= 5
+					}
+					trigger_event = {
+						id = me_subject_independence.18
+					}
+				}
+				2 = {	# Asking for minor advisory roles
+					trigger_event = {
+						id = me_subject_independence.19
+					}
+				}
+				1 = {	# Asking for nothing
+					trigger_event = {
+						id = me_subject_independence.20
+					}
+				}
+			}
+			trigger_event = {
+				id = me_subject_independence.16
+				days = 15
+			}
+			change_variable = {
+				name = fh_progress
+				add = 1
+			}
+		}
+		else = {	# Cleanup
+			remove_variable = fh_progress
+		}
+	}
+}
+
+me_subject_independence.17 = {	# Choice Event - FH asks for a bribe
+	type = country_event
+	title = me_subject_independence.17.t
+	desc = me_subject_independence.17.desc
+	picture = senate_debate	# TODO adjust for different governments and cultures
+	left_portrait = current_ruler
+	right_portrait = scope:selected_family_head
+
+	option = {	# Give them the bribe
+		name = me_subject_independence.17.a
+		add_treasury = -100
+		scope:selected_family_head = {
+			add_gold = 100
+			add_corruption = corruption_large
+			add_loyalty = family_head_pos_loyalty
+		}
+	}
+
+	option = {	# Deny the bribe
+		name = me_subject_independence.17.b
+		scope:selected_family_head = {
+			add_loyalty = family_head_neg_loyalty
+		}
+	}
+}
+
+me_subject_independence.18 = {	# Choice Event - FH asks for holdings
+	type = country_event
+	title = me_subject_independence.18.t
+	desc = me_subject_independence.18.desc
+	picture = senate_debate	# TODO adjust for different governments and cultures
+	left_portrait = current_ruler
+	right_portrait = scope:selected_family_head
+
+	option = {	# Give them the holdings
+		name = me_subject_independence.18.a
+		while = {
+			count = 5
+			random_owned_province = {
+				save_scope_as = tmp_holding_scope
+			}
+			scope:selected_family_head = {
+				add_holding = scope:tmp_holding_scope
+			}
+		}
+		scope:selected_family_head = {
+			add_corruption = corruption_large
+			add_loyalty = family_head_pos_loyalty
+		}
+	}
+
+	option = {	# Deny the holdings
+		name = me_subject_independence.18.b
+		scope:selected_family_head = {
+			add_loyalty = family_head_neg_loyalty
+		}
+	}
+}
+
+me_subject_independence.19 = {	# Choice Event - FH asks for minor advisor roles
+	type = country_event
+	title = me_subject_independence.19.t
+	desc = me_subject_independence.19.desc
+	picture = senate_debate	# TODO adjust for different governments and cultures
+	left_portrait = current_ruler
+	right_portrait = scope:selected_family_head
+
+	option = {	# Give them the advisor titles
+		name = me_subject_independence.19.a
+		# TODO add the advisor status on a couple of adult characters in the family
+		scope:selected_family_head = {
+			add_character_modifier = {
+				name = me_subject_advisor_charmod
+				duration = 3650
+			}
+			next_in_family = {
+				add_character_modifier = {
+					name = me_subject_advisor_charmod
+					duration = 3650
+				}
+				next_in_family = {
+					add_character_modifier = {
+						name = me_subject_advisor_charmod
+						duration = 3650
+					}
+				}
+			}
+			add_corruption = corruption_large
+			add_loyalty = family_head_pos_loyalty
+		}
+	}
+
+	option = {	# Deny the titles
+		name = me_subject_independence.19.b
+		scope:selected_family_head = {
+			add_loyalty = family_head_neg_loyalty
+		}
+	}
+}
+
+me_subject_independence.20 = {	# Choice Event - FH asks for nothing
+	type = country_event
+	title = me_subject_independence.20.t
+	desc = me_subject_independence.20.desc
+	picture = senate_debate	# TODO adjust for different governments and cultures
+	left_portrait = current_ruler
+	right_portrait = scope:selected_family_head
+
+	option = {
+		name = me_subject_independence.20.a
+		scope:selected_family_head = {
+			add_loyalty = family_head_pos_loyalty
+		}
+	}
+}
+
+me_subject_independence.21 = {	# Conluding task
+	type = country_event
+	title = me_subject_independence.21.t
+	desc = me_subject_independence.21.desc
+	picture = senate_debate	# TODO adjust for different governments and cultures
+	left_portrait = current_ruler
+
+	option = {
+		name = me_subject_independence.21.a
+	}
+}
+## Mission 5 (Left) - Preparing Character - start

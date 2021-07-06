@@ -34,13 +34,12 @@ judea_inv.1 = { #Join the Diadochi war
 			target = c:PRY
 		}
 		hidden_effect = { #on Ptolemaios' side
-			trigger_event = {
-				id = judea_inv.4
-				days = 5
+			c:EGY = {
+				trigger_event = {
+					id = judea_inv.4
+					days = 5
+				}
 			}
-		}
-		c:EGY = {
-			save_scope_as = war_leader_jud
 		}
 		set_variable = {
 			name = egy_jud
@@ -58,20 +57,19 @@ judea_inv.1 = { #Join the Diadochi war
 			target = c:PRY
 		}
 		hidden_effect = { #On Antigonos' side
-			trigger_event = {
-				id = judea_inv.3
-				days = 5
+			c:PRY = {
+				trigger_event = {
+					id = judea_inv.3
+					days = 5
+				}
 			}
-		}
-		c:PRY = {
-			save_scope_as = war_leader_jud
 		}
 		set_variable = {
 			name = pry_jud
 		}
 
 	}
-	option = { #join neither
+	option = { #remain neutral
 		name = judea_inv.1.c
 		add_political_influence = 25
 		add_opinion = {
@@ -90,53 +88,75 @@ judea_inv.2 = {
 	desc = judea_inv.2.desc
 	picture = council_country
 
+	left_portrait = current_ruler
+	right_portrait = scope:mission_country_scope.current_ruler
+
 	trigger = {
 		has_land = yes
 	}
 
 	option = { #Give Decapolis and Galilee to Judea/Samaria
 		area:decapolis_area = {
+			limit = {
+				owns_or_subject_owns = yes
+			}
 			every_area_province = {
-				set_owned_by = root
+				set_owned_by = scope:mission_country_scope
 			}
 		}
 		area:galilee_area = {
+			limit = {
+				owns_or_subject_owns = yes
+			}
 			every_area_province = {
-				set_owned_by = root
+				set_owned_by = scope:mission_country_scope
 			}
 		}
 	}
 	option = { #Give Philistia and Samaria to Judea/Samaria
 		area:philistia_area = {
+			limit = {
+				owns_or_subject_owns = yes
+			}
 			every_area_province = {
-				set_owned_by = root
+				set_owned_by = scope:mission_country_scope
 			}
 		}
 		area:samaria_area = {
+			limit = {
+				owns_or_subject_owns = yes
+			}
 			every_area_province = {
-				set_owned_by = root
+				set_owned_by = scope:mission_country_scope
 			}
 		}
 	}
 	option = { #Betray and give no land
 		if = {
-			limit = { alliance_with = c:JUD }
-			break_alliance = c:JUD
+			limit = { alliance_with = scope:mission_country_scope }
+			break_alliance = scope:mission_country_scope
 		}
 		add_opinion = {
 			modifier = -100
-			target = c:JUD
+			target = scope:mission_country_scope
 		}
 		root = {
 			area:philistia_area = {
 				every_area_province = {
-					add_claim = root
+					add_claim = scope:mission_country_scope
 				}
+			}
+		}
+		ai_chance = {
+			factor = 0.5
+			modifier = {
+				factor = 0.25
+				opinion >= 100
 			}
 		}
 	}
 }
-judea_inv.3 = { #Join Antigonos
+judea_inv.3 = { # Antigonids
 	type = country_event
 	title = judea_inv.3.t
 	desc = judea_inv.3.desc
@@ -144,7 +164,7 @@ judea_inv.3 = { #Join Antigonos
 
 	right_portrait = c:EGY.current_ruler
 	left_portrait = c:PRY.current_ruler
-	left_portrait = ROOT.current_ruler
+	left_portrait = scope:mission_country_scope.current_ruler
 
 	trigger = {
 		has_land = yes
@@ -152,29 +172,59 @@ judea_inv.3 = { #Join Antigonos
 
 	option = {
 		name = judea_inv.3.a
-		add_to_war = {
-			target = scope:pry_egy_jud_war_scope
-			attacker = no #on Antigonos' side
+		scope:mission_country_scope = {
+			add_to_war = {
+				target = scope:pry_egy_jud_war_scope
+				attacker = no #on Antigonos' side
+			}
 		}
-		root = {
+		scope:mission_country_scope = {
 			trigger_event = {
 				id = judea_inv.5
 				days = -1
 			}
 		}
+		ai_chance = {
+            factor = 2
+            modifier = {
+                factor = 2.5
+                opinion >= 50 
+            }
+            modifier = {
+                factor = 3
+                opinion >= 100
+            }
+        }
 	}
 	option = {
 		name = judea_inv.3.b
-		root = {
+		scope:mission_country_scope = {
 			set_variable = {
 				name = no_want_war
 				days = -1
 			}
 		}
+		scope:mission_country_scope = {
+			trigger_event = {
+				id = judea_inv.5
+				days = -1
+			}
+		}
+		ai_chance = {
+            factor = 1
+            modifier = {
+                factor = 1.5
+                opinion <= -50 
+            }
+            modifier = {
+                factor = 2
+                opinion <= -100
+            }
+        }
 	}
 
 }
-judea_inv.4 = { #Join Ptolemaios
+judea_inv.4 = { #Ptolemaic Kingdom
 	type = country_event
 	title = judea_inv.4.t
 	desc = judea_inv.4.desc
@@ -182,7 +232,7 @@ judea_inv.4 = { #Join Ptolemaios
 
 	left_portrait = c:EGY.current_ruler
 	right_portrait = c:PRY.current_ruler
-	left_portrait = ROOT.current_ruler
+	left_portrait = scope:mission_country_scope.current_ruler
 
 	trigger = {
 		has_land = yes
@@ -190,57 +240,85 @@ judea_inv.4 = { #Join Ptolemaios
 
 	option = {
 		name = judea_inv.4.a
-		add_to_war = {
-			target = scope:pry_egy_jud_war_scope
-			attacker = yes #on Egypt's side
+		scope:mission_country_scope = {
+			add_to_war = {
+				target = scope:pry_egy_jud_war_scope
+				attacker = no #on Antigonos' side
+			}
 		}
-		root = {
+		scope:mission_country_scope = {
 			trigger_event = {
 				id = judea_inv.5
 				days = -1
 			}
 		}
+		ai_chance = {
+            factor = 2
+            modifier = {
+                factor = 2.5
+                opinion >= 50 
+            }
+            modifier = {
+                factor = 3
+                opinion >= 100
+            }
+        }
 	}
 	option = {
 		name = judea_inv.4.b
-		root = {
+		scope:mission_country_scope = {
 			set_variable = {
 				name = no_want_war
 				days = -1
 			}
 		}
+		scope:mission_country_scope = {
+			trigger_event = {
+				id = judea_inv.5
+				days = -1
+			}
+		}
+		ai_chance = {
+            factor = 1
+            modifier = {
+                factor = 1.5
+                opinion <= -50 
+            }
+            modifier = {
+                factor = 2
+                opinion <= -100
+            }
+        }
 	}
 }
-judea_inv.5 = { #Answer War
+judea_inv.5 = { #Answer 
 	type = country_event
 	title = judea_inv.5.t
 	desc = {
         desc = judea_inv.5.desc
         first_valid = {
-            triggered_desc = { # Positive
+            triggered_desc = { # War
                 trigger = { 
                     any_active_war = {
-						AND = {
-							OR = {
-								any_war_participant = c:JUD
-								any_war_participant = c:SMA
-							}
-							OR = {
-								any_war_participant = c:EGY
-								any_war_participant = c:PRY
-							}
+						any_war_participant = scope:mission_country_scope
+						any_war_participant = c:EGY
+						any_war_participant = c:PRY
 						}
 					}
                 }
                 desc = judea_inv.5.desc_1
             }
-            triggered_desc = { # Other
+            triggered_desc = { # Peace
                 trigger = { always = yes }
                 desc = judea_inv.5.desc_2
             }
         }
     }
 	picture = great_city
+
+	left_portrait = current_ruler
+	right_portrait = c:PRY.current_ruler
+	right_portrait = c:EGY.current_ruler
 
 	trigger = {
 		has_land = yes
@@ -285,21 +363,22 @@ judea_inv.7 = {                           # Feudatory - Nabataea side
     title = judea_inv.7.t
     desc = judea_inv.7.desc
     picture = council_country
-    left_portrait = current_ruler
+    left_portrait = scope:mission_country_scope.current_ruler
     right_portrait = c:NBT.current_ruler
+
 
     trigger = {
         has_land = yes
     }  
 
-    immediate = { save_scope_as = korkyra_scope }
+    immediate = { save_scope_as = nabataea_scope }
 
     option = { #feudatory
         name = judea_inv.7.a
-        c:NBT = {
+        scope:mission_country_scope = {
             make_subject = {
                 type = feudatory
-                target = root
+                target = nabataea_scope
             }
         }
         ai_chance = {
@@ -317,7 +396,9 @@ judea_inv.7 = {                           # Feudatory - Nabataea side
 
     option = { #refusal
         name = judea_inv.7.b
-        c:NBT.capital_scope = { add_claim = root }
+        c:NBT.capital_scope = { 
+			add_claim = scope:mission_country_scope 
+		}
         ai_chance = {
             factor = 1
             modifier = {
@@ -336,7 +417,7 @@ judea_inv.7 = {                           # Feudatory - Nabataea side
     }
 
     after = {
-        root = {
+        scope:mission_country_scope = {
             trigger_event = { 
                 id = judea_inv.8 
                 days = 5

@@ -188,7 +188,7 @@ gm_subject_independence = {
 		requires = { gm_subject_independence_3a }
 
 		allow = {
-			manpower >= 10
+			manpower_percentage >= 0.6
 		}
 
 		on_completion = {
@@ -261,26 +261,30 @@ gm_subject_independence = {
 		}
 
 		on_completion = {
-			# TODO fire event sequence to try and befriend one or two nations
-			every_country = {
-				limit = {
-					in_diplomatic_range = root
-					rank = 3	# TODO get overlords rank here
-				}
-				add_to_list = possible_allies_list
-			}
-			while = {
-				count = 3
-				random_in_list = {
-					list = possible_allies_list
-					save_scope_as = tmp_ally_scope
-					remove_from_list = possible_allies_list	# TODO list needs to be removed at the end (reduce clutter)
-				}
-				trigger_event = {
-					id = me_subject_independence.25
-				}
-			}
+			custom_tooltip = gm_subject_independence_6a.tt
 			hidden_effect = {
+				every_country = {
+					limit = {
+						in_diplomatic_range = root
+						rank = 3	# TODO get overlords rank here
+						NOT = {
+							tag = scope:our_overlord
+							alliance_with = scope:our_overlord
+						}
+					}
+					add_to_list = possible_allies_list
+				}
+				while = {
+					count = 3
+					random_in_list = {
+						list = possible_allies_list
+						save_scope_as = tmp_ally_scope
+						remove_from_list = possible_allies_list	# TODO list needs to be removed at the end (reduce clutter)
+					}
+					trigger_event = {
+						id = me_subject_independence.25
+					}
+				}
 				change_variable = {
 					name = bad_boy_points
 					add = 1
@@ -291,13 +295,60 @@ gm_subject_independence = {
 
 	gm_subject_independence_7a = {	# 7 (Left) - Asking For Favours
 		icon = "task_political"
-		duration = 60
 
 		requires = { gm_subject_independence_5a }
 
 		on_completion = {
-			# TODO ask for manpower (from allies), money (family heads), pi (office holders), stab (religious head)
+			custom_tooltip = gm_subject_independence_7a.tt
 			hidden_effect = {
+				# Family head
+				random_character = {
+					limit = {
+						is_head_of_family = yes
+						is_ruler = no
+					}
+					save_scope_as = selected_family_head
+				}
+				# Friendly neighbour
+				random_country = {
+					limit = {
+						in_diplomatic_range = root
+						NOT = {
+							tag = scope:our_overlord
+							tag = root
+							alliance_with = scope:our_overlord
+						}
+						opinion = {
+							target = root
+							value >= 30
+						}
+					}
+					save_scope_as = selected_friendly_neighbour
+				}
+				# Government character
+				random_character = {
+					limit = {
+						is_head_of_family = no
+						has_any_office = yes
+						is_ruler = no
+					}
+					save_scope_as = selected_office_boy
+				}
+				# Religious head
+				random_character = {
+					limit = {
+						OR = {
+							has_office = office_high_priest_monarchy
+							has_office = office_augur
+							has_office = office_high_priest
+						}
+						is_ruler = no
+					}
+					save_scope_as = selected_high_priest
+				}
+				trigger_event = {
+					id = me_subject_independence.30
+				}
 				change_variable = {
 					name = bad_boy_points
 					add = 1
@@ -332,18 +383,37 @@ gm_subject_independence = {
 	
 	gm_subject_independence_9a = {	# 9 (Left) - Making Final Preparations
 		icon = "task_expansion"
-		duration = 60
+		duration = 180
 
 		requires = { gm_subject_independence_3a }
 
+		allow = {
+			political_influence >= 20
+		}
+
 		on_start = {
-			# TODO start event sequence, use spurned_characters_list to bring back characters you cucked
-			add_treasury = -50
+			add_political_influence = -20
+			custom_tooltip = gm_subject_independence_9a.tt
+			hidden_effect = {
+				set_variable = {
+					name = discussion_progress
+					value = 0
+				}
+				trigger_event = {
+					id = me_subject_independence.40
+				}
+				trigger_event = {
+					id = me_subject_independence.41
+					days = { 25 30 }
+				}
+			}
 		}
 
 		on_completion = {
-			# TODO define final modifier/reward (maybe combine the others...)
 			hidden_effect = {
+				trigger_event = {
+					id = me_subject_independence.45
+				}
 				change_variable = {
 					name = bad_boy_points
 					add = 1
@@ -598,7 +668,7 @@ gm_subject_independence = {
 		requires = { gm_subject_independence_11c }
 	}
 
-	gm_subject_independence_14c = {
+	gm_subject_independence_14c = {	# 14 (Right) - Rallying the people
 		icon = "task_political"
 
 		requires = { gm_subject_independence_11c }

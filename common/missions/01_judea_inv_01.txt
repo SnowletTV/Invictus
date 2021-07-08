@@ -347,11 +347,11 @@
         }
 
         allow = {
-            owns = 742 #Kadasa
-            owns = 687 #Jersualem
-            owns = 683 #Ephraim
-            owns = 680 #Shekhem
-            owns = 691 #Hebron
+            owns_or_subject_owns = 742 #Kadasa
+            owns_or_subject_owns = 687 #Jersualem
+            owns_or_subject_owns = 683 #Ephraim
+            owns_or_subject_owns = 680 #Shekhem
+            owns_or_subject_owns = 691 #Hebron
         }
 
         on_completion = {
@@ -411,7 +411,7 @@
             p:942 = {#Apologos
                 owner = root
             }
-            owns_or_subject_owns_region = mesopotamia_region
+            root = { owned_or_subject_owned = mesopotamia_region }
         }
 
         on_completion = {
@@ -435,13 +435,15 @@
                 OR = {
                     province_id = 922 #Aqola
                     province_id = 942 #Apologos
+                    province_id = 918 #Babylon
                 }
             }
         }
 
         allow = {
-            owns = 922 #Aqola
-            owns = 942 #Apologos
+            owns_or_subject_owns = 922 #Aqola
+            owns_or_subject_owns = 942 #Apologos
+            owns_or_subject_owns = 918 #Babylon
         }
 
         on_completion = {
@@ -748,8 +750,8 @@
         allow = {
             political_influence >= 25
             treasury >= 50
-            owns_area = eastern_delta_area 
-            owns_area = sinai_area
+            owns_or_subject_owns_area = eastern_delta_area 
+            owns_or_subject_owns_area = sinai_area
         }
 
         on_completion = {
@@ -857,6 +859,10 @@
         icon = "task_diplomatic"
 
         requires = { judea_inv_mission_task_15 }
+
+        bypass = {
+            NOT = { exists = c:SHB }
+        }
 
         allow = {
             exists = c:SHB
@@ -1105,22 +1111,44 @@
                         change_country_tag = HBR
 	        		}
 	        	}
-                every_owned_province = {
-                    limit = {
-                        region:lower_egypt_region = {
-                            owns_or_subject_owns_region = yes
+                region:lower_egypt_region = {
+                    every_region_province = {
+                        limit = {                
+                            owned_or_subject_owned = root 
                             NOR = {
                                 is_in_area = sinai_area
                                 is_in_area = eastern_delta_area
                             }
                         }
+                        set_owned_by = scope:hebrew_egypt_country_scope
                     }
-                    set_owned_by = scope:hebrew_egypt_country_scope
                 }
-	        	make_subject = {
-	        		target = scope:hebrew_egypt_country_scope
-	        		type = feudatory
-	        	}
+                p:505 = { set_owned_by = scope:hebrew_egypt_country_scope }
+                p:524 = { set_owned_by = scope:hebrew_egypt_country_scope }
+                p:510 = { set_owned_by = scope:hebrew_egypt_country_scope }
+                p:508 = { set_owned_by = scope:hebrew_egypt_country_scope }
+                p:502 = { set_owned_by = scope:hebrew_egypt_country_scope }
+                p:7688 = { set_owned_by = scope:hebrew_egypt_country_scope }
+                region:cyrenaica_region = {
+                    every_region_province = {
+                        limit = {                
+                            owned_or_subject_owned = root 
+                        }
+                        set_owned_by = scope:hebrew_egypt_country_scope
+                    }
+                }
+                region:upper_egypt_region = {
+                    every_region_province = {
+                        limit = {                
+                            owned_or_subject_owned = root 
+                        }
+                        set_owned_by = scope:hebrew_egypt_country_scope
+                    }
+                }
+                make_subject = {
+                    target = scope:hebrew_egypt_country_scope
+                    type = feudatory
+                }
         	}
             custom_tooltip = judea_inv_mission_task_22_2.tt
             scope:mission_country_scope = {
@@ -1173,9 +1201,12 @@
         on_completion = {
             add_political_influence = -50
             add_treasury = -200
-            trigger_event = {
-                id = judea_inv.15
-                days = -1
+            custom_tooltip = judea_inv_mission_task_24.tt
+            hidden_effect = {
+                trigger_event = {
+                    id = judea_inv.15
+                    days = -1
+                }
             }
         }
     }
@@ -1256,50 +1287,44 @@
 
         on_start = {
             set_variable = bypass_task_27_pls
-            if = {
-                limit = {
-                    c:JUD = {
-                        is_subject = yes
+            c:PRY = {
+                if = {
+                    limit = {
+                        c:JUD = {
+                            is_subject_of = c:PRY
+                        }
                     }
                 }
-                c:PRY = {
-                    release_subject = {
-                        target = c:JUD
+                release_subject = c:JUD
+                if = {
+                    limit = {
+                        c:SMA = {
+                            is_subject_of = c:PRY
+                        }
                     }
                 }
-            }
-            if = {
-                limit = {
-                    c:SMA = {
-                        is_subject = yes
-                    }
-                }
-                c:PRY = {
-                    release_subject = {
-                        target = c:SMA
-                    }
-                }
+                release_subject = c:SMA
             }
         }
 
         on_completion = {
             add_political_influence = -25
-            if = {
-                root = c:SMA
-            }
-            root = {
-                make_subject = {
-                    type = feudatory
-                    target = c:JUD
+            if = { 
+                limit = { root = c:SMA }
+                root = {
+                    make_subject = {
+                        type = feudatory
+                        target = c:JUD
+                    }
                 }
             }
-            if = {
-                root = c:JUD
-            }
-            root = {
-                make_subject = {
-                    type = feudatory
-                    target = c:SMA
+            if = { 
+                limit = { root = c:JUD }
+                root = {
+                    make_subject = {
+                        type = feudatory
+                        target = c:SMA
+                    }
                 }
             }
         }
@@ -1358,6 +1383,8 @@
 
     judea_inv_mission_task_28 = { #Conquer Nineveh et al.
         icon = "task_expansion"
+
+        duration = 365
         
         requires = { judea_inv_mission_task_5 }
 
@@ -1391,6 +1418,14 @@
 
         on_completion = {
             add_political_influence = 100
+            if = {
+                limit = {
+                    p:954 = { owner = root }
+                }
+                p:954 = {
+                    set_city_status = city
+                }
+            }
         }
     }
 }

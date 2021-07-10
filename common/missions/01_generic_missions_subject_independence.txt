@@ -81,7 +81,7 @@ gm_subject_independence = {
 
 	gm_subject_independence_1 = {	# 1 - Internal discussion of independence
 		icon = "task_political"
-		duration = 180
+		duration = 365
 
 		allow = {
 			is_subject = yes
@@ -108,7 +108,7 @@ gm_subject_independence = {
 			}
 			trigger_event = {
 				id = me_subject_independence.2
-				days = 25
+				days = 50
 			}
 		}
 		
@@ -197,17 +197,20 @@ gm_subject_independence = {
 
 	gm_subject_independence_3a = {	# 3 (Left) - Building Defenses
 		icon = "task_conquest"
+		duration = 60
 
 		requires = { gm_subject_independence_2a }
 
 		allow = {
 			is_subject = yes
+			treasury >= 30
 			capital_scope = {
 				has_building = fortress_building
 			}
 		}
 
 		on_completion = {
+			add_treasury = -30
 			capital_scope = {
 				add_province_modifier = {
 					name = gm_subject_defensive_pmod
@@ -228,6 +231,7 @@ gm_subject_independence = {
 
 	gm_subject_independence_4a = {	# 4 (Left) - Army Boon
 		icon = "task_conquest"
+		duration = 60
 
 		requires = { gm_subject_independence_3a }
 
@@ -237,10 +241,12 @@ gm_subject_independence = {
 
 		allow = {
 			is_subject = yes
-			manpower_percentage >= 0.6
+			manpower_percentage >= 0.8
+			military_experience >= 5
 		}
 
 		on_completion = {
+			add_military_experience = -5
 			add_country_modifier = {
 				name = gm_subject_army_cmod
 				duration = 3650	# 10 years
@@ -269,11 +275,12 @@ gm_subject_independence = {
 
 		allow = {
 			is_subject = yes
-			political_influence >= 10
+			current_ruler = {
+				popularity >= 60
+			}
 		}
 
 		on_start = {
-			add_political_influence = -10
 			every_character = {
 				limit = {
 					is_head_of_family = yes
@@ -309,6 +316,7 @@ gm_subject_independence = {
 
 	gm_subject_independence_6a = {	# 6 (Left) - Making Allies
 		icon = "task_diplomatic"
+		duration = 60
 
 		requires = { gm_subject_independence_5a }
 
@@ -355,6 +363,7 @@ gm_subject_independence = {
 					}
 					trigger_event = {
 						id = me_subject_independence.25
+						days = { 15 55 }
 					}
 				}
 				every_in_list = {
@@ -450,6 +459,7 @@ gm_subject_independence = {
 
 	gm_subject_independence_8a = {	# 8 (Left) - Navy Boon
 		icon = "task_expansion"
+		duration = 60
 
 		requires = { gm_subject_independence_3a }
 
@@ -459,10 +469,35 @@ gm_subject_independence = {
 
 		allow = {
 			is_subject = yes
-			num_of_ships >= 20
+			custom_tooltip = {
+				text = gm_subject_independence_8a.allow
+				OR = {
+					num_of_ships >= scope:our_overlord.num_of_ships
+					num_of_ships >= 20
+				}
+			}
+			custom_tooltip = {
+				text = gm_subject_independence_8a.allow_2
+				any_owned_province = {
+					is_coastal = yes
+					has_building = port_building
+				}
+			}
 		}
 
 		on_completion = {
+			random_owned_province = {
+				limit = {
+					has_building = port_building
+				}
+				save_scope_as = port_province
+			}
+			create_unit = {
+				navy = yes
+				location = scope:port_province
+				sub_unit = octere
+				add_subunit = octere
+			}
 			add_country_modifier = {
 				name = gm_subject_navy_cmod
 				duration = 3650	# 10 years
@@ -482,13 +517,17 @@ gm_subject_independence = {
 	
 	gm_subject_independence_9a = {	# 9 (Left) - Making Final Preparations
 		icon = "task_political"
-		duration = 180
+		duration = 365
 
-		requires = { gm_subject_independence_3a }
+		requires = { gm_subject_independence_5a }
 
 		allow = {
 			is_subject = yes
 			stability >= 60
+			custom_tooltip = {
+				text = 	gm_subject_independence_9a.allow
+				var:bad_boy_points > 3
+			}
 		}
 
 		on_start = {
@@ -518,7 +557,7 @@ gm_subject_independence = {
 				}
 				trigger_event = {
 					id = me_subject_independence.41
-					days = { 25 30 }
+					days = { 40 60 }
 				}
 			}
 		}
@@ -546,6 +585,9 @@ gm_subject_independence = {
 		allow = {
 			is_subject = yes
 			war = no
+			NOT = {
+				has_truce_with = scope:our_overlord
+			}
 		}
 
 		on_completion = {
@@ -651,6 +693,7 @@ gm_subject_independence = {
 
 	gm_subject_independence_3b = {	# 3 (Right) - Building Relations
 		icon = "task_diplomatic"
+		duration = 60
 
 		requires = { gm_subject_independence_2b }
 
@@ -659,7 +702,7 @@ gm_subject_independence = {
 			scope:our_overlord = {
 				opinion = {
 					target = root
-					value >= 60
+					value >= 100
 				}
 			}
 		}
@@ -686,6 +729,7 @@ gm_subject_independence = {
 
 	gm_subject_independence_4b = {	# 4 (Right) - Marriage/Character exchange
 		icon = "task_diplomatic"
+		duration = 20
 
 		requires = { gm_subject_independence_7b }
 
@@ -698,8 +742,13 @@ gm_subject_independence = {
 		}
 
 		on_completion = {
+			add_stability = -5
+			add_country_modifier = {
+				name = me_subject_exch_char_cmod
+				duration = 1825	# 5 years
+			}
+			custom_tooltip = gm_subject_independence_4b.tt
 			hidden_effect = {
-				# move_country or move_country_with_message to move char
 				if = {
 					limit = {	# If overlord is monarchy, find possible marriage match
 						scope:our_overlord = {
@@ -739,6 +788,7 @@ gm_subject_independence = {
 						is_general = no
 						is_governor = no
 						is_ruler = no
+						is_head_of_family = no
 						highest_skill = martial
 					}
 					save_scope_as = subject_char_martial
@@ -750,6 +800,7 @@ gm_subject_independence = {
 						is_general = no
 						is_governor = no
 						is_ruler = no
+						is_head_of_family = no
 						highest_skill = finesse
 					}
 					save_scope_as = subject_char_finesse
@@ -761,6 +812,7 @@ gm_subject_independence = {
 						is_general = no
 						is_governor = no
 						is_ruler = no
+						is_head_of_family = no
 						highest_skill = charisma
 					}
 					save_scope_as = subject_char_charisma
@@ -772,6 +824,7 @@ gm_subject_independence = {
 						is_general = no
 						is_governor = no
 						is_ruler = no
+						is_head_of_family = no
 						highest_skill = zeal
 					}
 					save_scope_as = subject_char_zeal
@@ -789,6 +842,7 @@ gm_subject_independence = {
 
 	gm_subject_independence_5b = {	# 5 (Right) - Building Capital
 		icon = "task_economical"
+		duration = 60
 
 		requires = { gm_subject_independence_3b }
 
@@ -802,7 +856,7 @@ gm_subject_independence = {
 					}
 					AND = {
 						num_of_library_building >= 1
-						num_of_academy_building >= 1
+						num_of_court_building >= 1
 					}
 				}
 			}
@@ -912,6 +966,10 @@ gm_subject_independence = {
 
 		allow = {
 			is_subject = yes
+			treasury >= 50
+			current_ruler = {
+				wealth >= 50
+			}
 		}
 
 		bypass = {
@@ -919,13 +977,14 @@ gm_subject_independence = {
 		}
 
 		on_completion = {
+			add_treasury = -50
 			current_ruler = {
 				add_gold = -50
-				force_add_trait = corrupt
+				add_corruption = corruption_large
 			}
 			scope:our_overlord = {
 				current_ruler = {
-					add_gold = 50
+					add_gold = 100
 				}
 			}
 			hidden_effect = {
@@ -957,6 +1016,7 @@ gm_subject_independence = {
 		}
 
 		on_completion = {
+			add_political_influence = 30
 			current_ruler = {
 				add_popularity = popularity_huge
 				force_add_trait = prominent
@@ -976,13 +1036,17 @@ gm_subject_independence = {
 
 	gm_subject_independence_9b = {	# 9 (Right) - Drafting The Proposal
 		icon = "task_political"
-		duration = 180
+		duration = 365
 
 		requires = { gm_subject_independence_3b }
 
 		allow = {
 			is_subject = yes
 			stability >= 60
+			custom_tooltip = {
+				text = 	gm_subject_independence_9b.allow
+				var:good_boy_points > 3
+			}
 		}
 
 		on_start = {
@@ -1008,7 +1072,7 @@ gm_subject_independence = {
 				}
 				trigger_event = {
 					id = me_subject_independence.101
-					days = { 25 30 }
+					days = { 40 60 }
 				}
 			}
 		}

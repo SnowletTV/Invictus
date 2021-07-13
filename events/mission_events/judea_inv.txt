@@ -590,7 +590,7 @@ judea_inv.10 = { #Finishing event for forming the Kingdom of David
 		name = judea_inv.10.a
 	}
 }
-judea_inv.11 = { #Metropolis Building Event 1
+judea_inv.11 = { #Metropolis Building Event 1: Accident
 	type = country_event
 	title = judea_inv.11.t
 	desc = judea_inv.11.desc
@@ -601,15 +601,57 @@ judea_inv.11 = { #Metropolis Building Event 1
 	}
 
 	immediate = {
-
+		captal_scope = {
+			random_pops_in_province = {
+				limit = {
+					pop_type = slaves
+				}
+				while = {
+					count = 2
+					kill_pop = yes
+				}
+			}
+		}
 	}
 
-	option = {
+	option = { #pay off damage 
 		name = judea_inv.11.a
+		add_treasury = {
+			value = -1000
+			divide = root.current_ruler.finesse
+		}
+		current_ruler = {
+			add_popularity = 5
+		}
+	}
+
+	option = { #improve security
+		name = judea_inv.11.b
+		add_political_influence = -25
+		current_ruler = {
+			add_popularity = 5
+		}
+	}
+
+	option = { #ignore
+		name = judea_inv.11.c
+		capital_scope = {
+			random_pops_in_province = {
+				limit = {
+					NOT = {
+						pop_culture = hebrew
+					}
+				}
+				while = {
+					count = 3
+					kill_pop = yes
+				}
+			}
+		}
 	}
 
 }
-judea_inv.12 = { #Metropolis Building Event 2
+judea_inv.12 = { #Metropolis Building Event 2: Old Structures found
 	type = country_event
 	title = judea_inv.12.t
 	desc = judea_inv.12.desc
@@ -619,12 +661,94 @@ judea_inv.12 = { #Metropolis Building Event 2
 		religion = judaism
 	}
 
-	immediate = {
-
+	option = { #Excavate and sell
+		name = judea_inv.12.a
+		add_treasury = {
+			value = 100
+			multiply = root.current_ruler.finesse
+		}
+	}
+	
+	option = { #Restore
+		name = judea_inv.12.b
+		capital_scope = {
+			random_list = {
+				10 = {
+					trigger = {
+						NOT = {
+							num_of_academy_building = 3
+						}
+					}
+					add_building_level = academy_building
+				}
+				10 = {
+					trigger = {
+						NOT = {
+							num_of_forum_building = 3
+						}
+					}
+					add_building_level = forum_building
+				}
+				10 = {
+					trigger = {
+						NOT = {
+							num_of_court_building = 3
+						}
+					}
+					add_building_level = court_building
+				}
+				30 = {
+					add_building_level = aqueduct_building
+				}
+				10 = {
+					trigger = {
+						NOT = {
+							num_of_workshop_building = 3
+						}
+					}
+					add_building_level = workshop_building
+				}
+				5 = {
+					add_building_level = fortress_building
+				}
+				5 = {
+					trigger = {
+						NOT = {
+							has_building = foundry_building
+						}
+					}
+					add_building_level = foundry_building
+				}
+				5 = {
+					trigger = {
+						NOT = {
+							has_building = temple_building
+						}
+					}
+					add_building_level = temple_building
+				}
+				5 = {
+					trigger = {
+						NOT = {
+							has_building = theathre_building
+						}
+					}
+					add_building_level = theathre_building
+				}
+				30 = {
+					add_building_level = library_building
+				}
+				30 = {
+					add_building_level = military_building
+				}
+			} 
+		}
 	}
 
-	option = {
-		name = judea_inv.12.a
+	option = { #let the poor have it
+		name = judea_inv.12.c
+		create_state_pop = slave
+		create_state_pop = freemen
 	}
 }
 judea_inv.13 = { #Metropolis Building Event 3
@@ -855,13 +979,14 @@ judea_inv.18 = { #Priest approaching to help when treasure is found
 	}
 }
 judea_inv.19 = {
-	type = country_type
-	title = judea_inv.10.t
+	type = country_event
+	title = judea_inv.19.t
 	desc = judea_inv.19.desc
 	picture = throneroom
 
 	left_portrait = current_ruler
 	right_portrait = scope:alliance_target_1.current_ruler
+	right_portrait = scope:alliance_target_2.current_ruler
 
 	trigger = {
 		has_land = yes
@@ -870,28 +995,177 @@ judea_inv.19 = {
 	immediate = {
 		random_country = {
 			limit = {
+				num_of_provinces >= 200
 				in_diplomatic_range = yes
-
+				opinion = {
+					value > 0
+					target = root
+				}
 			}
 			save_scope_as = alliance_target_1
 		}
 		random_country = {
 			limit = {
+				num_of_provinces >= 200
 				in_diplomatic_range = yes
 				NOT = {
 					THIS = scope:alliance_target_1
+				}
+				opinion = {
+					value > 0
+					target = root
 				}
 			}
 			save_scope_as = alliance_target_2
 		}
 	}
 
-	option = {
+	option = { #Ask country 1
 		name = judea_inv.19.a
+		scope:alliance_target_1 = {
+			set_variable = try_hard
+			trigger_event = {
+				id = judea_inv.20
+				days = { 5 10 }
+			}
+		}
+	}
+
+	option = { #Ask country 2
+		name = judea_inv.19.b
+		scope:alliance_target_2 = {
+			set_variable = try_hard
+			trigger_event = {
+				id = judea_inv.20
+				days = { 5 10 }
+			}
+		}
+	}
+}
+ judea_inv.20 = {
+	type = country_event
+	title = judea_inv.20.t
+	desc = judea_inv.20.desc
+	picture = council_country
+
+	right_portrait = scope:mission_country_scope.current_ruler
+	left_portrait = scope:alliance_target_1.current_ruler
+	left_portrait = scope:alliance_target_2.current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = { # Alliance
+		name = judea_inv.20.a
+		if = {
+			limit = { root = scope:alliance_target_1 }
+			scope:mission_country_scope = {
+				add_alliance = {
+					target = scope:alliance_target_1
+				}
+			}
+		}
+		if = {
+			limit = { root = scope:alliance_target_2 }
+			scope:mission_country_scope = {
+				add_alliance = {
+					target = scope:alliance_target_2
+				}
+			}
+		}
+		scope:mission_country_scope = {
+			trigger_event = {
+				id = judea_inv.21
+				duration = { 5 10 }
+			}
+		}
+	}
+
+	option = { # No Alliance
+		name = judea_inv.20.b
+		scope:mission_country_scope = {
+			trigger_event = {
+				id = judea_inv.22
+				duration = { 5 10 }
+			}
+		}
+	}
+ }
+ 
+ judea_inv.21 = { #Positive Response
+	type = country_event
+	title = judea_inv.21.t
+	desc = judea_inv.21.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+	right_portrait = scope:alliance_target_1.current_ruler
+	right_portrait = scope:alliance_target_2.current_ruler
+
+	trigger = {
+		has_land = yes
 	}
 
 	option = {
-		name = judea_inv.19.b
+		name = judea_inv.21.a
 	}
-}
+ }
+
+ judea_inv.22 = { #Negative Response
+	type = country_event
+	title = judea_inv.22.t
+	desc = judea_inv.22.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+	right_portrait = scope:alliance_target_1.current_ruler
+	right_portrait = scope:alliance_target_2.current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = { #Oh well
+		name = judea_inv.22.a
+	}
+
+	option = { #try the other guy
+		name = judea_inv.22.b
+		trigger = {
+			NOT = { has_variable = loser }
+		}
+		set_variable = loser
+		if = {
+			limit = {
+				scope:alliance_target_1 = {
+					NOT = {
+						has_variable = try_hard
+					}
+				}
+			}
+			scope:alliance_target_1 = {
+				trigger_event = {
+					id = judea_inv.20
+					days = { 5 10 }
+				}
+			}
+		}
+		if = {
+			limit = {
+				scope:alliance_target_2 = {
+					NOT = {
+						has_variable = try_hard
+					}
+				}
+			}
+			scope:alliance_target_2 = {
+				trigger_event = {
+					id = judea_inv.20
+					days = { 5 10 }
+				}
+			}
+		}
+	}
+ }
 

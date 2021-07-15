@@ -3318,21 +3318,21 @@ me_subject_independence.111 = {	# Decision event for overlord
 				factor = 2
 				opinion = {
 					target = scope:unwilling_subject
-					value >= 50
+					value >= 100
 				}
 			}
 			modifier = {
 				factor = 3
 				opinion = {
 					target = scope:unwilling_subject
-					value >= 100
+					value >= 150
 				}
 			}
 			modifier = {
 				factor = 4
 				opinion = {
 					target = scope:unwilling_subject
-					value >= 150
+					value >= 200
 				}
 			}
 		}
@@ -3372,21 +3372,21 @@ me_subject_independence.111 = {	# Decision event for overlord
 				factor = 2
 				opinion = {
 					target = scope:unwilling_subject
-					value < 50
+					value < 100
 				}
 			}
 			modifier = {
 				factor = 3
 				opinion = {
 					target = scope:unwilling_subject
-					value <= 0
+					value <= 50
 				}
 			}
 			modifier = {
 				factor = 4
 				opinion = {
 					target = scope:unwilling_subject
-					value <= -50
+					value <= 0
 				}
 			}
 		}
@@ -3551,6 +3551,7 @@ me_subject_independence.130 = {	# Initial event - choose a character to spearhea
 				limit = {
 					is_adult = yes
 					is_ruler = no
+					is_head_of_family = no
 				}
 				save_scope_as = potential_infiltrator_1
 			}
@@ -3558,6 +3559,7 @@ me_subject_independence.130 = {	# Initial event - choose a character to spearhea
 				limit = {
 					is_adult = yes
 					is_ruler = no
+					is_head_of_family = no
 					age != scope:potential_infiltrator_1.age
 				}
 				save_scope_as = potential_infiltrator_2
@@ -3566,6 +3568,7 @@ me_subject_independence.130 = {	# Initial event - choose a character to spearhea
 				limit = {
 					is_adult = yes
 					is_ruler = no
+					is_head_of_family = no
 					age != scope:potential_infiltrator_1.age
 					age != scope:potential_infiltrator_2.age
 				}
@@ -3579,6 +3582,10 @@ me_subject_independence.130 = {	# Initial event - choose a character to spearhea
 		custom_tooltip = me_subject_independence.130.at
 		hidden_effect = {
 			scope:potential_infiltrator_1 = {
+				move_country = scope:our_overlord
+				set_variable = {
+					name = infiltrator_from_subject
+				}
 				save_scope_as = selected_infiltrator
 			}
 		}
@@ -3589,6 +3596,10 @@ me_subject_independence.130 = {	# Initial event - choose a character to spearhea
 		custom_tooltip = me_subject_independence.130.bt
 		hidden_effect = {
 			scope:potential_infiltrator_2 = {
+				move_country = scope:our_overlord
+				set_variable = {
+					name = infiltrator_from_subject
+				}
 				save_scope_as = selected_infiltrator
 			}
 		}
@@ -3599,6 +3610,10 @@ me_subject_independence.130 = {	# Initial event - choose a character to spearhea
 		custom_tooltip = me_subject_independence.130.ct
 		hidden_effect = {
 			scope:potential_infiltrator_3 = {
+				move_country = scope:our_overlord
+				set_variable = {
+					name = infiltrator_from_subject
+				}
 				save_scope_as = selected_infiltrator
 			}
 		}
@@ -3609,6 +3624,10 @@ me_subject_independence.130 = {	# Initial event - choose a character to spearhea
 			trigger_event = {
 				id = me_subject_independence.131
 				days = 45	# 45 * 4 = 180 (I want to get 3 progress events and then the final event)
+			}
+			set_variable = {
+				name = infiltration_progress
+				value = 0
 			}
 		}
 	}
@@ -3630,14 +3649,65 @@ me_subject_independence.131 = {	# Progress event - 25% done
 	option = {	# Small chance of discovery
 		name = me_subject_independence.131.b
 		custom_tooltip = me_subject_independence.131.bt
-		# TODO do the chance thing
+		random = {	# Subterfuge discovered - SMALL CHANCE
+			chance = 10
+			modifier = {
+				factor = 0.5
+				scope:selected_infiltrator = {
+					finesse >= 8
+				}
+			}
+			modifier = {
+				factor = 0.5
+				scope:selected_infiltrator = {
+					OR = {
+						has_trait = crafty
+						has_trait = cautious
+						has_trait = unnoticeable
+					}
+				}
+			}
+			modifier = {
+				factor = 2
+				scope:selected_infiltrator = {
+					finesse <= 5
+				}
+			}
+			modifier = {
+				factor = 2
+				scope:selected_infiltrator = {
+					OR = {
+						has_trait = guileless
+						has_trait = reckless
+						has_trait = prominent
+					}
+				}
+			}
+			set_variable = {
+				name = infiltration_discovered
+			}
+			scope:our_overlord = {
+				trigger_event = {
+					id = me_subject_independence.135
+				}
+			}
+			trigger_event = {	# TODO remove, for testing purposes
+				id = me_subject_independence.135
+			}
+		}
 	}
 	
 	after = {
 		hidden_effect = {
 			if = {
-				NOT = {
-					has_variable = infiltration_discovered
+				limit = {
+					NOT = {
+						has_variable = infiltration_discovered
+					}
+				}
+				change_variable = {
+					name = infiltration_progress
+					add = 1
 				}
 				trigger_event = {
 					id = me_subject_independence.132
@@ -3659,19 +3729,116 @@ me_subject_independence.132 = {	# Progress event - 50% done
 		name = me_subject_independence.132.a
 		custom_tooltip = me_subject_independence.132.at
 		# TODO add cost
+		random = {	# Subterfuge discovered - VERY SMALL CHANCE
+			chance = 5
+			modifier = {
+				factor = 0.5
+				scope:selected_infiltrator = {
+					finesse >= 8
+				}
+			}
+			modifier = {
+				factor = 0.5
+				scope:selected_infiltrator = {
+					OR = {
+						has_trait = crafty
+						has_trait = cautious
+						has_trait = unnoticeable
+					}
+				}
+			}
+			modifier = {
+				factor = 2
+				scope:selected_infiltrator = {
+					finesse <= 5
+				}
+			}
+			modifier = {
+				factor = 2
+				scope:selected_infiltrator = {
+					OR = {
+						has_trait = guileless
+						has_trait = reckless
+						has_trait = prominent
+					}
+				}
+			}
+			set_variable = {
+				name = infiltration_discovered
+			}
+			scope:our_overlord = {
+				trigger_event = {
+					id = me_subject_independence.135
+				}
+			}
+			trigger_event = {	# TODO remove, for testing purposes
+				id = me_subject_independence.135
+			}
+		}
 	}
 
 	option = {	# Medium chance of discovery
 		name = me_subject_independence.132.b
 		custom_tooltip = me_subject_independence.132.bt
-		# TODO do the chance thing
+		random = {	# Subterfuge discovered - MEDIUM CHANCE
+			chance = 20
+			modifier = {
+				factor = 0.5
+				scope:selected_infiltrator = {
+					finesse >= 8
+				}
+			}
+			modifier = {
+				factor = 0.5
+				scope:selected_infiltrator = {
+					OR = {
+						has_trait = crafty
+						has_trait = cautious
+						has_trait = unnoticeable
+					}
+				}
+			}
+			modifier = {
+				factor = 2
+				scope:selected_infiltrator = {
+					finesse <= 5
+				}
+			}
+			modifier = {
+				factor = 2
+				scope:selected_infiltrator = {
+					OR = {
+						has_trait = guileless
+						has_trait = reckless
+						has_trait = prominent
+					}
+				}
+			}
+			set_variable = {
+				name = infiltration_discovered
+			}
+			scope:our_overlord = {
+				trigger_event = {
+					id = me_subject_independence.135
+				}
+			}
+			trigger_event = {	# TODO remove, for testing purposes
+				id = me_subject_independence.135
+			}
+		}
 	}
 
 	after = {
 		hidden_effect = {
 			if = {
-				NOT = {
-					has_variable = infiltration_discovered
+				limit = {
+					NOT = {
+						has_variable = infiltration_discovered
+					}
+				}
+				change_variable = {
+					name = infiltration_progress
+					add = 1
 				}
 				trigger_event = {
 					id = me_subject_independence.133
@@ -3693,12 +3860,119 @@ me_subject_independence.133 = {	# Progress event - 75% done
 		name = me_subject_independence.133.a
 		custom_tooltip = me_subject_independence.133.at
 		# TODO add cost
+		random = {	# Subterfuge discovered - SMALL CHANCE
+			chance = 10
+			modifier = {
+				factor = 0.5
+				scope:selected_infiltrator = {
+					finesse >= 8
+				}
+			}
+			modifier = {
+				factor = 0.5
+				scope:selected_infiltrator = {
+					OR = {
+						has_trait = crafty
+						has_trait = cautious
+						has_trait = unnoticeable
+					}
+				}
+			}
+			modifier = {
+				factor = 2
+				scope:selected_infiltrator = {
+					finesse <= 5
+				}
+			}
+			modifier = {
+				factor = 2
+				scope:selected_infiltrator = {
+					OR = {
+						has_trait = guileless
+						has_trait = reckless
+						has_trait = prominent
+					}
+				}
+			}
+			set_variable = {
+				name = infiltration_discovered
+			}
+			scope:our_overlord = {
+				trigger_event = {
+					id = me_subject_independence.135
+				}
+			}
+			trigger_event = {	# TODO remove, for testing purposes
+				id = me_subject_independence.135
+			}
+		}
 	}
 
 	option = {	# Large chance of discovery
 		name = me_subject_independence.133.b
 		custom_tooltip = me_subject_independence.133.bt
-		# TODO do the chance thing
+		random = {	# Subterfuge discovered - LARGE CHANCE
+			chance = 40
+			modifier = {
+				factor = 0.5
+				scope:selected_infiltrator = {
+					finesse >= 8
+				}
+			}
+			modifier = {
+				factor = 0.5
+				scope:selected_infiltrator = {
+					OR = {
+						has_trait = crafty
+						has_trait = cautious
+						has_trait = unnoticeable
+					}
+				}
+			}
+			modifier = {
+				factor = 2
+				scope:selected_infiltrator = {
+					finesse <= 5
+				}
+			}
+			modifier = {
+				factor = 2
+				scope:selected_infiltrator = {
+					OR = {
+						has_trait = guileless
+						has_trait = reckless
+						has_trait = prominent
+					}
+				}
+			}
+			set_variable = {
+				name = infiltration_discovered
+			}
+			scope:our_overlord = {
+				trigger_event = {
+					id = me_subject_independence.135
+				}
+			}
+			trigger_event = {	# TODO remove, for testing purposes
+				id = me_subject_independence.135
+			}
+		}
+	}
+
+	after = {
+		hidden_effect = {
+			if = {
+				limit = {
+					NOT = {
+						has_variable = infiltration_discovered
+					}
+				}
+				change_variable = {
+					name = infiltration_progress
+					add = 1
+				}
+			}
+		}
 	}
 }
 
@@ -3707,11 +3981,21 @@ me_subject_independence.134 = {	# Final event - choose an effect (if possible)
 	title = me_subject_independence.134.t
 	desc = {
 		desc = me_subject_independence.134.desc
-		triggered_desc = {
-			trigger = {
-				has_variable = infiltration_discovered
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					has_variable = infiltration_discovered
+				}
+				desc = me_subject_independence.134.desc_1
 			}
-			desc = me_subject_independence.134.desc_1
+			triggered_desc = {
+				trigger = {
+					NOT = {
+						has_variable = infiltration_discovered
+					}
+				}
+				desc = me_subject_independence.134.desc_2
+			}
 		}
 	}
 	picture = bakery	# TODO change
@@ -3720,14 +4004,57 @@ me_subject_independence.134 = {	# Final event - choose an effect (if possible)
 	right_portrait = scope:our_overlord.current_ruler
 
 	option = {	# Best thing - slave uprising
+		trigger = {
+			var:infiltration_progress >= 3
+		}
 		name = me_subject_independence.134.a
+		if = {
+			limit = {
+				NOT = {
+					has_variable = infiltration_discovered
+				}
+			}
+			scope:selected_infiltrator = {
+				move_country_with_message = root
+			}
+		}
+		else = {
+			scope:our_overlord = {
+				trigger_event = {
+					id = me_subject_independence.136
+				}
+			}
+		}
 	}
 
 	option = {	# Better thing - torching food supplies
+		trigger = {
+			var:infiltration_progress >= 2
+		}
 		name = me_subject_independence.134.b
+		if = {
+			limit = {
+				NOT = {
+					has_variable = infiltration_discovered
+				}
+			}
+			scope:selected_infiltrator = {
+				move_country_with_message = root
+			}
+		}
+		else = {
+			scope:our_overlord = {
+				trigger_event = {
+					id = me_subject_independence.136
+				}
+			}
+		}	
 	}
 
 	option = {	# Good thing - defensiveness malus in capital
+		trigger = {
+			var:infiltration_progress >= 1
+		}
 		name = me_subject_independence.134.c
 		scope:our_overlord = {
 			capital_scope = {
@@ -3737,10 +4064,35 @@ me_subject_independence.134 = {	# Final event - choose an effect (if possible)
 				}
 			}
 		}
+		if = {
+			limit = {
+				NOT = {
+					has_variable = infiltration_discovered
+				}
+			}
+			scope:selected_infiltrator = {
+				move_country_with_message = root
+			}
+		}
+		else = {
+			scope:our_overlord = {
+				trigger_event = {
+					id = me_subject_independence.136
+				}
+			}
+		}
 	}
 
-	option = {	# Nothing
+	option = {	# Nothing - send char back home
 		name = me_subject_independence.134.d
+		scope:selected_infiltrator = {
+			move_country_with_message = root
+		}
+		scope:our_overlord = {
+			trigger_event = {
+				id = me_subject_independence.137
+			}
+		}
 	}
 }
 

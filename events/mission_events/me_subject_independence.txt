@@ -3574,6 +3574,10 @@ me_subject_independence.130 = {	# Initial event - choose a character to spearhea
 				}
 				save_scope_as = potential_infiltrator_3
 			}
+			set_variable = {
+				name = infiltration_progress
+				value = 0
+			}
 		}
 	}
 
@@ -4045,10 +4049,10 @@ me_subject_independence.134 = {	# Final event - choose an effect (if possible)
 	right_portrait = scope:our_overlord.current_ruler
 
 	option = {	# Best thing - slave uprising
+		name = me_subject_independence.134.a
 		trigger = {
 			var:infiltration_progress >= 3
 		}
-		name = me_subject_independence.134.a
 		if = {
 			limit = {
 				NOT = {
@@ -4070,10 +4074,27 @@ me_subject_independence.134 = {	# Final event - choose an effect (if possible)
 	}
 
 	option = {	# Better thing - torching food supplies
+		name = me_subject_independence.134.b
 		trigger = {
 			var:infiltration_progress >= 2
 		}
-		name = me_subject_independence.134.b
+		scope:our_overlord = {
+			capital_scope.area = {
+				random_area_state = {
+					limit = {
+						is_capital_state = yes
+						owner = scope:our_overlord
+					}
+					add_state_food = -500
+				}
+			}
+			capital_scope = {
+				add_province_modifier = {
+					name = me_overlord_food_pmod
+					duration = 1825	# 5 years
+				}
+			}
+		}
 		if = {
 			limit = {
 				NOT = {
@@ -4095,10 +4116,10 @@ me_subject_independence.134 = {	# Final event - choose an effect (if possible)
 	}
 
 	option = {	# Good thing - defensiveness malus in capital
-		trigger = {
-			var:infiltration_progress >= 1
-		}
 		name = me_subject_independence.134.c
+		trigger = {
+			root.var:infiltration_progress >= 1
+		}
 		scope:our_overlord = {
 			capital_scope = {
 				add_province_modifier = {
@@ -4139,6 +4160,13 @@ me_subject_independence.134 = {	# Final event - choose an effect (if possible)
 			}
 		}
 	}
+
+	after = {
+		hidden_effect = {
+			remove_variable = infiltration_discovered
+			remove_variable = infiltration_progress
+		}
+	}
 }
 
 me_subject_independence.135 = {	# Overlord - character discovery event
@@ -4165,17 +4193,56 @@ me_subject_independence.136 = {	# Overlord - character captured event
 
 	option = {	# Execute him
 		name = me_subject_independence.136.a
-		# TODO effect
+		scope:selected_infiltrator = {
+			death = {
+				killer = root.current_ruler
+				death_reason = death_execution
+			}
+			set_variable = {
+				name = was_executed_by_overlord
+				days = 90
+			}
+		}
 	}
 
 	option = {	# Imprison him
 		name = me_subject_independence.136.b
-		# TODO effect
+		imprison = {
+			target = scope:selected_infiltrator
+		}
+		scope:selected_infiltrator = {
+			remove_character_modifier = visiting_foreign_citizen
+			add_character_modifier = {
+				name = foreign_citizen
+				duration = -1
+			}
+			set_variable = {
+				name = was_imprisoned_by_overlord
+				days = 90
+			}			
+		}
 	}
 
 	option = {	# Let him go
 		name = me_subject_independence.136.c
-		# TODO effect
+		scope:selected_infiltrator = {
+			move_country_with_message = root
+			remove_character_modifier = visiting_foreign_citizen
+			set_variable = {
+				name = was_let_go_by_overlord
+				days = 90
+			}
+		}
+	}
+
+	after = {
+		hidden_effect = {
+			scope:unwilling_subject = {
+				trigger_event = {
+					id = me_subject_independence.138
+				}
+			}
+		}
 	}
 }
 
@@ -4189,6 +4256,73 @@ me_subject_independence.137 = {	# Overlord - suspicious character gets pulled ba
 
 	option = {	# Ok
 		name = me_subject_independence.137.a
+	}
+}
+
+me_subject_independence.138 = {	# Subject - Fate of the infiltrator
+	type = country_event
+	title = me_subject_independence.138.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					scope:selected_infiltrator = {
+						has_variable = was_executed_by_overlord
+					}
+				}
+				desc = me_subject_independence.138.desc_1
+			}
+			triggered_desc = {
+				trigger = {
+					scope:selected_infiltrator = {
+						has_variable = was_imprisoned_by_overlord
+					}
+				}
+				desc = me_subject_independence.138.desc_2
+			}
+			triggered_desc = {
+				trigger = {
+					scope:selected_infiltrator = {
+						has_variable = was_let_go_by_overlord
+					}
+				}
+				desc = me_subject_independence.138.desc_3
+			}
+		}
+	}
+	picture = bakery	# TODO change
+	left_portrait = scope:our_overlord.current_ruler
+	left_portrait = scope:selected_infiltrator
+	right_portrait = current_ruler
+
+	option = {	# Was executed
+		name = me_subject_independence.138.a
+		trigger = {
+			scope:selected_infiltrator = {
+				has_variable = was_executed_by_overlord
+			}
+		}
+		exclusive = yes
+	}
+
+	option = {	# Was imprisoned
+		name = me_subject_independence.138.b
+		trigger = {
+			scope:selected_infiltrator = {
+				has_variable = was_imprisoned_by_overlord
+			}
+		}
+		exclusive = yes
+	}
+
+	option = {	# Was let go
+		name = me_subject_independence.138.c
+		trigger = {
+			scope:selected_infiltrator = {
+				has_variable = was_let_go_by_overlord
+			}
+		}
+		exclusive = yes
 	}
 }
 ## Mission 12 (Alt) - Mess with their capital - end

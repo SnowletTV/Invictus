@@ -5622,7 +5622,7 @@ me_subject_independence.158 = {	# Final event - choose an effect
 		}
 	}
 
-	option = {	# Better thing -  modifier for mercs
+	option = {	# Better thing
 		name = me_subject_independence.158.a
 		trigger = {
 			var:infiltration_progress >= 2
@@ -5642,7 +5642,8 @@ me_subject_independence.158 = {	# Final event - choose an effect
 						random_sub_unit = {
 							add_subunit_strength = -0.9
 						}
-					}while = {
+					}
+					while = {
 						count = 2
 						random_sub_unit = {
 							add_subunit_strength = -0.6
@@ -5903,3 +5904,236 @@ me_subject_independence.161 = {	# Overlord - Notification of chosen effect
 	}
 }
 ## Mission 14 (Alt) - Mess with their navy - end
+
+## Mission 17 (Alt) - Cause unrest - start
+me_subject_independence.165 = {	# Initial event
+	type = country_event
+	title = me_subject_independence.165.t
+	desc = me_subject_independence.165.desc
+	picture = interesting_histories_hellenic_dock
+
+	option = {
+		name = me_subject_independence.165.a
+		add_manpower = -1
+	}
+}
+
+me_subject_independence.166 = {	# Subject - Result of Raid
+	type = country_event
+	title = me_subject_independence.166.t
+	desc = {
+		desc = me_subject_independence.166.desc
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					has_variable = raided_money
+				}
+				desc = me_subject_independence.166.desc_1
+			}
+			triggered_desc = {
+				trigger = {
+					has_variable = raided_military_exp
+				}
+				desc = me_subject_independence.166.desc_2
+			}
+			triggered_desc = {
+				trigger = {
+					has_variable = raided_slaves
+				}
+				desc = me_subject_independence.166.desc_3
+			}
+		}
+	}
+	picture = looting
+
+	immediate = {
+		if = {
+			limit = {
+				has_variable = raided_money
+			}
+			add_treasury = {
+				value = has_monthly_income
+				multiply = 10
+				ceiling = yes
+				max = 150
+			}
+		}
+		else_if = {
+			limit = {
+				has_variable = raided_military_exp
+			}
+			add_military_experience = 15
+		}
+		else_if = {
+			limit = {
+				has_variable = raided_slaves
+			}
+			custom_tooltip = me_subject_independence.166.tt
+		}
+	}
+
+	option = {
+		name = me_subject_independence.166.a
+	}
+}
+
+me_subject_independence.167 = {	# Overlord - Get raided
+	type = country_event
+	title = me_subject_independence.167.t
+	desc = {
+		desc = me_subject_independence.167.desc
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					scope:unwilling_subject = {
+						has_variable = raided_money
+					}
+				}
+				desc = me_subject_independence.167.desc_1
+			}
+			triggered_desc = {
+				trigger = {
+					scope:unwilling_subject = {
+						has_variable = raided_military_exp
+					}
+				}
+				desc = me_subject_independence.167.desc_2
+			}
+			triggered_desc = {
+				trigger = {
+					scope:unwilling_subject = {
+						has_variable = raided_slaves
+					}
+				}
+				desc = me_subject_independence.167.desc_3
+			}
+		}
+	}
+	picture = diadochi_treasury_plundered
+
+	immediate = {
+		if = {
+			limit = {
+				scope:unwilling_subject = {
+					has_variable = raided_money
+				}
+			}
+			capital_scope.area = {
+				random_area_province = {
+					limit = {
+						has_city_status = yes
+					}
+					add_civilization_value = -10
+				}
+			}
+		}
+		else_if = {
+			limit = {
+				scope:unwilling_subject = {
+					has_variable = raided_military_exp
+				}
+			}
+			add_manpower = -1
+		}
+		else_if = {
+			limit = {
+				scope:unwilling_subject = {
+					has_variable = raided_slaves
+				}
+			}
+			capital_scope.area = {
+				random_area_province = {
+					limit = {
+						OR = {
+							num_of_citizens >= 3
+							num_of_freemen >= 3
+						}
+					}
+					while = {
+						count = 2
+						random_pops_in_province = {
+							limit = {
+								OR = {
+									pop_type = citizen
+									pop_type = freemen
+								}
+							}
+							move_pop = scope:unwilling_subject.capital_scope
+							set_pop_type = slaves
+						}
+					}
+				}
+			}
+		}
+	}
+
+	option = {
+		name = me_subject_independence.167.a
+	}
+}
+
+me_subject_independence.168 = {	# Maintenance hidden event
+	type = country_event
+	hidden = yes
+
+	immediate = {
+		if = {
+			limit = {
+				OR = {
+					var:amount_of_raids <= 5
+					is_subject = no
+				}
+			}
+			random_list = {
+				3 = {
+					set_variable = {
+						name = raid_happened_no
+						days = 30
+					}
+				}
+				1 = {
+					set_variable = {
+						name = raided_money
+						days = 30
+					}
+				}
+				1 = {
+					set_variable = {
+						name = raided_military_exp
+						days = 30
+					}
+				}
+				1 = {
+					set_variable = {
+						name = raided_slaves
+						days = 30
+					}
+				}
+			}
+			if = {
+				limit = {
+					NOT = {
+						has_variable = raid_happened_no
+					}
+				}
+				trigger_event = {
+					id = me_subject_independence.166
+				}
+				scope:our_overlord = {
+					trigger_event = {
+						id = me_subject_independence.167
+					}
+				}
+				change_variable = {
+					name = amount_of_raids
+					add = 1
+				}
+			}
+			trigger_event = {
+				id = me_subject_independence.168
+				days = 90
+			}
+		}
+	}
+}
+## Mission 17 (Alt) - Cause unrest - end

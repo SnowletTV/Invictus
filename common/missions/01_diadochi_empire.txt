@@ -1,0 +1,967 @@
+﻿diadochi_empire = { 
+	header = "mission_image_macedon"
+	icon = "macedon_2"
+
+	repeatable = no #[Boolean] (Default no) Whether this mission is repeatable
+	
+	potential = {
+		NOT = { has_variable = diadochi_empire }
+		has_dlc = "Heirs of Alexander"
+		OR = {
+			OR = { # Seleukids
+				tag = SEL
+				has_variable = sel_unique_mech
+			}
+			OR = {
+				tag = TRE
+				has_variable = me_thrace_start_flag
+			}
+			OR = { # Macedon
+				tag = MAC
+				has_variable = me_mac_start_flag
+			}
+			tag = EGY
+			OR = { # Antigonids
+				tag = PRY
+				has_variable = me_ant_start_flag
+			}
+			tag = ALX
+			tag = EPI
+		}
+		has_civil_war = no
+		is_subject = no
+		is_monarchy = yes
+		OR = {
+			AND = { # Macedon
+				has_completed_mission = macedon_01_legacy
+				has_completed_mission = macedon_02_mastery
+			}
+			OR = { # Antigonids
+				has_completed_mission = antigonid_01_vision
+				has_completed_mission = antigonid_03_birthright
+			}
+			AND = { # Seleukids
+				has_completed_mission = seleukid_mission_02_syria
+				has_completed_mission = seleukid_mission_04_palestine
+			}
+			AND = { # Egypt
+				has_completed_mission = egypt_mission_3_empire
+				has_completed_mission = egypt_mission_4_border
+			} 
+			AND = { # Thrace
+				has_completed_mission = thrace_03_philhellene
+				has_completed_mission = thracian_01_hellespont
+			}
+			AND = { # Epirus
+				has_dlc = "Epirus Flavor Pack" 
+				has_completed_mission = epirus_3_greece
+			}
+		}
+	}
+	
+	ai_chance = { factor = 5 }
+	
+	#Saved Scopes:
+	#Note: The existence of these scopes also gate whether some branches are drawn up.
+	#alexander_scope = Alexander the Great
+	#babylon_scope = Babylon
+	#pella_macedon_scope = Pella
+	#memphis_scope = Memphis
+	
+	#Variables:
+	#
+	
+	on_potential = {
+		char:39 = {
+			save_scope_as = alexander_scope
+		}
+	}
+
+	abort = {
+		
+	}
+	
+	on_abort = {
+		custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+			name = diadochi_empire
+			days = 7300
+		}
+	}
+	
+	
+	on_start = {
+		#Setup for specific Branches:
+		
+		#Macedonian Barons:
+		if = {
+			limit = {
+				OR = {
+					NOT = { owns_or_subject_owns_area = macedonia_area }
+					NOT = { owns_or_subject_owns_area = chalkidiki_area }
+					NOT = { owns_or_subject_owns_area = thessaly_area }
+				}
+			}
+			p:379 = {
+				save_scope_as = pella_macedon_scope
+			}
+		}
+		
+		#The Two Rivers:
+		if = {
+			limit = {
+				OR = {
+					NOT = { owns_or_subject_owns_area = asoristan_area }
+					NOT = { owns_or_subject_owns_area = beth_daraye_area }
+					NOT = { owns_or_subject_owns_area = veh_kavad_area }
+					NOT = { owns_or_subject_owns_area = babylonia_area }
+					NOT = { owns_or_subject_owns_area = tigris_area }
+					NOT = { owns_or_subject_owns_area = niniveh_area }
+					NOT = { owns_or_subject_owns_area = upper_mesopotamia_area }
+					NOT = { owns_or_subject_owns_area = corduene_area }
+					NOT = { owns_or_subject_owns_area = susiana_area }
+					NOT = { owns_or_subject_owns_area = osroene_area }
+					NOT = { owns_or_subject_owns_area = euphrates_area }
+				}
+			}
+			p:918 = {
+				save_scope_as = babylon_scope
+			}
+		}
+		
+		#Crown of Lower Egypt:
+		if = {
+			limit = {
+				OR = {
+					NOT = { owns_or_subject_owns_area = western_delta_area }
+					NOT = { owns_or_subject_owns_area = central_delta_area }
+					NOT = { owns_or_subject_owns_area = eastern_delta_area }
+					NOT = { owns_or_subject_owns_area = memphis_area }
+					NOT = { owns_or_subject_owns_area = heptanomis_area }
+					NOT = { owns_or_subject_owns_area = ammon_area }
+					NOT = { owns_or_subject_owns_area = parva_area }
+				}
+			}
+			p:500 = {
+				save_scope_as = memphis_scope
+			}
+		}
+		deity:omen_alexander = { save_scope_as = alexander_deity_scope }
+	}
+	
+	diadochi_hellenistic_empire = { #
+		icon = task_expansion
+		
+		allow = {
+			government = imperium
+		}
+		
+		on_completion = {
+			show_as_tooltip = {
+				add_innovation = 4
+				add_stability = 35
+			}
+			trigger_event = { id = me_diadochi_empire_events.3 }
+		}
+
+	}
+	
+	diadochi_center_of_art_and_culture = { #
+		icon = task_political
+		requires = {
+			diadochi_hellenistic_empire
+		}
+		
+		allow = {
+			trigger_if = {
+				limit = { exists = treasure:treasure_anthology }
+				treasure:treasure_anthology = {
+					custom_tooltip = {
+						text = own_or_control_treasure_in_alex_shrine
+						ROOT = {
+							any_holy_site = {
+								province_deity = scope:alexander_deity_scope
+								any_province_treasure = {
+									this = treasure:treasure_anthology
+								}
+							}
+						}
+					}
+				}
+			}
+			trigger_else = {
+				custom_tooltip = {
+					text = anthology_which_does_not_exist_yet_tt
+					always = no
+				}
+			}
+		}
+
+		prevented_by = { diadochi_of_gods_and_men }
+		bypass = {
+			OR = {
+				has_variable = of_gods_and_men
+				AND = {
+					NOT = { 
+						has_variable = made_anthologia
+					}
+					OR = {
+						NOT = { exists = treasure:treasure_enquiry_into_plants }
+						NOT = { exists = treasure:treasure_partition_triparadeisos }
+						NOT = { exists = treasure:treasure_history_of_animals }
+						NOT = { exists = treasure:treasure_indike }
+						NOT = { exists = treasure:treasure_tragedies }
+						NOT = { exists = treasure:treasure_book_of_the_dead }
+						NOT = { exists = treasure:treasure_gilgamesh }
+						NOT = { exists = treasure:treasure_babylonian_chronicles }
+						NOT = { exists = treasure:history_of_alexander }
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			set_variable = completed_anthology
+			show_as_tooltip = {
+				add_innovation = 6
+				add_country_modifier = {
+					name = "center_of_art_and_culture_modifier"
+					duration = -1
+				}
+			}
+			trigger_event = { id = me_diadochi_empire_events.6 }
+		}
+
+	}
+	
+	
+	diadochi_of_gods_and_men = { #
+		icon = task_economical
+		requires = {
+			diadochi_hellenistic_empire
+		}
+		
+		prevented_by = { diadochi_center_of_art_and_culture }
+		bypass = { has_variable = completed_anthology }
+		
+		allow = {
+			custom_tooltip = {
+				text = diadochi_pantheon_deity_other
+				any_pantheon_deity = {
+					count >= 2
+					NOT = { deity_religion = ROOT.religion }
+					has_holy_site = yes
+					holy_site = {
+						owner = root
+					}
+				}
+			}
+			treasury >= 500
+		}
+
+		on_completion = {
+			show_as_tooltip = { add_treasury = -500 }
+			set_variable = of_gods_and_men
+			random_pantheon_deity = {
+				limit = {
+					NOT = { deity_religion = ROOT.religion }
+					has_holy_site = yes
+					holy_site = {
+						owner = root
+					}
+				}
+				save_scope_as = venerated_deity
+				holy_site = { save_scope_as = venerated_deity_holy_site }
+			}
+			random_pantheon_deity = {
+				limit = {
+					NOT = { this = scope:venerated_deity }
+					NOT = { deity_religion = ROOT.religion }
+					has_holy_site = yes
+					holy_site = {
+						owner = root
+					}
+				}
+				save_scope_as = venerated_deity_2
+				holy_site = { save_scope_as = venerated_deity_2_holy_site }
+			}
+			trigger_event = { id = me_diadochi_empire_events.1 }
+			custom_tooltip = diadochi_pantheon_deity_other_effect
+		}
+
+	}
+	
+	diadochi_school_of_x = { #
+		icon = task_diplomatic
+		
+		requires = {
+			diadochi_center_of_art_and_culture
+			diadochi_of_gods_and_men
+		}
+		
+		allow = {
+			political_influence > 100
+		}
+		
+		duration = 180
+		
+		on_start = {
+			trigger_event = { id = me_diadochi_empire_events.12 }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_diadochi_empire_events.13  }
+			custom_tooltip = school_of_x_outcome_depends_on_choices
+			current_ruler = {
+				add_finesse = 3
+			}
+		}
+
+	}
+	
+	diadochi_philosopher_kings = { #
+		icon = task_expansion
+
+		requires = {
+			diadochi_school_of_x
+		}
+		
+		allow = {
+			political_influence > 80
+		}
+ 
+		duration = 180
+		
+		monthly_on_action = philosopher_king_pulse
+ 
+		
+		on_start = {
+			add_political_influence = -80
+			trigger_event = { id = me_diadochi_empire_events.7 }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_diadochi_empire_events.11 }
+			current_ruler = {
+				add_charisma = 2
+				add_zeal = 2
+			}
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = lycaeum_of_capital
+					duration = -1
+				}
+				add_innovation = 4
+			}
+		}
+
+	}
+	
+	diadochi_imperial_lineage = { #Imperial Lineage
+		icon = task_political
+		
+		requires = {
+			diadochi_philosopher_kings
+		}
+		
+		allow = {
+			current_ruler = {
+				is_adult = yes
+			}
+			political_influence > 50
+		}
+
+		on_completion = {
+			add_political_influence = -50
+			custom_tooltip = diadochi_imperial_lineage_reward
+			trigger_event = { id = me_diadochi_empire_events.14 }
+		}
+
+	}
+	
+	diadochi_macedonian_barons = { #
+		icon = task_conquest
+		
+		potential = {
+			exists = scope:pella_macedon_scope
+		}
+		allow = {
+			owns_or_subject_owns_area = macedonia_area
+			owns_or_subject_owns_area = chalkidiki_area
+			owns_or_subject_owns_area = thessaly_area
+		}
+ 
+		highlight = {
+			scope:province = {
+				is_uninhabitable = no
+				has_owner = yes
+				OR = {
+					is_in_area = macedonia_area
+					is_in_area = chalkidiki_area
+					is_in_area = thessaly_area
+				}
+				NOT = { owner = ROOT }
+				owner = {
+					NOT = {
+						is_subject_of = ROOT
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = diadochi_regional_rule_tt
+			trigger_event = {
+				id = me_diadochi_empire_events.5
+			}
+		}
+
+	}
+	
+	diadochi_to_the_strongest = { 
+		icon = task_expansion	
+		
+		allow = {
+			treasury >= 500
+			military_experience >= 100
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_treasury = -500
+				add_military_experience = -100
+			}
+			trigger_event = { id = me_diadochi_empire_events.4 }
+			#Make a new Legion called the silver shields
+			custom_tooltip = claims_on_empire
+			hidden_effect = {
+				if = {
+					limit = {
+						exists = scope:babylon_scope
+					}
+					mission_claim_area_effect = { AREA = asoristan_area }
+					mission_claim_area_effect = { AREA = beth_daraye_area }
+					mission_claim_area_effect = { AREA = babylonia_area }
+					mission_claim_area_effect = { AREA = tigris_area }
+					mission_claim_area_effect = { AREA = niniveh_area }
+					mission_claim_area_effect = { AREA = upper_mesopotamia_area }
+					mission_claim_area_effect = { AREA = corduene_area }
+					mission_claim_area_effect = { AREA = susiana_area }
+					mission_claim_area_effect = { AREA = euphrates_area }
+					mission_claim_area_effect = { AREA = osroene_area }
+				}
+				
+				if = {
+					limit = {
+						exists = scope:memphis_scope
+					}
+					mission_claim_area_effect = { AREA = central_delta_area }
+					mission_claim_area_effect = { AREA = eastern_delta_area }
+					mission_claim_area_effect = { AREA = memphis_area }
+					mission_claim_area_effect = { AREA = heptanomis_area }
+					mission_claim_area_effect = { AREA = ammon_area }
+					mission_claim_area_effect = { AREA = parva_area }
+				}
+				
+				if = {
+					limit = {
+						exists = scope:pella_macedon_scope
+					}
+					mission_claim_area_effect = { AREA = macedonia_area }
+					mission_claim_area_effect = { AREA = chalkidiki_area }
+					mission_claim_area_effect = { AREA = thessaly_area }
+					mission_claim_area_effect = { AREA = heptanomis_area }
+					mission_claim_area_effect = { AREA = ammon_area }
+					mission_claim_area_effect = { AREA = parva_area }
+				}
+			}
+		}
+
+	}
+	
+	diadochi_two_rivers = { #
+		requires = {
+			diadochi_to_the_strongest
+		}
+		icon = task_political
+		potential = {
+			exists = scope:babylon_scope
+		}
+		allow = {
+			owns_or_subject_owns_area = asoristan_area
+			owns_or_subject_owns_area = beth_daraye_area
+			owns_or_subject_owns_area = veh_kavad_area
+			owns_or_subject_owns_area = babylonia_area
+			owns_or_subject_owns_area = tigris_area
+			owns_or_subject_owns_area = niniveh_area
+			owns_or_subject_owns_area = upper_mesopotamia_area
+			owns_or_subject_owns_area = corduene_area
+			owns_or_subject_owns_area = susiana_area
+			owns_or_subject_owns_area = euphrates_area
+			owns_or_subject_owns_area = osroene_area
+		}
+ 
+		highlight = {
+			scope:province = {
+				is_uninhabitable = no
+				has_owner = yes
+				OR = {
+					is_in_area = asoristan_area
+					is_in_area = beth_daraye_area
+					is_in_area = veh_kavad_area
+					is_in_area = babylonia_area
+					is_in_area = tigris_area
+					is_in_area = niniveh_area
+					is_in_area = upper_mesopotamia_area
+					is_in_area = corduene_area
+					is_in_area = susiana_area
+					is_in_area = euphrates_area
+					is_in_area = osroene_area
+				}
+				NOT = { owner = ROOT }
+				owner = {
+					NOT = {
+						is_subject_of = ROOT
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = diadochi_regional_rule_tt
+			trigger_event = {
+				id = me_diadochi_empire_events.15
+			}
+		}
+
+	}
+	
+	diadochi_crown_of_lower_egypt = { #
+		requires = {
+			diadochi_to_the_strongest
+		}
+		icon = task_economical
+		
+		potential = {
+			exists = scope:memphis_scope
+		}
+		allow = {
+			owns_or_subject_owns_area = western_delta_area
+			owns_or_subject_owns_area = central_delta_area
+			owns_or_subject_owns_area = eastern_delta_area
+			owns_or_subject_owns_area = memphis_area
+			owns_or_subject_owns_area = heptanomis_area
+			owns_or_subject_owns_area = ammon_area
+			owns_or_subject_owns_area = parva_area
+			trigger_if = {
+				limit = {
+					exists = treasure:hemhem_crown_of_egypt
+				}
+				treasure:hemhem_crown_of_egypt = {
+					custom_tooltip = {
+						text = own_or_control_treasure
+						ROOT = {
+							any_country_treasure = {
+								this = treasure:hemhem_crown_of_egypt
+							}
+						}
+					}
+				}
+			}
+		}
+ 
+		highlight = {
+			scope:province = {
+				is_uninhabitable = no
+				has_owner = yes
+				OR = {
+					is_in_area = western_delta_area
+					is_in_area = central_delta_area
+					is_in_area = eastern_delta_area
+					is_in_area = memphis_area
+					is_in_area = heptanomis_area
+					is_in_area = ammon_area
+					is_in_area = parva_area
+				}
+				NOT = { owner = ROOT }
+				owner = {
+					NOT = {
+						is_subject_of = ROOT
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = diadochi_regional_rule_tt
+			trigger_event = {
+				id = me_diadochi_empire_events.16
+			}
+		}
+
+	}
+	
+	diadochi_imperial_capital = { # 
+		requires = {
+			diadochi_crown_of_lower_egypt
+			diadochi_two_rivers
+			diadochi_macedonian_barons
+		}
+		icon = task_diplomatic
+		
+		allow = {
+			hidden:capital_scope = {
+				has_great_work = yes
+			}
+		}
+ 
+		highlight = {
+			scope:province = {
+				is_capital = yes
+				is_uninhabitable = no
+				has_owner = yes
+				owner = ROOT
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				capital_scope = {
+					if = {
+						limit = {
+							NOT = { has_province_rank = city_metropolis }
+						}
+						set_city_status = city_metropolis
+					}
+					add_permanent_province_modifier = {
+						name = "imperial_capital_mission_reward"
+						duration = -1
+					}
+				}
+			}
+			trigger_event = { id = me_diadochi_empire_events.17 }
+		}
+
+	}
+	
+	diadochi_granary_of_the_mediterrenean = { #
+		requires = {
+			diadochi_imperial_capital
+		}
+		icon = task_economical
+		
+		allow = {
+			treasury >= 1000
+		}
+ 
+		duration = 365
+		
+		monthly_on_action = granary_of_the_mediterrenean_pulse
+ 
+		on_start = {
+			show_as_tooltip = { add_treasury = -1000 }
+			trigger_event = { id = me_diadochi_empire_events.18 }
+		}
+
+		on_completion = {
+			custom_tooltip = diadochi_granary_of_the_mediterrenean_outcome
+			if = {
+				limit = {
+					has_variable = food_for_the_people
+					var:food_for_the_people > 2
+				}
+				trigger_event = { id = me_diadochi_empire_events.22 }
+			}
+			else = {
+				trigger_event = { id = me_diadochi_empire_events.23 }
+			}
+		}
+
+	}
+	
+	diadochi_pax_hellenica = { #
+		requires = {
+			diadochi_granary_of_the_mediterrenean
+			diadochi_imperial_lineage
+		}
+		icon = task_expansion
+		
+		
+		
+		allow = {
+			war = no
+		}
+
+		on_completion = {
+			custom_tooltip = country_splitting_in_two
+			trigger_event = { id = me_diadochi_empire_events.28 }
+		}
+
+	}
+	
+	
+	diadochi_heirs_of_alexander = { #
+		requires = {
+			diadochi_pax_hellenica
+		}
+		icon = task_political
+		
+		allow = {
+			has_civil_war = no
+			war = no
+		}
+			
+		final = yes
+
+		on_completion = {
+			custom_tooltip = heirs_of_alexander_tt
+			trigger_event = { id = me_diadochi_empire_events.29 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = "heirs_of_alexander"
+					duration = -1
+				}
+			}
+		}
+
+	}
+	
+	#Side Branch for Panoply and Godhood
+	diadochi_ends_of_the_world = { #
+		icon = task_conquest
+		
+		requires = {
+			diadochi_philosopher_kings
+		}
+		
+		allow = {
+			trigger_if = {
+				limit = { exists = treasure:treasure_alexander_panoply }
+				treasure:treasure_alexander_panoply = {
+					custom_tooltip = {
+						text = own_or_control_treasure_in_alex_shrine
+						ROOT = {
+							any_holy_site = {
+								province_deity = scope:alexander_deity_scope
+								any_province_treasure = {
+									this = treasure:treasure_alexander_panoply
+								}
+							}
+						}
+					}
+				}
+			}
+			trigger_else = {
+				custom_tooltip = {
+					text = panoply_which_does_not_exist_yet_tt
+					always = no
+				}
+			}
+		}
+		on_completion = {
+			trigger_event = { id = me_diadochi_empire_events.26 }
+			if = {
+				limit = {
+					exists = deity:omen_alexander
+					deity:omen_alexander = {
+						exists = holy_site
+					}
+				}
+				show_as_tooltip = {
+					deity:omen_alexander.holy_site = {
+						add_permanent_province_modifier = {
+							name = "alex_pilgrimage_major"
+							duration = -1
+						}
+					}
+				}
+			}
+			else = {
+				custom_tooltip = holy_site_which_does_not_exist_yet_tt
+			}
+			current_ruler = {
+				add_zeal = 4
+				add_martial = 2
+				family = {
+					add_prestige = 350
+				}
+			}
+		}
+		bypass  = {
+			AND = {
+				NOT = { 
+					has_variable = made_panoply
+				}
+				OR = {
+					NOT = { exists = treasure:treasure_alexander_helmet }
+					NOT = { exists = treasure:treasure_arms_of_alexander }
+					NOT = { exists = treasure:treasure_armor_of_alexander }
+				}
+			}
+		}
+	}
+	diadochi_apotheosis = { #
+		icon = task_diplomatic
+		requires = {
+			diadochi_ends_of_the_world
+		}
+		
+		potential = {
+			has_dlc = "Magna Graecia"
+		}
+
+		allow = {
+			hidden:current_ruler = {
+				is_deified = yes
+			}
+		}
+ 
+		on_completion = {
+			trigger_event = { id = me_diadochi_empire_events.27 }
+			show_as_tooltip = {
+				add_legitimacy = 20
+				current_ruler = {
+					add_charisma = 3
+					add_martial = 2
+					add_popularity = 20
+				}
+			}
+		}
+
+	}
+	
+	#Optional branch for Eastward Expansion:
+	diadochi_conquest_of_persia = { #
+		requires = {
+			diadochi_imperial_capital
+		}
+		icon = task_conquest
+
+		allow = {
+			custom_tooltip = {
+				text = diadochi_conquest_of_persia_allow_tt
+				region:ariana_region = {
+					any_region_province = {
+						count = all
+						OR = {
+							has_owner = no
+							owned_or_subject_owned = ROOT
+						}
+					}
+				}
+				region:bactriana_region = {
+					any_region_province = {
+						count = all
+						OR = {
+							has_owner = no
+							owned_or_subject_owned = ROOT
+						}
+					}
+				}
+				region:persis_region = {
+					any_region_province = {
+						count = all
+						OR = {
+							has_owner = no
+							owned_or_subject_owned = ROOT
+						}
+					}
+				}
+				region:media_region = {
+					any_region_province = {
+						count = all
+						OR = {
+							has_owner = no
+							owned_or_subject_owned = ROOT
+						}
+					}
+				}
+			}
+		}
+ 
+		highlight = {
+			scope:province = {
+				is_uninhabitable = no
+				has_owner = yes
+				OR = {
+					is_in_region = ariana_region
+					is_in_region = bactriana_region
+					is_in_region = persis_region
+					is_in_region = media_region
+				}
+				NOT = { owner = ROOT }
+				owner = {
+					NOT = {
+						is_subject_of = ROOT
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = diadochi_regional_rule_tt
+			trigger_event = {
+				id = me_diadochi_empire_events.24
+			}
+		}
+
+	}
+	
+	diadochi_to_the_indus = { #
+		requires = {
+			diadochi_conquest_of_persia
+		}
+		icon = task_economical
+		
+		allow = {
+			owns_or_subject_owns_area = south_sindhu_area
+			owns_or_subject_owns_area = sivi_area
+			owns_or_subject_owns_area = taxila_area
+			owns_or_subject_owns_area = panchanada_area
+			owns_or_subject_owns_area = madra_area
+			owns_or_subject_owns_area = gandhara_area
+			owns_or_subject_owns_area = north_sindhu_area
+			owns_or_subject_owns_area = sauvira_area
+			owns_or_subject_owns_area = patalene_area
+		}
+ 
+		highlight = {
+			scope:province = {
+				is_uninhabitable = no
+				has_owner = yes
+				OR = {
+					is_in_area = south_sindhu_area
+					is_in_area = sivi_area
+					is_in_area = taxila_area
+					is_in_area = panchanada_area
+					is_in_area = madra_area
+					is_in_area = gandhara_area
+					is_in_area = north_sindhu_area
+					is_in_area = sauvira_area
+					is_in_area = patalene_area
+				}
+				NOT = { owner = ROOT }
+				owner = {
+					NOT = {
+						is_subject_of = ROOT
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = diadochi_regional_rule_tt
+			trigger_event = {
+				id = me_diadochi_empire_events.25
+			}
+		}
+
+	}
+	
+	
+	on_completion = {
+		complete_mission_effect = yes
+		
+	}
+	
+}

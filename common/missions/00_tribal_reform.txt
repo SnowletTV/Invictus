@@ -1,0 +1,837 @@
+﻿tribal_reform = { 
+
+	header = "mission_image_general"
+	icon = "general_2"
+
+	repeatable = no 
+
+	potential = {
+		is_tribal = yes
+		has_variable = can_tribal_reform
+		NOT = {
+			has_variable = reform_cooldown
+		}
+		has_civil_war = no
+	} 
+
+	abort = {
+		ai_mission_back_out_trigger = yes
+	}
+
+	chance = {
+		factor = 100
+	} 
+
+	on_potential = {} 
+
+	on_start = {
+		start_mission_ai_effect = yes
+		random_family = {
+			weight = {
+				modifier = {
+					factor = 1000
+					any_family_member = {
+						count = all
+						from_ruler_family = no
+					}
+				}
+			}
+			save_scope_as = monarchy_family
+		}
+		if = {
+			limit = {
+				any_family = {
+					NOT = {
+						this = scope:monarchy_family
+					}
+				}
+			}
+			random_family = {
+				limit = {
+					NOT = {
+						this = scope:monarchy_family
+					}
+				}
+				weight = {
+					modifier = {
+						factor = 1000
+						any_family_member = {
+							count = all
+							from_ruler_family = no
+						}
+					}
+				}
+				save_scope_as = republic_family
+			}
+		}
+		trigger_event = {
+			id = tribal_reform.1
+		}
+	}  
+
+	on_abort = {
+		custom_tooltip = "on_abort_tribal_reform_tt"
+		set_variable = {
+			name = reform_cooldown
+			days = 7300
+		}
+	}  
+
+	on_completion = {
+		complete_mission_effect = yes
+		if = {
+			limit = {
+				any_owned_province = { has_province_modifier = tribal_civilization_pmod }
+			}
+			every_owned_province = {
+				limit = { has_province_modifier = tribal_civilization_pmod }
+				remove_province_modifier = tribal_civilization_pmod
+			}
+		}
+	}
+
+	tribal_reform_1 = { #monarchy chain
+		icon = "task_political"
+
+		allow = {
+			trigger_if = {
+				limit = {
+					exists = scope:monarchy_family
+				}
+				hidden:scope:monarchy_family = {
+					custom_tooltip = {
+						text = tribal_monarchy_family_raised_up_tt 
+						num_of_jobs >= monarchy_family_num_of_expected_jobs_plus_svalue
+					}
+				}
+			}
+			trigger_else = {
+				tyranny >= 60
+			}
+		} 
+		
+		bypass = {
+			is_tribal = no
+		} 
+		
+		prevented_by = { tribal_reform_2 }
+
+		on_completion = {
+			add_country_modifier = {
+				name = tribal_reform_law_modifier
+				duration = 3650
+			}
+		} 
+	}
+	
+	tribal_reform_1_b = { 
+		icon = "task_political"
+
+		requires = { tribal_reform_1 } 
+
+		allow = {
+			has_law = absolute_authority
+			NOT = {
+				has_law = increased_council_powers
+			}
+			political_influence >= 100
+		} 
+		
+		bypass = {
+			is_tribal = no
+		} 
+
+		on_completion = {
+			add_political_influence = -100
+			if = {
+				limit = {
+					exists = scope:republic_family
+				}
+				scope:republic_family = {
+					every_family_member = {
+						limit = {
+							employer = root
+						}
+						custom = all_republic_family_members
+						add_loyalty = antirepublican_sentiment_l
+					}
+				}
+			}
+			if = {
+				limit = {
+					exists = scope:monarchy_family
+				}
+				scope:monarchy_family = {
+					every_family_member = {
+						limit = {
+							employer = root
+						}
+						custom = all_monarchy_family_members
+						add_loyalty = promonarchist_sentiment_l
+					}
+				}
+			}
+		} 
+	}
+	
+	tribal_reform_1_c = { 
+		icon = "task_economical"
+
+		requires = { tribal_reform_1 } 
+
+		allow = {
+			capital_scope = {
+				civilization_value >= 40
+				trigger_if = {
+					limit = {
+						has_city_status = no
+					}
+					has_city_status = yes
+				}
+			}
+		} 
+		
+		bypass = {
+			is_tribal = no
+		} 
+
+		on_completion = {
+			capital_scope = {
+				if = {
+					limit = {
+						NOT = {
+							has_province_modifier = civilized_tribe_ppmod
+						}
+					}
+					add_permanent_province_modifier = {
+						name = civilized_tribe_ppmod 
+						duration = -1
+					}
+				}
+				else = {
+					root = {
+						add_stability = 5
+					}
+				}
+			}
+		} 
+	}
+	
+	tribal_reform_2 = { 
+		icon = "task_political"
+
+		allow = {
+			trigger_if = {
+				limit = {
+					exists = scope:republic_family
+				}
+				hidden:scope:republic_family = {
+					custom_tooltip = {
+						text = tribal_republic_family_raised_up_tt 
+						num_of_jobs >= republic_family_num_of_expected_jobs_plus_svalue
+					}
+				}
+			}
+			trigger_else = {
+				stability >= 65
+			}
+		} 
+		
+		bypass = {
+			is_tribal = no
+		} 
+		
+		prevented_by = { tribal_reform_1 }
+
+		on_completion = {
+			add_country_modifier = {
+				name = tribal_reform_law_modifier
+				duration = 3650
+			}
+		} 
+	}
+	
+	tribal_reform_2_b = { 
+		icon = "task_political"
+
+		requires = { tribal_reform_2 } 
+
+		allow = {
+			has_law = increased_council_powers
+			NOT = {
+				has_law = absolute_authority
+			}
+			political_influence >= 100
+		} 
+		
+		bypass = {
+			is_tribal = no
+		} 
+
+		on_completion = {
+			add_political_influence = -100
+			if = {
+				limit = {
+					exists = scope:monarchy_family
+				}
+				scope:monarchy_family = {
+					every_family_member = {
+						limit = {
+							employer = root
+						}
+						custom = all_monarchy_family_members
+						add_loyalty = antimonarchy_sentiment_l
+					}
+				}
+			}
+			if = {
+				limit = {
+					exists = scope:republic_family
+				}
+				scope:republic_family = {
+					every_family_member = {
+						limit = {
+							employer = root
+						}
+						custom = all_republic_family_members
+						add_loyalty = republican_sentiment_l
+					}
+				}
+			}
+		} 
+	}
+	
+	tribal_reform_2_c = { 
+		icon = "task_economical"
+
+		requires = { tribal_reform_2 } 
+
+		allow = {
+			capital_scope = {
+				civilization_value >= 40
+				trigger_if = {
+					limit = {
+						has_city_status = no
+					}
+					has_city_status = yes
+				}
+			}
+		} 
+		
+		bypass = {
+			is_tribal = no
+		} 
+
+		on_completion = {
+			capital_scope = {
+				if = {
+					limit = {
+						NOT = {
+							has_province_modifier = civilized_tribe_republic_ppmod
+						}
+					}
+					add_permanent_province_modifier = {
+						name = civilized_tribe_republic_ppmod 
+						duration = -1
+					}
+				}
+				else = {
+					root = {
+						add_stability = 5
+					}
+				}
+			}
+		} 
+	}
+	
+	tribal_reform_2_d = { 
+		icon = "task_diplomatic"
+
+		requires = { 
+			tribal_reform_2_b
+			tribal_reform_2_c
+		} 
+		
+		on_start = {
+			add_country_modifier = {
+				name = administrative_purge
+				duration = 365
+			}
+		}
+		
+		duration = 365
+		
+		monthly_on_action = tribal_reform_monarchy_pulse
+		
+		bypass = {
+			is_tribal = no
+		} 
+
+		on_completion = {
+			add_country_modifier = {
+				name = civilized_tribe
+				duration = 3650
+			}
+		} 
+	}
+	
+	tribal_reform_1_d = { 
+		icon = "task_diplomatic"
+
+		requires = { 
+			tribal_reform_1_b
+			tribal_reform_1_c
+		} 
+		
+		on_start = {
+			add_country_modifier = {
+				name = administrative_purge_rep
+				duration = 365
+			}
+		}
+		
+		duration = 365
+		
+		monthly_on_action = tribal_reform_monarchy_pulse
+		
+		bypass = {
+			is_tribal = no
+		} 
+
+		on_completion = {
+			add_country_modifier = {
+				name = civilized_tribe
+				duration = 3650
+			}
+		} 
+	}
+	
+	tribal_reform_1_e = { 
+		icon = "task_political"
+
+		requires = { 
+			tribal_reform_1_d
+		} 
+
+		allow = {
+			exists = current_ruler
+			current_ruler = {
+				popularity >= 80
+			}
+		} 
+		
+		final = yes
+		
+		bypass = {
+			is_tribal = no
+		} 
+
+		on_completion = {
+			add_2_free_province_investments = yes
+			if = {
+				limit = {
+					primary_culture = hibernian
+				}
+				change_government = tanist_kingdom
+			}
+			else = {
+				change_government = despotic_monarchy
+			}
+			switch_government_type_event_clearup_effect = yes
+			if = {
+				limit = {
+					exists = scope:monarchy_family
+					scope:monarchy_family = {
+						any_family_member = {
+							is_adult = yes
+							trigger_if = {
+								limit = {
+									root = {
+										gender_equality = no
+									}
+								}
+								is_male = yes
+							}
+							has_any_office = no
+						}
+					}
+				}
+				custom_tooltip = grant_offices_monarchy_reform_tt
+				hidden_effect = {
+					if = {
+						limit = {
+							scope:monarchy_family = {
+								any_family_member = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+							}
+							office_is_empty = office_foreign_minister
+						}
+						scope:monarchy_family = {
+							random_family_member = {
+								limit = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+								weight = {
+									modifier = {
+										factor = {
+											value = 1
+											add = charisma
+										}
+									}
+								}
+								give_office = office_foreign_minister
+							}
+						}
+					}
+					if = {
+						limit = {
+							scope:monarchy_family = {
+								any_family_member = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+							}
+							office_is_empty = office_marshal
+						}
+						scope:monarchy_family = {
+							random_family_member = {
+								limit = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+								weight = {
+									modifier = {
+										factor = {
+											value = 1
+											add = martial
+										}
+									}
+								}
+								give_office = office_marshal
+							}
+						}
+					}
+					if = {
+						limit = {
+							scope:monarchy_family = {
+								any_family_member = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+							}
+							office_is_empty = office_high_priest_monarchy
+						}
+						scope:monarchy_family = {
+							random_family_member = {
+								limit = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+								weight = {
+									modifier = {
+										factor = {
+											value = 1
+											add = zeal
+										}
+									}
+								}
+								give_office = office_high_priest_monarchy
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	tribal_reform_2_e = { 
+		icon = "task_political"
+
+		requires = { 
+			tribal_reform_2_d
+		} 
+
+		allow = {
+			exists = current_ruler
+			current_ruler = {
+				popularity >= 80
+			}
+		} 
+		
+		final = yes
+		
+		bypass = {
+			is_tribal = no
+		} 
+
+		on_completion = {
+			add_2_free_province_investments = yes
+			
+			change_government = democratic_republic
+			switch_government_type_event_clearup_effect = yes
+			if = {
+				limit = {
+					is_iron_man = yes
+					is_ai = no
+					NOT = {
+						has_variable = ach_tribal_assembly_var
+					}
+				}
+				set_variable = ach_tribal_assembly_var
+			}
+			if = {
+				limit = {
+					exists = scope:republic_family
+					scope:republic_family = {
+						any_family_member = {
+							is_adult = yes
+							trigger_if = {
+								limit = {
+									root = {
+										gender_equality = no
+									}
+								}
+								is_male = yes
+							}
+							has_any_office = no
+						}
+					}
+				}
+				custom_tooltip = grant_offices_republic_reform_tt
+				hidden_effect = {
+					if = {
+						limit = {
+							scope:republic_family = {
+								any_family_member = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+							}
+							office_is_empty = office_censor
+						}
+						scope:republic_family = {
+							random_family_member = {
+								limit = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+								weight = {
+									modifier = {
+										factor = {
+											value = 1
+											add = charisma
+										}
+									}
+								}
+								give_office = office_censor
+							}
+						}
+					}
+					if = {
+						limit = {
+							scope:republic_family = {
+								any_family_member = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+							}
+							office_is_empty = office_tribune_of_the_soldiers
+						}
+						scope:republic_family = {
+							random_family_member = {
+								limit = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+								weight = {
+									modifier = {
+										factor = {
+											value = 1
+											add = martial
+										}
+									}
+								}
+								give_office = office_tribune_of_the_soldiers
+							}
+						}
+					}
+					if = {
+						limit = {
+							scope:republic_family = {
+								any_family_member = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+							}
+							office_is_empty = office_pontifex
+						}
+						scope:republic_family = {
+							random_family_member = {
+								limit = {
+									is_adult = yes
+									trigger_if = {
+										limit = {
+											root = {
+												gender_equality = no
+											}
+										}
+										is_male = yes
+									}
+									has_any_office = no
+									is_general = no
+									is_admiral = no
+									is_governor = no
+									has_tech_office = no
+								}
+								weight = {
+									modifier = {
+										factor = {
+											value = 1
+											add = zeal
+										}
+									}
+								}
+								give_office = office_pontifex
+							}
+						}
+					}
+				}
+			}
+		} 
+	}
+}

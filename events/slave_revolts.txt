@@ -10,9 +10,9 @@ slave_revolts.1 = {
 	
 	trigger = {
 		has_owner = yes
-		num_of_slaves >= 16
+		num_of_slaves >= 25
 		current_date > 462.1.1
-		slaves_happiness <= 0.15 #Less than 25% Happiness
+		slaves_happiness <= 0.1 #Less than 10% Happiness
 		num_of_slaves >= slave_revolt_svalue #Ratio of slaves and minimum size
 		NOT = { has_province_modifier = recent_slave_revolt } #Safe for a bit
 		owner = {
@@ -38,6 +38,10 @@ slave_revolts.1 = {
 				name = "ongoing_slave_revolt" #Inspires other slaves
 				duration = 3650
 			}
+			set_variable = {
+				name = slaves_defeated
+				value = 0
+			}
 		}
 		random_pops_in_province = {
 			limit = { pop_type = slaves }
@@ -52,10 +56,7 @@ slave_revolts.1 = {
 					unit_location = ROOT
 					unit_owner = c:REB
 				}
-				set_variable = {
-					name = slave_army_origin
-					value = root.owner
-				}
+				set_variable = slaveflag
 				hidden_effect = {
 					while = { #One light infantry per slave.
 						limit = {
@@ -68,7 +69,13 @@ slave_revolts.1 = {
 								limit = { pop_type = slaves }
 								kill_pop = yes
 							}
-						}
+							owner = {
+								change_variable = {
+									name = slaves_defeated
+									add = 1
+								}
+							}
+						}					
 						add_subunit = light_infantry
 					}
 				}
@@ -96,7 +103,7 @@ slave_revolts.2 = {
 	goto_location = root
 	
 	trigger = {
-		num_of_slaves > 1 #No slaves can join if there are no slaves
+		num_of_slaves >= 1 #No slaves can join if there are no slaves
 		NOT = { has_province_modifier = recent_slave_revolt } #Let us spare the same place from being hit twice in short time.
 		is_capital = no
 		any_unit_in_province = { #Snowball was here
@@ -161,6 +168,12 @@ slave_revolts.2 = {
 						random_pops_in_province = {
 							limit = { pop_type = slaves }
 							kill_pop = yes
+						}
+						owner = {
+							change_variable = {
+								name = slaves_defeated
+								add = 1
+							}
 						}
 					}
 					add_subunit = light_infantry #Now we add to the army
@@ -285,12 +298,23 @@ slave_revolts.2 = {
 #Slaves defeated
 slave_revolts.3 = {
 	type = country_event
-	title = "slave_revolts.3.t"
-	desc = "slave_revolts.3.desc"
+	title = slave_revolts.3.t
+	desc = slave_revolts.3.desc
 	picture = crucifixion
+	left_portrait = current_ruler
+    right_portrait = scope:actor.commander
 	
 	trigger = {
-		always = yes
+		root = {
+			has_country_modifier = ongoing_slave_revolt
+        }
+		NOT = {
+			any_province = {
+				any_unit_in_province = {
+					has_variable = slaveflag
+				}
+			}			
+		}
 	}
 	
 	immediate = {
@@ -302,19 +326,7 @@ slave_revolts.3 = {
 		}
 		every_owned_province = {
 			limit = { controller = c:REB }
-			set_controller = scope:country_dealing_with_slave_revolt
-		}
-		c:REB = {
-			every_unit = {
-				limit = {
-					unit_location = { owner = scope:country_dealing_with_slave_revolt }
-					unit_owner = c:REB
-				}
-				every_sub_unit = {
-					destroy_subunit = yes
-				}
-				destroy_unit = yes
-			}
+			set_controller = root
 		}
 	}
 	
@@ -346,8 +358,20 @@ slave_revolts.3 = {
 			duration = 5475
 		}
 		hidden_effect = {
+			change_variable = {
+				name = slaves_defeated
+				divide = 3
+				min = 2
+				max = 40
+			}
 			while = {
-				count = root.slaves_defeated_svalue #How many slaves remain to be resettled.
+				limit = {
+					var:slaves_defeated >= 1
+				}
+				change_variable = {
+					name = slaves_defeated
+					subtract = 1
+				}
 				random_owned_province = {
 					limit = {
 						is_in_region = root.capital_scope
@@ -365,8 +389,8 @@ slave_revolts.3 = {
 					create_state_pop = slaves
 				}
 			}
-		}
-		
+			remove_variable = slaves_defeated
+		}		
 	}
 }
 
@@ -498,6 +522,12 @@ slave_revolts.5 = {
 						random_pops_in_province = {
 							limit = { pop_type = slaves }
 							kill_pop = yes
+						}
+						owner = {
+							change_variable = {
+								name = slaves_defeated
+								add = 1
+							}
 						}
 					}
 					add_subunit = light_infantry #Now we add to the army

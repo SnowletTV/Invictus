@@ -54,6 +54,10 @@ gm_subject_simp = {
 
 		prevented_by = { gm_subject_simp_1b }
 
+		bypass = {
+			has_variable = chose_path
+		}
+
 		allow = {
 			scope:our_overlord = {
 				opinion = {
@@ -62,6 +66,12 @@ gm_subject_simp = {
 				}
 			}
 			is_subject = yes
+		}
+
+		on_completion = {
+			set_variable = {
+				name = chose_path
+			}
 		}
 	}
 
@@ -200,14 +210,24 @@ gm_subject_simp = {
 
 		prevented_by = { gm_subject_simp_1a }
 
+		bypass = {
+			has_variable = chose_path
+		}
+
 		allow = {
 			scope:our_overlord = {
 				opinion = {
 					target = scope:willing_subject
-					value >= 70
+					value >= 100
 				}
 			}
 			is_subject = yes
+		}
+
+		on_completion = {
+			set_variable = {
+				name = chose_path
+			}
 		}
 	}
 
@@ -228,7 +248,7 @@ gm_subject_simp = {
 		requires = { gm_subject_simp_2b }
 
 		allow = {
-			manpower_percentage >= 0.8
+			manpower_percentage >= 0.8	# 80% needs to be filled
 			is_subject = yes
 		}
 
@@ -330,11 +350,12 @@ gm_subject_simp = {
 		requires = { gm_subject_simp_3b }
 
 		allow = {
-			military_experience >= 50
+			military_experience >= 100
 			is_subject = yes
 		}
 
 		on_completion = {
+			add_military_experience = -100
 			add_research = {
 				technology = military_tech
 				value = 80
@@ -355,21 +376,53 @@ gm_subject_simp = {
 
 	gm_subject_simp_2c = {	# 2c - Overlord invests military >< business
 		icon = "task_political"
+		duration = 180
 
 		requires = { gm_subject_simp_1c }
 
 		allow = {
 			is_subject = yes
 		}
+
+		on_completion = {
+			capital_scope.state = {
+				add_state_modifier = {
+					name = state_improvement_military
+					duration = -1
+					mode = add
+				}
+				add_state_modifier = {
+					name = state_improvement_oratory
+					duration = -1
+					mode = add
+				}
+			}
+		}
 	}
 
 	gm_subject_simp_3c = {	# 3c - Overlord invests infrastructure >< religious
 		icon = "task_political"
+		duration = 180
 
 		requires = { gm_subject_simp_2c }
 
 		allow = {
 			is_subject = yes
+		}
+
+		on_completion = {
+			capital_scope.state = {
+				add_state_modifier = {
+					name = state_improvement_civic
+					duration = -1
+					mode = add
+				}
+				add_state_modifier = {
+					name = state_improvement_religious
+					duration = -1
+					mode = add
+				}
+			}
 		}
 	}
 
@@ -381,6 +434,12 @@ gm_subject_simp = {
 		allow = {
 			is_subject = yes
 		}
+
+		on_completion = {
+			add_treasury = 200
+			add_political_influence = 100
+			add_military_experience = 30
+		}
 	}
 
 	gm_subject_simp_5c = {	# 5c - Optional: Request land in your main area
@@ -390,6 +449,74 @@ gm_subject_simp = {
 
 		allow = {
 			is_subject = yes
+		}
+
+		on_completion = {
+			capital_scope.area = {
+				if = {
+					limit = {
+						NOT = {
+							this.region = scope:our_overlord.capital_scope.region
+						}
+					}
+					every_area_province = {
+						limit = {
+							owned_or_subject_owned = scope:our_overlord
+							owner = {
+								NOT = {
+									this = root
+									is_subject_type = tributary
+									is_subject_type = vassal_tribe
+									is_subject_type = subject_mercenary_city_state
+									is_subject_type = subject_colony
+									is_subject_type = subject_league_city_state
+								}
+							}
+						}
+						set_owned_by = scope:willing_subject
+					}
+				}
+				else = {
+					every_area_province = {
+						limit = {
+							owned_or_subject_owned = scope:our_overlord
+							owner = {
+								NOT = {
+									this = scope:our_overlord
+									this = root
+									is_subject_type = tributary
+									is_subject_type = vassal_tribe
+									is_subject_type = subject_mercenary_city_state
+									is_subject_type = subject_colony
+									is_subject_type = subject_league_city_state
+								}
+							}
+						}
+						set_owned_by = scope:willing_subject
+					}
+				}
+			}
+#			scope:our_overlord = {
+#				every_subject = {
+#					limit = {
+#						capital_scope = {
+#							is_in_area = scythia_area
+#						}
+#						NOT = {
+#							this = root
+#						}
+#					}
+#					scope:our_overlord = {
+#						release_subject = prev
+#					}
+#					scope:willing_subject = {
+#						make_subject = {
+#							target = prev
+#							type = client_state
+#						}
+#					}
+#				}
+#			}
 		}
 	}
 }

@@ -1,0 +1,240 @@
+﻿naval_raiding = {
+
+	enable = no
+	toggle = no
+	navy_only = yes
+	
+	hidden = {
+		unit_owner = {
+			OR = {
+				num_of_cities < 1
+				NOR = {
+					is_tradition_tree_allowed = greek_philosophy
+					is_tradition_tree_allowed = mauryan_philosophy
+					is_tradition_tree_allowed = haemic_philosophy #New for Invictus
+					is_tradition_tree_allowed = iberian_philosophy #New for Invictus
+					heritage = pirate_heritage
+				}
+			}
+		}
+	}
+
+	allow = {
+		unit_owner = {
+			trigger_if = {
+				limit = { is_tradition_tree_allowed = greek_philosophy }
+				custom_tooltip = {
+					text = has_slave_raiding_military_tradition
+					OR = {
+						has_military_bonus = greek_antigonid_path_4
+						has_military_bonus = mauryan_coastal_path_4
+						has_military_bonus = illyrian_piracy_path_1
+						has_military_bonus = celt_iberian_path_c_3
+					}
+				}
+			}
+			trigger_else_if = {
+				limit = { is_tradition_tree_allowed = mauryan_philosophy }
+				custom_tooltip = {
+					text = has_slave_raiding_military_tradition
+					OR = {
+						has_military_bonus = greek_antigonid_path_4
+						has_military_bonus = mauryan_coastal_path_4
+						has_military_bonus = illyrian_piracy_path_1
+						has_military_bonus = celt_iberian_path_c_3
+					}
+				}
+			}
+			trigger_else_if = {
+				limit = { is_tradition_tree_allowed = haemic_philosophy } #New for Invictus
+				custom_tooltip = {
+					text = has_slave_raiding_military_tradition
+					OR = {
+						has_military_bonus = greek_antigonid_path_4
+						has_military_bonus = mauryan_coastal_path_4
+						has_military_bonus = illyrian_piracy_path_1
+						has_military_bonus = celt_iberian_path_c_3
+					}
+				}
+			}
+			trigger_else_if = {
+				limit = { is_tradition_tree_allowed = iberian_philosophy } #New for Invictus
+				custom_tooltip = {
+					text = has_slave_raiding_military_tradition
+					OR = {
+						has_military_bonus = greek_antigonid_path_4
+						has_military_bonus = mauryan_coastal_path_4
+						has_military_bonus = illyrian_piracy_path_1
+						has_military_bonus = celt_iberian_path_c_3
+					}
+				}
+			}
+			trigger_else_if = {
+				limit = {
+					heritage = pirate_heritage
+				}
+			}
+			trigger_else = {
+				always = no
+			}
+		}
+		unit_location = {
+			custom_tooltip = {
+				text = naval_raiding_sea_province
+				OR = {
+					terrain = riverine_terrain
+					terrain = ocean
+					terrain = coastal_terrain
+				}
+			}
+		}
+		is_navy = yes
+		unit_size >= 10
+		in_combat = no
+		is_moving = no
+		in_siege = no
+		is_exiled = no
+		trigger_if = {
+			limit = {
+				unit_location = {
+					NOT = {
+						any_neighbor_province = {
+							is_sea = no
+							naval_raid_target_province_trigger = yes
+						}
+					}
+					any_neighbor_province = {
+						is_sea = no
+						has_owner = yes
+						total_population > 5
+						fort_level <= root.naval_raid_fort_limit_tooltip_svalue
+						NOT = { owner = root.unit_owner }
+						root.unit_owner = { is_subject = yes }
+						root.unit_owner.overlord = this.owner
+						owner = {
+							NOT = { alliance_with = root.unit_owner }
+							NOT = { is_subject_of = root.unit_owner }
+							NOT = { has_truce_with = root.unit_owner }
+						}
+						is_port = yes
+					}
+				}
+			}
+			custom_tooltip = {
+				text = naval_raiding_only_overlord_ports_tooltip
+				always = no
+			}
+		}
+		trigger_else_if = {
+			limit = {
+				unit_location = {
+					NOT = {
+						any_neighbor_province = {
+							is_sea = no
+							naval_raid_target_province_trigger = yes
+						}
+					}
+				}
+			}
+			custom_tooltip = {
+				text = explain_naval_raiding_tooltip
+				always = no
+			}
+		}
+		trigger_else_if = {
+			limit = {
+				unit_location = {
+					NOT = {
+						any_neighbor_province = {
+							is_sea = no
+							naval_raid_target_province_trigger = yes
+							NOT = {
+								has_province_modifier = port_province_raided
+							}
+						}
+					}
+				}
+			}
+			custom_tooltip = {
+				text = naval_raiding_cooldown_tooltip
+				always = no
+			}
+		}
+		trigger_if = {
+			limit = {
+				exists = commander
+			}
+			commander = {
+				loyalty > 33
+			}
+		}
+	}
+	
+	
+	
+	start_effect = {
+		if = {
+			limit = {
+				unit_location = {
+					any_neighbor_province = {
+						naval_raid_target_province_trigger = yes
+					}
+				}
+			}
+			custom_tooltip = naval_raiding_ae_gain_tooltip
+			show_as_tooltip = { #All fake for the tooltips sake
+				unit_location = {
+					every_neighbor_province = {
+						limit = {
+							naval_raid_target_province_trigger = yes
+							NOT = {	has_province_modifier = port_province_raided }
+						}
+						custom = naval_raiding_explain_modifier_tooltip
+						add_province_modifier = {
+							name = port_province_raided
+							duration = 3650
+						}
+					}
+				}
+			}
+			hidden_effect = {
+				root.unit_owner = {
+					add_aggressive_expansion = 1
+				}
+			}
+			unit_location = {
+				ordered_neighbor_province = {
+					limit = {
+						naval_raid_target_province_trigger = yes
+						NOT = {	has_province_modifier = port_province_raided }
+					}
+					add_city_smoke_effect = yes
+					add_city_fire_effect = yes
+					order_by = total_population
+					max = root.naval_raid_capacity_svalue
+					hidden_effect = {
+						root.unit_owner = {
+							add_aggressive_expansion = 1
+						}
+						add_province_modifier = {
+							name = port_province_raided
+							duration = 3650
+						}
+					}
+					random_pops_in_province = {
+						move_pop = root.unit_owner.capital_scope
+						if = {
+							limit = { NOT = { pop_type = slaves } }
+							set_pop_type = slaves
+						}
+					}
+				}
+			}
+		}
+		else = {
+			custom_tooltip = naval_raiding_tooltip
+		}
+	}
+	
+	
+}

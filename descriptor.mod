@@ -3,6 +3,5 @@ tags={
 	"Overhaul"
 	"Total Conversions"
 }
-name="Imperator: Invictus"
+name="Imperator: Invictus-dev"
 supported_version="2.*"
-remote_file_id="2532715348"

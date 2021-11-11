@@ -1,0 +1,282 @@
+﻿namespace = gadir_inv
+
+gadir_inv.1 = {
+	type = country_event
+	title = gadir_inv.1.t
+	desc = gadir_inv.1.desc
+	picture = interesting_histories_purple_soldier
+
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	option = { #reconquer
+		name = gadir_inv.1.a
+		add_country_modifier = {
+			name = gadir_modifier_2
+			duration = 9125 #25 yrs
+		}
+	}
+
+	option = { #be content with the status quo
+		name = gadir_inv.1.b
+		add_country_modifier = {
+			name = gadir_modifier_3
+			duration = 9125 #25 yrs
+		}
+		set_variable = { #skips all the tasks confronting with Carthage and disallows mission tree 2
+			name = coward_not_facing_carthage_and_skipping_half_the_content
+			days = -1
+		}
+		c:CAR = {
+			add_opinion = {
+				target = root
+				modifier = trade_contact_well_treated
+			}
+		}
+	}
+}
+
+gadir_inv.2 = { #task 15 naval buff choice
+	type = country_event
+	title = gadir_inv.2.t
+	desc = gadir_inv.2.desc
+	picture = interesting_histories_ship_port_africa
+
+	left_portrait = current_ruler
+	right_portrait = scope:random_admiral
+
+	immediate = {
+		random_character = {
+			limit = {
+				is_admiral = yes
+			}
+			save_scope_as = random_admiral
+		}
+	}
+
+	option = { #offense
+		name = gadir_inv.2.a
+		add_country_modifier = {
+			name = gadir_modifier_10
+			duration = 9125 #25 yrs
+		}
+	}
+	option = { #defense
+		name = gadir_inv.2.b
+		add_country_modifier = {
+			name = gadir_modifier_11
+			duration = 9125 #25 yrs
+		}
+	}
+	option = { #maintenance
+		name = gadir_inv.2.c
+		add_country_modifier = {
+			name = gadir_modifier_12
+			duration = 9125 #25 yrs
+		}
+	}
+}
+
+gadir_inv.3 = { #creating tags nad start war, event is triggered for Carthage
+	type = country_event
+	title = gadir_inv.3.t
+	desc = gadir_inv.3.desc
+	picture = interesting_histories_purple_soldier
+
+	left_portrait = c:CAR.current_ruler
+	right_portrait = scope:baetica_governor_scope
+	right_portrait = scope:mauretania_governor_scope
+	left_portrait = c:GAD.current_ruler
+
+	trigger = {
+		region:baetica_region = {
+			any_region_province = {
+				owner = c:CAR
+			}
+		}
+	}
+
+	immediate = {
+		p:1278.governor = {
+			save_scope_as = baetica_governor_scope
+		}
+		p:3061.governor = {
+			save_scope_as = mauretania_governor_scope
+		}
+
+		ordered_owned_province = {
+			limit = {
+				is_in_region = baetica_region
+			}
+			order_by = total_population
+			create_country = {
+				name = {
+					name = BAETICA_REBELS
+					adjective = BAETICA_REBELS_ADJECTIVE
+				}
+				set_primary_culture = carthaginian
+				set_country_religion = carthaginian_pantheon
+				change_government = aristocratic_republic
+				set_country_heritage = punic_heritage
+				save_scope_as = baetica_rebels_country_scope
+				change_country_tag = BRR
+				set_as_ruler = scope:baetica_governor_scope
+			}
+		}
+
+		region:baetica_region = {
+			every_region_province = {
+				limit = {
+					owned_or_subject_owned = c:CAR 
+				}
+				set_owned_by = scope:baetica_rebels_country_scope
+			}
+		}
+
+		if = {
+			limit = {
+				scope:mauretania_governor_scope = {
+					is_friend = c:GAD.current_ruler
+				}
+			}
+			ordered_owned_province = {
+				limit = {
+					is_in_region = mauretania_region
+				}
+				order_by = total_population
+				create_country = {
+					name = {
+						name = MAURETANIA_REBELS
+						adjective = MAURETANIA_REBELS_ADJECTIVE
+					}
+					set_primary_culture = carthaginian
+					set_country_religion = carthaginian_pantheon
+					change_government = aristocratic_republic
+					set_country_heritage = punic_heritage
+					save_scope_as = mauretania_rebels_country_scope
+					change_country_tag = MRR
+					set_as_ruler = scope:mauretania_governor_scope
+				}
+			}
+
+			region:mauretania_region = {
+				every_region_province = {
+					limit = {
+						owned_or_subject_owned = c:CAR 
+					}
+					set_owned_by = scope:mauretania_rebels_country_scope
+				}
+			}
+		}
+
+		c:GAD = {
+			declare_war_with_wargoal = {
+				war_goal = naval_wargoal
+				target = c:CAR
+			}
+		}
+		random_current_war = {
+			limit = {
+				any_war_attacker = { this = c:GAD }
+				any_war_defender = { this = c:CAR }
+			}
+			save_scope_as = gadir_carthage_war_scope
+		}
+		scope:baetica_rebels_country_scope = {
+			add_to_war = {
+				target = scope:gadir_carthage_war_scope
+				attacker = yes
+				leader = no
+			}
+		}
+		if = {
+			limit = {
+				c:MRR = {
+					has_land = yes
+				}
+			}
+			scope:mauretania_rebels_country_scope = {
+				add_to_war = {
+					target = scope:gadir_carthage_war_scope
+					attacker = yes
+					leader = no
+				}
+			}
+		}
+	}
+
+	option = {
+		name = gadir_inv.3.a
+		c:GAD = {
+			trigger_event = { #tell the player that he's at war
+				id = gadir_inv.4
+				days = -1
+			}
+		}
+	}
+}
+
+gadir_inv.4 = { #just telling you that you're at war with carthage now
+	type = country_event
+	title = gadir_inv.4.t
+	desc = gadir_inv.4.desc
+	picture = council_country
+
+	goto_location = c:CAR.capital_scope
+	
+	left_portrait = current_ruler
+	left_portrait = c:BRR.current_ruler
+	left_portrait = c:MRR.current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	option = {
+		name = gadir_inv.4
+	}
+}
+
+gadir_inv.5 = { #annexation of MRR and BRR by c:GAD
+	type = country_event
+	title = gadir_inv.5.t
+	desc = gadir_inv.5.desc
+	picture = interesting_histories_punic_town
+
+	immediate = {
+		c:BRR = {
+			every_owned_province = {
+				set_owned_by = c:GAD
+			}
+		}
+
+		if = {
+			limit = {
+				c:MRR = {
+					has_land = yes
+				}
+			}
+			c:MRR = {
+				every_owned_province = {
+					set_owned_by = c:GAD
+				}
+			}
+		}
+	}
+
+	option = {
+		name = gadir_inv.5.a
+	}
+}
+
+#gadir_inv.6 = { #start of small event chain for task 1
+#	type = country_event
+#	title = gadir_inv.6.t
+#	desc = gadir_inv.6.desc
+#	picture = interesting_histories_ship_port_africa
+#
+#	option = {
+#		name = gadir_inv.6.a
+#	}
+#
+#	option = {
+#		name = gadir_inv.6.b
+#	}
+#}

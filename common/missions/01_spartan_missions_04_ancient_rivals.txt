@@ -1,0 +1,1180 @@
+﻿spartan_mission_04_rivals = {
+    header = "mission_image_sparta"
+    icon = "sparta_1"
+
+    repeatable = no
+
+    chance = {
+        factor = 3
+    }
+
+    potential = {
+        NOT = { has_variable = spartan_mission_04_rivals }
+        has_dlc = "Magna Graecia"
+        OR = {
+            tag = SPA
+            has_variable = spa_unique_mech
+        }
+        OR = {
+            has_completed_mission = 01_sparta_missions_02_peloponnesus
+            has_completed_mission = spartan_mission_03_peloponnesian_league
+        }
+        calc_true_if = {
+            amount >= 2
+            AND = {
+                c:ATH = {
+                    num_of_cities >= 1
+                }
+                NOT = { owns = 416 }
+            }
+            NOT = { owns = 426 }
+            AND = {
+                c:MAC = {
+                    num_of_cities >= 1
+                }
+                NOR = { 
+                    owns = 379 
+                    owns = 373
+                }
+            }
+        }
+        is_subject = no
+        has_civil_war = no
+    }
+
+    abort = {
+        ai_mission_back_out_trigger = yes
+    }
+
+    on_start = {
+        start_mission_ai_effect = yes
+        save_scope_as = mission_country
+        if = {
+            limit = {
+                c:ATH = {
+                    num_of_cities >= 1
+                }
+                NOT = { owns = 416 }
+            }
+            set_variable = spartan_mission_04_athens_branch
+        }
+        if = {
+            limit = {
+                NOT = { owns = 426 }
+            }
+            set_variable = spartan_mission_04_thebes_branch
+        }
+        if = {
+            limit = {
+                c:MAC = {
+                    num_of_cities >= 1
+                }
+                NOR = { 
+                    owns = 379 
+                    owns = 373
+                }
+            }
+            set_variable = spartan_mission_04_macedon_branch
+        }
+        if = {
+            limit = {
+                any_country = {
+                    tag = MAC
+                }
+            }
+            random_country = {
+                limit = {
+                    tag = MAC
+                }
+                save_scope_as = macedon_scope
+            }
+        }
+    }
+
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = spartan_mission_04_rivals
+            days = 7300
+        }
+        spartan_mission_04_variable_cleanup_effect = yes
+    }
+
+    on_completion = {
+        complete_mission_effect = yes
+        spartan_mission_04_variable_cleanup_effect = yes
+        trigger_event = me_spartan_04_rivals.21
+        add_country_modifier = {
+            name = sparta_mission_rivals_armies_of_sparta_modifier
+            duration = -1
+        }
+    }
+
+    spartan_mission_04_rivals_task_1 = { # The people of Athens
+        duration = 90
+
+        icon = "task_diplomatic"
+
+        highlight = {
+            scope:province = {
+                exists = owner 
+                owner = c:ATH
+                OR = {
+                    province_id = 417
+                    province_id = 413
+                    province_id = 416
+                    province_id = 7799
+                }
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_athens_branch
+        }
+
+        allow = {
+            political_influence >= 25
+        }
+
+        bypass = {
+            p:416 = {
+                exists = owner
+                NOT = { owner = c:ATH }
+            }
+        }
+
+        on_start = {
+            trigger_event = me_spartan_04_rivals.2
+            add_political_influence = -25
+            set_variable = spartan_mission_04_rivals_task_1_started
+        }
+
+        on_bypass = {
+            if = {
+                limit = {
+                    has_variable = spartan_mission_04_rivals_task_1_started
+                }
+                remove_variable = spartan_mission_04_rivals_task_1_started
+                add_political_influence = 25
+                trigger_event = me_spartan_04_rivals.1
+            }
+        }
+
+        on_completion = {  
+            trigger_event = me_spartan_04_rivals.3
+            remove_variable = spartan_mission_04_rivals_task_1_started
+        	c:ATH = {
+                every_owned_province = {
+                    limit = {
+                        OR = {
+                            province_id = 417
+                            province_id = 413
+                            province_id = 416
+                            province_id = 7799
+                        }
+                    }
+                    add_claim = root
+                }
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_2 = { # Taking the Long Wall
+    	requires = { spartan_mission_04_rivals_task_1 }
+
+        icon = "task_conquest"
+
+        highlight = {
+            scope:province = {
+                province_id = 416
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_athens_branch
+        }
+
+        allow = {
+        	owns_or_subject_owns = 416
+        }
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.4
+            p:416 = {
+                custom_tooltip = spartan_mission_04_rivals_task_2_effect_tt
+                add_province_modifier = {
+                    name = sparta_mission_rivals_athens_subjugated_modifier
+                    duration = 3650
+                }
+            }
+            hidden_effect = {
+                p:416 = {
+                    while = {
+                        limit = {
+                            has_building = fortress_building
+                        }
+                        remove_building_level = fortress_building
+                    }
+                }
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_3 = { # Rebuilding Athens
+    	requires = { spartan_mission_04_rivals_task_2 }
+
+        icon = "task_economical"
+
+        highlight = {
+            scope:province = {
+                province_id = 416
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_athens_branch
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 416 }
+                }
+                owns = 416
+            }
+        	hidden:p:416 = {
+        		trigger_if = {
+        			limit = {
+        				has_construction = yes
+        			}
+        			custom_tooltip = {
+        				text = ongoing_construction_trigger_tt
+        				has_construction = no
+        			}
+        		}
+        		custom_tooltip = {
+	        		text = spartan_mission_04_rivals_task_3_trigger_tt
+	        		free_building_slots = 0
+	        	}
+        	}
+        }
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.5
+            p:416 = {
+                add_province_modifier = {
+                    name = sparta_mission_rivals_attican_infrastructure_modifier
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_4 = { # The Spartan Garrison
+    	requires = { spartan_mission_04_rivals_task_2 }
+
+        icon = "task_expansion"
+
+        highlight = {
+            scope:province = {
+                province_id = 416
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_athens_branch
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns_or_subject_owns = 416 }
+                }
+                owns_or_subject_owns = 416
+            }
+        	custom_tooltip = {
+        		text = spartan_mission_04_rivals_task_4_trigger_tt
+	        	any_country_sub_unit = {
+	        		count >= spartan_mission_04_rivals_task_4_total
+                    OR = {
+                        sub_unit_type = spearmen
+                        sub_unit_type = heavy_infantry
+                        sub_unit_type = light_infantry    
+                    }
+	        		owning_unit.unit_location = p:416
+                    subunit_not_mercenary_unit_trigger = yes
+	        	}
+        	}
+        }
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.6
+            custom_tooltip = spartan_mission_04_rivals_task_4_effect_tt
+            hidden_effect = {
+                ordered_country_sub_unit = {   
+                    order_by = subunit_morale_percentage
+                    limit = {
+                        OR = {
+                            sub_unit_type = spearmen
+                            sub_unit_type = heavy_infantry
+                            sub_unit_type = light_infantry    
+                        }
+                        owning_unit.unit_location = p:416
+                        subunit_not_mercenary_unit_trigger = yes
+                    }
+                    max = spartan_mission_04_rivals_task_4_total
+                    destroy_subunit = yes
+                }
+                every_unit = {
+                    limit = {
+                        unit_size = 0
+                    }
+                    destroy_unit = yes
+                }
+            }
+            p:416 = {
+                if = {
+                    limit = {
+                        has_province_modifier = sparta_mission_rivals_athens_subjugated_modifier
+                    }
+                    remove_province_modifier = sparta_mission_rivals_athens_subjugated_modifier
+                }
+                add_province_modifier = {
+                    name = sparta_mission_rivals_athens_garrisoned_modifier
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_5 = { # The Mysteries in Eleusis
+    	requires = { spartan_mission_04_rivals_task_3 }
+
+        icon = "task_political"
+
+        potential = {
+            has_variable = spartan_mission_04_athens_branch
+        }
+
+        allow = {
+            political_influence >= 25
+        }
+
+        on_completion = {
+            add_political_influence = -25
+            trigger_event = me_spartan_04_rivals.7
+            custom_tooltip = spartan_mission_04_rivals_task_5_effect_tt
+            set_variable = deity_unlocked_demeter_potnia
+            custom_tooltip = athenian_mission_02_attica_task_10_effect_tt
+            current_ruler = {
+                add_character_modifier = {
+                    name = athenian_mission_10_eleusinian_cult_modifier
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_6 = { # The Plains of Thessaly
+        icon = "task_expansion"
+
+        highlight = {
+            scope:province = {
+                exists = owner 
+                owner = c:MAC
+                is_in_area = thessaly_area
+            }
+        }
+
+        allow = {
+            custom_tooltip = {
+                text = spartan_mission_04_rivals_task_6_trigger_tt
+                area:thessaly_area = {
+                    any_area_province = {
+                        count = all
+                        OR = {
+                            controller = root
+                            NOT = { owner = c:MAC }
+                        }
+                    }
+                }
+            }
+        }
+
+        on_completion = {
+            if = {
+                limit = {
+                    NOR = {
+                        p:390 = {
+                            controller = root
+                            owner = c:MAC
+                        }
+                        p:389 = {
+                            controller = root
+                            owner = c:MAC
+                        }
+                        p:394 = {
+                            controller = root
+                            owner = c:MAC
+                        }
+                    }
+                }
+                custom_tooltip = spartan_mission_04_rivals_task_6_effect_thessaly_tt
+                hidden_effect = {
+                    area:thessaly_area = {
+                        ordered_area_province = {
+                            order_by = total_population
+                            limit = {
+                                controller = root
+                                owner = c:MAC
+                            }
+                            max = 1
+                            create_country = {
+                                name = {
+                                    name = THESSALY_NAME
+                                    adjective = THESSALY_ADJECTIVE
+                                }
+                                save_scope_as = thessaly_country
+                                set_variable = {
+                                    name = new_thessalian_country
+                                    days = 100
+                                }
+                                add_opinion = {
+                                    target = root
+                                    modifier = opinion_liberated_us
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else = {
+                p:390 = { # Pherai
+                	if = {
+                        limit = {
+                            controller = root
+                            owner = c:MAC
+                        }
+                        custom_tooltip = spartan_mission_04_rivals_task_6_effect_specific_tt
+                        hidden_effect = {
+                            create_country = {
+                                name = {
+                                    name = PHERAI_NAME
+                                    adjective = PHERAI_ADJECTIVE
+                                }
+                                save_scope_as = pherai_country
+                                set_variable = {
+                                    name = new_thessalian_country
+                                    days = 100
+                                }
+                                add_opinion = {
+                                    target = root
+                                    modifier = opinion_liberated_us
+                                }
+                            }
+                            if = {
+                                limit = {
+                                    area:thessaly_area = {
+                                        any_area_province = {
+                                            controller = root
+                                            owner = c:MAC
+                                            OR = {
+                                                province_id = 391
+                                                province_id = 398
+                                                province_id = 420
+                                                province_id = 392
+                                            }
+                                        }
+                                    }
+                                }
+                                area:thessaly_area = {
+                                    every_area_province = {
+                                        limit = {
+                                            controller = root
+                                            owner = c:MAC
+                                            OR = {
+                                                province_id = 391
+                                                province_id = 398
+                                                province_id = 420
+                                                province_id = 392
+                                            }
+                                        }
+                                        set_owned_by = scope:pherai_country
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                p:389 = { # Larissa
+                    if = {
+                        limit = {
+                            controller = root
+                            owner = c:MAC
+                        }
+                        custom_tooltip = spartan_mission_04_rivals_task_6_effect_specific_tt
+                        hidden_effect = {
+                            create_country = {
+                                name = {
+                                    name = LARISSA_NAME
+                                    adjective = LARISSA_ADJECTIVE
+                                }
+                                set_variable = {
+                                    name = new_thessalian_country
+                                    days = 100
+                                }
+                                save_scope_as = larissa_country
+                                add_opinion = {
+                                    target = root
+                                    modifier = opinion_liberated_us
+                                }
+                            }
+                            if = {
+                                limit = {
+                                    area:thessaly_area = {
+                                        any_area_province = {
+                                            controller = root
+                                            owner = c:MAC
+                                            OR = {
+                                                province_id = 388
+                                                province_id = 404
+                                            }
+                                        }
+                                    }
+                                }
+                                area:thessaly_area = {
+                                    every_area_province = {
+                                        limit = {
+                                            controller = root
+                                            owner = c:MAC
+                                            OR = {
+                                                province_id = 388
+                                                province_id = 404
+                                            }
+                                        }
+                                        set_owned_by = scope:larissa_country
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                p:394 = { # Pharsalos
+                    if = {
+                        limit = {
+                            controller = root
+                            owner = c:MAC
+                        }
+                        custom_tooltip = spartan_mission_04_rivals_task_6_effect_specific_tt
+                        hidden_effect = {
+                            create_country = {
+                                name = {
+                                    name = PHARSALOS_NAME
+                                    adjective = PHARSALOS_ADJECTIVE
+                                }
+                                save_scope_as = pharsalos_country
+                                set_variable = {
+                                    name = new_thessalian_country
+                                    days = 100
+                                }
+                                add_opinion = {
+                                    target = root
+                                    modifier = opinion_liberated_us
+                                }
+                            }
+                            if = {
+                                limit = {
+                                    area:thessaly_area = {
+                                        any_area_province = {
+                                            controller = root
+                                            owner = c:MAC
+                                            OR = {
+                                                province_id = 395
+                                                province_id = 396
+                                            }
+                                        }
+                                    }
+                                }
+                                area:thessaly_area = {
+                                    every_area_province = {
+                                        limit = {
+                                            controller = root
+                                            owner = c:MAC
+                                            OR = {
+                                                province_id = 395
+                                                province_id = 396
+                                            }
+                                        }
+                                        set_owned_by = scope:pharsalos_country
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            hidden_effect = {
+                area:thessaly_area = {
+                    while = {
+                        count = 10
+                        limit = {
+                            any_area_province = {
+                                controller = root
+                                owner = c:MAC
+                            }
+                        }
+                        every_area_province = {
+                            limit = {
+                                controller = root
+                                owner = c:MAC
+                            }
+                            save_scope_as = thessalian_province
+                            random_neighbor_province = {
+                                limit = {
+                                    exists = owner
+                                    owner = {
+                                        has_variable = new_thessalian_country
+                                    }
+                                }
+                                owner = {
+                                    save_scope_as = thessalian_country
+                                }
+                                scope:thessalian_province = {
+                                    set_owned_by = scope:thessalian_country
+                                }
+                            }
+                        }
+                    }
+                    while = {
+                        count = 10
+                        limit = {
+                            any_area_province = {
+                                controller = root
+                                owner = c:MAC
+                            }
+                        }
+                        every_area_province = {
+                            limit = {
+                                controller = root
+                                owner = c:MAC
+                            }
+                            save_scope_as = thessalian_province
+                            random_neighbor_province = {
+                                random_neighbor_province = {
+                                    limit = {
+                                        exists = owner
+                                        owner = {
+                                            has_variable = new_thessalian_country
+                                        }
+                                    }
+                                    owner = {
+                                        save_scope_as = thessalian_country
+                                    }
+                                    scope:thessalian_province = {
+                                        set_owned_by = scope:thessalian_country
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    while = {
+                        count = 10
+                        limit = {
+                            any_area_province = {
+                                controller = root
+                                owner = c:MAC
+                            }
+                        }
+                        every_area_province = {
+                            limit = {
+                                controller = root
+                                owner = c:MAC
+                            }
+                            save_scope_as = thessalian_province
+                            random_country = {
+                                limit = {
+                                    has_variable = new_thessalian_country
+                                }
+                                save_scope_as = thessalian_country
+                                scope:thessalian_province = {
+                                    set_owned_by = scope:thessalian_country
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            trigger_event = me_spartan_04_rivals.8
+            c:MAC = {
+                trigger_event = me_spartan_04_rivals.9
+            }
+            add_country_modifier = {
+                name = sparta_mission_thessalian_cavalry
+                duration = 7300
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_7 = { # The Sons of Cadmos
+        icon = "task_conquest"
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 426
+                    province_id = 468
+                    province_id = 423
+                    province_id = 7802
+                    province_id = 406
+                }
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_thebes_branch
+        }
+
+        allow = {
+        	owns = 426
+        	owns_or_subject_owns = 468
+        	owns_or_subject_owns = 423
+        	owns_or_subject_owns = 7802
+        	owns_or_subject_owns = 406
+        }
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.10
+            if = {
+                limit = {
+                    capital_scope = {
+                        NOT = { province_id = 426 }
+                    }
+                }
+                capital_scope = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_culture = root.culture
+                            OR = {
+                                pop_type = nobles
+								pop_type = citizen
+                                pop_type = freemen
+                            }
+                        }
+                        move_pop = p:426
+                    }
+                    random_pops_in_province = {
+                        limit = {
+                            pop_culture = root.culture
+                            OR = {
+                                pop_type = nobles
+								pop_type = citizen
+                                pop_type = freemen
+                            }
+                        }
+                        move_pop = p:426
+                    }
+                }
+            }
+            p:426 = {
+                add_province_modifier = {
+                    name = sparta_mission_rivals_theban_occupation_modifier
+                    duration = 7300
+                }
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_8 = { # Restoring the Seven Gates
+    	requires = { spartan_mission_04_rivals_task_7 }
+
+        icon = "task_economical"
+
+        highlight = {
+            scope:province = {
+                province_id = 426
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_thebes_branch
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 426 }
+                }
+                owns = 426
+            }
+        	custom_tooltip = {
+        		text = spartan_mission_04_rivals_task_8_trigger_tt
+	        	p:426 = {
+	        		num_of_fortress_building >= spartan_mission_04_rivals_task_8_total
+	        	}
+        	}
+        }
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.11
+            p:426 = {
+                add_permanent_province_modifier = {
+                    name = sparta_mission_rivals_theban_glory_modifier
+                }
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_9 = { # Appeasing the Gods of Boeotia
+        duration = 60
+
+    	requires = { spartan_mission_04_rivals_task_7 }
+
+        icon = "task_political"
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 426
+                    province_id = 423
+                    province_id = 468
+                    province_id = 7802
+                }
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_thebes_branch
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 426 }
+                }
+                owns = 426
+            }
+            treasury >= 150
+        }
+
+        on_start = {
+            add_treasury = -150
+            trigger_event = me_spartan_04_rivals.12
+        }
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.15
+            if = {
+                limit = {
+                    any_owned_province = {
+                        is_in_area = boeotia_area
+                    }
+                }
+                random_owned_province = {
+                    limit = {
+                        is_in_area = boeotia_area
+                    }
+                    state = {
+                        add_state_modifier = {
+                            name = sparta_mission_rivals_boeotia_appeased_gods_modifier
+                            duration = 7300
+                        }
+                    }
+                }
+            }
+            else = {
+                show_as_tooltip = {
+                    p:426.state = {
+                        add_state_modifier = {
+                            name = sparta_mission_rivals_boeotia_appeased_gods_modifier
+                            duration = 7300
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_10 = { # Pacifying the League
+    	requires = { spartan_mission_04_rivals_task_8 spartan_mission_04_rivals_task_9 }
+
+        icon = "task_diplomatic"
+
+        highlight = {
+            scope:province = {
+                owner = root
+                is_in_area = boeotia_area 
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_thebes_branch
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = {
+                        owns = 426
+                    }
+                }
+                owns = 426
+            }
+        	hidden:p:426 = {
+        		hidden:state = {
+        			calc_true_if = {
+		        		amount >= 2
+		        		state_improvement_military_trigger = yes 
+		        		has_state_modifier = state_improvement_civic
+		        		has_state_modifier = state_improvement_oratory
+		        		state_improvement_religious_trigger = yes
+		        	}
+        		}
+        	}
+        }
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.16
+            add_2_free_province_investments = yes
+        }
+    }
+
+    spartan_mission_04_rivals_task_11 = { # Ending the Macedonian Threat
+        icon = "task_political"
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 379
+                    province_id = 373
+                    province_id = 365
+                }
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_macedon_branch
+        }
+
+        allow = {
+            political_influence >= 25
+        }
+
+        bypass = {
+            owns = 379
+            owns = 373
+            owns = 365
+        }
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.17
+            add_political_influence = -25
+            if = {
+                limit = {
+                    NOT = { owns = 379 }
+                }
+                p:379 = {
+                    add_claim = root
+                }
+            }
+            if = {
+                limit = {
+                    NOT = { owns = 373 }
+                }
+                p:373 = {
+                    add_claim = root
+                }
+            }
+            if = {
+                limit = {
+                    NOT = { owns = 365 }
+                }
+                p:365 = {
+                    add_claim = root
+                }
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_12 = { # Home of the Macedonians
+    	requires = { spartan_mission_04_rivals_task_11 }
+
+        icon = "task_expansion"
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 379
+                    province_id = 373
+                    province_id = 365
+                }
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_macedon_branch
+        }
+
+        allow = {
+        	owns = 379
+        	owns = 373
+            owns = 365
+        }
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.18
+            add_country_modifier = {
+                name = sparta_mission_rivals_revenge_on_the_macedons_modifier
+                duration = 3650
+            }
+            p:379 = {
+                if = {
+                    limit = {
+                        has_city_status = yes
+                    }
+                    set_city_status = settlement
+                }
+                if = {
+                    limit = {
+                        total_population > 10
+                    }
+                    custom_tooltip = spartan_mission_04_rivals_task_12_effect_tt
+                }
+                add_province_modifier = {
+                    name = sparta_mission_rivals_pella_modifier
+                    duration = -1
+                }
+                hidden_effect = {
+                    while = {
+                        limit = {
+                            total_population >= 10
+                        }
+                        root = {
+                            random_owned_province = {
+                                limit = {
+                                    total_population < population_cap
+                                    NOT = { province_id = 379 }
+                                }
+                                weight = {
+                                    modifier = {
+                                        factor = 10
+                                        OR = {
+                                            is_in_area = macedonia_area
+                                            is_in_area = chalkidiki_area
+                                        }
+                                    }
+                                    modifier = {
+                                        factor = 10
+                                        has_city_status = yes
+                                    }
+                                }
+                                save_scope_as = new_home
+                            }
+                        }
+                        random_pops_in_province = {
+                            move_pop = scope:new_home
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    spartan_mission_04_rivals_task_13 = { # Spartan Peace
+    	requires = { spartan_mission_04_rivals_task_12 }
+
+        icon = "task_diplomatic"
+
+        highlight = {
+            scope:province = {
+                owner = root
+                OR = {
+                    is_in_area = macedonia_area
+                    is_in_area = chalkidiki_area 
+                }
+            }
+        }
+
+        potential = {
+            has_variable = spartan_mission_04_macedon_branch
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    area:macedonia_area = {
+                        NOT = {
+                            any_area_province = {
+                                owner = root
+                            }
+                        }
+                    }
+                }
+                custom_tooltip = {
+                    text = spartan_mission_04_rivals_task_13_trigger_own_macedonia_tt
+                    area:macedonia_area = {
+                        any_area_province = {
+                            owner = root
+                        }
+                    }
+                }
+            }
+            custom_tooltip = {
+                text = spartan_mission_04_rivals_task_13_trigger_macedonia_tt
+                area:macedonia_area = {
+                    any_area_province = {
+                        owner = root
+                        state_loyalty = 100
+                    }
+                }
+            }
+            trigger_if = {
+                limit = {
+                    area:chalkidiki_area = {
+                        NOT = {
+                            any_area_province = {
+                                owner = root
+                            }
+                        }
+                    }
+                }
+                custom_tooltip = {
+                    text = spartan_mission_04_rivals_task_13_trigger_own_chalkidiki_tt
+                    area:chalkidiki_area = {
+                        any_area_province = {
+                            owner = root
+                        }
+                    }
+                }
+            }
+            custom_tooltip = {
+                text = spartan_mission_04_rivals_task_13_trigger_chalkidiki_tt
+                area:chalkidiki_area = {
+                    any_area_province = {
+                        owner = root
+                        state_loyalty = 100
+                    }
+                }
+            }
+        }
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.19
+            add_2_free_province_investments = yes
+        }
+    }
+
+    spartan_mission_04_rivals_task_final = { # Spartan Supremacy
+    	requires = { spartan_mission_04_rivals_task_4 spartan_mission_04_rivals_task_10 spartan_mission_04_rivals_task_13 }
+
+        icon = "task_political"
+
+        final = yes
+
+        on_completion = {
+            trigger_event = me_spartan_04_rivals.20
+            current_ruler = {
+                add_popularity = 15
+            }
+        }
+    }
+}

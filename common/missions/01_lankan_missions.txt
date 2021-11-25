@@ -24,14 +24,19 @@
 
     on_abort = {
         custom_tooltip = general_mission_cooldown_tt
-        set_variable = {
-            name = lankan_mission_cooldown
-            days = 7300
-        }
+#        set_variable = {
+#            name = lankan_mission_cooldown
+#            days = 7300
+#        }
     }
 
     on_completion = {
         complete_mission_effect = yes
+        add_3_free_province_investments = yes
+       	current_ruler = {
+       		add_finesse = 1
+       		add_martial = 1
+       	}
     }
 
 	lankan_missions_task_1 = {   ##The Kingdom of Anuradhapura
@@ -57,7 +62,7 @@
 		}
 	}
 
-	lankan_missions_task_2 = {   ##Dominate Ruhunu
+	lankan_missions_task_2 = {   ##Integrate Ruhunu
 		icon = "task_political"
 		requires = { lankan_missions_task_1 }
 
@@ -68,18 +73,40 @@
 			}
 		}
 
-		allow = {
-		#Ruhunu doens't exist or is a subject
+		bypass = {
 			c:RHN = {
 				OR = {
 					has_land = no
 					is_subject_of = root
 				}
+			}			
+		}
+
+		allow = {
+		#Current ruler is a freind or Ruhunu has 75 opinion
+			custom_tooltip = {
+			text = lankan_missions_task_2_tooltip
+			OR = {
+				current_ruler = { is_friend = c:RHN.current_ruler }
+				c:RHN = {
+	                opinion = {
+						target = scope:mission_country
+						value >= 75
+					}
+				}
+			}
 			}
 		}
 
 		on_completion = {
+			trigger_event = {
+				id = me_lanka.5
+			}
 			add_stability = 5
+			add_political_influence = 25
+		}
+
+		on_bypass = {
 			add_political_influence = 25
 		}
 	}
@@ -249,7 +276,11 @@
 		}
 
 		allow = {
-		#Pandya does not exist or are our subject
+		#Own all Pandyan provinces and Pandya does not exist or are our subject
+			custom_tooltip = {
+				text = lankan_missions_task_7_A_tooltip
+				lankan_missions_task_7_owned_pandyan_provinces_current >= lankan_missions_task_7_owned_pandyan_provinces_total
+			}		
 			c:PND = {
 				OR = {
 				has_land = no
@@ -261,7 +292,7 @@
 		on_completion = {
 		#Small chance to get the blood of Pandya
 			add_political_influence = 25
-			custom_tooltip = lankan_missions_task_7_tooltip
+			custom_tooltip = lankan_missions_task_7_B_tooltip
 			hidden_effect = {
 				random_list = {
 					25 = {
@@ -285,10 +316,10 @@
 							family = {
 								ordered_family_member = {
 									limit = {
-										NOT = { this = current_ruler }
+										NOT = { has_trait = pandya }
 										OR = {
 											is_primary_heir = yes
-											is_child_of = current_ruler
+											is_child_of = root.current_ruler
 										}
 									}
 									order_by = loyalty
@@ -315,7 +346,11 @@
 		}
 
 		allow = {
-		#Chola does not exist or are our subject
+		#Chola does not exist or are our subject, own all cholan provinces.
+			custom_tooltip = {
+				text = lankan_missions_task_8_A_tooltip
+				lankan_missions_task_8_owned_cholan_provinces_current >= lankan_missions_task_8_owned_cholan_provinces_total
+			}		
 			c:CHL = {
 				OR = {
 				has_land = no
@@ -327,7 +362,7 @@
 		on_completion = {
 		#Small chance to get the blood of Chola
 		add_political_influence = 25
-			custom_tooltip = lankan_missions_task_8_tooltip
+			custom_tooltip = lankan_missions_task_8_B_tooltip
 			hidden_effect = {
 				random_list = {
 					75 = {
@@ -342,15 +377,15 @@
 							family = {
 								ordered_family_member = {
 									limit = {
-										NOT = { this = current_ruler }
+										NOT = { has_trait = chola }
 										OR = {
 											is_primary_heir = yes
-											is_child_of = current_ruler
+											is_child_of = root.current_ruler
 										}
 									}
 									order_by = loyalty
 									max = 4
-									add_trait = pandya
+									force_add_trait = chola
 								}
 							}
 						}
@@ -362,7 +397,8 @@
 
 	lankan_missions_task_9 = {   ##Lankan Dominance
 		icon = "task_political"
-		requires = { lankan_missions_task_7 lankan_missions_task_8 }
+		requires = { lankan_missions_task_7 lankan_missions_task_8 lankan_missions_task_10 }
+		final = yes
 
 		allow = {
 		#Own all provinces of Cholan, Cheran, Pandyan, and Tamil culture.
@@ -382,6 +418,61 @@
 		}
 	}
 
+	lankan_missions_task_10 = {   ##Cheran Consolidation
+		icon = "task_political"
+		requires = { lankan_missions_task_5 }
+
+		highlight = {
+			scope:province = {
+				has_owner = yes
+				owner = c:CHR
+			}
+		}
+
+		allow = {
+		#Own all Cheran provinces and Chera doesn't exist.
+			custom_tooltip = {
+				text = lankan_missions_task_10_A_tooltip
+				lankan_missions_task_10_owned_cheran_provinces_current >= lankan_missions_task_10_owned_cheran_provinces_total
+			}
+			c:CHR = {
+				OR = {
+				has_land = no
+				is_subject_of = root
+				}
+			}			
+		}
+
+		on_completion = {
+			add_stability = 5
+			custom_tooltip = lankan_missions_task_10_B_tooltip
+			hidden_effect = {
+				random_list = {
+					75 = {}
+					25 = {
+						current_ruler = {
+							force_add_trait = chera
+							family = {
+								ordered_family_member = {
+									limit = {
+										NOT = { has_trait = chera }
+										OR = {
+											is_primary_heir = yes
+											is_child_of = root.current_ruler
+										}
+									}
+									order_by = loyalty
+									max = 4
+									force_add_trait = chera
+								}
+							}
+						}
+					}
+				}
+			}		
+		}
+	}
+
 	lankan_missions_task_13 = {   ##Import Food
 		icon = "task_political"
 
@@ -396,7 +487,7 @@
 				}
 				capital_scope.state = {
 					trade_good_surplus = {
-						target = livestock
+						target = cattle
 						value >= 2
 					}
 				}	
@@ -629,4 +720,68 @@
 			}		
 		}
 	}
+
+	lankan_missions_task_20 = {   ##Dharmashoka
+		icon = "task_political"
+
+		bypass = {
+			char:66 = {
+				is_alive = no
+			}
+		}
+
+		allow = {
+			custom_tooltip = {
+			text = lankan_missions_task_20_A_tooltip
+				c:MRY = {
+					char:66 = {
+						is_ruler = yes
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = lankan_missions_task_20_B_tooltip
+			trigger_event = {
+				id = me_lanka.6
+			}
+		}
+	}
+
+	lankan_missions_task_21 = {   ##Mahinda Thera
+		icon = "task_political"
+		requires = { lankan_missions_task_20 }
+
+
+		allow = {
+			political_influence >= 200
+			stability >= 50
+		}
+
+		on_completion = {
+			custom_tooltip = lankan_missions_task_21_A_tooltip
+			trigger_event = {
+				id = me_lanka.7
+			}			
+		}
+	}
+
+	lankan_missions_task_22 = {   ##Planting of the Sacred Maha Bodhi
+		icon = "task_political"
+		requires = { lankan_missions_task_20 }
+
+
+		allow = {
+			treasury >= 200
+		}
+
+		on_completion = {
+			custom_tooltip = lankan_missions_task_22_A_tooltip
+			trigger_event = {
+				id = me_lanka.8
+			}			
+		}
+	}
+
 }

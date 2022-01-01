@@ -1389,9 +1389,6 @@ me_rhodes.25 = { #Hidden Navy battle counter
         #May want to add more triggers
         tag = RHO
         scope:actor = { #This is the unit scope
-#            is_navy = yes
-#            has_variable = organized_rhodes_armada
-            exists = commander
             commander = { has_triggered_character_modifier = rhodes_badass_admiral }
         }
     }
@@ -1435,29 +1432,12 @@ me_rhodes.26 = { #A Reorganized Navy
     picture = interesting_histories_greek_debate
 
     immediate = {
-        hidden_effect = {
-            create_character = {
-                first_name = "Agesimbrotus"
-                age = 25
-                culture = root.culture
-                religion = root.religion
-                female = no
-                good_martial_effect = yes
-                good_charisma_effect = yes
-                bad_zeal_effect = yes
-                good_finesse_effect = yes
-                add_trait = oarmaster
-                add_trait = seadog
-                save_scope_as = appointed_rhodian_admiral
-            }
-        }
         scope:appointed_rhodian_admiral = {
             add_triggered_character_modifier = {
                 name = rhodes_badass_admiral
                 duration = -1
             }
         }
-        
         ordered_navy = {
             limit = {
                 unit_size >= 50
@@ -1483,5 +1463,309 @@ me_rhodes.26 = { #A Reorganized Navy
     option = {      
         name = me_rhodes.26.a
 
+    }
+}
+me_rhodes.27 = { #A Naval Coup! (triggerd by modifier)
+    type = country_event
+    title = me_rhodes_27_title
+    desc = me_rhodes_27_desc
+    picture = interesting_histories_greek_debate
+
+    trigger = {
+        scope:removed_or_dead_admiral = {   #This scope is saved in the modifier
+            is_alive = yes
+        }        
+    }
+
+    immediate = {
+        if = {
+            limit = {
+                scope:removed_or_dead_admiral = {
+                    is_alive = yes
+                }
+            }
+            if = {
+                limit = {
+                    c:RHO.var:armada_battle_counter >= 5
+                }
+                set_variable = {
+                    name = deadly_civil_war
+                    days = 365
+                }
+            }
+            ordered_governorships = {
+                limit = {
+                    NOT = {
+                        any_governorship_state = {
+                            is_capital_state = yes
+                        }
+                    }
+                }
+                max = 1
+                order_by = {
+                    every_governorship_state = {
+                        every_state_province = {
+                            add = total_population
+                        }
+                    }
+                }
+                save_scope_as = bad_guys_capital
+            }
+            if = {
+                limit = {
+                    scope:removed_or_dead_admiral = {
+                        is_governor = no
+                    }
+                }
+                scope:bad_guys_capital = {
+                    random_governorship_state = {
+                        random_state_province = {
+                            set_as_governor = scope:removed_or_dead_admiral
+                        }
+                    }
+                }
+            }
+            start_civil_war = scope:removed_or_dead_admiral
+            scope:removed_or_dead_admiral.location = {
+                save_scope_as = civil_war_capital
+            }
+            scope:bad_guys_capital.owner = {
+                change_country_name = "rhodia_revolter_name"
+                change_country_adjective = "rhodian_revolter_adjective"
+                change_country_color = sapphire_blue
+#                change_country_flag = BHARAT_REVOLT_FLAG
+                change_government = plutocratic_republic
+                save_scope_as = rhodes_revolt_country
+            }
+            if = {
+                limit = { has_variable = deadly_civil_war }
+                ordered_governorships = {
+                    limit = {
+                        NOT = {
+                            any_governorship_state = {
+                                is_capital_state = yes
+                            }
+                        }
+                        trigger_if = {
+                            limit = {
+                                exists = governor
+                            }
+                            governor = {
+                                OR = {
+                                    from_ruler_family = no
+                                    loyalty < 60
+                                }
+                            }
+                        }
+                    }
+                    max = {
+                        ROOT = {
+                            every_governorships = {
+                                add = 1
+                            }
+                        }
+                        divide = 4
+                        min = 1
+                    }
+                    order_by = {
+                        every_governorship_state = {
+                            every_state_province = {
+                                limit = {
+                                    dominant_province_culture = root.culture
+                                }
+                                add = total_population
+                            }
+                        }
+                    }
+                    every_governorship_state = {
+                        every_state_province = {
+                            set_owned_by = scope:rhodes_revolt_country
+                            add_claim = root
+                        }
+                    }
+                }
+                every_subject = {
+                    limit = {
+                        OR = {
+                            is_subject_type = feudatory
+                            is_subject_type = satrapy
+                            is_subject_type = client_state
+                        }
+                        has_subject_loyalty < 70
+                    }
+                    switch = { #Must remain the same type of subject
+                        trigger = is_subject_type
+                        feudatory = {
+                            random_list = {
+                                50 = {
+                                    ROOT = { release_subject = THIS }
+                                    save_scope_as = released_subject 
+                                    scope:rhodes_revolt_country = {
+                                        make_subject = { 
+                                            target = scope:released_subject
+                                            type = feudatory 
+                                        }
+                                    }
+                                }
+                                50 = { }
+                            }
+                        }
+                        client_state = {
+                            random_list = {
+                                50 = {
+                                    ROOT = { release_subject = THIS }
+                                    save_scope_as = released_client_subject
+                                    scope:rhodes_revolt_country = {
+                                        make_subject = { 
+                                            target = scope:released_client_subject
+                                            type = client_state 
+                                        }
+                                    }
+                                }
+                                50 = { }
+                            }
+                        }
+                    }
+                }
+            }
+            every_owned_province = {
+                add_claim = scope:rhodes_revolt_country
+            }
+            every_character = {
+                limit = { loyalty < 60 }
+                move_country = scope:rhodes_revolt_country
+            }
+        }
+    }
+
+    option = {      
+        name = me_rhodes.27.a
+        #We're Doomed
+
+    }
+}
+me_rhodes.28 = { #Naval Hegemony
+    type = country_event
+    title = me_rhodes_28_title
+    desc = me_rhodes_28_desc
+    picture = interesting_histories_greek_debate
+#    interface_lock = no
+
+
+    immediate = {
+        ordered_country = {
+            limit = {
+                NOT = { tag = RHO }
+                any_owned_province = {
+                    OR = {
+                        city_is_in_greece_or_balkans = yes
+                        city_is_in_anatolia = yes
+                        is_in_egypt_trigger = yes
+                        is_in_cyrenaica_trigger = yes
+                    }                    
+                }
+            }
+            order_by = num_of_ships
+            max = 1
+            save_scope_as = naval_hegemony_victim
+        }
+    }
+
+    option = {      
+        name = me_rhodes.28.a
+        #Declare the war!!!
+        declare_war_with_wargoal = {
+            war_goal = naval_wargoal
+            target = scope:naval_hegemony_victim
+        }
+        add_country_modifier = {
+            name = naval_hegemon
+            duration = -1
+        }
+    }
+    option = {      
+        name = me_rhodes.28.b
+        #Back down
+        add_political_influence = -15
+        current_ruler = {
+            add_popularity = -10
+        }
+    }
+}
+me_rhodes.29 = { #A Feudatory or a new State?
+    type = country_event
+    title = me_rhodes_29_title
+    desc = me_rhodes_29_desc
+    picture = interesting_histories_greek_debate
+
+    option = {      
+        name = me_rhodes.29.a
+        p:1992.state = {
+            add_state_modifier = {
+                name = lycian_prosperity
+                duration = -1
+            }
+        }
+    }
+    option = {      
+        name = me_rhodes.29.b
+        #Release a feudatory subject
+        hidden_effect = {
+            p:1992 = {
+                create_country = {
+                    name = {
+                        name = LYCIA_FEUDATORY_NAME
+                    adjective = LYCIA_FEUDATORY_ADJECTIVE
+                    }
+#                    change_country_flag = KUSH_CLIENT_C_FLAG
+                    change_country_color = achaemenid_mauve
+                    set_country_religion = root.religion
+                    set_primary_culture = c:RHO.culture
+                    change_government = plutocratic_republic
+                    save_scope_as = lycia_country_scope
+                }
+            }
+            area:lycia_area = {
+                every_area_province = {
+                    limit = { owned_or_subject_owned = root }
+                    set_owned_by = scope:lycia_country_scope
+                }
+            }                                                
+            make_subject = {
+                target = scope:lycia_country_scope
+                type = feudatory
+            }
+        }
+    }
+}
+me_rhodes.30 = { #Aegean League
+    type = country_event
+    title = me_rhodes_30_title
+    desc = me_rhodes_30_desc
+    picture = interesting_histories_greek_debate
+
+    option = {      
+        name = me_rhodes.30.a
+        #Form the Aegean League
+        c:RHO = {
+            change_country_name = "aegean_league_name"   
+            hidden_effect = { 
+            change_country_adjective = "aegean_league_adjective"
+            change_country_color = aegean_league_country_color
+            change_country_flag = aegean_league_flag 
+            }
+            add_country_modifier = {
+                name = aegean_league_modifier
+                duration = -1
+            }    
+        }
+    }
+    option = {      
+        name = me_rhodes.30.b
+        #Gain "Proud Rhodian Heritage" modifier
+        add_country_modifier = {
+            name = proud_rhodian_heritage 
+            duration = 3650
+        }
     }
 }

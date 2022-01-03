@@ -273,8 +273,8 @@ me_rhodes.5 = {
         trigger = { has_variable = gold_rewards }
         switch = {
         	trigger = has_variable
-        	small_rewards = { add_treasury = 50 }
-        	medium_rewards = { add_treasury = 150 }
+        	small_rewards = { add_treasury = 150 }
+        	medium_rewards = { add_treasury = 200 }
         	large_rewards = { add_treasury = 250 }
         	massive_rewards = { add_treasury = 400 }
         }
@@ -1445,7 +1445,6 @@ me_rhodes.26 = { #A Reorganized Navy
             order_by = unit_size
             max = 1
             save_scope_as = new_rhodian_navy
-#            set_variable = organized_rhodes_armada
         }
         scope:new_rhodian_navy = {
             if = {
@@ -1656,6 +1655,8 @@ me_rhodes.28 = { #Naval Hegemony
         ordered_country = {
             limit = {
                 NOT = { tag = RHO }
+                NOT = { alliance_with = c:RHO }
+                NOT = { has_truce_with = c:RHO }
                 any_owned_province = {
                     OR = {
                         city_is_in_greece_or_balkans = yes
@@ -1766,6 +1767,232 @@ me_rhodes.30 = { #Aegean League
         add_country_modifier = {
             name = proud_rhodian_heritage 
             duration = 3650
+        }
+    }
+}
+me_rhodes.31 = { #Rhodian Peraia
+    type = country_event
+    title = me_rhodes_31_title
+    desc = me_rhodes_31_desc
+    picture = interesting_histories_greek_debate
+
+    option = {      
+        name = me_rhodes.31.a
+        add_treasury = -100
+        custom_tooltip = me_rhodes.31.tt
+    }
+}
+me_rhodes.32 = { #The Ionians
+    type = country_event
+    title = me_rhodes_32_title
+    desc = me_rhodes_32_desc
+    picture = interesting_histories_greek_debate
+
+    option = {      
+        name = me_rhodes.32.a
+        add_treasury = -100
+        custom_tooltip = me_rhodes.32.tt
+    }
+}
+me_rhodes.33 = { #Hidden Legion Battle Counter
+    type = country_event
+    hidden = yes
+    trigger = {
+        #May want to add more triggers
+        tag = RHO
+        scope:actor = { #This is the unit scope
+            has_legion_trigger = yes
+            has_variable = legion_that_is_being_counted
+        }
+    }
+    immediate = {
+        if = {
+            limit = {
+                NOR = {
+                    has_variable = error_log_appeasing_var_2
+                    has_variable = legion_battle_counter
+                }
+            }
+            set_variable = error_log_appeasing_var_2
+        }
+        if = {
+            limit = {
+                NOT = { has_variable = legion_battle_counter }
+            }
+            set_variable = {
+                name = legion_battle_counter
+                value = 1
+            }
+        }
+        else_if = {
+            limit = { var:legion_battle_counter < 11 }
+            change_variable = {
+                name = legion_battle_counter
+                add = 1
+            }
+        }        
+    }
+}
+me_rhodes.34 = { #The Legion of Rhodes
+    type = country_event
+    title = me_rhodes_34_title
+    desc = me_rhodes_34_desc
+    picture = interesting_histories_greek_debate
+    left_portrait = legion_of_rhodes.commander
+
+    immediate = {
+        hidden_effect = {
+            random_unit = {
+                limit = { legion = ROOT.capital_scope.governorship.legion }
+                set_variable = legion_that_is_being_counted
+                save_scope_as = legion_of_rhodes 
+            }
+        }
+    }
+
+    option = {      
+        name = me_rhodes.34.a
+        add_country_modifier = {
+            name = temp_army_morale_mod
+            duration = 1825
+        }
+    }
+}
+me_rhodes.35 = { #The Merchants vs The Military (Mission start event, explains unique mechanic)
+    type = country_event
+    title = me_rhodes_35_title
+    desc = me_rhodes_35_desc
+    picture = interesting_histories_greek_debate
+
+    option = {      #We'll support the Merchants...for now
+        name = me_rhodes.35.a
+        add_5_merchant_support_effect = yes
+        lose_5_military_support_effect = yes
+        faction_support_cleanup_effect = yes
+    }
+    option = {      #We'll support the Military...for now
+        name = me_rhodes.35.b
+        add_5_military_support_effect = yes
+        lose_5_merchant_support_effect = yes
+        faction_support_cleanup_effect = yes
+    }
+    option = {      #Try to keep a balance
+        name = me_rhodes.35.c
+    }
+    option = {
+        name = me_rhodes.35.d
+        add_10_merchant_support_effect = yes
+        lose_10_military_support_effect = yes
+        faction_support_cleanup_effect = yes        
+    }
+}
+me_rhodes.36 = { #Unique mechanic monthly modifier distribution event
+    type = country_event
+    hidden = yes
+
+    trigger = { tag = RHO }
+
+    immediate = {
+        #For each interval of 10 between the two variable apply a different tier of the modifier.
+        #Tier 3, 30 away from the other faction will give the best bonus.
+        #Will have to remove the previous modifier somehow (should be a scripted effect with a switch)
+        if = {
+            limit = {
+                NOT = { has_country_modifier = rhodes_nobody_in_power_mod }
+                #Mil support equals merc support
+                c:RHO.var:military_support = c:RHO.var:merchant_support
+            }
+            remove_all_faction_modifiers_effect = yes
+            add_country_modifier = {
+                name = rhodes_nobody_in_power_mod
+                duration = -1
+            }   
+        }
+        else_if = {
+            limit = {
+                #Mil support value is 10 more than merc support value
+                NOT = { has_country_modifier = rhodes_military_in_power_10_mod }
+                OR = {
+                    faction_power_balance_svalue = 10
+                    faction_power_balance_svalue = 5
+                }
+            }
+            remove_all_faction_modifiers_effect = yes
+            add_country_modifier = {
+                name = rhodes_military_in_power_10_mod
+                duration = -1
+            }            
+        }
+        else_if = {
+            limit = {
+                #Mil support value is 20 more than merc support value
+                NOT = { has_country_modifier = rhodes_military_in_power_20_mod }
+                OR = {
+                    faction_power_balance_svalue = 15
+                    faction_power_balance_svalue = 20
+                    faction_power_balance_svalue = 25
+                }
+            }
+            remove_all_faction_modifiers_effect = yes
+            add_country_modifier = {
+                name = rhodes_military_in_power_20_mod
+                duration = -1
+            }            
+        }
+        else_if = {
+            limit = {
+                #Mil support value is 30 more than merc support value
+                NOT = { has_country_modifier = rhodes_military_in_power_30_mod }
+                faction_power_balance_svalue = 30
+            }
+            remove_all_faction_modifiers_effect = yes
+            add_country_modifier = {
+                name = rhodes_military_in_power_30_mod
+                duration = -1
+            }            
+        }
+        else_if = {
+            limit = {
+                #Merc support value is 10 more than mil support value
+                NOT = { has_country_modifier = rhodes_merchants_in_power_10_mod }
+                OR = {
+                    faction_power_balance_svalue = -10
+                    faction_power_balance_svalue = -5
+                }
+            }
+            remove_all_faction_modifiers_effect = yes
+            add_country_modifier = {
+                name = rhodes_merchants_in_power_10_mod
+                duration = -1
+            }
+        }
+        else_if = {
+            limit = {
+                #Merc support value is 20 more than mil support value
+                NOT = { has_country_modifier = rhodes_merchants_in_power_20_mod }
+                OR = {
+                    faction_power_balance_svalue = -15
+                    faction_power_balance_svalue = -20
+                    faction_power_balance_svalue = -25
+                }
+            }
+            remove_all_faction_modifiers_effect = yes
+            add_country_modifier = {
+                name = rhodes_merchants_in_power_20_mod
+                duration = -1
+            }
+        }
+        else_if = {
+            limit = {
+                #Merc support value is 30 more than mil support value
+                NOT = { has_country_modifier = rhodes_merchants_in_power_30_mod }
+                faction_power_balance_svalue = -30
+            }
+            remove_all_faction_modifiers_effect = yes
+            add_country_modifier = {
+                name = rhodes_merchants_in_power_30_mod
+                duration = -1
+            }
         }
     }
 }

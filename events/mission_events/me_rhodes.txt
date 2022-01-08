@@ -1787,6 +1787,12 @@ me_rhodes.30 = { #Aegean League
             duration = 3650
         }
     }
+    after = {
+        trigger_event = { 
+            id = me_rhodes.38
+            days = { 5 25 }
+        }
+    }
 }
 me_rhodes.31 = { #Rhodian Peraia
     type = country_event
@@ -2006,6 +2012,249 @@ me_rhodes.36 = { #Unique mechanic monthly modifier distribution event
                 duration = -1
             }
         }
+    }
+}
+me_rhodes.37 = { #Peloponessian Prosperity
+    type = country_event
+    title = me_rhodes_37_title
+    desc = me_rhodes_37_desc
+    picture = interesting_histories_greek_debate
+
+    option = {  #Laconia
+        name = me_rhodes.37.a
+        p:427.state = {
+            add_state_modifier = {
+               name = peloponessian_prosperity
+                duration = -1
+            }
+        }
+    }
+    option = {  #Achaea
+        name = me_rhodes.37.b
+        p:439.state = {
+            add_state_modifier = {
+               name = peloponessian_prosperity
+                duration = -1
+            }
+        }
+    }
+    option = {  #Arcadia
+        name = me_rhodes.37.c
+        p:440.state = {
+            add_state_modifier = {
+               name = peloponessian_prosperity
+                duration = -1
+            }
+        }
+    }
+}
+me_rhodes.38 = { #A New Administration
+    type = country_event
+    title = me_rhodes_38_title
+    desc = me_rhodes_38_desc
+    picture = interesting_histories_greek_debate
+
+    option = {  #Democracy is the only way
+        name = me_rhodes.38.a
+        custom_tooltip = me_rhodes_38_tt_1
+    }
+    option = {  #We could explore other alternatives...
+        name = me_rhodes.38.b
+        custom_tooltip = me_rhodes_38_tt_2
+        trigger_event = {
+            id = me_rhodes.39
+            days = { 10 20 }
+        }
+    }
+
+}
+me_rhodes.39 = { #Dictatorship of Rhodes
+    type = country_event
+    title = me_rhodes_39_title
+    desc = me_rhodes_39_desc
+    picture = interesting_histories_greek_debate
+    immediate = {
+        #Get fucked
+        hidden_effect = {
+            if = {
+                limit = {
+                    any_character = {
+                        is_adult = yes
+                        is_primary_heir = no
+                        is_ruler = no
+                        is_governor = yes
+                    }
+                }
+                ordered_character = {
+                    limit = {
+                        is_adult = yes
+                        is_primary_heir = no
+                        is_ruler = no
+                        is_governor = yes                        
+                    }
+                    check_range_bounds = no
+                    order_by = power_base
+                    save_scope_as = leader_of_da_opps
+                    max = 1
+                }
+            }
+            else = {
+                ordered_character = {
+                    limit = {
+                        is_ruler = no
+                        is_adult = yes
+                        is_primary_heir = no
+                        is_minor_character = yes
+                    }
+                    max = 1
+                    check_range_bounds = no
+                    order_by = power_base
+                    save_scope_as = leader_of_da_opps
+               }
+            }
+            ordered_governorships = {
+                limit = {
+                    NOT = {
+                        any_governorship_state = {
+                            is_capital_state = yes
+                        }
+                    }
+                }
+                max = 1
+                order_by = {
+                    every_governorship_state = {
+                        every_state_province = {
+                            add = total_population
+                        }
+                    }
+                }
+                save_scope_as = da_opps_spot
+            }
+            if = {
+                limit = {
+                    scope:leader_of_da_opps = {
+                        is_governor = no
+                    }
+                }
+                scope:da_opps_spot = {
+                    random_governorship_state = {
+                        random_state_province = {
+                            set_as_governor = scope:leader_of_da_opps
+                        }
+                    }
+                }
+            }
+            start_civil_war = scope:leader_of_da_opps
+            scope:leader_of_da_opps.location = {
+                save_scope_as = home_of_da_opps
+            }
+            scope:home_of_da_opps.owner = {
+                change_country_name = "rhodia_revolter_name"
+                change_country_adjective = "rhodian_revolter_adjective"
+                change_country_color = onyx_black
+                save_scope_as = da_opps
+            }
+            ordered_governorships = {
+                limit = {
+                    NOT = {
+                        any_governorship_state = {
+                            is_capital_state = yes
+                        }
+                    }
+                    trigger_if = {
+                        limit = {
+                            exists = governor
+                        }
+                        governor = {
+                            OR = {
+                                from_ruler_family = no
+                                loyalty < 60
+                            }
+                        }
+                    }
+                }
+                max = {
+                    ROOT = {
+                        every_governorships = {
+                            add = 1
+                        }
+                    }
+                    divide = 3
+                    min = 1
+                }
+                order_by = {
+                    every_governorship_state = {
+                        every_state_province = {
+                            limit = {
+                                dominant_province_culture = root.culture
+                            }
+                            add = total_population
+                        }
+                    }
+                }
+                every_governorship_state = {
+                    every_state_province = {
+                        set_owned_by = scope:da_opps
+                        add_claim = root
+                    }
+                }
+            }
+            every_subject = {
+                limit = {
+                    OR = {
+                        is_subject_type = feudatory
+                        is_subject_type = satrapy
+                        is_subject_type = client_state
+                    }
+                    has_subject_loyalty < 70
+                }
+                switch = { #Must remain the same type of subject
+                    trigger = is_subject_type
+                    feudatory = {
+                        random_list = {
+                            50 = {
+                                ROOT = { release_subject = THIS }
+                                save_scope_as = released_subject 
+                                scope:da_opps = {
+                                    make_subject = { 
+                                        target = scope:released_subject
+                                        type = feudatory 
+                                    }
+                                }
+                            }
+                            50 = { }
+                        }
+                    }
+                    client_state = {
+                        random_list = {
+                            50 = {
+                                ROOT = { release_subject = THIS }
+                                save_scope_as = released_client_subject
+                                scope:da_opps = {
+                                    make_subject = { 
+                                        target = scope:released_client_subject
+                                        type = client_state 
+                                    }
+                                }
+                            }
+                            50 = { }
+                        }
+                    }
+                }
+            }
+            every_owned_province = {
+                add_claim = scope:da_opps
+            }
+            every_character = {
+                limit = { loyalty < 55 }
+                move_country = scope:da_opps
+            }
+        }
+    }
+    option = {  #GetRuler will lead Rhodes to Glory!
+        name = me_rhodes.39.a
+        add_stability = -20
+        change_government = rhodian_dictatorship
     }
 }
 me_rhodes.100 = { #Merchant event 1 (Maintaining Trade Routes)

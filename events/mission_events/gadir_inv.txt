@@ -33,7 +33,7 @@ gadir_inv.1 = { # Starting Event of the Tree
 		name = gadir_inv.1.b
 		add_country_modifier = {
 			name = gadir_modifier_3
-			duration = 9125 #25 yrs
+			duration = 18250 #50 yrs
 		}
 		set_variable = { #skips all the tasks confronting with Carthage and disallows mission tree 2
 			name = coward_not_facing_carthage_and_skipping_half_the_content
@@ -305,7 +305,7 @@ gadir_inv.6 = { # Start of small event chain for task 1
 			target = c:CAR
 		}
 		add_political_influence = 25
-		add_gold = 100
+		add_treasury = 100
 	}
 
 	after = {
@@ -359,7 +359,7 @@ gadir_inv.7 = {
 			target = c:CAR
 		}
 		add_political_influence = 25
-		add_gold = 100
+		add_treasury = 100
 	}
 }
 
@@ -1076,12 +1076,14 @@ gadir_inv.13 = { #flavour event task 5
 			limit = {
 				has_variable = tharsis_lame_hub
 			}
-			p:1415 = {
-				total_population >= 30
+			p:1415.state = {
 				trade_good_surplus = {
 					target = iron
 					value >= 4
 				}
+			}
+			p:1415 = {
+				total_population >= 30
 			}
 		}
 	}
@@ -1096,12 +1098,14 @@ gadir_inv.13 = { #flavour event task 5
 		exclusive = yes
 		trigger = {
 			current_date >= 480.1.1
-			p:1415 = {
-				total_population >= 30
+			p:1415.state = {
 				trade_good_surplus = {
 					target = iron
 					value >= 4
 				}
+			}
+			p:1415 = {
+				total_population >= 30
 			}
 		}
 		p:1415 = { #upgrade Tharsis + modifier
@@ -1114,4 +1118,371 @@ gadir_inv.13 = { #flavour event task 5
 		set_variable = tharsis_trade_hub
 		custom_tooltip = gadir_inv.13.tt
 	}
+}
+
+gadir_inv.14 = {
+	hidden = yes
+	immediate = {
+		current_ruler.employer = {
+			save_scope_as = actor
+		}
+		p:3061.governor = {
+			save_scope_as = target
+		}
+		scope:target.employer = {
+			trigger_event = {
+				id = befriend.10
+				days = -1
+			}
+		}
+	}
+}
+
+gadir_inv.15 = { #first event: merchants hindered
+	type = country_event
+	title = gadir_inv.15.t
+	desc = gadir_inv.15.desc
+	picture = interesting_histories_purple_soldier
+
+	left_portrait = current_ruler
+	right_portrait = scope:floating_victim
+
+	immediate = {
+		c:CAR = {
+			random_admiral = {
+				save_scope_as = floating_victim #the guy was hindering our ships (allegedly)
+			}
+		}
+		add_treasury = -200
+		add_country_modifier = {
+			name = gadir_modifier_19
+			duration = 3650
+		}
+	}
+
+	option = { #escalate
+		name = gadir_inv.15.a
+		add_treasury = {
+			value = has_monthly_income 
+			multiply = -2.5
+			max = -100
+			min = -450
+		}
+		add_country_modifier = {
+			name = gadir_modifier_18
+			duration = 3650 #10 years
+		}
+	}
+
+	option = { #try to deescalate
+		name = gadir_inv.15.b
+		trigger = {
+			c:CAR = {
+				has_opinion = {
+					target = root
+					value >= 0
+				}
+			}
+		}
+		add_political_influence = -25
+		remove_country_modifier = gadir_modifier_19
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.16
+			days = { 30 50 }
+		}
+	}
+}
+
+gadir_inv.16 = { #sow discontent in Carthage
+	type = country_event
+	title = gadir_inv.16.t
+	desc = gadir_inv.16.desc
+	picture = interesting_histories_punic_town
+
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	immediate = {
+		hidden_effect = {
+			add_manpower = -2
+		}
+	}
+
+	option = { #focus on the people
+		name = gadir_inv.16.a
+		c:CAR = {
+			add_country_modifier = {
+				name = gadir_modifier_20
+				duration = 3650
+			}
+		}
+	}
+
+	option = { #focus on the army
+		name = gadir_inv.16.b
+		c:CAR = {
+			add_country_modifier = {
+				name = gadir_modifier_21
+				duration = 3650
+			}
+		}
+	}
+
+	option = { #focus on the generals
+		name = gadir_inv.16.c
+		c:CAR = {
+			every_character = {
+				limit = {
+					loyalty < 55
+				}
+				add_loyalty = unrest_gadir_carthage
+			}
+		}
+	}
+
+	option = { #sabotage the forts
+		name = gadir_inv.16.d
+		c:CAR = {
+			add_country_modifier = {
+				name = gadir_modifier_22
+				duration = 3650
+			}
+		}
+	}
+
+	option = { #save the resources
+		name = gadir_inv.16.e
+		add_manpower = 2
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.17
+			days = { 45 60 }
+		}
+	}
+}
+
+gadir_inv.17 = { #border conflict / raid
+	type = country_event
+	title = gadir_inv.17.t
+	desc = gadir_inv.17.desc
+	picture = interesting_histories_punic_town
+
+	left_portrait = current_ruler
+	right_portrait = scope:the_walking_dead_general
+
+	immediate = {
+		c:CAR = {
+			random_general = {
+				save_scope_as = the_walking_dead_general
+			}
+		}
+		add_treasury = -200
+		every_owned_province = {
+			limit = {
+				any_neighbour_province = {
+					owner = c:CAR
+				}
+				add_province_modifier = {
+					name = gadir_modifier_23
+					duration = 3650
+				}
+				random_pops_in_province = {
+					count = 1
+					kill_pop = yes
+				}
+			}
+		}
+	}
+
+	option = { #raid back
+		name = gadir_inv.17.a
+		trigger = {
+			any_owned_province = {
+				any_neighbour_province = {
+					owner = c:CAR
+				}
+			}
+		}
+		c:CAR = {
+			every_owned_province = {
+				limit = {
+					any_neighbour_province = {
+						owner = c:GAD
+					}
+					add_province_modifier = {
+						name = gadir_modifier_23
+						duration = 3650
+					}
+				}
+			}
+		}
+	}
+
+	option = { #increase security
+		name = gadir_inv.17.b
+		add_country_modifier = {
+			name = gadir_modifier_24
+			duration = 3650
+		}
+		add_treasury = {
+			value = has_monthly_income
+			multiply = -3.5
+			max = -250
+		}
+	}
+
+	option = { #demand recompensation
+		name = gadir_inv.17.c
+		trigger = {
+			c:CAR = {
+				has_opinion = {
+					target = root
+					value >= 0
+				}
+			}
+		}
+		custom_tooltip = gadir_inv.17.tt
+		hidden_effect = {
+			c:CAR = {
+				trigger_event = gadir_inv.18
+				days = { 5 10 }
+			}
+		}
+	}
+
+	option = { #deal with the damage
+		name = gadir_inv.17.d
+		trigger = {
+			any_owned_province = {
+				has_province_modifier = gadir_modifier_23
+			}
+		}
+		add_treasury = {
+			value = has_monthly_income
+			multiply = -1.75
+			max = -100
+		}
+		every_owned_province = {
+			limit = {
+				has_province_modifier = gadir_modifier_23
+			}
+			remove_province_modifier = gadir_modifier_23
+		}
+	}
+
+	option = {  #do nothing
+		name = gadir_inv.17.e
+		current_ruler = {
+			add_popularity = -10
+		}
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.20
+			days = { 40 60 }
+		}
+	}
+}
+
+gadir_inv.18 = {
+	type = country_event
+	title = gadir_inv.18.t
+	desc = gadir_inv.18.desc
+	picture = interesting_histories_purple_soldier
+
+	left_portrait = current_ruler
+	right_portrait = c:GAD.current_ruler
+
+	option = { #pay
+		name = gadir_inv.18.a
+	}
+
+	option = { #refuse
+		name = gadir_inv.18.b
+		add_treasury = {
+			value = has_monthly_income
+			multiply = -2
+			max = -150
+			min = -500
+		}
+		ai_chance = {
+			modifier = {
+				add = 1000
+				trigger = {
+					has_opinion = {
+						target = c:GAD
+						value >= 50
+					}
+				}
+			}
+		}
+		c:GAD = {
+			set_variable = {
+				name = carthage_always_pays_their_debts
+				days = 20
+			}
+		}
+	}
+
+	after = {
+		c:GAD = {
+			trigger_event = {
+				id = gadir_inv.19
+				duration = { 5 10 }
+			}
+		}
+	}
+}
+
+gadir_inv.19 = {
+	type = country_event
+	title = gadir_inv.19.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					has_variable = carthage_always_pays_their_debts
+				}
+				desc = gadir_inv.19.desc_1
+			}
+			triggered_desc = {
+				always = yes
+			}
+			desc = gadir_inv.19.desc_2
+		}
+	}
+
+	picture = interesting_histories_purple_soldier
+
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	option = {
+		name = gadir_inv.19.a
+		trigger = {
+			has_variable = carthage_always_pays_their_debts
+		}
+		exclusive = yes
+	}
+
+	option = {
+		name = gadir_inv.19.b
+	}
+}
+
+gadir_inv.20 = {
+	type = country_event
+	title = gadir_inv.20.t
+	desc = gadir_inv.20.desc
+	picture = interesting_histories_punic_town
+	goto_location = p:3080
+
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
 }

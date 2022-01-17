@@ -1,0 +1,2602 @@
+﻿namespace = gadir_inv
+
+gadir_inv.1 = { # Starting Event of the Tree
+	type = country_event
+	title = gadir_inv.1.t
+	desc = gadir_inv.1.desc
+	picture = interesting_histories_purple_soldier
+
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	option = { # We can't accept it
+		name = gadir_inv.1.a
+		add_country_modifier = {
+			name = gadir_modifier_2
+			duration = 9125 #25 yrs
+		}
+		if = {
+			limit = {
+				c:CAR = {
+					has_opinion = {
+						target = root
+						modifier = gadir_friendly_opinion_modifier
+					}
+				}
+			}
+			add_political_influence = -25
+		}
+	}
+
+	option = { # Maintain the Status Quo
+		name = gadir_inv.1.b
+		add_country_modifier = {
+			name = gadir_modifier_3
+			duration = 18250 #50 yrs
+		}
+		set_variable = { #skips all the tasks confronting with Carthage and disallows mission tree 2
+			name = cowards_option
+			days = -1
+		}
+		c:CAR = {
+			add_opinion = {
+				target = root
+				modifier = trade_contact_well_treated
+			}
+		}
+	}
+}
+
+gadir_inv.2 = { # The Gadiran Armada
+	type = country_event
+	title = gadir_inv.2.t
+	desc = gadir_inv.2.desc
+	picture = interesting_histories_ship_port_africa
+
+	left_portrait = current_ruler
+	right_portrait = scope:random_admiral
+
+	immediate = {
+		random_character = {
+			limit = {
+				is_admiral = yes
+			}
+			save_scope_as = random_admiral
+		}
+	}
+
+	option = { # Focus on Offense
+		name = gadir_inv.2.a
+		add_country_modifier = {
+			name = gadir_modifier_10
+			duration = 9125 #25 yrs
+		}
+	}
+	option = { # Focus on Defense
+		name = gadir_inv.2.b
+		add_country_modifier = {
+			name = gadir_modifier_11
+			duration = 9125 #25 yrs
+		}
+	}
+	option = { # Focus on Maintenance
+		name = gadir_inv.2.c
+		add_country_modifier = {
+			name = gadir_modifier_12
+			duration = 9125 #25 yrs
+		}
+	}
+}
+
+gadir_inv.3 = { # Start of the war, create the tags. This event is triggered for Carthage
+	type = country_event
+	title = gadir_inv.3.t
+	desc = gadir_inv.3.desc
+	picture = interesting_histories_purple_soldier
+
+	left_portrait = c:CAR.current_ruler
+	right_portrait = scope:baetica_governor_scope
+	right_portrait = scope:mauretania_governor_scope
+	left_portrait = c:GAD.current_ruler
+
+	trigger = {
+		region:baetica_region = {
+			any_region_province = {
+				owner = c:CAR
+			}
+		}
+	}
+
+	immediate = {
+		p:1278.governor = {
+			save_scope_as = baetica_governor_scope
+		}
+		p:3061.governor = {
+			save_scope_as = mauretania_governor_scope
+		}
+
+		p:1348 = {
+			create_country = {
+				name = {
+					name = BAETICA_REBELS
+					adjective = BAETICA_REBELS_ADJECTIVE
+				}
+				set_primary_culture = carthaginian
+				set_country_religion = carthaginian_pantheon
+				change_government = aristocratic_republic
+				set_country_heritage = punic_heritage
+				save_scope_as = baetica_rebels_country_scope
+				change_country_tag = BRR
+				set_as_ruler = scope:baetica_governor_scope
+				set_variable = baetica_rebels_country_variable
+			}
+		}
+
+		region:baetica_region = {
+			every_region_province = {
+				limit = {
+					owned_or_subject_owned = c:CAR 
+				}
+				set_owned_by = scope:baetica_rebels_country_scope
+			}
+		}
+
+		if = {
+			limit = {
+				exists = scope:mauretania_governor_scope
+				scope:mauretania_governor_scope = {
+					is_friend = c:GAD.current_ruler
+				}
+			}
+			region:mauretainia_region = {
+				ordered_region_province = {
+					limit = {
+						owner = ROOT
+					}
+					order_by = total_population
+					create_country = {
+						name = {
+							name = MAURETANIA_REBELS
+							adjective = MAURETANIA_REBELS_ADJECTIVE
+						}
+						set_primary_culture = carthaginian
+						set_country_religion = carthaginian_pantheon
+						change_government = aristocratic_republic
+						set_country_heritage = punic_heritage
+						save_scope_as = mauretania_rebels_country_scope
+						change_country_tag = MRR
+						set_as_ruler = scope:mauretania_governor_scope
+						set_variable = mauretania_rebels_country_variable
+					}
+				}
+				every_region_province = {
+					limit = {
+						has_owner = yes
+						owned_or_subject_owned = c:CAR 
+						OR = {
+							is_in_area = mauretania_tingitana_meridionalis_area
+							is_in_area = mauretania_tingitana_septentrionalis_area
+							is_in_area = rutubis_area
+						}
+					}
+					set_owned_by = scope:mauretania_rebels_country_scope
+				}
+			}
+		}
+
+		c:GAD = {
+			declare_war_with_wargoal = {
+				war_goal = naval_wargoal
+				target = c:CAR
+			}
+		}
+		random_current_war = {
+			limit = {
+				any_war_attacker = { this = c:GAD }
+				any_war_defender = { this = c:CAR }
+			}
+			save_scope_as = gadir_carthage_war_scope
+		}
+		scope:baetica_rebels_country_scope = {
+			add_to_war = {
+				target = scope:gadir_carthage_war_scope
+				attacker = yes
+				leader = no
+			}
+		}
+		if = {
+			limit = {
+				scope:mauretania_rebels_country_scope = {
+					exists = this
+					has_land = yes
+				}
+			}
+			scope:mauretania_rebels_country_scope = {
+				add_to_war = {
+					target = scope:gadir_carthage_war_scope
+					attacker = yes
+					leader = no
+				}
+			}
+		}
+	}
+
+	option = {
+		name = gadir_inv.3.a
+		c:GAD = {
+			trigger_event = { # Tell the player that they are at war
+				id = gadir_inv.4
+				days = -1
+			}
+		}
+	}
+}
+
+gadir_inv.4 = { # Tell the player that they are at war
+	type = country_event
+	title = gadir_inv.4.t
+	desc = gadir_inv.4.desc
+	picture = council_country
+
+	goto_location = c:CAR.capital_scope
+	
+	left_portrait = current_ruler
+	left_portrait = c:BRR.current_ruler
+	left_portrait = c:MRR.current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	option = {
+		name = gadir_inv.4.a
+	}
+}
+
+gadir_inv.5 = { # Annexation of the rebel governarates by Gadir
+	type = country_event
+	title = gadir_inv.5.t
+	desc = gadir_inv.5.desc
+	picture = interesting_histories_punic_town
+
+	trigger = {
+		OR = {
+			any_country = {
+				has_variable = baetica_rebels_country_variable
+				has_land = yes
+			}
+			any_country = {
+				has_variable = mauretania_rebels_country_variable
+				has_land = yes
+			}
+		}
+	}
+
+	immediate = {
+		random_country = {
+			limit = {
+				has_variable = baetica_rebels_country_variable
+			}
+			every_owned_province = {
+				set_owned_by = c:GAD
+			}
+		}
+
+		if = {
+			limit = {
+				any_country = {
+					has_variable = mauretania_rebels_country_variable
+					has_land = yes
+					exists = this
+				}
+			}
+			random_country = {
+				limit = {
+					has_variable = mauretania_rebels_country_variable
+					has_land = yes
+				}
+				every_owned_province = {
+					set_owned_by = c:GAD
+				}
+			}
+		}
+	}
+
+	option = {
+		name = gadir_inv.5.a
+	}
+}
+
+gadir_inv.6 = { # Start of small event chain for task 1
+	type = country_event
+	title = gadir_inv.6.t
+	desc = gadir_inv.6.desc
+	picture = interesting_histories_ship_port_africa
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	option = { #claims; claim the land and ignore Carthage's offers
+		name = gadir_inv.6.a
+		region:baetica_region = {
+			every_region_province = {
+				limit = {
+					owner = c:CAR
+				}
+				add_claim = c:GAD
+			}
+		}
+	}
+
+	option = { #opinion; made deal with Carthage
+		name = gadir_inv.6.b
+		reverse_add_opinion = {
+			modifier = gadir_friendly_opinion_modifier
+			target = c:CAR
+		}
+		add_political_influence = 25
+		add_treasury = 100
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.7
+			days = { 10 20 }
+		}
+	}
+}
+
+gadir_inv.7 = {
+	type = country_event
+	title = gadir_inv.7.t
+	desc = gadir_inv.7.desc
+	picture = interesting_histories_ship_port_africa
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	option = { #claims; claim the land and ignore Carthage's offers
+		name = gadir_inv.6.a
+		area:mauretania_tingitana_septentrionalis_area = {
+			every_area_province = {
+				limit = {
+					owner = c:CAR
+				}
+				add_claim = c:GAD
+			}
+		}
+		area:mauretania_tingitana_meridionalis_area = {
+			every_area_province = {
+				limit = {
+					owner = c:CAR
+				}
+				add_claim = c:GAD
+			}
+		}
+		area:rutubis_area = {
+			every_area_province = {
+				limit = {
+					owner = c:CAR
+				}
+				add_claim = c:GAD
+			}
+		}
+	}
+
+	option = { #opinion; made deal with Carthage
+		name = gadir_inv.6.b
+		reverse_add_opinion = {
+			modifier = gadir_friendly_opinion_modifier
+			target = c:CAR
+		}
+		add_political_influence = 25
+		add_treasury = 100
+	}
+}
+
+gadir_inv.8 = {	# Initial event - pick a target
+	type = country_event
+	title = gadir_inv.8.t
+	desc = gadir_inv.8.desc
+	picture = dagger_behind_back
+	left_portrait = scope:kill_them_all_1
+	left_portrait = scope:kill_them_all_2
+	right_portrait = scope:kill_them_all_3
+	right_portrait = scope:kill_them_all_4
+
+	immediate = {
+		c:CAR = {
+			random_character = {	# Ruler
+				limit = {
+					is_ruler = yes
+				}
+				save_scope_as = kill_them_all_1
+			}
+			random_character = {	# Some governor
+				limit = {
+					is_ruler = no
+					is_governor = yes
+				}
+				save_scope_as = kill_them_all_2
+			}
+			random_character = {	# General
+				limit = {
+					is_ruler = no
+					is_general = yes
+					is_governor = no
+				}
+				save_scope_as = kill_them_all_3
+			}
+			random_character = {	# Researcher
+				limit = {
+					has_job = yes
+					has_any_office = no
+					is_general = no
+					is_admiral = no
+					is_governor = no
+					is_ruler = no
+				}
+				save_scope_as = kill_them_all_4
+			}
+		}
+	}
+
+	option = {	# Choose the RULER
+		trigger = {
+			scope:kill_them_all_1 = {
+				exists = yes
+			}
+		}
+		name = gadir_inv.8.a
+		custom_tooltip = gadir_inv.8.tt
+		custom_tooltip = gadir_inv.8.at
+		scope:kill_them_all_1 = {
+			save_scope_as = selected_to_kill_char
+		}
+	}
+
+	option = {	# Choose the GOVERNOR
+		trigger = {
+			scope:kill_them_all_2 = {
+				exists = yes
+			}
+		}
+		name = gadir_inv.8.b
+		custom_tooltip = gadir_inv.8.tt
+		scope:kill_them_all_2 = {
+			save_scope_as = selected_to_kill_char
+		}
+	}
+
+	option = {	# Choose the GENERAL
+		trigger = {
+			scope:kill_them_all_3 = {
+				exists = yes
+			}
+		}
+		name = gadir_inv.8.c
+		custom_tooltip = gadir_inv.8.tt
+		scope:kill_them_all_3 = {
+			save_scope_as = selected_to_kill_char
+		}
+	}
+
+	option = {	# Choose the RESEARCHER
+		trigger = {
+			scope:kill_them_all_4 = {
+				exists = yes
+			}
+		}
+		name = gadir_inv.8.d
+		custom_tooltip = gadir_inv.8.tt
+		scope:kill_them_all_4 = {
+			save_scope_as = selected_to_kill_char
+		}
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.9
+			days = 30
+		}
+	}
+}
+
+gadir_inv.9 = {	# Choose your assassin
+	type = country_event
+	title = gadir_inv.9.t
+	desc = gadir_inv.9.desc
+	picture = dagger_behind_back
+	left_portrait = current_ruler
+	right_portrait = scope:would_be_assassin_1
+	right_portrait = scope:would_be_assassin_2
+	right_portrait = scope:would_be_assassin_3
+
+	immediate = {
+		random_character = {
+			limit = {
+				is_adult = yes
+				highest_skill = finesse
+				loyalty >= 40
+			}
+			save_scope_as = would_be_assassin_1
+		}
+		random_character = {
+			limit = {
+				is_adult = yes
+				highest_skill = finesse
+				loyalty >= 40
+				age != scope:would_be_assassin_1.age
+			}
+			save_scope_as = would_be_assassin_2
+		}
+		random_character = {
+			limit = {
+				is_adult = yes
+				highest_skill = finesse
+				loyalty >= 40
+				age != scope:would_be_assassin_1.age
+				age != scope:would_be_assassin_2.age
+			}
+			save_scope_as = would_be_assassin_3
+		}
+	}
+
+	option = {
+		trigger = {
+			scope:would_be_assassin_1 = {
+				exists = yes
+			}
+		}
+		name = gadir_inv.9.a
+		add_treasury = -100
+		scope:would_be_assassin_1 = {
+			add_gold = 100
+			save_scope_as = selected_assassin_char
+		}
+		custom_tooltip = gadir_inv.9.tt
+		hidden_effect = {
+			scope:would_be_assassin_1 = {
+				move_country = c:CAR
+				remove_character_modifier = foreign_citizen	# To prevent being made a citizen
+				add_character_modifier = {
+					name = visiting_foreign_citizen
+					duration = -1
+				}
+			}
+		}
+	}
+
+	option = {
+		trigger = {
+			scope:would_be_assassin_2 = {
+				exists = yes
+			}
+		}
+		name = gadir_inv.9.b
+		add_treasury = -100
+		scope:would_be_assassin_2 = {
+			add_gold = 100
+			save_scope_as = selected_assassin_char
+		}
+		custom_tooltip = gadir_inv.9.tt
+		hidden_effect = {
+			scope:would_be_assassin_2 = {
+				move_country = c:CAR
+				remove_character_modifier = foreign_citizen	# To prevent being made a citizen
+				add_character_modifier = {
+					name = visiting_foreign_citizen
+					duration = -1
+				}
+			}
+		}
+	}
+
+	option = {
+		trigger = {
+			scope:would_be_assassin_3 = {
+				exists = yes
+			}
+		}
+		name = gadir_inv.9.c
+		add_treasury = -100
+		scope:would_be_assassin_3 = {
+			add_gold = 100
+			save_scope_as = selected_assassin_char
+		}
+		custom_tooltip = gadir_inv.9.tt
+		hidden_effect = {
+			scope:would_be_assassin_3 = {
+				move_country = c:CAR
+				remove_character_modifier = foreign_citizen	# To prevent being made a citizen
+				add_character_modifier = {
+					name = visiting_foreign_citizen
+					duration = -1
+				}
+			}
+		}
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.10
+			days = 30
+		}
+	}
+}
+
+gadir_inv.10 = {	# Assassination or kidnapping?
+	type = country_event
+	title = gadir_inv.10.t
+	desc = gadir_inv.10.desc
+	picture = dagger_behind_back
+	left_portrait = scope:selected_assassin_char
+	right_portrait = scope:selected_to_kill_char
+
+	option = {	# Assassination
+		name = gadir_inv.10.a
+		custom_tooltip = gadir_inv.10.at
+		set_variable = {
+			name = will_assassinate
+		}
+	}
+
+	option = {	# Kidnapping
+		trigger = {
+			scope:selected_to_kill_char = {
+				is_ruler = no
+			}
+		}
+		name = gadir_inv.10.b
+		custom_tooltip = gadir_inv.10.bt
+		set_variable = {
+			name = will_kidnap
+		}
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.11
+			days = 30
+		}
+	}
+}
+
+gadir_inv.11 = {	# Result of the attempt
+	type = country_event
+	title = gadir_inv.11.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					has_variable = will_assassinate
+				}
+				desc = gadir_inv.11.desc_1
+			}
+			triggered_desc = {
+				trigger = {
+					has_variable = will_kidnap
+				}
+				desc = gadir_inv.11.desc_2
+			}
+		}
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					has_variable = assassination_success
+				}
+				desc = gadir_inv.11.desc_1_1
+			}
+			triggered_desc = {
+				trigger = {
+					has_variable = assassination_failure
+				}
+				desc = gadir_inv.11.desc_1_2
+			}
+			triggered_desc = {
+				trigger = {
+					has_variable = kidnapping_success
+				}
+				desc = gadir_inv.11.desc_2_1
+			}
+			triggered_desc = {
+				trigger = {
+					has_variable = kidnapping_failure
+				}
+				desc = gadir_inv.11.desc_2_2
+			}
+		}
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					has_variable = operative_got_away
+				}
+				desc = gadir_inv.11.desc_3
+			}
+			triggered_desc = {
+				trigger = {
+					NOT = {
+						has_variable = operative_got_away
+					}
+				}
+				desc = gadir_inv.11.desc_4
+			}
+		}
+	}
+	picture = assassination
+	left_portrait = scope:selected_assassin_char
+	right_portrait = scope:selected_to_kill_char
+
+	immediate = {
+		random_list = {
+			2 = {	# Success
+				modifier = {
+					factor = 2
+					has_variable = will_assassinate
+				}
+				modifier = {
+					factor = 2
+					scope:selected_assassin_char = {
+						finesse >= 8
+					}
+				}
+				modifier = {
+					factor = 3
+					scope:selected_assassin_char = {
+						OR = {
+							has_trait = crafty
+							has_trait = cautious
+							has_trait = shrewd
+						}
+					}
+				}
+				modifier = {
+					factor = 2
+					scope:selected_to_kill_char = {
+						OR = {
+							has_trait = submissive
+							has_trait = reckless
+							has_trait = trusting
+						}
+					}
+				}
+				modifier = {
+					factor = 2
+					scope:selected_to_kill_char = {
+						finesse < 5
+					}
+				}
+				modifier = {	# Heavily decreased chances if ruler
+					factor = 0.2
+					scope:selected_to_kill_char = {
+						is_ruler = yes
+					}
+				}
+				if = {
+					limit = {
+						has_variable = will_assassinate
+					}
+					set_variable = {
+						name = assassination_success
+					}
+					scope:selected_to_kill_char = {
+						death = {
+							killer = scope:selected_assassin_char
+							death_reason = death_assassinated
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						has_variable = will_kidnap
+					}
+					set_variable = {
+						name = kidnapping_success
+					}
+					scope:selected_to_kill_char = {
+						if = {
+							limit = {
+								is_governor = yes
+							}
+							remove_as_governor = yes
+						}
+						if = {
+							limit = {
+								is_general = yes
+							}
+							remove_command = yes
+						}
+						move_country_with_message = c:GAD
+						add_loyalty = kidnapped_loyalty
+						force_add_trait = vengeful
+					}
+					imprison = {
+						target = scope:selected_to_kill_char
+					}
+				}
+				set_variable = {
+					name = operative_got_away
+				}
+				scope:selected_assassin_char = {
+					add_finesse = 1
+					add_zeal = 1
+					force_add_trait = deceitful
+					move_country_with_message = root
+					hidden_effect = {
+						set_home_country = root
+						remove_character_modifier = visiting_foreign_citizen
+						remove_character_modifier = foreign_citizen
+					}
+				}
+			}
+			2 = {	# Failure
+				modifier = {
+					factor = 2
+					has_variable = will_kidnap
+				}
+				modifier = {
+					factor = 2
+					scope:selected_assassin_char = {
+						finesse >= 5
+					}
+				}
+				modifier = {
+					factor = 3
+					scope:selected_assassin_char = {
+						OR = {
+							has_trait = guileless
+							has_trait = reckless
+							has_trait = foolish
+						}
+					}
+				}
+				modifier = {
+					factor = 2
+					scope:selected_to_kill_char = {
+						OR = {
+							has_trait = assertive
+							has_trait = cautious
+							has_trait = suspicious
+						}
+					}
+				}
+				modifier = {
+					factor = 2
+					scope:selected_to_kill_char = {
+						finesse >= 8
+					}
+				}
+				if = {
+					limit = {
+						has_variable = will_assassinate
+					}
+					set_variable = {
+						name = assassination_failure
+					}
+				}
+				else_if = {
+					limit = {
+						has_variable = will_kidnap
+					}
+					set_variable = {
+						name = kidnapping_failure
+					}
+				}
+				set_variable = {
+					name = operative_got_away
+				}
+				scope:selected_to_kill_char = {
+					force_add_trait = suspicious
+				}
+				scope:selected_assassin_char = {
+					add_finesse = 1
+					force_add_trait = sceptical
+					move_country_with_message = root
+					hidden_effect = {
+						set_home_country = root
+						remove_character_modifier = visiting_foreign_citizen
+						remove_character_modifier = foreign_citizen
+					}
+				}
+			}
+			1 = {	# Critical failure
+				modifier = {
+					factor = 2
+					has_variable = will_kidnap
+				}
+				modifier = {
+					factor = 4
+					scope:selected_assassin_char = {
+						finesse < 5
+					}
+				}
+				modifier = {
+					factor = 2
+					scope:selected_assassin_char = {
+						OR = {
+							has_trait = guileless
+							has_trait = reckless
+							has_trait = foolish
+						}
+					}
+				}
+				modifier = {
+					factor = 2
+					scope:selected_to_kill_char = {
+						OR = {
+							has_trait = assertive
+							has_trait = cautious
+							has_trait = suspicious
+						}
+					}
+				}
+				modifier = {
+					factor = 2
+					scope:selected_to_kill_char = {
+						finesse >= 8
+					}
+				}
+				scope:selected_to_kill_char = {
+					force_add_trait = suspicious
+				}
+				scope:selected_assassin_char = {
+					death = {
+						killer = scope:selected_assassin_char
+						death_reason = death_escaping
+					}
+				}
+			}
+		}
+		c:CAR = {
+			trigger_event = {
+				id = gadir_inv.12
+			}
+		}
+	}
+
+	option = {	# Success
+		trigger = {
+			OR = {
+				has_variable = assassination_success
+				has_variable = kidnapping_success
+			}
+		}
+		name = gadir_inv.11.a
+		exclusive = yes
+		if = {
+			limit = {
+				has_variable = kidnapping_success
+			}
+			add_treasury = scope:selected_to_kill_char.wealth
+			scope:selected_to_kill_char = {
+				add_gold = {
+					value = wealth
+					multiply = -1
+				}
+			}
+		}
+	}
+
+	option = {	# Failure
+		trigger = {
+			OR = {
+				has_variable = assassination_failure
+				has_variable = kidnapping_failure
+			}
+		}
+		name = gadir_inv.11.b
+		exclusive = yes
+	}
+
+	option = {	# Critical failure
+		name = gadir_inv.11.c
+	}
+
+	after = {
+		remove_variable = will_assassinate
+		remove_variable = will_kidnap
+		remove_variable = assassination_success
+		remove_variable = assassination_failure
+		remove_variable = kidnapping_success
+		remove_variable = kidnapping_failure
+		remove_variable = operative_got_away
+	}
+}
+
+gadir_inv.12 = {	# Overlord - notification of the attempt
+	type = country_event
+	title = gadir_inv.12.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					c:GAD = {
+						has_variable = assassination_success
+					}
+				}
+				desc = gadir_inv.12.desc_1_1
+			}
+			triggered_desc = {
+				trigger = {
+					c:GAD = {
+						has_variable = kidnapping_success
+					}
+				}
+				desc = gadir_inv.12.desc_2_1
+			}
+			triggered_desc = {
+				trigger = {
+					c:GAD = {
+						has_variable = assassination_failure
+					}
+				}
+				desc = gadir_inv.12.desc_1_2
+			}
+			triggered_desc = {
+				trigger = {
+					c:GAD = {
+						has_variable = kidnapping_failure
+					}
+				}
+				desc = gadir_inv.12.desc_2_2
+			}
+		}
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					c:GAD = {
+						has_variable = operative_got_away
+					}
+				}
+				desc = gadir_inv.12.desc_3
+			}
+			triggered_desc = {
+				trigger = {
+					c:GAD = {
+						NOT = {
+							has_variable = operative_got_away
+						}
+					}
+				}
+				desc = gadir_inv.12.desc_4
+			}
+		}
+	}
+	picture = assassination
+	left_portrait = current_ruler
+	right_portrait = scope:selected_assassin_char
+
+	immediate = {
+		if = {
+			limit = {
+				c:GAD = {
+					has_variable = assassination_success
+				}
+			}
+			custom_tooltip = gadir_inv.12.tt_1
+		}
+		else_if = {
+			limit = {
+				c:GAD = {
+					has_variable = kidnapping_success
+				}
+			}
+			custom_tooltip = gadir_inv.12.tt_2
+		}
+	}
+
+	option = {
+		name = gadir_inv.12.a
+	}
+
+}
+
+gadir_inv.13 = { #flavour event task 5
+	type = country_event
+	title = gadir_inv.13.t
+	desc = gadir_inv.13.desc
+	picture = interesting_histories_punic_town
+	left_portrait = current_ruler
+
+	trigger = {
+		tag = GAD
+		has_variable = tharsis_trade_hub_enable
+		NOT = {
+			has_variable = tharsis_trade_hub
+		}
+		trigger_if = {
+			limit = {
+				has_variable = tharsis_lame_hub
+			}
+			p:1415.state = {
+				trade_good_surplus = {
+					target = iron
+					value >= 4
+				}
+			}
+			p:1415 = {
+				total_population >= 30
+			}
+		}
+	}
+
+	option = {
+		name = gadir_inv.13.a
+		set_variable = tharsis_lame_hub
+	}
+
+	option = {
+		name = gadir_inv.13.b
+		exclusive = yes
+		trigger = {
+			current_date >= 480.1.1
+			p:1415.state = {
+				trade_good_surplus = {
+					target = iron
+					value >= 4
+				}
+			}
+			p:1415 = {
+				total_population >= 30
+			}
+		}
+		p:1415 = { #upgrade Tharsis + modifier
+			increase_province_rank_effect = yes
+			add_province_modifier = {
+				name = gadir_modifier_17
+				duration = -1
+			}
+		}
+		set_variable = tharsis_trade_hub
+		custom_tooltip = gadir_inv.13.tt
+	}
+}
+
+gadir_inv.14 = {
+	type = country_event
+	hidden = yes
+	immediate = {
+		current_ruler.employer = {
+			save_scope_as = actor_1
+		}
+		p:3061.governor = {
+			save_scope_as = target_1
+		}
+		scope:target.employer = {
+			trigger_event = {
+				id = gadir_inv.23
+				days = -1
+			}
+		}
+	}
+}
+
+gadir_inv.15 = { #first event: merchants hindered
+	type = country_event
+	title = gadir_inv.15.t
+	desc = gadir_inv.15.desc
+	picture = interesting_histories_purple_soldier
+
+	left_portrait = current_ruler
+	right_portrait = scope:floating_victim
+
+	immediate = {
+		c:CAR = {
+			random_character = {
+				limit = {
+					is_admiral = yes
+				}
+				save_scope_as = floating_victim
+			}
+		}
+		add_treasury = -200
+		add_country_modifier = {
+			name = gadir_modifier_19
+			duration = 3650
+		}
+	}
+
+	option = { #escalate
+		name = gadir_inv.15.a
+		add_treasury = {
+			value = has_monthly_income 
+			multiply = -2.5
+			max = -100
+			min = -450
+		}
+		add_country_modifier = {
+			name = gadir_modifier_18
+			duration = 3650 #10 years
+		}
+		trigger_event = {
+			id = gadir_inv.32
+			days = { 10 20 }
+		}
+	}
+
+	option = { #try to deescalate
+		name = gadir_inv.15.b
+		trigger = {
+			c:CAR = {
+				opinion = {
+					target = root
+					value >= 0
+				}
+			}
+		}
+		add_political_influence = -25
+		remove_country_modifier = gadir_modifier_19
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.16
+			days = { 30 50 }
+		}
+	}
+}
+
+gadir_inv.16 = { #sow discontent in Carthage
+	type = country_event
+	title = gadir_inv.16.t
+	desc = gadir_inv.16.desc
+	picture = interesting_histories_punic_town
+
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	immediate = {
+		hidden_effect = {
+			add_manpower = -2
+		}
+	}
+
+	option = { #focus on the people
+		name = gadir_inv.16.a
+		c:CAR = {
+			add_country_modifier = {
+				name = gadir_modifier_20
+				duration = 3650
+			}
+		}
+	}
+
+	option = { #focus on the army
+		name = gadir_inv.16.b
+		c:CAR = {
+			add_country_modifier = {
+				name = gadir_modifier_21
+				duration = 3650
+			}
+		}
+	}
+
+	option = { #focus on the generals
+		name = gadir_inv.16.c
+		c:CAR = {
+			every_character = {
+				limit = {
+					loyalty < 55
+				}
+				add_loyalty = unrest_gadir_carthage
+			}
+		}
+	}
+
+	option = { #sabotage the forts
+		name = gadir_inv.16.d
+		c:CAR = {
+			add_country_modifier = {
+				name = gadir_modifier_22
+				duration = 3650
+			}
+		}
+	}
+
+	option = { #save the resources
+		name = gadir_inv.16.e
+		add_manpower = 2
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.17
+			days = { 45 60 }
+		}
+		c:CAR = {
+			add_opinion = {
+				target = root
+				modifier = gadir_meddling
+			}
+		}
+	}
+}
+
+gadir_inv.17 = { #border conflict / raid
+	type = country_event
+	title = gadir_inv.17.t
+	desc = gadir_inv.17.desc
+	picture = interesting_histories_punic_town
+
+	left_portrait = current_ruler
+	right_portrait = scope:the_walking_dead_general
+
+	immediate = {
+		c:CAR = {
+			random_character = {
+				limit = {
+					is_general = yes
+				}
+				save_scope_as = the_walking_dead_general
+			}
+		}
+		add_treasury = -200
+		every_owned_province = {
+			limit = {
+				any_neighbor_province = {
+					owner = c:CAR
+				}
+			}
+			add_province_modifier = {
+				name = gadir_modifier_23
+				duration = 3650
+			}
+			random_pops_in_province = {
+				kill_pop = yes
+			}
+		}
+	}
+
+	option = { #raid back
+		name = gadir_inv.17.a
+		trigger = {
+			any_owned_province = {
+				any_neighbor_province = {
+					owner = c:CAR
+				}
+			}
+		}
+		c:CAR = {
+			every_owned_province = {
+				limit = {
+					any_neighbor_province = {
+						owner = c:GAD
+					}
+				}
+				add_province_modifier = {
+					name = gadir_modifier_23
+					duration = 3650
+				}
+			}
+		}
+	}
+
+	option = { #increase security
+		name = gadir_inv.17.b
+		add_country_modifier = {
+			name = gadir_modifier_24
+			duration = 3650
+		}
+		add_treasury = {
+			value = has_monthly_income
+			multiply = -3.5
+			max = -250
+		}
+	}
+
+	option = { #demand recompensation
+		name = gadir_inv.17.c
+		trigger = {
+			c:CAR = {
+				opinion = {
+					target = root
+					value >= 0
+				}
+			}
+		}
+		custom_tooltip = gadir_inv.17.tt
+		hidden_effect = {
+			c:CAR = {
+				trigger_event = {
+					id = gadir_inv.18
+					days = { 5 10 }
+				}	
+			}
+		}
+	}
+
+	option = { #deal with the damage
+		name = gadir_inv.17.d
+		trigger = {
+			any_owned_province = {
+				has_province_modifier = gadir_modifier_23
+			}
+		}
+		add_treasury = {
+			value = has_monthly_income
+			multiply = -1.75
+			max = -100
+		}
+		every_owned_province = {
+			limit = {
+				has_province_modifier = gadir_modifier_23
+			}
+			remove_province_modifier = gadir_modifier_23
+		}
+	}
+
+	option = {  #do nothing
+		name = gadir_inv.17.e
+		current_ruler = {
+			add_popularity = -10
+		}
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.20
+			days = { 40 60 }
+		}
+	}
+}
+
+gadir_inv.18 = {
+	type = country_event
+	title = gadir_inv.18.t
+	desc = gadir_inv.18.desc
+	picture = interesting_histories_purple_soldier
+
+	left_portrait = current_ruler
+	right_portrait = c:GAD.current_ruler
+
+	option = { #pay
+		name = gadir_inv.18.a
+		c:CAR = {
+			add_opinion = {
+				target = c:GAD
+				modifier = gadir_meddling
+			}
+		}
+	}
+
+	option = { #refuse
+		name = gadir_inv.18.b
+		add_treasury = {
+			value = has_monthly_income
+			multiply = -2
+			max = -150
+			min = -500
+		}
+		ai_chance = {
+			modifier = {
+				add = 1000
+				trigger = {
+					opinion = {
+						target = c:GAD
+						value >= 50
+					}
+				}
+			}
+		}
+		c:GAD = {
+			set_variable = {
+				name = carthage_always_pays_their_debts
+				days = 20
+			}
+		}
+	}
+
+	after = {
+		c:GAD = {
+			trigger_event = {
+				id = gadir_inv.19
+				days = { 5 10 }
+			}
+		}
+	}
+}
+
+gadir_inv.19 = {
+	type = country_event
+	title = gadir_inv.19.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					has_variable = carthage_always_pays_their_debts
+				}
+				desc = gadir_inv.19.desc_1
+			}
+			triggered_desc = {
+				trigger = {
+					always = yes
+				}
+			}
+			desc = gadir_inv.19.desc_2
+		}
+	}
+
+	picture = interesting_histories_purple_soldier
+
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	option = {
+		name = gadir_inv.19.a
+		trigger = {
+			has_variable = carthage_always_pays_their_debts
+		}
+		exclusive = yes
+	}
+
+	option = {
+		name = gadir_inv.19.b
+	}
+}
+
+gadir_inv.20 = { #send merchants to Rusaddir 
+	type = country_event
+	title = gadir_inv.20.t
+	desc = gadir_inv.20.desc
+	picture = interesting_histories_punic_town
+	goto_location = p:3080
+
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	option = { #expensive
+		name = gadir_inv.20.a
+		set_variable = {
+			name = rusaddir_merchant_1
+			days = 100
+		}
+		add_treasury = {
+			value = has_monthly_income 
+			multiply = -4
+			max = -400
+		}
+		create_character = { #best char
+			female = no
+			add_finesse = 10
+			add_charisma = 4
+			add_trait = orator
+			add_trait = ambitious
+			culture = root.culture
+			religion = root.religion
+		}
+	}
+
+	option = { #medium
+		name = gadir_inv.20.b
+		set_variable = {
+			name = rusaddir_merchant_2
+			days = 100
+		}
+		add_treasury = {
+			value = has_monthly_income 
+			multiply = -2
+			max = -200
+		}
+		create_character = { #2nd
+			female = no
+			add_finesse = 6
+			add_charisma = 4
+			add_trait = silver_tongued
+			culture = root.culture
+			religion = root.religion
+		}
+	}
+
+	option = { #cheap 
+		name = gadir_inv.20.c
+		set_variable = {
+			name = rusaddir_merchant_3
+			days = 100
+		}
+		add_treasury = {
+			value = has_monthly_income 
+			multiply = -1
+			max = -100
+		}
+		create_character = { #3rd
+			female = no
+			add_finesse = 4
+			add_martial = 4
+			add_trait = confident
+			culture = root.culture
+			religion = root.religion
+		}
+	}
+
+	option = { #easter egg
+		name = gadir_inv.20.d
+		highlight = yes
+		trigger = {
+			current_ruler.finesse >= 10
+		}
+		set_variable = {
+			name = rusaddir_merchant_4
+			days = 100
+		}
+
+		add_treasury = -100
+
+		create_character = { #best char
+			female = no
+			add_finesse = 10
+			add_charisma = 4
+			add_trait = orator
+			add_trait = ambitious
+			culture = root.culture
+			religion = root.religion
+		}
+
+		create_character = { #2nd
+			female = no
+			add_finesse = 6
+			add_charisma = 4
+			add_trait = silver_tongued
+			culture = root.culture
+			religion = root.religion
+		}
+
+		create_character = { #3rd
+			female = no
+			add_finesse = 4
+			add_martial = 4
+			add_trait = confident
+			culture = root.culture
+			religion = root.religion
+		}
+	}
+
+	option = { #don't pay
+		name = gadir_inv.20.e
+		set_variable = {
+			name = rusaddir_merchant_5
+			days = 100
+		}
+	}
+
+	after = {
+		if = {
+			limit = {
+				NOR = {
+					has_variable = rusaddir_merchant_4
+					has_variable = rusaddir_merchant_5
+				}
+			}
+			trigger_event = {
+				id = gadir_inv.21
+				days = { 40 80 }
+			}
+		}
+
+		if = {
+			limit = {
+				has_variable = rusaddir_merchant_4
+			}
+			trigger_event = {
+				id = gadir_inv.22
+				days = { 40 80 }
+			}
+		}
+		
+		c:CAR = {
+			add_opinion = {
+				target = root
+				modifier = gadir_meddling
+			}
+		}
+	}
+}
+
+gadir_inv.21 = { #Rusaddir resolution
+	type = country_event
+	title = gadir_inv.21.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					has_variable = rusaddir_merchant_1
+				}
+				desc = gadir_inv.21.desc_1
+			}
+			triggered_desc = {
+				trigger = {
+					has_variable = rusaddir_merchant_2
+				}
+				desc = gadir_inv.21.desc_2
+			}
+			triggered_desc = {
+				trigger = {
+					has_variable = rusaddir_merchant_2
+				}
+				desc = gadir_inv.21.desc_3
+			}
+		}
+	}
+	picture = interesting_histories_punic_town
+	goto_location = p:3080
+
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	immediate = {
+		if = {
+			limit = {
+				has_variable = rusaddir_merchant_1
+			}
+			p:3080 = {
+				set_owned_by = root
+			}
+		}
+
+		if = {
+			limit = {
+				has_variable = rusaddir_merchant_2
+			}
+			p:3080 = {
+				create_country = {
+					name = {
+						name = RUSADDIR_GADIR
+						adjective = RUSADDIR_GADIR_ADJECTIVE
+					}
+					set_country_heritage = punic_heritage
+					set_country_religion = carthaginian_pantheon
+					#set_primary_culture = carthaginian
+					save_scope_as = rusaddir_vassal_scope
+					change_government = punic_republic
+					change_country_tag = RUS
+					set_variable = rusaddir_vassal_var
+				}
+			}
+			make_subject = {
+				target = scope:rusaddir_vassal_scope
+				type = subject_colony 
+			}
+			hidden_effect = { add_treasury = 1000 }
+		}
+
+		if = {
+			limit = {
+				has_variable = rusaddir_merchant_3
+			}
+			capital_scope = {
+				create_state_pop = nobles
+				create_state_pop = citizen
+				create_state_pop = citizen
+				create_state_pop = freemen
+				create_state_pop = slaves
+				create_state_pop = slaves
+			}
+		}
+	}
+
+	option = { #good!
+		name = gadir_inv.21.a
+	}
+
+	after = {
+		c:CAR = {
+			trigger_event = {
+				id = gadir_inv.26
+				days = { 40 80 }
+			}
+		}
+	}
+}
+
+gadir_inv.22 = {
+	type = country_event
+	title = gadir_inv.22.t
+	desc = gadir_inv.22.desc
+	picture = interesting_histories_punic_town
+	goto_location = p:3080
+
+	left_portrait = current_ruler
+	right_portrait = c:CAR.current_ruler
+
+	option = { #occupy
+		name = gadir_inv.22.a 
+		p:3080 = {
+			set_owned_by = root
+		}
+		capital_scope = {
+			create_state_pop = nobles
+			create_state_pop = citizen
+			create_state_pop = freemen
+			create_state_pop = slaves
+		}
+	}
+
+	option = { #vassalise
+		name = gadir_inv.22.b
+		p:3080 = {
+			create_country = {
+				name = {
+					name = RUSADDIR_GADIR
+					adjective = RUSADDIR_GADIR_ADJECTIVE
+				}
+				set_country_heritage = punic_heritage
+				set_country_religion = carthaginian_pantheon
+				#set_primary_culture = carthaginian
+				save_scope_as = rusaddir_vassal_scope
+				change_government = punic_republic
+				change_country_tag = RUS
+				set_variable = rusaddir_vassal_var
+			}
+		}
+		make_subject = {
+			target = scope:rusaddir_vassal_scope
+			type = subject_colony 
+		}
+		scope:rusaddir_vassal_scope = {
+			hidden_effect = { 
+				add_treasury = 1000 
+				create_state_pop = nobles
+				create_state_pop = nobles
+				create_state_pop = citizen
+				create_state_pop = citizen
+				create_state_pop = freemen
+				create_state_pop = freemen
+				create_state_pop = freemen
+				create_state_pop = slaves
+				create_state_pop = slaves
+				create_state_pop = slaves
+			}
+		}
+		capital_scope = {
+			create_state_pop = nobles
+			create_state_pop = citizen
+			create_state_pop = freemen
+			create_state_pop = slaves
+		}
+	}
+
+	after = {
+		c:CAR = {
+			trigger_event = {
+				id = gadir_inv.26
+				days = { 40 80 }
+			}
+		}
+	}
+}
+
+gadir_inv.23 = {
+	type = country_event
+		title = "gadir_inv.23.t"
+		desc = "gadir_inv.23.desc"
+		
+		left_portrait = current_ruler
+		right_portrait = scope:actor_1.current_ruler
+	
+		picture = senator_conversing
+		
+		option = {
+			name = "gadir_inv.23.a"
+			scope:target_1 = {
+				add_friend = scope:actor_1.current_ruler
+			}
+			custom_tooltip = friend_refusal
+			hidden_effect = {
+				if = {
+					limit = {
+						scope:actor_1 = {
+							has_land = yes
+						}
+					}
+					scope:actor_1 = {
+						trigger_event = {
+							id = gadir_inv.25
+						}
+					}
+				}
+			}
+		}
+		
+		option = {
+			name = "gadir_inv.23.b"
+			custom_tooltip = friend_refusal
+			hidden_effect = {
+				if = {
+					limit = {
+						scope:actor_1 = {
+							has_land = yes
+						}
+					}
+					scope:actor_1 = {
+						trigger_event = {
+							id = gadir_inv.24
+						}
+					}
+				}
+			}
+		}
+}
+
+gadir_inv.24 = { #declined
+	type = country_event
+	title = "gadir_inv.24.t"
+	desc = "gadir_inv.24.desc"
+	
+	left_portrait = current_ruler
+	right_portrait = scope:target_1
+	
+	picture = greek_court
+	
+	option = {
+		name = "gadir_inv.24.a"
+		custom_tooltip = no_effect_tooltip
+	}
+	
+}
+
+gadir_inv.25 = { #accepted
+	type = country_event
+	title = "gadir_inv.25.t"
+	desc = "gadir_inv.25.desc"
+	
+	left_portrait = current_ruler
+	right_portrait = scope:target_1
+	
+	picture = council_country
+	
+	option = {
+		name = "gadir_inv.25.a"
+		show_as_tooltip = {
+			scope:target_1 = {
+				add_friend = scope:actor_1.current_ruler
+			}
+		}
+	}
+	
+}
+
+gadir_inv.26 = { #msg carthage that Rusaddir has been stolen
+	type = country_event
+	title = gadir_inv.22.t
+	desc = gadir_inv.22.desc
+	picture = interesting_histories_punic_town
+	goto_location = p:3080
+
+	option = {
+		name = gadir_inv.26.a
+	}
+}
+
+gadir_inv.27 = {
+	type = country_event
+	title = gadir_inv.27.t
+	desc = gadir_inv.27.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+	right_portrait = scope:alliance_target_1.current_ruler
+	right_portrait = scope:alliance_target_2.current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	immediate = {
+		random_country = {
+			limit = {
+				NOR = { 
+					this = root
+					this = c:CAR 
+				}
+				NOT = { alliance_with = root }
+				rank = major_power
+				in_diplomatic_range = ROOT
+				opinion = {
+					target = ROOT
+					value > 0
+				}
+			}
+			save_scope_as = alliance_target_1
+		}
+		random_country = {
+			limit = {
+				NOR = { 
+					this = root
+					this = c:CAR 
+				}
+				NOT = { alliance_with = root }
+				rank = major_power
+				in_diplomatic_range = ROOT
+				NOT = {
+					THIS = scope:alliance_target_1
+				}
+				opinion = {
+					target = ROOT
+					value > 0
+				}
+			}
+			save_scope_as = alliance_target_2
+		}
+	}
+
+	option = { #Ask country 1
+		name = gadir_inv.27.a
+		scope:alliance_target_1 = {
+			set_variable = try_hard
+			trigger_event = {
+				id = gadir_inv.28
+				days = { 5 10 }
+			}
+		}
+	}
+
+	option = { #Ask country 2
+		name = gadir_inv.27.b
+		scope:alliance_target_2 = {
+			set_variable = try_hard
+			trigger_event = {
+				id = gadir_inv.28
+				days = { 5 10 }
+			}
+		}
+	}
+}
+
+gadir_inv.28 = {
+	type = country_event
+	title = gadir_inv.28.t
+	desc = gadir_inv.28.desc
+	picture = council_country
+
+	right_portrait = scope:mission_country_scope.current_ruler
+	left_portrait = scope:alliance_target_1.current_ruler
+	left_portrait = scope:alliance_target_2.current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = { # Alliance
+		name = gadir_inv.28.a
+		scope:mission_country_scope = {
+			add_alliance = root
+		}
+		scope:mission_country_scope = {
+			trigger_event = {
+				id = gadir_inv.29
+				days = { 5 10 }
+			}
+		}
+		ai_chance = {
+            factor = 1
+            modifier = {
+                factor = 2
+                opinion = {
+					target = scope:mission_country_scope
+					value >= 50
+				}
+            }
+            modifier = {
+                factor = 3
+                opinion = {
+					target = scope:mission_country_scope
+					value >= 100
+				}
+            }
+        }
+	}
+
+	option = { #No Alliance
+		name = gadir_inv.28.b
+		scope:mission_country_scope = {
+			trigger_event = {
+				id = gadir_inv.30
+				days = { 5 10 }
+			}
+		}
+		ai_chance = {
+            factor = 1
+            modifier = {
+                factor = 1.5
+                opinion = {
+					target = scope:mission_country_scope
+					value <= -50
+				}
+            }
+            modifier = {
+                factor = 2
+                opinion = {
+					target = scope:mission_country_scope
+					value <= -150
+				}
+            }
+        }
+	}
+}
+
+gadir_inv.29 = { #Positive Response
+	type = country_event
+	title = gadir_inv.29.t
+	desc = gadir_inv.29.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+	right_portrait = scope:alliance_target_1.current_ruler
+	right_portrait = scope:alliance_target_2.current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.29.a
+	}
+}
+
+gadir_inv.30 = { #Negative Response
+	type = country_event
+	title = gadir_inv.30.t
+	desc = gadir_inv.30.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+	right_portrait = scope:alliance_target_1.current_ruler
+	right_portrait = scope:alliance_target_2.current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = { #Oh well
+		name = gadir_inv.30.a
+	}
+
+	option = { #try the other guy
+		name = gadir_inv.30.b
+		trigger = {
+			NOT = { has_variable = loser }
+		}
+		set_variable = loser
+		if = {
+			limit = {
+				scope:alliance_target_1 = {
+					NOT = {
+						has_variable = try_hard
+					}
+				}
+			}
+			scope:alliance_target_1 = {
+				trigger_event = {
+					id = gadir_inv.28
+					days = { 5 10 }
+				}
+			}
+		}
+		if = {
+			limit = {
+				scope:alliance_target_2 = {
+					NOT = {
+						has_variable = try_hard
+					}
+				}
+			}
+			scope:alliance_target_2 = {
+				trigger_event = {
+					id = gadir_inv.28
+					days = { 5 10 }
+				}
+			}
+		}
+	}
+}
+
+gadir_inv.31 = { #merchant boon hidden
+	type = country_event
+
+	hidden = yes
+
+	trigger = {
+		any_country = {
+			has_variable = rusaddir_vassal_var
+			owns = p:3080
+		}
+	}
+
+	immediate = {
+		p:3080 = {
+			set_city_status = city_metropolis
+			add_building_level = aqueduct_building
+			add_building_level = aqueduct_building
+			set_trade_goods = dye
+			while = {
+				limit = {
+					total_population < population_cap
+				}
+				count = 10
+				create_state_pop = citizen
+			}
+			while = {
+				limit = {
+					total_population < population_cap
+				}
+				count = 10
+				create_state_pop = freemen
+			}
+		}
+	}
+}
+
+gadir_inv.32 = {
+	type = country_event
+
+	hidden = yes
+
+	immediate = {
+
+		random_list = {
+			10 = {
+				modifier = {
+					factor = 2
+					scope:floating_victim.martial > 10
+				}
+				modifier = {
+					factor = 0.01
+					c:CAR = {
+						any_navy = {
+							has_commander = yes
+							commander = scope:floating_victim
+							unit_size > c:GAD.num_of_ships
+						}
+					}
+				}
+				modifier = {
+					factor = 4
+					c:CAR = {
+						any_navy = {
+							has_commander = yes
+							commander = scope:floating_victim
+							unit_size < c:GAD.num_of_ships
+						}
+					}
+				}
+				scope:floating_victim = {
+					death = {
+						death_reason = death_obscurity
+					}
+				}
+				remove_country_modifier = gadir_modifier_19
+			}
+			10 = {
+				modifier = {
+					factor = 2
+					scope:floating_victim.martial < 10
+				}
+				scope:floating_victim = {
+					add_trait = wounded
+				}
+				random_navy = {
+					random_sub_unit = {
+						destroy_subunit = yes
+					}
+				}
+			}
+		}
+	}
+
+	after = {
+		trigger_event = {
+			id = gadir_inv.33
+			days = { 5 10 }
+		}
+	}
+}
+
+gadir_inv.33 = { #tell the player the success or failure of the intervention against the admiral
+	type = country_event
+	title = gadir_inv.33.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					scope:floating_victim = {
+						is_alive = yes
+					}
+				}
+				desc = gadir_inv.33.desc_1
+			}
+			triggered_desc = {
+				trigger = {
+					scope:floating_victim = {
+						is_alive = no
+					}
+				}
+				desc = gadir_inv.33.desc_2
+			}
+		}
+	}
+	picture = interesting_histories_ship_port_africa
+
+	left_portrait = current_ruler
+	right_portrait = scope:floating_victim
+
+	option = {
+		name = gadir_inv.33.a
+		trigger = {
+			scope:floating_victim = {
+				is_alive = yes
+			}
+		} 
+		exclusive = yes
+		show_as_tooltip = {
+			scope:floating_victim = {
+				add_trait = wounded
+			}
+			random_navy = {
+				random_sub_unit = {
+					destroy_subunit = yes
+				}
+			}
+		}
+	}
+
+	option = {
+		name = gadir_inv.33.b
+		show_as_tooltip = {
+			scope:floating_victim = {
+				death = {
+					death_reason = death_obscurity
+				}
+			}
+			remove_country_modifier = gadir_modifier_19
+		}
+	}
+}
+
+gadir_inv.34 = { #task 2 flavour
+	type = country_event
+	title = gadir_inv.34.t
+	desc = gadir_inv.34.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.34.a
+	}
+}
+
+gadir_inv.35 = { #task 3 flavour
+	type = country_event
+	title = gadir_inv.35.t
+	desc = gadir_inv.35.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.35.a
+	}
+}
+
+gadir_inv.36 = { #task 4 flavour
+	type = country_event
+	title = gadir_inv.36.t
+	desc = gadir_inv.36.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.36.a
+	}
+}
+
+gadir_inv.37 = { #task 6 flavour
+	type = country_event
+	title = gadir_inv.37.t
+	desc = gadir_inv.37.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.37.a
+	}
+}
+
+gadir_inv.38 = { #task 7 flavour
+	type = country_event
+	title = gadir_inv.38.t
+	desc = gadir_inv.38.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.38.a
+	}
+}
+
+gadir_inv.39 = { #task 8 flavour
+	type = country_event
+	title = gadir_inv.39.t
+	desc = gadir_inv.39.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.39.a
+	}
+}
+
+gadir_inv.40 = { #task 9 flavour
+	type = country_event
+	title = gadir_inv.40.t
+	desc = gadir_inv.40.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.40.a
+	}
+}
+
+gadir_inv.41 = { #task 10 flavour
+	type = country_event
+	title = gadir_inv.41.t
+	desc = gadir_inv.41.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.41.a
+	}
+}
+
+gadir_inv.42 = { #task 11 flavour
+	type = country_event
+	title = gadir_inv.42.t
+	desc = gadir_inv.42.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.42.a
+	}
+}
+
+gadir_inv.43 = { #task 12 flavour
+	type = country_event
+	title = gadir_inv.43.t
+	desc = gadir_inv.43.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.43.a
+	}
+}
+
+gadir_inv.44 = { #task 14 flavour
+	type = country_event
+	title = gadir_inv.44.t
+	desc = gadir_inv.44.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.44.a
+	}
+}
+
+gadir_inv.45 = { #task 16 flavour
+	type = country_event
+	title = gadir_inv.45.t
+	desc = gadir_inv.45.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.45.a
+	}
+}
+
+gadir_inv.46 = { #task 17 flavour
+	type = country_event
+	title = gadir_inv.46.t
+	desc = gadir_inv.46.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.46.a
+	}
+}
+
+gadir_inv.47 = { #task 18 flavour
+	type = country_event
+	title = gadir_inv.47.t
+	desc = gadir_inv.47.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.47.a
+	}
+}
+
+gadir_inv.48 = { #task 22 flavour
+	type = country_event
+	title = gadir_inv.48.t
+	desc = gadir_inv.48.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+
+	trigger = {
+		has_land = yes
+	}
+
+	option = {
+		name = gadir_inv.48.a
+	}
+}

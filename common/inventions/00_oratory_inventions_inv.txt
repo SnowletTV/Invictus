@@ -1407,21 +1407,58 @@ oratory_2 = {
 			monthly_tyranny = 0.02  
 			enact_law_cost_modifier = -0.25
 		}
-		allow = { 
-			OR = {
-				government = oligarchic_republic
-				government = aristocratic_republic
-				government = plutocratic_republic
-				government = theocratic_republic
+		allow = {
+			custom_tooltip = {
+				text = "has_proclaimed_dictatorship_ci"
+				AND = {
+					OR = {
+						government = oligarchic_republic
+						government = aristocratic_republic
+						government = plutocratic_republic
+						government = theocratic_republic
+						government = punic_republic
+					}
+					OR = {
+						has_country_modifier = dictatorial_extension
+						has_variable = has_unlocked_dictatorship_tree
+						is_ai = yes
+						trigger_if = {
+							limit = {
+								tag = ROM
+							}
+							OR =  {
+								has_law = senatus_consultum_ultimum
+								has_law = princeps_civitatis
+							}
+						}
+						trigger_else_if = {
+							limit = {
+								tag = CAR
+							}
+							OR =  {
+								has_law = extended_terms
+								has_law = wartime_leadership
+							}
+						}
+						trigger_else = {
+							OR = {
+								has_law = republican_election_2
+								has_law = republican_election_4
+							}
+						}
+					}
+				}
 			}
 		}
 		potential = {
-			custom_tooltip = {
-				text = "has_proclaimed_dictatorship_ci"
-				OR = {
-					has_country_modifier = dictatorial_extension
-					is_ai = yes
+			trigger_if = {
+				limit = {
+					is_ai = no
 				}
+				has_country_modifier = dictatorial_extension
+			}
+			trigger_else = {
+				always = yes
 			}
 		}
 		ai_will_do = {
@@ -1434,21 +1471,16 @@ oratory_2 = {
 				}
 			}
 		}
-		on_activate = {}
+		on_activate = {
+			set_variable = has_unlocked_dictatorship_tree
+		}
 		requires = { assassinate_attempt_cost_modifier_inv }
 	}
 	
 	dictatorship_step_2 = {
 		modifier = { 
 			stability_monthly_change = -0.03
-		}
-		allow = { 
-			OR = {
-				government = oligarchic_republic
-				government = aristocratic_republic
-				government = plutocratic_republic
-				government = theocratic_republic
-			}
+			character_loyalty = -5
 		}
 		potential = {
 			trigger_if = {
@@ -1460,14 +1492,29 @@ oratory_2 = {
 					limit = {
 						tag = ROM
 					}
-					has_law = senatus_consultum_ultimum
+					OR =  {
+						has_law = senatus_consultum_ultimum
+						has_law = princeps_civitatis
+					}
+				}
+				trigger_else_if = {
+					limit = {
+						tag = CAR
+					}
+					OR =  {
+						has_law = extended_terms
+						has_law = wartime_leadership
+					}
 				}
 				trigger_else = {
-					has_law = republican_election_2
+					OR = {
+						has_law = republican_election_2
+						has_law = republican_election_4
+					}
 				}
 			}
 			trigger_else = {
-				is_ai = yes
+				always = yes
 			}
 		}
 		on_activate = {
@@ -1476,6 +1523,12 @@ oratory_2 = {
 					tag = ROM
 				}
 				change_law = princeps_civitatis
+			}
+			else_if = {
+				limit = {
+					tag = CAR
+				}
+				change_law = wartime_leadership
 			}
 			else = {
 				change_law = republican_election_4
@@ -1497,27 +1550,73 @@ oratory_2 = {
 		modifier = { 
 			monthly_political_influence_modifier = 0.1
 		}
-		allow = { 
-			OR = {
-				government = oligarchic_republic
-				government = aristocratic_republic
-				government = plutocratic_republic
-				government = theocratic_republic
-			}
-		}
 		keystone = yes
 		potential = {
 			war = no
 			has_civil_war = no
-			num_of_cities > 40
+			num_of_cities >= 80
+			trigger_if = {
+				limit = {
+					is_ai = no
+					tag = ROM
+				}
+				has_law = princeps_civitatis
+			}
+			trigger_else_if = {
+				limit = {
+					is_ai = no
+					tag = CAR
+				}
+				has_law = wartime_leadership
+			}
+			trigger_else_if = {
+				limit = {
+					is_ai = no
+					NOR = {
+						tag = ROM
+						tag = CAR
+					}
+				}
+				has_law = republican_election_4
+			}
+			has_country_modifier = dictatorial_extension
 		}
 		on_activate = {
 			add_tyranny = 10
 			if = {
 				limit = {
-					stability > 85
+					is_ai = no
 				}
-				add_stability = -15
+				if = {
+					limit = {
+						stability > 85
+					}
+					add_stability = -35
+				}
+				else_if = {
+					limit = {
+						stability > 70
+					}
+					add_stability = -25
+				}
+				else_if = {
+					limit = {
+						stability > 50
+					}
+					add_stability = -20
+				}
+				else_if = {
+					limit = {
+						stability > 30
+					}
+					add_stability = -15
+				}
+				else = {
+					add_stability = -10
+				}
+			}
+			else = {
+				add_stability = 10
 			}
 			add_2_free_province_investments = yes
 			switch_government_type_event_clearup_effect = yes
@@ -1576,18 +1675,27 @@ oratory_2 = {
 					}
 				}
 				scope:civil_war_country = {
-					random_country_culture = {
+					add_military_experience = 200
+					add_stability = 25
+					add_political_influence = 200
+					add_country_modifier = {
+						name = civil_war_buff_ai
+						duration = 3650
+					}
+					if = {
 						limit = {
-							is_integrated = no
+							tag = ROM
 						}
-						weight = {
-							modifier = {
-								factor = country_culture_pop_count
-							}
+						change_law = testamentum_militis
+					}
+					else_if = {
+						limit = {
+							tag = CAR
 						}
-						scope:civil_war_country = {
-							integrate_country_culture = prev
-						}
+						change_law = magonid_levy
+					}
+					else = {
+						change_law = republican_recruitment_3
 					}
 					random_country_culture = {
 						limit = {
@@ -1615,7 +1723,20 @@ oratory_2 = {
 							integrate_country_culture = prev
 						}
 					}
-					add_treasury = 3000
+					random_country_culture = {
+						limit = {
+							is_integrated = no
+						}
+						weight = {
+							modifier = {
+								factor = country_culture_pop_count
+							}
+						}
+						scope:civil_war_country = {
+							integrate_country_culture = prev
+						}
+					}
+					add_treasury = 4000
 					random_country_culture = {
 						limit = {
 							is_integrated = no
@@ -1679,14 +1800,6 @@ oratory_2 = {
 		modifier = { 
 			monthly_political_influence_modifier = 0.1
 		}
-		allow = { 
-			OR = {
-				government = oligarchic_republic
-				government = aristocratic_republic
-				government = plutocratic_republic
-				government = theocratic_republic
-			}
-		}
 		keystone = yes
 		potential = {
 			war = no
@@ -1694,6 +1807,7 @@ oratory_2 = {
 			country_dictatorship_party_trigger = yes
 			tyranny >= 50
 			political_influence >= 150
+			num_of_cities >= 50
 		}
 		on_activate = {
 			add_stability = -25

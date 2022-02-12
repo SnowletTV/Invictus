@@ -18,9 +18,9 @@
 			tag = X08
 			tag = X09
 		}
-		any_owned_province = {
-			is_in_region = galatia_region
-		}
+		# any_owned_province = {
+			# is_in_region = galatia_region
+		# }
 	} 
 
 	abort = {
@@ -60,23 +60,280 @@
 			# }
 		# }
 	}
+
 	
-	raiders = { 
+	mobilize = { 
+		icon = "task_political"
+		
+		allow = {
+			OR = {
+				has_law = local_hierarchs
+				has_law = follow_the_strong_law
+			}
+		} 
+		
+		on_completion = {
+			add_centralization = -30
+			scope:capital_scope = { 
+				create_pop = tribeman 
+				create_pop = tribeman 
+				create_pop = tribeman 
+			}
+		} 
+	}
+	
+	stabilize = { 
+		icon = "task_political"
+		
+		allow = {
+			# offer a sacrifice - TBD
+		} 
+		
+		on_completion = {
+			add_stability = 20
+			add_political_influence = 20
+		} 
+	}
+	
+	march = { 
+		icon = "task_political"
+
+		requires = { mobilize stabilize }
+		
+		allow = {
+			# has certain troop count
+			root = {
+				any_unit = {
+					count >= 5
+				}
+			}
+
+		} 
+		
+		on_completion = {
+			add_military_experience = 20
+		} 
+	}
+	
+	alliance = { 
 		icon = "task_political"
 
 		# requires = { settle }
-		
+		# prevented_by = { subjugation }
+		bypass = {
+			has_completed_mission_task = subjugation
+		}
 		allow = {
-			any_ownable_province = {
-				# limit = {
-					is_in_region = asia_region
-				# }
-				# OR = {
-					has_province_modifier = province_raided
-					# has_province_modifier = province_pillaged
-				# }
+			trigger_if = {
+				lim = {tag = X07 }
+				c:X07 = {
+					alliance_with = c:X08
+					alliance_with = c:X09
+				}
+			}
+			trigger_if = {
+				lim = {tag = X08 }
+				c:X07 = {
+					alliance_with = c:X07
+					alliance_with = c:X09
+				}
+			}
+			trigger_if = {
+				lim = {tag = X09 }
+				c:X07 = {
+					alliance_with = c:X08
+					alliance_with = c:X07
+				}
+			}
+
+		} 
+		
+		on_completion = {
+			add_stability = 10
+			add_political_influence = 20
+			scope:capital_scope = { 
+				create_pop = tribeman #{
 			}
 		} 
+	}
+	
+	subjugation = { 
+		icon = "task_political"
+
+		# requires = { settle }
+		# prevented_by = { alliance }
+		bypass = {
+			has_completed_mission_task = alliance
+		}
+		allow = {
+			p:4842 = {
+				owned_or_subject_owned = c:X07
+			}
+			p:4850 = {
+				owned_or_subject_owned = c:X07
+			}
+			p:4853 = {
+				owned_or_subject_owned = c:X07
+			}
+		} 
+		
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 4842
+					province_id = 4850
+					province_id = 4853
+				}
+			}
+		}
+		
+		on_completion = {
+			add_stability = 10
+			add_political_influence = 20
+			scope:capital_scope = { 
+				create_pop = tribeman #{
+			}
+		} 
+	}
+	
+	unity = { 
+		icon = "task_expansion"
+
+		requires = { alliance subjugation }
+		# bypass = {
+			# OR = {
+				# has_completed_mission_task = alliance
+				# has_completed_mission_task = subjugation
+			# }
+		# }
+		
+		allow = {
+			# either allied nations or conquered them
+		} 
+		
+		on_completion = {
+			add_treasury = 40
+		} 
+	}
+	
+	invade = { 
+		icon = "task_conquest"
+
+		requires = { march unity }
+		
+		duration = 90
+		
+		allow = {
+
+		} 
+		
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = galatia_trocmi_area
+					is_in_area = galatia_area
+					is_in_area = phrygia_parorea_area
+				}
+			}
+		}
+		
+		on_start = {
+			trigger_event = {
+				id = galatian_invasion.1
+				days = 1
+			}
+			set_variable = {
+				name = player_invasion_eligible
+				value = 1
+			}
+			set_variable = {
+				name = galatian_mission_flag
+				value = 1
+			}
+		}
+		
+		on_completion = {
+			
+		} 
+	}
+	
+	new_lands = { 
+		icon = "task_conquest"
+
+		requires = { invade }
+				
+		allow = {
+			any_owned_province = {
+				is_in_region = galatia_region
+			}
+		} 
+		
+		highlight = {	
+			scope:province = {
+				is_in_area = galatia_area
+			}
+		}
+		
+		on_start = {
+
+		}
+		
+		on_completion = {
+			
+		} 
+	}
+	
+
+		
+	raiders = { 
+		icon = "task_conquest"
+
+		requires = { invade }
+		
+		allow = {
+			custom_tooltip = {
+				text = raiders_tt
+				OR = {
+					region:asia_region = {
+						any_region_province = {
+							count >= 1
+							OR = {
+								has_province_modifier = province_raided
+								has_province_modifier = province_pillaged
+							}
+						}
+					}
+					region:galatia_region = {
+						any_region_province = {
+							count >= 1
+							OR = {
+								has_province_modifier = province_raided
+								has_province_modifier = province_pillaged
+							}					
+						}
+					}
+				}
+			}
+			# any_ownable_province = {
+				# limit = {
+					# is_in_region = asia_region
+				# }
+				# OR = {
+					# has_province_modifier = province_raided
+					# has_province_modifier = province_pillaged
+				# }
+			# }
+		} 
+		
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = asia_region
+					is_in_region = galatia_region
+				}
+			}
+		}
+		
 		
 		on_completion = {
 			add_popularity = 20
@@ -92,18 +349,20 @@
 	}
 	
 	roving_bands = { 
-		icon = "task_political"
+		icon = "task_conquest"
 
 		requires = { raiders }
 		
 		allow = {
 			
-			if = {
+			trigger_if = {
 				limit = {
 					tag = X07 # Tectosagia
 				}
+				# custom_tooltip = roving_bands_tectosagia_tt
 				OR = {
 					# Targets should be Laodikea, Apamea, Amblada, Pessinous
+					# note to self: cities above don't match?
 					p:1936 = { # Kelanai
 						OR = {
 							has_province_modifier = province_raided
@@ -130,7 +389,7 @@
 					}
 				}
 			}
-			else_if = {
+			trigger_if = {
 				limit = {
 					tag = X08 # Tolistobogia
 				}
@@ -161,7 +420,7 @@
 					}
 				}
 			}
-			else_if = {
+			trigger_if = {
 				limit = {
 					tag = X09 # Trocmeria
 				}
@@ -194,6 +453,41 @@
 			}
 		} 
 		
+		# trigger_if = {
+			# lim = { tag = X07 }	
+
+		highlight = {
+			scope:province = {
+				trigger_if = {
+					lim = { tag = X07 }	
+					OR = {
+						province_id = 1936
+						province_id = 1934
+						province_id = 1947
+						province_id = 315
+					}
+				}
+				trigger_if = {
+					lim = { tag = X07 }	
+					# OR = {
+						# province_id = 290
+						# province_id = 1973
+						# province_id = 161
+						# province_id = 1993
+					# }
+				}
+				trigger_if = {
+					lim = { tag = X09 }	
+					# OR = {
+						# province_id = 252
+						# province_id = 257
+						# province_id = 274
+						# province_id = 278
+					# }
+				}
+			}
+		}
+	
 		on_completion = {
 			add_military_experience = 20
 			random = {
@@ -215,13 +509,13 @@
 	}
 	
 	raid_specific_target_1 = {		
-		icon = "task_political"
+		icon = "task_conquest"
 
 		requires = { roving_bands }
 		
 		allow = {
 			
-			if = {
+			trigger_if = {
 				limit = {
 					tag = X07 # Tectosagia
 				}
@@ -232,7 +526,7 @@
 					}
 				}
 			}
-			else_if = {
+			trigger_if = {
 				limit = {
 					tag = X08 # Tolistobogia
 				}
@@ -243,7 +537,7 @@
 					}
 				}
 			}
-			else_if = {
+			trigger_if = {
 				limit = {
 					tag = X09 # Trocmeria
 				}
@@ -277,13 +571,13 @@
 	
 	raid_specific_target_2 = {
 		
-		icon = "task_political"
+		icon = "task_conquest"
 
 		requires = { roving_bands }
 		
 		allow = {
 			
-			if = {
+			trigger_if = {
 				limit = {
 					tag = X07 # Tectosagia
 				}
@@ -294,7 +588,7 @@
 					}
 				}
 			}
-			else_if = {
+			trigger_if = {
 				limit = {
 					tag = X08 # Tolistobogia
 				}
@@ -305,7 +599,7 @@
 					}
 				}
 			}
-			else_if = {
+			trigger_if = {
 				limit = {
 					tag = X09 # Trocmeria
 				}
@@ -339,13 +633,13 @@
 	
 	raid_specific_target_3 = {
 		
-		icon = "task_political"
+		icon = "task_conquest"
 
 		requires = { roving_bands }
 		
 		allow = {
 			
-			if = {
+			trigger_if = {
 				limit = {
 					tag = X07 # Tectosagia
 				}
@@ -356,7 +650,7 @@
 					}
 				}
 			}
-			else_if = {
+			trigger_if = {
 				limit = {
 					tag = X08 # Tolistobogia
 				}
@@ -367,7 +661,7 @@
 					}
 				}
 			}
-			else_if = {
+			trigger_if = {
 				limit = {
 					tag = X09 # Trocmeria
 				}
@@ -401,13 +695,13 @@
 	
 	raid_specific_target_4 = {
 		
-		icon = "task_political"
+		icon = "task_conquest"
 
 		requires = { roving_bands }
 		
 		allow = {
 			
-			if = {
+			trigger_if = {
 				limit = {
 					tag = X07 # Tectosagia
 				}
@@ -418,7 +712,7 @@
 					}
 				}
 			}
-			else_if = {
+			trigger_if = {
 				limit = {
 					tag = X08 # Tolistobogia
 				}
@@ -429,7 +723,7 @@
 					}
 				}
 			}
-			else_if = {
+			trigger_if = {
 				limit = {
 					tag = X09 # Trocmeria
 				}
@@ -462,16 +756,19 @@
 	}
 		
 	for_brennus = { 
-		icon = "task_political"
+		icon = "task_conquest"
 
 		requires = { raiders }
 		
 		allow = {
-			any_ownable_province = {
-				limit = {
-					is_in_region = asia_region
+			custom_tooltip = {
+				text = for_brennus_tt
+				region:asia_region = {
+					any_region_province = {
+						Count >= 1
+						Has_province_modifier = holy_site_desecrated
+					}
 				}
-				has_province_modifier = holy_site_desecrated
 			}
 		} 
 		
@@ -485,9 +782,9 @@
 	}
 	
 	warriors = { 
-		icon = "task_political"
+		icon = "task_conquest"
 
-		# requires = { raiders }
+		requires = { new_lands }
 		
 		allow = {
 			war = yes						
@@ -496,18 +793,21 @@
 		on_completion = {
 			add_military_experience = 10
 			add_manpower = 2
-			region:galatia_region = {
-				every_region_area = {
-					every_area_province = {
-						add_claim = root
+			# custom_tooltip = {
+				# text = warriors_claims_tt
+				region:galatia_region = {
+					every_region_area = {
+						every_area_province = {
+							add_claim = root
+						}
 					}
 				}
-			}
+			# }
 		} 
 	}
 	
 	rivals = { 
-		icon = "task_political"
+		icon = "task_conquest"
 
 		requires = { warriors }
 		
@@ -556,17 +856,34 @@
 		icon = "task_political"
 		
 		requires = { rivals }
-		
-		allow = {
+		bypass = { 			
 			c:PON = {
-				OR = {
-					exists = no
+				exists = no
+			}
+		}
+		allow = {
+
+			c:PON = {
+				# OR = {
 					is_subject_of = root
-					NOR = {
-						any_owned_province = {
+					# NOR = {
+						# any_owned_province = {
+							# is_in_region = bithynia_region
+							# is_in_region = galatia_region
+						# }
+					# }
+				# }
+			}
+			custom_tooltip = {
+				text = fall_of_mithridates_land_tt
+				NOT = {
+					any_owned_province = {
+						count >= 1 
+						OR = {
 							is_in_region = bithynia_region
 							is_in_region = galatia_region
 						}
+						owner = c:PON
 					}
 				}
 			}
@@ -588,20 +905,36 @@
 	fall_of_attalus = {
 		icon = "task_political"
 		
+		# potential = { 
+			# c:PGM = {
+				# exists = yes
+			# }
+		# }
 		requires = { rivals }
+		bypass = {
+			c:PGM = {
+				exists = no
+			}
+		}
 		
 		allow = {
 			c:PGM = {
-				OR = {
-					exists = no
+				# OR = {
 					is_subject_of = root
-					NOR = {
-						any_owned_province = {
-							is_in_region = bithynia_region
-							is_in_region = galatia_region
+					custom_tooltip = {
+						text = fall_of_attalus_land_tt
+						NOT = {
+							any_owned_province = {
+								count >= 1 
+								OR = {
+									is_in_region = bithynia_region
+									is_in_region = galatia_region
+								}
+								owner = c:PON
+							}
 						}
 					}
-				}
+				# }
 			}
 		}
 		
@@ -619,9 +952,9 @@
 	}
 	
 	extra_muscle = { 
-		icon = "task_political"
+		icon = "task_diplomatic"
 
-		# requires = { settle }
+		requires = { invade }
 
 		allow = {
 			manpower > 5
@@ -644,7 +977,7 @@
 	}
 	
 	gallic_merc_st = { 
-		icon = "task_political"
+		icon = "task_diplomatic"
 
 		potential = {
 			has_dlc = "Magna Graecia"
@@ -816,7 +1149,7 @@
 	tournament = { 
 		icon = "task_political"
 
-		requires = { unification }
+		requires = { grand_chariot }
 
 		allow = {
 
@@ -839,10 +1172,13 @@
 	galatia = { 
 		icon = "task_political"
 
-		requires = { tournament }
+		requires = { unification }
 
 		allow = {
-			# tag = GLT
+			custom_tooltip = {
+				text = galatia_final_tt
+				tag = GLT
+			}
 		} 
 				
 		# prevented_by = { phrygia }

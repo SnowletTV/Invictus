@@ -376,7 +376,7 @@ disasters_inv.4 = {
 	}
 }
 
-disasters_inv.5 = { #land slide
+disasters_inv.5 = { #landslide
 	type = country_event
 	title = disasters_inv.5.t
 	desc = disasters_inv.5.desc
@@ -650,6 +650,170 @@ disasters_inv.6 = {
 		set_variable = {
 			name = hills_cooldown
 			days = 9125 #25 yrs
+		}
+	}
+}
+
+disasters_inv.7 = { #drought
+	type = country_event
+	title = disasters_inv.7.t
+	desc = disasters_inv.7.desc
+	picture = natural_disaster
+
+	left_portrait = current_ruler
+	right_portrait = scope:i_am_thirsty.governor
+	goto_location = scope:i_am_thirsty
+
+	trigger = {
+		any_country_state = {
+			OR = {
+				state_monthly_food_income < -2
+				has_state_food <= 0
+			}
+		}
+		any_owned_province = {
+			OR = {
+				terrain = desert
+				terrain = desert_hills
+			}
+		}
+		NOT = {
+			has_variable = drought_cooldown
+		}
+	}
+
+	immediate = {
+		random_country_state = {
+			limit = {
+				OR = {
+					state_monthly_food_income < -2
+					has_state_food <= 0
+				}
+			}
+			save_scope_as = i_am_thirsty
+			add_state_modifier = {
+				name = grow_a_pear
+				duration = 1825 #5 yrs
+			}
+		}
+	}
+
+	option = { #try to save and feed your people
+		name = disasters_inv.7.a
+		scope:i_am_thirsty = {
+			every_neighbor_area = {
+				every_area_state = {
+					add_state_food = -100
+				}
+			}
+			add_state_food = {
+				value = 100
+				multiply = 2 #count neighbouring states
+			}
+		}
+		add_treasury = {
+			subtract = has_monthly_income 
+			multiply = 6
+		}
+		hidden_effect = {
+			if = {
+				limit = {
+					scope:i_am_thirsty = {
+						any_neighbor_area = {
+							any_area_state = {
+								has_state_food <= 0
+							}
+						}
+					}
+				}
+				scope:i_am_thirsty = {
+					every_neighbor_area = {
+						every_area_state = {
+							limit = {
+								has_state_food <= 0
+							}
+							add_state_modifier = {
+								name = grow_a_pear
+								duration = 1825 # 5yrs
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	option = { #ignore the area
+		name = disasters_inv.7.b
+		hidden_effect = {
+			trigger_event = {
+				id = disasters_inv.8 #drought spreads
+				days = { 30 100 }
+			}
+			scope:i_am_thirsty = {
+				every_neighbor_area = {
+					every_area_state = {
+						limit = {
+							owner = root
+						}
+						add_state_food = -150
+					}
+				}
+			}
+		}
+	}
+}
+
+disaster_inv.8 = {
+	type = country_event
+	title = disasters_inv.8.t
+	desc = disasters_inv.8.desc
+	picture = natural_disaster
+
+	left_portrait = current_ruler
+	right_portrait = scope:i_am_thirsty.governor
+	goto_location = scope:i_am_thirsty
+
+	immediate = {
+		scope:i_am_thirsty = {
+			every_neighbor_area = {
+				every_area_state = {
+					add_state_modifier = {
+						name = grow_a_pear
+						duration = 1825 # 5yrs
+					}
+				}
+			}
+		}
+	}
+
+	option = { 
+		name = disasters_inv.8.a
+		random = {
+			chance = 35
+			trigger_event = {
+				id = disaster_inv.8
+				days = { 30 100 }
+			}
+		}
+	}
+
+	after = {
+		scope:i_am_thirsty = {
+			remove_state_modifier = grow_a_pear
+			add_state_modifier = {
+				name = grow_a_pear
+				duration = 3650 #10 yrs
+			}
+			clear_saved_scope = i_am_thirsty
+			random_neighbor_area = {
+				random_area_state = {
+					limit = {
+						has_state_modifier = grow_a_pear
+					}
+					save_scope_as = i_am_thirsty
+				}
+			}
 		}
 	}
 }

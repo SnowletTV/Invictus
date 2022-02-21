@@ -764,7 +764,7 @@ disasters_inv.7 = { #drought
 	}
 }
 
-disaster_inv.8 = {
+disasters_inv.8 = {
 	type = country_event
 	title = disasters_inv.8.t
 	desc = disasters_inv.8.desc
@@ -789,11 +789,20 @@ disaster_inv.8 = {
 
 	option = { 
 		name = disasters_inv.8.a
-		random = {
-			chance = 35
-			trigger_event = {
-				id = disaster_inv.8
-				days = { 30 100 }
+		random_list = {
+			35 = {
+				custom_tooltip = disasters_inv_8_a_1
+				trigger_event = {
+					id = disasters_inv.8
+					days = { 30 100 }
+				}
+			}
+			65 = {
+				custom_tooltip = disasters_inv_8_a_2
+				set_variable = {
+					name = drought_cooldown
+					days = 9125 #25 yrs
+				}
 			}
 		}
 	}
@@ -815,5 +824,115 @@ disaster_inv.8 = {
 				}
 			}
 		}
+	}
+}
+
+disasters_inv.9 = { #Seastorm hitting coast - using vanilla events as base for location
+	type = country_event
+	title = disasters_inv.9.t
+	desc = disasters_inv.9.desc
+	picture = natural_disaster
+
+	left_portrait = current_ruler
+	right_portrait = scope:stormy_daniels.governor
+	goto_location = scope:stormy_daniels
+
+	trigger = {
+		any_province = {
+			OR = {
+				has_province_modifier = ravaged_by_storms
+				has_province_modifier = stormy_seas
+			}
+			any_neighbor_province = {
+				owner = root
+			}
+			OR = {
+				terrain = coastal_terrain
+				terrain = ocean
+			}
+		}
+	}
+
+	immediate = {
+		random_province = {
+			limit = {
+				OR = {
+					terrain = coastal_terrain
+					terrain = ocean
+				}
+				OR = {
+					has_province_modifier = ravaged_by_storms
+					has_province_modifier = stormy_seas
+				}
+			}
+			random_neighbor_province = {
+				limit = {
+					owner = root
+				}
+				save_scope_as = stormy_daniels
+				set_variable = {
+					name = num_of_victims
+					days = 2
+					value = total_population
+				}
+				random_pops_in_province = {
+					while = {
+						count = {
+							value = var:num_of_victims
+							multiply = 0.15
+						}
+						kill_pop = yes
+					}
+				}
+				if = {
+					limit = {
+						has_building = port_building 
+					}
+					remove_building_level = port_building
+				}
+				if = {
+					limit = {
+						any_unit_in_province = {
+							exists = yes
+						}
+					}
+					every_unit_in_province = {
+						damage_unit_percent = 0.06
+						damage_unit_morale_percent = 0.12
+					}
+				}
+			}
+			save_scope_as = stormy_mommy
+			hidden_effect = {
+				every_neighbor_province = {
+					limit = {
+						OR = {
+							terrain = ocean
+							terrain = coastal_terrain
+						}
+						NOT = { has_province_modifier = stormy_seas }
+					}
+					add_vfx = {
+						name = "seastorm"
+						duration = 60
+					}
+					add_province_modifier = {
+						name = "stormy_seas"
+						duration = 60
+					}
+				}
+				every_neighbor_province = {
+					limit = { has_owner = yes }
+					add_province_modifier = {
+						name = "ravaged_by_storms"
+						duration = 60
+					}
+				}
+			}
+		}
+	}
+
+	option = {
+		name = disasters_inv.9.a
 	}
 }

@@ -26,21 +26,13 @@ disasters_inv.1 = { #flood in flood_plain
 				total_population >= 4
 			}
 			save_scope_as = the_day_after
-			set_variable = {
-				name = num_of_victims
-				days = 3
-				value = total_population
-			}
 			add_province_modifier = {
 				name = flood_initial_damage
 				duration = 730
 			}
 			random_pops_in_province = {
 				while = {
-					count = {
-						value = var:num_of_victims
-						multiply = 0.15
-					}
+					count = num_of_victims_flood
 					kill_pop = yes
 				}
 			}
@@ -234,7 +226,7 @@ disasters_inv.3 = { #flood receding
 	}
 }
 
-disasters_inv.4 = {
+disasters_inv.4 = { #Avalanche
 	type = country_event
 	title = disasters_inv.4.t
 	desc = disasters_inv.4.desc
@@ -262,19 +254,20 @@ disasters_inv.4 = {
 			if = {
 				limit = {
 					NOT = {
-						owner = {
-							any_owned_province = {
-								this = scope:snowball
-							}
-						}
+						has_variable = starting_point
 					}
 				}
-				save_scope_as = snowball
+				set_variable = {
+					name = starting_point
+					days = 2
+				}
 			}
-			set_variable = {
-				name = num_of_victims
-				days = 2
-				value = total_population
+			switch = {
+				trigger = has_variable 
+				starting_point = {
+					save_scope_as = snowball
+				}
+				recurring_disaster = {}
 			}
 			add_province_modifier = {
 				name = hit_by_avalanche
@@ -282,10 +275,7 @@ disasters_inv.4 = {
 			}
 			random_pops_in_province = {
 				while = {
-					count = {
-						value = var:num_of_victims
-						multiply = 0.3
-					}
+					count = num_of_victims_avalanche
 					kill_pop = yes
 				}
 			}
@@ -366,9 +356,13 @@ disasters_inv.4 = {
 							has_province_modifier = hit_by_avalanche
 						}
 					}
+					save_scope_as = snowball
+					set_variable = {
+						name = recurring_disaster
+						days = 7
+					}
 					random = {
 						chance = 50
-						save_scope_as = snowball
 						owner = {
 							trigger_event = {
 								id = disasters_inv.4
@@ -414,11 +408,6 @@ disasters_inv.5 = { #landslide
 				total_population >= 4
 			}
 			save_scope_as = mudstick
-			set_variable = {
-				name = num_of_victims
-				days = 2
-				value = total_population
-			}
 			add_province_modifier = {
 				name = the_land_slides_into_your_dms
 				duration = 730
@@ -434,29 +423,10 @@ disasters_inv.5 = { #landslide
 					damage_unit_morale_percent = 0.12
 				}
 			}
-			if = {
-				limit = {
-					has_building = fortress_ramparts_building
-				}
-				random_pops_in_province = {
-					while = {
-						count = {
-							value = var:num_of_victims
-							multiply = 0.05
-						}
-						kill_pop = yes
-					}
-				}
-			}
-			else = {
-				random_pops_in_province = {
-					while = {
-						count = {
-							value = var:num_of_victims
-							multiply = 0.15
-						}
-						kill_pop = yes
-					}
+			random_pops_in_province = {
+				while = {
+					count = num_of_victims_standard
+					kill_pop = yes
 				}
 			}
 			custom_tooltip = disasters_inv_destroyed_building
@@ -586,29 +556,10 @@ disasters_inv.6 = {
 						}
 						remove_province_deity = yes
 					}
-					if = {
-						limit = {
-							has_building = fortress_ramparts_building
-						}
-						random_pops_in_province = {
-							while = {
-								count = {
-									value = var:num_of_victims
-									multiply = 0.05
-								}
-								kill_pop = yes
-							}
-						}
-					}
-					else = {
-						random_pops_in_province = {
-							while = {
-								count = {
-									value = var:num_of_victims
-									multiply = 0.15
-								}
-								kill_pop = yes
-							}
+					random_pops_in_province = {
+						while = {
+							count = num_of_victims_standard
+							kill_pop = yes
 						}
 					}
 					random_list = {
@@ -727,7 +678,7 @@ disasters_inv.7 = { #drought
 	trigger = {
 		any_country_state = {
 			OR = {
-				state_monthly_food_income < -2
+				state_monthly_food_income < 0
 				has_state_food <= 0
 			}
 		}
@@ -746,7 +697,7 @@ disasters_inv.7 = { #drought
 		random_country_state = {
 			limit = {
 				OR = {
-					state_monthly_food_income < -2
+					state_monthly_food_income < 0
 					has_state_food <= 0
 				}
 			}
@@ -849,7 +800,7 @@ disasters_inv.8 = {
 		set_variable = {
 			name = drought_spread
 			days = 500
-			value = 3
+			value = 5
 		}
 		scope:i_am_thirsty = {
 			every_neighbor_area = {
@@ -912,6 +863,8 @@ disasters_inv.8 = {
 		if = {
 			limit = {
 				OR = {
+					var:drought_spread = 5
+					var:drought_spread = 4
 					var:drought_spread = 3
 					var:drought_spread = 2
 				}
@@ -928,10 +881,17 @@ disasters_inv.8 = {
 				duration = 3650 #10 yrs
 			}
 			clear_saved_scope = i_am_thirsty
+			set_variable = {
+				name = thirsty_bois
+				days = 500
+			}
 			random_neighbor_area = {
 				random_area_state = {
 					limit = {
 						has_state_modifier = grow_a_pear
+						NOT = {
+							has_variable = thirsty_bois
+						}
 					}
 					save_scope_as = i_am_thirsty
 				}
@@ -983,11 +943,6 @@ disasters_inv.9 = { #Seastorm hitting coast - using vanilla events as base for l
 					owner = root
 				}
 				save_scope_as = stormy_daniels
-				set_variable = {
-					name = num_of_victims
-					days = 2
-					value = total_population
-				}
 				if = {
 					limit = {
 						has_building = port_building 
@@ -1007,35 +962,16 @@ disasters_inv.9 = { #Seastorm hitting coast - using vanilla events as base for l
 				}
 				add_vfx = {
 					name = "seastorm"
-					duration = 60
+					duration = 90
 				}
 				add_province_modifier = {
 					name = "stormy_seas"
-					duration = 60
+					duration = 90
 				}
-				if = {
-					limit = {
-						has_building = fortress_ramparts_building
-					}
-					random_pops_in_province = {
-						while = {
-							count = {
-								value = var:num_of_victims
-								multiply = 0.05
-							}
-							kill_pop = yes
-						}
-					}
-				}
-				else = {
-					random_pops_in_province = {
-						while = {
-							count = {
-								value = var:num_of_victims
-								multiply = 0.15
-							}
-							kill_pop = yes
-						}
+				random_pops_in_province = {
+					while = {
+						count = num_of_victims_standard
+						kill_pop = yes
 					}
 				}
 			}
@@ -1068,11 +1004,11 @@ disasters_inv.9 = { #Seastorm hitting coast - using vanilla events as base for l
 						}
 						add_province_modifier = {
 							name = "ravaged_by_storms"
-							duration = 60
+							duration = 90
 						}
 						add_vfx = {
 							name = "seastorm"
-							duration = 60
+							duration = 90
 						}
 					}
 				}
@@ -1121,18 +1057,27 @@ disasters_inv.10 = { #Sandstorm Extreme - using vanilla events as base for locat
 				limit = {
 					owner = root
 				}
-				save_scope_as = sandman
-				set_variable = {
-					name = num_of_victims
-					days = 2
-					value = total_population
+				if = {
+					limit = {
+						NOT = {
+							has_variable = starting_point
+						}
+					}
+					set_variable = {
+						name = starting_point
+						days = 2
+					}
+				}
+				switch = {
+					trigger = has_variable 
+					starting_point = {
+						save_scope_as = sandman
+					}
+					recurring_disaster = {}
 				}
 				random_pops_in_province = {
 					while = {
-						count = {
-							value = var:num_of_victims
-							multiply = 0.1
-						}
+						count = num_of_victims_standard
 						kill_pop = yes
 					}
 				}
@@ -1202,6 +1147,43 @@ disasters_inv.10 = { #Sandstorm Extreme - using vanilla events as base for locat
 	option = {
 		name = disasters_inv.10.a
 	}
+
+	after = {
+		random = {
+			chance = 50
+			scope:sandman = {
+				clear_saved_scope = sandman
+			}
+			random_owned_province = {
+				limit = {
+					has_province_modifier = sand_up_comedy
+					any_neighbor_province = {
+						NOT = {
+							has_province_modifier = sand_up_comedy
+						}
+					}
+				}
+				random_neighbor_province = {
+					limit = {
+						NOT = {
+							has_province_modifier = sand_up_comedy
+						}
+					}
+					save_scope_as = sandman
+					set_variable = {
+						name = recurring_disaster
+						days = 7
+					}
+				}
+			}
+			scope:sandman.owner = {
+				trigger_event = {
+					id = disasters_inv.10
+					days = { 2 6 }
+				}
+			}
+		}
+	}
 }
 
 disasters_inv.11 = { #Snowstorm Extreme
@@ -1216,26 +1198,24 @@ disasters_inv.11 = { #Snowstorm Extreme
 
 	trigger = {
 		any_province = {
-			limit = {
-				OR = { #merged the vanilla snowstorm areas from 3 events
-					is_in_region = scandinavia_region
-					is_in_region = germania_region
-					is_in_region = bohemia_area
-					is_in_region = vistulia_region
-					is_in_region = belgica_region
-					is_in_region = germania_superior_region
-					is_in_region = rhaetia_region
-					is_in_region = armorica_region
-					is_in_region = caledonia_region
-					is_in_region = areas
-					is_in_region = himalayan_region
-					is_in_region = sogdiana_region
-					is_in_region = tibet_region
-					is_in_region = bactriana_region
-				}
-				has_winter = yes
-				NOT = { has_province_modifier = snow_storm }
+			OR = { #merged the vanilla snowstorm areas from 3 events
+				is_in_region = scandinavia_region
+				is_in_region = germania_region
+				is_in_region = bohemia_area
+				is_in_region = vistulia_region
+				is_in_region = belgica_region
+				is_in_region = germania_superior_region
+				is_in_region = rhaetia_region
+				is_in_region = armorica_region
+				is_in_region = caledonia_region
+				is_in_region = areas
+				is_in_region = himalayan_region
+				is_in_region = sogdiana_region
+				is_in_region = tibet_region
+				is_in_region = bactriana_region
 			}
+			has_winter = yes
+			NOT = { has_province_modifier = snow_storm }
 			any_neighbor_province = {
 				owner = root
 			}
@@ -1267,18 +1247,27 @@ disasters_inv.11 = { #Snowstorm Extreme
 					has_winter = yes
 					NOT = { has_province_modifier = snow_storm }
 				}
-				save_scope_as = not_snowden
-				set_variable = {
-					name = num_of_victims
-					days = 2
-					value = total_population
+				if = {
+					limit = {
+						NOT = {
+							has_variable = starting_point
+						}
+					}
+					set_variable = {
+						name = starting_point
+						days = 2
+					}
+				}
+				switch = {
+					trigger = has_variable 
+					starting_point = {
+						save_scope_as = not_snowden
+					}
+					recurring_disaster = {}
 				}
 				random_pops_in_province = {
 					while = {
-						count = {
-							value = var:num_of_victims
-							multiply = 0.1
-						}
+						count = num_of_victims_standard
 						kill_pop = yes
 					}
 				}
@@ -1320,7 +1309,7 @@ disasters_inv.11 = { #Snowstorm Extreme
 							is_in_region = bactriana_region
 						}
 						has_winter = yes
-						NOT = { has_province_modifier = snow_storm }
+						NOT = { has_province_modifier = jizz_storm }
 					}
 					add_vfx = {
 						name = "snowstorm"
@@ -1349,7 +1338,7 @@ disasters_inv.11 = { #Snowstorm Extreme
 								is_in_region = bactriana_region
 							}
 							has_winter = yes
-							NOT = { has_province_modifier = snow_storm }
+							NOT = { has_province_modifier = jizz_storm }
 						}
 						add_vfx = {
 							name = "snowstorm"
@@ -1367,5 +1356,42 @@ disasters_inv.11 = { #Snowstorm Extreme
 
 	option = {
 		name = disasters_inv.11.a
+	}
+
+	after = {
+		random = {
+			chance = 50
+			scope:not_snowden = {
+				clear_saved_scope = not_snowden
+			}
+			random_owned_province = {
+				limit = {
+					has_province_modifier = jizz_storm
+					any_neighbor_province = {
+						NOT = {
+							has_province_modifier = jizz_storm
+						}
+					}
+				}
+				random_neighbor_province = {
+					limit = {
+						NOT = {
+							has_province_modifier = jizz_storm
+						}
+					}
+					save_scope_as = not_snowden
+					set_variable = {
+						name = recurring_disaster
+						days = 7
+					}
+				}
+			}
+			scope:not_snowden.owner = {
+				trigger_event = {
+					id = disasters_inv.11
+					days = { 2 6 }
+				}
+			}
+		}
 	}
 }

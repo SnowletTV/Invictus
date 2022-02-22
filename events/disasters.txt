@@ -93,6 +93,7 @@ disasters_inv.1 = { #flood in flood_plain
 		add_treasury = {
 			subtract = has_monthly_income
 			multiply = 6
+			max = -100
 		}
 		trigger_event = {
 			id = disasters_inv.3
@@ -422,15 +423,6 @@ disasters_inv.5 = { #landslide
 				name = the_land_slides_into_your_dms
 				duration = 730
 			}
-			random_pops_in_province = {
-				while = {
-					count = {
-						value = var:num_of_victims
-						multiply = 0.15
-					}
-					kill_pop = yes
-				}
-			}
 			if = {
 				limit = {
 					any_unit_in_province = {
@@ -440,6 +432,31 @@ disasters_inv.5 = { #landslide
 				every_unit_in_province = {
 					damage_unit_percent = 0.06
 					damage_unit_morale_percent = 0.12
+				}
+			}
+			if = {
+				limit = {
+					has_building = fortress_ramparts_building
+				}
+				random_pops_in_province = {
+					while = {
+						count = {
+							value = var:num_of_victims
+							multiply = 0.05
+						}
+						kill_pop = yes
+					}
+				}
+			}
+			else = {
+				random_pops_in_province = {
+					while = {
+						count = {
+							value = var:num_of_victims
+							multiply = 0.15
+						}
+						kill_pop = yes
+					}
 				}
 			}
 			custom_tooltip = disasters_inv_destroyed_building
@@ -487,10 +504,12 @@ disasters_inv.5 = { #landslide
 		name = disasters_inv.5.a
 		current_ruler = {
 			add_popularity = 5
+			add_trait = disciplined
 		}
 		add_treasury = {
 			subtract = has_monthly_income
-			multiply = 6
+			multiply = 12
+			max = -200
 		}
 		set_variable = {
 			name = money_money_money
@@ -504,6 +523,9 @@ disasters_inv.5 = { #landslide
 			name = must_be_funny
 			days = 14
 			value = 0
+		}
+		current_ruler = {
+			add_trait = brave
 		}
 	}
 
@@ -545,7 +567,7 @@ disasters_inv.6 = {
 			limit = {
 				has_variable = must_be_funny
 			}
-			random 	= { #Landslide is worse
+			random 	= { #Landslide gets worse
 				chance = 50
 				change_variable = {
 					add = 1
@@ -564,13 +586,29 @@ disasters_inv.6 = {
 						}
 						remove_province_deity = yes
 					}
-					random_pops_in_province = {
-						while = {
-							count = {
-								value = var:num_of_victims
-								multiply = 0.15
+					if = {
+						limit = {
+							has_building = fortress_ramparts_building
+						}
+						random_pops_in_province = {
+							while = {
+								count = {
+									value = var:num_of_victims
+									multiply = 0.05
+								}
+								kill_pop = yes
 							}
-							kill_pop = yes
+						}
+					}
+					else = {
+						random_pops_in_province = {
+							while = {
+								count = {
+									value = var:num_of_victims
+									multiply = 0.15
+								}
+								kill_pop = yes
+							}
 						}
 					}
 					random_list = {
@@ -735,7 +773,11 @@ disasters_inv.7 = { #drought
 		}
 		add_treasury = {
 			subtract = has_monthly_income 
-			multiply = 6
+			multiply = 16
+			max = -200
+		}
+		current_ruler = {
+			add_trait = benefactor
 		}
 		hidden_effect = {
 			if = {
@@ -767,6 +809,9 @@ disasters_inv.7 = { #drought
 
 	option = { #ignore the area
 		name = disasters_inv.7.b
+		current_ruler = {
+			add_trait = harsh
+		}
 		hidden_effect = {
 			trigger_event = {
 				id = disasters_inv.8 #drought spreads
@@ -797,6 +842,11 @@ disasters_inv.8 = {
 	goto_location = scope:i_am_thirsty
 
 	immediate = {
+		set_variable = {
+			name = drought_spread
+			days = 500
+			value = 3
+		}
 		scope:i_am_thirsty = {
 			every_neighbor_area = {
 				every_area_state = {
@@ -813,6 +863,9 @@ disasters_inv.8 = {
 		name = disasters_inv.8.a
 		random_list = {
 			25 = {
+				modifier = {
+					factor = var:drought_spread
+				}
 				custom_tooltip = disasters_inv_8_a_1
 				trigger_event = {
 					id = disasters_inv.8
@@ -829,7 +882,41 @@ disasters_inv.8 = {
 		}
 	}
 
+	option = {
+		name = disasters_inv.8.b
+		custom_tooltip = disasters_inv_8_b
+		trigger = {
+			current_ruler = {
+				OR = {
+					has_trait = merciful
+					has_trait = lunatic
+					has_trait = lapsed
+					has_trait = arbitrary
+				}
+			}
+			var:drought_spread >= 1
+		}
+		add_treasury = {
+			subtract = has_monthly_income 
+			multiply = 32
+			max = -400
+		}
+		highlight = yes
+	}
+
 	after = {
+		if = {
+			limit = {
+				OR = {
+					var:drought_spread = 3
+					var:drought_spread = 2
+				}
+			}
+			change_variable = {
+				add = -1
+				name = drought_spread
+			}
+		}
 		scope:i_am_thirsty = {
 			remove_state_modifier = grow_a_pear
 			add_state_modifier = {
@@ -897,15 +984,6 @@ disasters_inv.9 = { #Seastorm hitting coast - using vanilla events as base for l
 					days = 2
 					value = total_population
 				}
-				random_pops_in_province = {
-					while = {
-						count = {
-							value = var:num_of_victims
-							multiply = 0.1
-						}
-						kill_pop = yes
-					}
-				}
 				if = {
 					limit = {
 						has_building = port_building 
@@ -930,6 +1008,31 @@ disasters_inv.9 = { #Seastorm hitting coast - using vanilla events as base for l
 				add_province_modifier = {
 					name = "stormy_seas"
 					duration = 60
+				}
+				if = {
+					limit = {
+						has_building = fortress_ramparts_building
+					}
+					random_pops_in_province = {
+						while = {
+							count = {
+								value = var:num_of_victims
+								multiply = 0.05
+							}
+							kill_pop = yes
+						}
+					}
+				}
+				else = {
+					random_pops_in_province = {
+						while = {
+							count = {
+								value = var:num_of_victims
+								multiply = 0.15
+							}
+							kill_pop = yes
+						}
+					}
 				}
 			}
 			save_scope_as = stormy_mommy
@@ -1062,11 +1165,11 @@ disasters_inv.10 = { #Sandstorm - using vanilla events as base for location
 					}
 					add_vfx = {
 						name = "desert_sandstorm"
-						duration = 120
+						duration = 90
 					}
 					add_province_modifier = {
 						name = "sand_up_comedy"
-						duration = 120
+						duration = 90
 					}
 					every_neighbor_province = {
 						limit = {
@@ -1080,11 +1183,11 @@ disasters_inv.10 = { #Sandstorm - using vanilla events as base for location
 						}
 						add_province_modifier = {
 							name = "sand_up_comedy"
-							duration = 120
+							duration = 90
 						}
 						add_vfx = {
 							name = "desert_sandstorm"
-							duration = 120
+							duration = 90
 						}
 					}
 				}

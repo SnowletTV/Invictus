@@ -14,7 +14,7 @@ switch_player_country_setup_effect = {
 	    create_character = {
 	        first_name = $RULER_NAME$
 	        family_name = $RULER_LAST_NAME$
-	       	age = 30
+	       	age = 25
 	        culture = $RULER_CULTURE$
 	        religion = $RULER_RELIGION$
 	        female = no
@@ -22,18 +22,14 @@ switch_player_country_setup_effect = {
 	        good_popularity_trait_effect = yes
 	        save_scope_as = new_ruler
 	    }
-	    set_variable = $VAR$
     }
 }
 switch_player_country_effect = {
+#Can't figure out how to get truces to transfer...
 	##REQUIRED INPUT
-	# NEW_GOVERNMENT
-	# NEW_COLOR
-	# NEW_RELIGION 
 	# NEW_NAME
 	# NEW_ADJECTIVE
 	# NEW_TAG
-	# NEW_CULTURE
 	# OLD_COUNTRY_COLOR
 	# OLD_COUNTRY_NAME
 	# OLD_COUNTRY_ADJ
@@ -44,12 +40,12 @@ switch_player_country_effect = {
 	hidden_effect = {
 		save_scope_as = new_country #Used for money/manpower svalues
 		current_ruler = { save_scope_as = old_ruler }
-		change_government = $NEW_GOVERNMENT$
-		change_country_color = $NEW_COLOR$
-		set_country_religion = $NEW_RELIGION$
+		random_owned_province = {
+			limit = { is_capital = yes }
+			save_scope_as = current_capital
+		}
 	    change_country_name = $NEW_NAME$
 		change_country_adjective = $NEW_ADJECTIVE$
-		change_country_tag = $NEW_TAG$
 		add_stability_effect = yes
 		if = { # Created leader
 			limit = {
@@ -63,15 +59,7 @@ switch_player_country_effect = {
 			create_family = scope:new_ruler
 		}
 		set_as_ruler = scope:new_ruler
-		ordered_owned_province = {
-			limit = {
-				NOR = {
-					is_in_area = gandhara_area
-					is_in_area = taxila_area
-				}
-			}
-			order_by = total_population
-			save_scope_as = old_country_capital
+		scope:current_capital = {
 			create_country = {
 				save_scope_as = old_country
 			}
@@ -83,7 +71,6 @@ switch_player_country_effect = {
 				set_country_heritage = $OLD_COUNTRY_HERITAGE$
 				set_primary_culture = $OLD_COUNTRY_CULTURE$
 				set_country_religion = $OLD_COUNTRY_RELIGION$
-				change_country_tag = $OLD_TAG$
 			}
 		}
 		if = {
@@ -192,14 +179,30 @@ switch_player_country_effect = {
 						}
 					}
 					set_owned_by = scope:old_country
-				}				
+				}		
+			}
+			change_to_shunga = {
+				every_owned_province = {
+					limit = {
+						NOT = { is_in_list = shunga_provinces_list }
+					}
+					set_owned_by = scope:old_country
+				}
+			}
+			change_to_satavahana = {
+				every_owned_province = {
+					limit = {
+						NOT = { is_in_list = satavahana_provinces_list }
+					}
+					set_owned_by = scope:old_country
+				}
 			}
 		}
 		scope:old_country = {
 			set_as_ruler = scope:old_ruler
 			add_treasury = old_treasury_svalue	#Give old treasury
 			add_manpower = old_manpower_svalue
-			add_military_experience = 200	#released counties get no traditions :(
+			add_military_experience_to_new_country_effect = yes
 		}
 		#Remove old gold so you can't game the event chain and save millions of gold before switching.
 		add_treasury = remove_treasury_svalue
@@ -238,6 +241,9 @@ switch_player_country_effect = {
 		}
 		#This is the way vanilla does it, I feel like I should check what subject type they are so they get the right one after...but idk
 		every_subject = {
+			limit = {
+				is_subject_type = feudatory
+			}
 			ROOT = {
 				release_subject = PREV
 			}
@@ -248,15 +254,94 @@ switch_player_country_effect = {
 				}
 			}
 		}
+		every_subject = {
+			limit = {
+				is_subject_type = tributary
+			}
+			ROOT = {
+				release_subject = PREV
+			}
+			scope:old_country = {
+				make_subject = {
+					target = PREV
+					type = tributary
+				}
+			}			
+		}
+		every_subject = {
+			limit = {
+				is_subject_type = satrapy
+			}
+			ROOT = {
+				release_subject = PREV
+			}
+			scope:old_country = {
+				make_subject = {
+					target = PREV
+					type = satrapy
+				}
+			}			
+		}
+		every_subject = {
+			limit = {
+				is_subject_type = client_state
+			}
+			ROOT = {
+				release_subject = PREV
+			}
+			scope:old_country = {
+				make_subject = {
+					target = PREV
+					type = client_state
+				}
+			}			
+		}		
+		every_subject = {
+			limit = {
+				is_subject_type = vassal_tribe
+			}
+			ROOT = {
+				release_subject = PREV
+			}
+			scope:old_country = {
+				make_subject = {
+					target = PREV
+					type = vassal_tribe
+				}
+			}			
+		}
+		every_country_treasure = {
+			add_to_list = old_treasures_list
+		}
+		every_in_list = {
+			list = old_treasures_list
+            limit = {
+                NOT = { treasure_owner = scope:old_country }
+            }
+            transfer_treasure_to_country = scope:old_country
+		}
+
 		every_province = {
 			remove_claim = ROOT
 		}
-		#Vanilla does this, it seems pointless but ima do it anyway.
-		change_country_name = $NEW_NAME$
-		change_country_adjective = $NEW_ADJECTIVE$
+	}
+}
+#This stuff has to be down here because the first one is taking too many arguments I guess
+switch_player_country_second_effect = {
+	##REQUIRED INPUT
+	# NEW_GOVERNMENT
+	# NEW_COLOR
+	# NEW_RELIGION
+	# NEW_CULTURE
+	# NEW_TAG
+	# OLD_TAG
+	hidden_effect = {
+		change_government = $NEW_GOVERNMENT$
+		change_country_color = $NEW_COLOR$
+		set_country_religion = $NEW_RELIGION$
 		#Create a new family
 		while = {
-			count = 12
+			count = 12 #The amount needed to fill offices
 			create_character  = {
 	        	culture = $NEW_CULTURE$
 	        	religion = $NEW_RELIGION$
@@ -278,5 +363,50 @@ switch_player_country_effect = {
             NEW_PRIMARY_CULTURE = $NEW_CULTURE$
             MAKE_OLD_CULTURE_INTEGRATED = no
         }
+		change_country_tag = $NEW_TAG$
+		scope:old_country = {
+			change_country_tag = $OLD_TAG$
+		}
+    }
+}
+add_military_experience_to_new_country_effect = {
+	hidden_effect = {
+		#Give mil experience based on date, if date is really late reduce cost to take mil traditions so they can catch up.
+		#If it is too early give nothing.
+		if = {
+			limit = {
+				current_date > 500.1.1
+				current_date < 550.1.1
+			}
+			add_military_experience = 100
+		}
+		else_if = {
+			limit = {
+				current_date > 550.1.1
+				current_date < 600.1.1
+			}
+			add_military_experience = 200
+		}
+		else_if = {
+			limit = {
+				current_date > 650.1.1
+				current_date < 700.1.1
+			}
+			add_military_experience = 200
+			add_country_modifier = {
+				name = released_country_mil_tradition_1_ai_mod
+				duration = 730
+			}
+		}
+		else_if = {
+			limit = {
+				current_date > 700.1.1
+			}
+			add_military_experience = 200
+			add_country_modifier = {
+				name = released_country_mil_tradition_2_ai_mod
+				duration = 730
+			}
+		}
 	}
 }

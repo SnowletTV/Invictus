@@ -107,3 +107,596 @@ character_interactions_inv.2 = {	#Got Divorced (ruler)
 		}      
     }
 }
+character_interactions_inv.3 = {
+    type = country_event
+    title = character_interactions_inv_3_title
+    desc = character_interactions_inv_3_desc
+    picture = aqueducts
+    left_portrait = current_ruler
+    right_portrait = scope:target
+
+    option = {	#Scope:target will be forced to retire
+        name = character_interactions_inv_3.a
+        show_as_tooltip = { pay_price = price_force_retirement }
+        scope:target = {
+        	custom_tooltip = character_interactions_inv_3_A_tooltip
+        	show_as_tooltip = {
+				add_loyalty = forced_to_retire
+			    add_character_modifier = {
+			        name = forced_into_retirement
+			        duration = -1
+			    }
+				if = {	
+					limit = {
+						exists = scope:recipient
+					}
+					scope:target = {
+						add_holding = scope:recipient
+					}
+				}   
+        	}
+        	custom_tooltip = character_interactions_inv_3_B_tooltip
+        	show_as_tooltip = {
+        		add_loyalty = refused_retirement
+        	}
+     		hidden_effect = {
+	        	random_list = {
+	        		90 = {
+	        			set_variable = accepted_retirement
+			        	add_loyalty = forced_to_retire
+			        	add_character_modifier = {
+			        		name = forced_into_retirement
+			        		duration = -1
+			        	}
+						if = {	
+							limit = {
+								exists = scope:recipient
+							}
+							scope:target = {
+								add_holding = scope:recipient
+							}
+						}
+						if = {
+							limit = { 
+								scope:target = {
+									OR = {
+										is_general = yes
+										is_admiral = yes
+									}									
+								}
+							}
+							remove_command = yes
+						}
+						else_if = {
+							limit = {
+								scope:target = { is_governor = yes }
+							}
+							remove_as_governor = yes
+						}
+						else = {
+							limit = {
+								scope:target = {
+									OR = {
+										has_tech_office = yes
+										has_any_office = yes									
+									}
+								}
+							}
+							remove_all_offices = yes
+						}
+		        	}
+		        	15 = {
+		        		set_variable = rejected_retirement
+		        		add_loyalty = refused_retirement
+		        	}
+	        	}
+        	}
+        	add_gold = 50
+        }
+        trigger_event = {
+        	id = character_interactions.4
+        	days = 5
+        }
+    }
+    option = {   #On second thought this isn't a good idea   
+        name = character_interactions_inv_3.b
+       	
+    }
+}
+
+character_interactions_inv.4 = {
+    type = minor_country_event
+    title = character_interactions_4_title
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					scope:target = { has_variable = accepted_retirement }
+				}
+				desc = "character_interactions_4_desc_1"
+			}
+			triggered_desc = {
+				trigger = {
+					scope:target = { has_variable = rejected_retirement }
+				}
+				desc = "character_interactions_4_desc_2"
+			}
+		}
+	}
+    left_portrait = current_ruler
+    right_portrait = scope:target
+    interface_lock = no
+
+    option = {      #Scope:target has retired from public life
+        name = character_interactions_4.a
+        trigger = {
+        	scope:target = { has_variable = accepted_retirement }
+        }
+        pay_price = price_force_retirement
+        show_as_tooltip = {
+             scope:target = {
+				 add_loyalty = forced_to_retire
+				 add_character_modifier = {
+				  	name = forced_into_retirement
+				    duration = -1
+				}
+			}
+			if = {	
+				limit = {
+					exists = scope:recipient
+				}
+				scope:target = {
+					add_holding = scope:recipient
+				}
+			}
+        }
+    }
+    option = {      #Scope:target has retired from public life
+        name = character_interactions_4.b
+        trigger = {
+        	scope:target = { has_variable = rejected_retirement }
+        }
+        show_as_tooltip = {
+        	scope:target = { add_loyalty = refused_retirement }
+        }
+    }
+}
+
+character_interactions_inv.5 = {	#
+    type = country_event
+    title = character_interactions_inv_5_title
+    desc = character_interactions_inv_5_desc
+    picture = aqueducts
+
+    left_portrait = current_ruler
+    right_portrait = scope:target
+
+    immediate = {
+    	current_ruler.family = { save_scope_as = ruler_family }
+    	hidden_effect = {
+    		scope:target = {
+    			remove_character_modifier = foreign_citizen
+    		}
+    	}
+    }
+
+    option = {	#scope:target will join the ruling family
+        name = character_interactions_inv_5.a
+        scope:target = {
+			set_family = scope:ruler_family
+  			hidden_effect = { adapt_family_name = yes }
+        }
+    }
+    option = {	#That won't be necessary
+        name = character_interactions_inv_5.b
+    
+    }
+}
+
+character_interactions_inv.6 = {	#Offering Support
+    type = country_event
+    title = character_interactions_inv_6_title
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					has_variable = accepted_support
+				}
+				desc = "character_interactions_inv_6_desc_1"
+			}
+			triggered_desc = {
+				trigger = {
+					has_variable = rejected_support
+				}
+				desc = "character_interactions_inv_6_desc_2"
+			}
+		}
+	}
+    picture = aqueducts
+
+    left_portrait = current_ruler
+    right_portrait = scope:target
+
+    immediate = {
+    	scope:target.employer = { save_scope_as = target_employer }
+    	hidden_effect = {
+    		random_list = {
+    			9000 = {
+                    modifier = {
+                    	current_ruler.charisma >= 8
+                    	current_ruler.charisma < 10
+                        factor = 1
+                    }
+                    modifier = {
+                    	scope:target.employer = {
+                    		any_neighbour_country = {
+                    			NOR = { 
+                    				THIS = ROOT
+                    				alliance_with = scope:target_employer
+                    			}
+                    			is_subject_of = scope:target_employer
+                    			num_of_cities > scope:target_employer.num_of_cities
+                    		}
+                    	}
+                        factor = 1
+                    }
+                    modifier = {
+                    	current_ruler.charisma >= 10
+                    	current_ruler.charisma < 13
+                        factor = 2
+                    }
+                    modifier = {
+                    	current_ruler.charisma >= 13
+                        factor = 3
+                    }
+                    set_variable = {
+                    	name = accepted_support
+                    	days = 180
+                    }
+    			}
+    			5 = {
+                    modifier = {
+                    	scope:target.employer = {
+                    		NOT = {
+	                    		any_neighbour_country = {
+	                    			NOR = { 
+	                    				THIS = ROOT
+	                    				alliance_with = scope:target_employer
+	                    			}
+	                    			is_subject_of = scope:target_employer
+	                    			num_of_cities > scope:target_employer.num_of_cities
+	                    		}
+                    		}
+                    	}
+                        factor = 2
+                    }
+                    modifier = {
+                    	current_ruler.charisma < 8
+                    	current_ruler.charisma >= 6
+                        factor = 1
+                    }
+                    modifier = {
+                    	current_ruler.charisma < 5
+                        factor = 3
+                    }
+                    set_variable = {
+                    	name = rejected_support
+                    	days = 180
+                    }
+    			}
+    		}
+    	}
+    }
+
+    option = {	#scope:target.employer has accepted
+        name = character_interactions_inv_6.a
+        trigger = { has_variable = accepted_support }
+        make_subject = {
+			target = scope:target.employer
+			type = feudatory
+        }
+        scope:target = {
+        	add_triggered_character_modifier = {
+        		name = ruler_being_supported
+        		duration = -1
+        	}
+        	employer = { set_variable = accepted_vassalage_1 }
+        }
+    }
+    option = {	#scope:target.employer has declined
+        name = character_interactions_inv_6.b
+    	trigger = { has_variable = rejected_support }
+    	current_ruler = { add_popularity = -10 }
+    }
+}
+
+character_interactions_inv.7 = {	#The future of [get country]
+    type = country_event
+    title = character_interactions_inv_7_title
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					has_variable = accepted_servitude
+				}
+				desc = "character_interactions_inv_7_desc_1"
+			}
+			triggered_desc = {
+				trigger = {
+					has_variable = rejected_servitude
+				}
+				desc = "character_interactions_inv_7_desc_2"
+			}
+		}
+	}
+    picture = aqueducts
+
+    left_portrait = current_ruler
+    right_portrait = scope:dead_supported_ruler
+
+    immediate = {
+    	hidden_effect = {
+	    	random_list = {
+	    		5 = {
+	                modifier = {
+	                	current_ruler.charisma > scope:supported_country.current_ruler.charisma
+	                    factor = 1
+	                }
+	                modifier = {
+						opinion = {
+							target = scope:supported_country
+							value >= 150
+						}
+						factor = 2                	
+	                }
+	                modifier = {
+						opinion = {
+							target = scope:supported_country
+							value > 100
+						}
+						opinion = {
+							target = scope:supported_country
+							value < 150
+						}
+						factor = 1             	
+	                }
+	                set_variable = {
+	                	name = accepted_servitude
+	                	days = 180
+	                }
+	    		}
+	    		5 ={
+	                modifier = {
+	                	current_ruler.charisma < scope:supported_country.current_ruler.charisma
+	                    factor = 1
+	                }
+	                modifier = {
+						opinion = {
+							target = scope:supported_country
+							value < 50
+						}
+						factor = 2                	
+	                }
+	                modifier = {
+						opinion = {
+							target = scope:supported_country
+							value > 50
+						}
+						opinion = {
+							target = scope:supported_country
+							value < 100
+						}
+						factor = 1             	
+	                }
+	                set_variable = {
+	                	name = rejected_servitude
+	                	days = 180
+	                }
+	    		}
+	    	}
+    	}
+    }
+
+    option = {	#supported_country will remain a feudatory
+        name = character_interactions_inv_7.a
+        trigger = { has_variable = accepted_servitude }
+        add_legitimacy = 5
+    }
+    option = {	#supported_country claims they are independent!
+        name = character_interactions_inv_7.b
+        trigger = { has_variable = rejected_servitude }
+        release_subject = scope:supported_country
+		add_truce = {
+			target = scope:supported_country
+			duration = 1825 # 5 years
+		}
+    	scope:supported_country.capital_scope = { add_claim = ROOT }
+    }
+    after = {
+    	scope:supported_country = {
+    		remove_variable = accepted_vassalage_1
+    	}
+    }
+}
+
+character_interactions_inv.8 = {	#
+    type = country_event
+    hidden = yes
+
+
+    immediate = {
+    	if = {
+    		limit = {
+    			is_subject = yes
+    			NOT = {
+    				current_ruler = {
+    					has_triggered_character_modifier = ruler_being_supported
+    				}
+    			}
+    		}
+    		overlord = { trigger_event = character_interactions_inv.7 }
+    	}
+    	else = {
+    		limit = { is_subject = no }
+    		remove_variable = accepted_vassalage_1
+    	}
+    }
+}
+
+
+
+########################################################################################################
+#New namespace
+#This is the vanilla legitimacy scheme event for bloodlines
+
+namespace = scheme
+
+scheme.11 = {
+	type = character_event
+	title = "scheme.11.t"
+	desc = "scheme.11.desc"
+	
+	left_portrait = root
+	right_portrait = scope:ancestor
+	
+	picture = great_library
+	
+	immediate = {
+		if = {
+			limit = {
+				exists = father.father.father
+			}
+			father.father.father = {
+				save_scope_as = ancestor
+			}
+		}
+		else_if = {
+			limit = {
+				exists = father.father
+			}
+			father.father = {
+				save_scope_as = ancestor
+			}
+		}
+		else_if = {
+			limit = {
+				exists = father
+			}
+			father = {
+				save_scope_as = ancestor
+			}
+		}
+		else = {
+			save_scope_as = ancestor
+		}
+		hidden_effect = {
+			if = {
+				limit = {
+					has_culture_group = hellenic
+				}
+				random_list = {
+					1 = {
+						add_bloodline_effect = { BLOODLINE = alcimachid }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = antigonids }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = antipatrid }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = lagids }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = seleucids }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = argeads }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = agiad }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = aeacidae }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = agathocles }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = sophytid }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = diodotus }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = spartocid }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = demosthenid }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = blood_of_david }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = magas }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = agiad }
+					}
+				}
+			}
+			if = {
+				limit = {
+					OR = {
+						has_culture_group = aryan
+						has_culture_group = indian
+						has_culture_group = pracyan
+					}
+				}
+				random_list = {
+					1 = {
+						add_bloodline_effect = { BLOODLINE = maurya }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = blood_of_porus }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = blood_of_bharata }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = kalinga }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = chera }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = pandya }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = chola }
+					}
+					1 = {
+						add_bloodline_effect = { BLOODLINE = blood_of_vijaya }
+					}
+				}
+			}			
+		}
+	}
+	
+	option = {
+		name = "scheme.11.a"
+		employer = {
+			add_legitimacy = 10
+		}
+		if = {
+            limit = {
+                num_of_children > 0
+                any_child = {
+                    is_alive = yes
+                }
+            }
+            custom_tooltip = "gained_diadochi_bloodline_trait_children"
+        }
+        else = { custom_tooltip = "gained_diadochi_bloodline_trait" }
+	}
+}

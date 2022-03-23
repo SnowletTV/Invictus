@@ -8,7 +8,7 @@
 
     potential = {
     	tag = BIT
-       # NOT = { has_variable = bithynia_mission_cooldown }
+        NOT = { has_variable = bithynia_mission_cooldown }
     }
 
     abort = {}
@@ -28,7 +28,7 @@
     }
 
     bithynia_missions_task_1 = { #A Proper Capital
-        icon = "task_political"
+        icon = "task_economical"
 
         allow = {
         	any_owned_province = {
@@ -42,31 +42,51 @@
         	show_as_tooltip = {
                 if = {
                     limit = {
-                        capital_scope = { has_city_status = yes } 
+                        capital_scope = { 
+                            has_city_status = yes
+                        } 
                     }
                     add_treasury = 100
                     add_1_free_province_investments = yes
+                    capital_scope = {
+                        while = {
+                            count = 4
+                            define_pop = {
+                                type = citizen
+                                culture = root.culture
+                                religion = root.religion
+                            }
+                        }
+                    }
                 }
                 else = {
                     limit = {
-                        capital_scope = { has_city_status = no }
+                        capital_scope = { 
+                            has_city_status = no
+                        } 
                     }
-                    #ordered_owned_province = {
-                    #    limit = { has_city_status = yes }
-                    #    order_by = total_population
-                    #   max = 1
-                    #    save_scope_as = new_capital
-                    #}
                     add_1_free_province_investments = yes
+                    capital_scope = {
+                        while = {
+                            count = 3
+                            define_pop = {
+                                type = citizen
+                                culture = root.culture
+                                religion = root.religion
+                            }
+                        }
+                    }
                 } 
         	}
         }
     }
 
     bithynia_missions_task_2 = {	#The City of Zipoetes
-        icon = "task_political"
+        icon = "task_economical"
         requires = { bithynia_missions_task_1 }
-
+        #highlight = {
+        #    scope:province = { THIS = capital_scope }
+        #}
         allow = {
             #Zipoetes is still alive
         	capital_scope = {
@@ -96,33 +116,139 @@
     }
 
     bithynia_missions_task_3 = {	#Last of the Achaemenids
-        icon = "task_political"
-
-        allow = {
-        	c:HCP = {
-        		opinion = {
-        			target = c:BIT
-        			value >= 30
-        		}
-        	}
+        icon = "task_diplomatic"
+        highlight = {
+            scope:province = {
+                exists = owner 
+                owner = c:HCP
+            }
         }
-        bypass = {
-        	c:HCP = { has_land = no }
+        allow = {
+            trigger_if = {
+                limit = {
+                    c:HCP = { has_land = yes }
+                }
+                trigger_if = {
+                    limit = {
+                        char:306 = { is_alive = yes}
+                    }
+                    char:306 = { age >= 16 }
+                }
+                trigger_else_if = {
+                    limit = {
+                        char:306 = { is_alive = no }
+                    }
+                    current_ruler = {
+                        any_child = {
+                            is_alive = yes
+                            is_male = yes
+                        }
+                    }
+                }
+            	c:HCP = {
+            		opinion = {
+            			target = c:BIT
+            			value >= 30
+            		}
+                    any_character = {
+                        has_trait = achaemenid
+                        is_female = yes
+                        age <= 40
+                        age > 15
+                    }
+            	}
+            }
+            trigger_else = {
+                c:HCP = { has_land = no }
+            }
         }
         on_completion = {
             trigger_event = me_bithynia.3
-        	if = {
-        		limit = { c:HCP = { has_land = yes } }
-        		#Marry an Achaemenid character to Zipoetes son
-                #Have to fix the characters first
-        		custom_tooltip  = bithynia_missions_task_3_tt
-        	}
-        	else = {
-        		add_treasury = 100
-        		current_ruler = {
-        			add_popularity = 5
-        		}
-        	}
+            show_as_tooltip = {
+            	if = {
+            		limit = { 
+                        c:HCP = { has_land = yes }
+                        char:306 = { is_alive = yes }
+                    }
+            		#Marry an Achaemenid character to Zipoetes son if he is alive, otherwise marry a random child.
+            		custom_tooltip  = bithynia_missions_task_3_tt
+                    if = {
+                        limit = {
+                            char:306 = { is_married = yes }
+                        }
+                        char:306 = { divorce_character = spouse }
+                    }
+                    c:HCP = {
+                        random_character = {
+                            limit = {
+                                has_trait = achaemenid
+                                is_female = yes
+                                age <= 40
+                                age > 15
+                            }
+                            if = {
+                                limit = { is_married = yes }
+                                divorce_character = spouse
+                            }
+                            save_scope_as = marriage_partner
+                        }
+                    }
+                    char:306 = { marry_character = scope:marriage_partner }
+            	}
+                else_if = {
+                    limit = {
+                        c:HCP = { has_land = yes }
+                        current_ruler = {
+                            any_child = {
+                                is_alive = yes
+                                is_male = yes
+                                age >= 16
+                            }
+                        }
+                    }
+                    c:HCP = {
+                        random_character = {
+                            limit = {
+                                has_trait = achaemenid
+                                is_female = yes
+                                age <= 40
+                                age > 15
+                            }
+                            if = {
+                                limit = { is_married = yes }
+                                divorce_character = spouse
+                            }
+                            save_scope_as = marriage_partner
+                        }
+                    }
+                    current_ruler = {
+                        ordered_child = {
+                            limit = {
+                                age >= 16
+                                is_male = yes
+                                is_alive = yes
+                            }
+                            order_by = age
+                            position = end
+                            max = 1
+                            if = {
+                                limit = { is_married = yes }
+                                divorce_character = spouse
+                            }
+                            marry_character = scope:marriage_partner
+                        }
+                    }
+                }
+            	else_if = {
+                    limit = {
+                        #c:HCP = { has_land = no }
+                    }
+            		add_treasury = 100
+            		current_ruler = {
+            			add_popularity = 5
+            		}
+            	}
+            }
         }
     }
 
@@ -143,6 +269,10 @@
             show_as_tooltip = {
             	add_legitimacy = 10
                 custom_tooltip = bithynia_missions_task_4_tt
+                add_country_modifier = {
+                    name = kings_of_bithynia
+                    duration = 3650
+                }
                 hidden_effect = {
                 	area:bithynia_inferior_area = {
                 		every_area_province = {
@@ -159,7 +289,7 @@
     }
 
     bithynia_missions_task_5 = {	#Developing Food stores
-        icon = "task_political"
+        icon = "task_happiness"
         requires = { bithynia_missions_task_2 }
 
         allow = {
@@ -175,7 +305,6 @@
             show_as_tooltip = {
                 ordered_owned_province = {
                     limit = {
-                        has_province_rank = settlement
                         num_of_basic_settlement_infratructure_building = 1                    
                     }
                     order_by = num_goods_produced
@@ -189,9 +318,17 @@
     }
 
     bithynia_missions_task_6 = {	#Consolidating Bithynia
-        icon = "task_political"
+        icon = "task_conquest"
         requires = { bithynia_missions_task_4 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    THIS = p:246
+                    THIS = p:243
+                    THIS = p:240
+                }
+            }
+        }
         allow = {
         	trigger_if = {
         		limit = {
@@ -233,7 +370,7 @@
         			}
                     custom_tooltip = {
                         text = bithynia_missions_task_6_tt_2
-        			     p:240.owner.overlord.current_ruler.is_friend = root.current_ruler
+        			     p:240.owner.overlord.current_ruler = { is_friend = root.current_ruler }
                     }
         		}
         	}
@@ -275,28 +412,36 @@
                     owns = 246
                     owns = 243
                 }
-                add_popularity = 10
+                current_ruler = { add_popularity = 10 }
                 add_treasury = 50
             }
         }
     }
 
     bithynia_missions_task_7 = {	#Friends in Mariandynia 
-        icon = "task_political"
+        icon = "task_diplomatic"
         requires = { bithynia_missions_task_4 }
         duration = 90
         prevented_by = { bithynia_missions_task_8 }
-
+        highlight = {
+            scope:province = {
+                exists = owner 
+                owner = c:MYD
+            }
+        }
         allow = {
         	#Is Friends with Mariandynia
         	alliance_with = c:MYD
+            custom_tooltip = {
+                text = bithynia_missions_task_7_B_tt
+                num_of_cities > c:MYD.num_of_cities
+            }
         	c:MYD = {
         		opinion = {
         			target = root
         			value >= 40
         		}
         	}
-        	num_of_cities > c:MYD.num_of_cities
         	treasury >= 50
         }
         bypass = {
@@ -312,17 +457,39 @@
             #Send some gifts
             #trigger_event = me_bithynia.7a
             add_treasury = -50
+            custom_tooltip = bithynia_missions_task_7_tt
         }
         on_completion = {
         	#Offer Mariandynia to become our feudatory
+            hidden_effect = {
+                random_list = {
+                    50 = {
+                        set_variable = {
+                            name = nope
+                            days = 60
+                        }
+                    }
+                    50 = {
+                        set_variable = {
+                            name = yup
+                            days = 60
+                        }
+                    }
+                }
+            }
             trigger_event = me_bithynia.7
         }
     }
     bithynia_missions_task_8 = {	#War with Mariandynia 
-        icon = "task_political"
+        icon = "task_battle"
         requires = { bithynia_missions_task_4 }
         prevented_by = { bithynia_missions_task_7 }
-
+        highlight = {
+            scope:province = {
+                exists = owner 
+                owner = c:MYD
+            }
+        }
         allow = {
         	war_with = c:MYD
         }
@@ -347,19 +514,26 @@
         }
     }
     bithynia_missions_task_9 = {	#Beyond Mariandynia 
-        icon = "task_political"
+        icon = "task_calm"
         requires = { bithynia_missions_task_8 bithynia_missions_task_7 }
-
+        highlight = {
+            scope:province = {
+                dominant_province_culture = mariandynian
+            }
+        }
         allow = {
         	#Own at least 5 provinces of mariandynian
-        	any_owned_province = {
-        		count >= 5
-        		dominant_province_culture = mariandynian
-        		#OR = {
-        			owner = root
-        		#	owner = { is_subject_of = root }
-        		#}
-        	}
+            custom_tooltip = {
+                text = bithynia_missions_task_9_B_tt
+            	any_owned_province = {
+            		count >= 5
+            		dominant_province_culture = mariandynian
+            		OR = {
+            			owner = root
+            			owner = { is_subject_of = root }
+            		}
+            	}
+            }
         }
 
         on_completion = {
@@ -370,7 +544,7 @@
         }
     }
     bithynia_missions_task_10 = {	#Expanding the Kingdom
-        icon = "task_political"
+        icon = "task_expansion"
         requires = { bithynia_missions_task_6 }
 
         highlight = {
@@ -408,37 +582,33 @@
     bithynia_missions_task_11 = {	#Kingdom of Zipoetes
         icon = "task_political"
         requires = { bithynia_missions_task_9 bithynia_missions_task_10 }
-
+        duration = 90
         allow = {
-        	stability >= 40
+            treasury >= 50
         	#Change this to be cities of subjects too
         	num_of_cities >= 10
         }
-
+        on_start = { add_treasury = -50 }
         on_completion = {
         	#Get an option to change name to Kingdom of Zipoetes
         	#Gain claims on a bunch of areas
         	add_political_influence = 25
             trigger_event = me_bithynia.11
+            custom_tooltip = bithynia_missions_task_11_tt
         }
     }
     bithynia_missions_task_12 = {	#Cities of Bithynia
-        icon = "task_political"
+        icon = "task_happiness"
         requires = { bithynia_missions_task_2 }
 
         allow = {
-        	any_owned_province = {
-        		count >= 3
-        		has_city_status = yes
-        	}
-            hidden:capital_scope.state = {
-                calc_true_if = {
-                    amount >= 2
-                    state_improvement_military_trigger = yes
-                    state_improvement_civic_trigger = yes
-                    state_improvement_oratory_trigger = yes
-                    state_improvement_religious_trigger = yes
-                }
+            stability >= 50
+            custom_tooltip = {
+                text = bithynia_missions_task_12_B_tt
+            	any_owned_province = {
+            		count >= 5
+            		has_city_status = yes
+            	}
             }
         }
 
@@ -455,13 +625,13 @@
         }
     }
     bithynia_missions_task_13 = {	#Spreading Bithynian Ways
-        icon = "task_political"
+        icon = "task_religion"
         requires = { bithynia_missions_task_12 }
 
         allow = {
  			any_owned_province = {
                 count >= 2
-                has_province_modifier = bithynian_city
+                has_province_rank = bithynian_city
             }
         }
 
@@ -469,23 +639,24 @@
         	#Gain something cool
             trigger_event = me_bithynia.13
             show_as_tooltip = {
+                add_2_free_province_investments = yes
                 ordered_owned_province = {
                     limit = {
-                        has_province_modifier = bithynian_city
+                        has_province_rank = bithynian_city
                     }
                     order_by = total_population
                     max = 2
-                    add_permanent_province_modifier = {
-                        name = bithynian_city
-                        mode = add
+                    add_province_modifier = {
+                        name = increased_taxes
+                        duration = 3650
                     }
                 }
             }
         }
     }
     bithynia_missions_task_14 = {	#Naval Expansion
-        icon = "task_political"
-        requires = { bithynia_missions_task_5 }
+        icon = "task_expansion"
+        requires = { bithynia_missions_task_5 bithynia_missions_task_67 }
 
         allow = {
         	num_of_ships >= 25
@@ -502,8 +673,9 @@
         }
     }
     bithynia_missions_task_15 = {	#Heading East
-        icon = "task_political"
+        icon = "task_expansion"
         requires = { bithynia_missions_task_11 }
+        duration = 90
         highlight = {
         	scope:province = {
         		is_in_area = heracleotis_area
@@ -511,15 +683,23 @@
         }
         allow = {
         	owns_or_subject_owns_area = heracleotis_area
+            treasury >= 50
         }
-
+        on_start = { add_treasury = -50 }
         on_completion = {
         	#Gain claims on Paphlagonia
             trigger_event = me_bithynia.15
+            custom_tooltip = bithynia_missions_task_15_tt
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = masters_of_mariandynia
+                    duration = 1825
+                }
+            }
         }
     }
     bithynia_missions_task_16 = {	#Masters of Bithynia
-        icon = "task_political"
+        icon = "task_conquest"
         requires = { bithynia_missions_task_15 }
         highlight = {
         	scope:province = {
@@ -543,103 +723,245 @@
         }
     }
     bithynia_missions_task_17 = {	#A Bithynian Legion
-        icon = "task_political"
+        icon = "task_battle"
         requires = { bithynia_missions_task_14 }
 
         allow = {
         	#Have a legion
-            any_governorships = { has_legion_trigger = yes }
+            trigger_if = {
+                limit = {
+                    capital_scope.governorship = { has_legion_trigger = yes }
+                    any_unit = { legion = ROOT.capital_scope.governorship.legion }
+                }
+                custom_tooltip = {
+                    text = bithynia_missions_task_17_tooltip
+                    any_legion = {
+                        any_legion_unit = {
+                            unit_size >= 10
+                        }
+                    }
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = bithynia_missions_task_17_tooltip
+                    num_of_ships >= 1000000 #Random impossible trigger so no error log pain
+                }
+            }
         }
 
         on_completion = {
         	#Gain stuff
             trigger_event = me_bithynia.17
+            custom_tooltip = bithynia_missions_task_17_tt
+            random_unit = {
+                limit = { legion = ROOT.capital_scope.governorship.legion }
+                save_scope_as = legion_of_bithynia
+            }
         }
     }
     bithynia_missions_task_18 = {	#Ports of Bithynia
-        icon = "task_political"
+        icon = "task_economical"
         requires = { bithynia_missions_task_13 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = bithynia_region
+            }
+        }
         allow = {
-        	#Have 25 ports in the bithynia region
-        }
-
-        on_completion = {
-            trigger_event = me_bithynia.18
-        }
-    }
-    bithynia_missions_task_19 = {	#New Markets
-        icon = "task_political"
-        requires = { bithynia_missions_task_13 }
-
-        allow = {
-        	#Have 15 Marketplaces in the bithynia region
-        }
-
-        on_completion = {
-            trigger_event = me_bithynia.19
-        }
-    }
-    bithynia_missions_task_20 = {	#The Land of the Thracians
-        icon = "task_political"
-        requires = { bithynia_missions_task_16 }
-
-        allow = {
-        	#Own at least 5 provinces in the Thrace Region
-            any_owned_province = {
-                count >= 5
-                is_in_region = thrace_region
+        	#Have 15 ports in the bithynia region
+            custom_tooltip = {
+                text = bithynia_missions_task_18_tt
+                any_owned_province = {
+                    count >= 15
+                    has_building = port_building
+                    OR = {
+                        is_in_area = bithynia_inferior_area
+                        is_in_area = bithynia_superior_area
+                        is_in_area = paphlagonia_superior_area
+                        is_in_area = heracleotis_area
+                        is_in_area = paphlagonia_inferior_area
+                        is_in_area = bithynia_area
+                    }
+                }
             }
         }
 
         on_completion = {
+            trigger_event = me_bithynia.18
+            show_as_tooltip = {
+                ordered_owned_province = {
+                    limit = {
+                        has_building = port_building
+                    }
+                    order_by = total_population
+                    max = 3
+                    add_province_modifier = {
+                        name = ports_of_bithynia
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+    bithynia_missions_task_19 = {	#New Markets
+        icon = "task_economical"
+        requires = { bithynia_missions_task_13 }
+        highlight = {
+            scope:province = {
+                is_in_region = bithynia_region
+            }
+        }
+        allow = {
+        	#Have 15 Marketplaces in the bithynia region
+            custom_tooltip = {
+                text = bithynia_missions_task_19_tt
+                any_owned_province = {
+                    count >= 15
+                    has_building = commerce_building
+                    OR = {
+                        is_in_area = bithynia_inferior_area
+                        is_in_area = bithynia_superior_area
+                        is_in_area = paphlagonia_superior_area
+                        is_in_area = heracleotis_area
+                        is_in_area = paphlagonia_inferior_area
+                        is_in_area = bithynia_area
+                    }
+                }
+            }
+        }
+
+        on_completion = {
+            trigger_event = me_bithynia.19
+            show_as_tooltip = {
+                ordered_owned_province = {
+                    limit = {
+                        has_building = commerce_building
+                        OR = {
+                            is_in_area = bithynia_inferior_area
+                            is_in_area = bithynia_superior_area
+                            is_in_area = paphlagonia_superior_area
+                            is_in_area = heracleotis_area
+                            is_in_area = paphlagonia_inferior_area
+                            is_in_area = bithynia_area
+                        }
+                    }
+                    order_by = total_population
+                    max = 3
+                    add_province_modifier = {
+                        name = bithynian_markets
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+    bithynia_missions_task_20 = {	#The Land of the Thracians
+        icon = "task_diplomatic"
+        requires = { bithynia_missions_task_16 }
+        duration = 90
+        highlight = {
+            scope:province = {
+                is_in_region = thrace_region
+            }
+        }
+        allow = {
+        	#Own at least 5 provinces in the Thrace Region
+            treasury >= 50
+            any_owned_province = {
+                count >= 5
+                OR = {
+                    is_in_area = thracia_area
+                    is_in_area = europa_area
+                    is_in_area = rhodope_area
+                    is_in_area = haemimontus_area
+                }
+            }
+        }
+        on_start = { add_treasury = -50 }
+        on_completion = {
         	#Gain claims on thrace region
             trigger_event = me_bithynia.20
+            custom_tooltip = bithynia_missions_task_20_tt
+
         }
     }
     bithynia_missions_task_21 = {	#Into Asia
-        icon = "task_political"
+        icon = "task_diplomatic"
         requires = { bithynia_missions_task_16 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = mysia_abrettene_area
+                    is_in_area =mysia_area
+                }
+            }
+        }
         allow = {
         	owns_or_subject_owns_area = mysia_abrettene_area
         	owns_or_subject_owns_area = mysia_area
         }
 
         on_completion = {
-        	#Gain claims on thrace region
+        	#Gain claims on Asia region
             trigger_event = me_bithynia.21
+            custom_tooltip = bithynia_missions_task_21_tt
         }
     }
     bithynia_missions_task_22 = {	#Reconquering our Homeland
-        icon = "task_political"
+        icon = "task_conquest"
         requires = { bithynia_missions_task_20 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = thrace_region
+            }
+        }
         allow = {
         	owns_or_subject_owns_region = thrace_region
         }
 
         on_completion = {
         	trigger_event = me_bithynia.22
+            show_as_tooltip = { add_2_free_province_investments = yes }
         }
     }
     bithynia_missions_task_23 = {	#Protector of Thracians
-        icon = "task_political"
+        icon = "task_religion"
         requires = { bithynia_missions_task_22 }
-
+        #doesn't work
+        #highlight = {
+        #    scope:province = {
+                #dominant_province_culture_group = thrace_group
+        #    }
+        #}
         allow = {
-        	#All Thracian culture group Pops in the world are in Bythinia
+            #All thracian culture group pops in a few regions
+            custom_tooltip = {
+                text = bithynia_missions_task_23_B_tt
+                bithynia_missions_task_23_thracian_provinces_current >= bithynia_missions_task_23_thracian_provinces_total
+            }
         }
 
         on_completion = {
         	trigger_event = me_bithynia.23
+            custom_tooltip = bithynia_missions_task_23_tt
         }
     }
     bithynia_missions_task_24 = {	#Phyrgian Power
         icon = "task_political"
         requires = { bithynia_missions_task_16 }
-
+        duration = 90
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = galatia_area
+                    is_in_area = galatia_trocmi_area
+                    is_in_area = phrygia_epiktetos
+                }
+            }
+        }
         allow = {
+            treasury >= 50
             any_owned_province = {
                 count >= 10
                 OR = {
@@ -649,33 +971,41 @@
                 }
             }
         }
-
+        on_start = { add_treasury = -50 }
         on_completion = {
-
             trigger_event = me_bithynia.24
+            custom_tooltip = bithynia_missions_task_24_tt
+            #Claims on galatia_region
         }
     }
     bithynia_missions_task_25 = {	#Conquering Cappadocia
         icon = "task_political"
         requires = { bithynia_missions_task_16 }
-
+        duration = 90
+        highlight = {
+            scope:province = {
+                is_in_area = pontus_area
+            }
+        }
         allow = {
         	#cappadocia_region
         	#and
         	#cappadocia_pontica_region for this branch
+            treasury >= 50
         	any_owned_province = {
         		count >= 3
         		is_in_area = pontus_area
         	}
         }
-
+        on_start = { add_treasury = -50 }
         on_completion = {
-        	#
+        	#claims on cappadocia_region
             trigger_event = me_bithynia.25
+            custom_tooltip = bithynia_missions_task_25_tt
         }
     }
     bithynia_missions_task_26 = {	#Crossing the Sea
-        icon = "task_political"
+        icon = "task_expansion"
         requires = { bithynia_missions_task_16 }
 
         allow = {
@@ -685,25 +1015,44 @@
         on_completion = {
         	#
             trigger_event = me_bithynia.26
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = dominating_the_seas
+                    duration = -1
+                }
+            }
         }
     }
     bithynia_missions_task_27 = {	#Turbulence in Taurica
-        icon = "task_political"
+        icon = "task_expansion"
         requires = { bithynia_missions_task_26 }
-
+        duration = 90
+        highlight = {
+            scope:province = {
+                is_in_area = taurica_area
+            }
+        }
         allow = {
             owns_or_subject_owns_area = taurica_area
         }
-
+        on_start = { add_treasury = -50 }
         on_completion = {
         	#Claims on taurica region
             trigger_event = me_bithynia.27
+            custom_tooltip = bithynia_missions_task_27_tt
         }
     }
     bithynia_missions_task_28 = {   #Controlling the Coast
-        icon = "task_political"
+        icon = "task_battle"
         requires = { bithynia_missions_task_21 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = aeolia_area
+                    is_in_area = ionia_area
+                }
+            }
+        }
         allow = {
             owns_or_subject_owns_area = aeolia_area
             owns_or_subject_owns_area = ionia_area
@@ -712,25 +1061,21 @@
         on_completion = {
             #
             trigger_event = me_bithynia.28
-        }
-    }
-    bithynia_missions_task_29 = {   #An Aegean Power
-        icon = "task_political"
-        requires = { bithynia_missions_task_28 }
-
-        allow = {
-            owns_or_subject_owns_area = sporades_area
-            owns_or_subject_owns_area = crete_area
-            owns_or_subject_owns_area = aegean_islands_area
-        }
-
-        on_completion = {
-            #Pick one of those areas to give a state modifier
-            trigger_event = me_bithynia.29
             show_as_tooltip = {
                 random_owned_province = {
                     limit = {
-                        is_in_area = crete_area
+                        is_in_area = aeolia_area
+                    }
+                    state = {
+                        add_state_modifier = {
+                            name = bithynian_administration
+                            duration = -1
+                        }
+                    }
+                }
+                random_owned_province = {
+                    limit = {
+                        is_in_area = ionia_area
                     }
                     state = {
                         add_state_modifier = {
@@ -742,26 +1087,117 @@
             }
         }
     }
+    bithynia_missions_task_29 = {   #An Aegean Power
+        icon = "task_conquest"
+        requires = { bithynia_missions_task_28 }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = sporades_area
+                    is_in_area = crete_area
+                    is_in_area = aegean_islands_area
+                }
+            }
+        }
+        allow = {
+            owns_or_subject_owns_area = sporades_area
+            owns_or_subject_owns_area = crete_area
+            owns_or_subject_owns_area = aegean_islands_area
+        }
+
+        on_completion = {
+            #Pick one of those areas to give a state modifier
+            trigger_event = me_bithynia.29
+            custom_tooltip = bithynia_missions_task_29_tt
+            show_as_tooltip = {
+                random_owned_province = {
+                    limit = {
+                        #is_in_area = crete_area
+                    }
+                    state = {
+                        add_state_modifier = {
+                            name = aegean_center_of_administration
+                            duration = -1
+                        }
+                    }
+                }
+            }
+        }
+    }
     bithynia_missions_task_30 = {   #Masters of the Pelloponesse
         icon = "task_political"
         requires = { bithynia_missions_task_28 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = south_peleponnesos_area
+                    is_in_area = arcadia_area
+                    is_in_area = achaea_area
+                    is_in_area = central_greece_area
+                }
+            }
+        }
         allow = {
             owns_or_subject_owns_area = south_peleponnesos_area
             owns_or_subject_owns_area = arcadia_area
             owns_or_subject_owns_area = achaea_area
             owns_or_subject_owns_area = central_greece_area
+            custom_tooltip = {
+                text = rhodes_02_asia_task_29_B_tooltip
+                rhodes_02_asia_task_29_buildings_current >= rhodes_02_asia_task_29_buildings_total
+                area:achaea_area = {
+                        NOT = {
+                        any_area_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }
+                area:arcadia_area = {
+                        NOT = {
+                        any_area_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }
+                area:south_peleponnesos_area = {
+                        NOT = {
+                        any_area_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }                
+            }
         }
 
         on_completion = {
             #
             trigger_event = me_bithynia.30
+            add_2_free_province_investments = yes
+            show_as_tooltip = {
+                p:427.state = {
+                    add_state_modifier = {
+                        name = peloponessian_prosperity
+                        duration = -1
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_31 = {   #Protectors of Greece
         icon = "task_political"
         requires = { bithynia_missions_task_28 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = aetolia_area
+                    is_in_area = boeotia_area
+                    is_in_area = euboea_area
+                }
+            }
+        }
         allow = {
             owns_or_subject_owns_area = euboea_area
             owns_or_subject_owns_area = boeotia_area
@@ -771,12 +1207,28 @@
         on_completion = {
             #
             trigger_event = me_bithynia.31
+            show_as_tooltip = {
+                current_ruler = { add_popularity = 10 }
+                random_owned_province = {
+                    limit = { is_in_area = boeotia_area }
+                    state = {
+                        add_state_modifier = {
+                            name = bithynian_protection
+                            duration = -1
+                        }
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_32 = {   #Dominate Phrygia
-        icon = "task_political"
+        icon = "task_diplomatic"
         requires = { bithynia_missions_task_24 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = galatia_region
+            }
+        }
         allow = {
             owns_or_subject_owns_region = galatia_region
         }
@@ -784,19 +1236,50 @@
         on_completion = {
             #
             trigger_event = me_bithynia.32
+            show_as_tooltip = { add_treasury = 500 }
         }
     }
     bithynia_missions_task_33 = {   #The Southern Coast
-        icon = "task_political"
+        icon = "task_conquest"
         requires = { bithynia_missions_task_32 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = cilicia_region
+            }
+        }
         allow = {
             #Own 10 coastal provinces in the cicilia region
+            any_owned_province = {
+                count >= 10
+                is_coastal = yes
+                OR = {
+                    is_in_area = cilicia_trachea_area
+                    is_in_area = cilicia_pedias_area
+                    is_in_area = lycia_area
+                    is_in_area = cyprus_area
+                    is_in_area = pamphylia_area
+                    is_in_area = pisidia_area
+                    is_in_area = milyas_area
+                }
+            }
         }
 
         on_completion = {
             #
             trigger_event = me_bithynia.33
+            show_as_tooltip = {
+                ordered_owned_province = {
+                    limit = {
+                        has_building = port_building
+                    }
+                    order_by = total_population
+                    max = 5
+                    add_province_modifier = {
+                        name = ports_of_bithynia
+                        duration = -1
+                    }
+                }
+            }            
         }
     }
     bithynia_missions_task_34 = {   #Destroy the Mithraditic Dynasty
@@ -816,12 +1299,15 @@
                         }
                     }
                 }
-                NOT = {
-                    any_country = {
-                        NOT = { THIS = ROOT }
-                        any_character = {
-                            is_ruler = yes
-                            has_trait = mithridates
+                custom_tooltip = {
+                    text = bithynia_missions_task_34_tt
+                    NOT = {
+                        any_country = {
+                            NOT = { THIS = ROOT }
+                            any_character = {
+                                is_ruler = yes
+                                has_trait = mithridates
+                            }
                         }
                     }
                 }
@@ -834,12 +1320,26 @@
         on_completion = {
             #
             trigger_event = me_bithynia.34
+            show_as_tooltip = {
+                add_1_free_province_investments = yes
+                add_legitimacy = 10
+                current_ruler = {
+                    add_trait = victorious
+                }
+            }
         }
     }
     bithynia_missions_task_35 = {   #Kings of Cappadocia
         icon = "task_political"
         requires = { bithynia_missions_task_34 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = cappadocia_region
+                    is_in_region = cappadocia_pontica_region
+                }
+            }
+        }
         allow = {
             owns_or_subject_owns_region = cappadocia_region
             owns_or_subject_owns_region = cappadocia_pontica_region
@@ -848,23 +1348,34 @@
         on_completion = {
             #
             trigger_event = me_bithynia.35
+            show_as_tooltip = {
+                add_treasury = 250
+                add_country_modifier = {
+                    name = cappadocian_kings
+                    duration = -1
+                }
+            }
         }
     }
     bithynia_missions_task_36 = {   #Thracian Taurica
-        icon = "task_political"
+        icon = "task_expansion"
         requires = { bithynia_missions_task_27 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = taurica_region
+            }
+        }
         allow = {
             owns_or_subject_owns_region = taurica_region
         }
 
         on_completion = {
-            #Claims on taurica region
             trigger_event = me_bithynia.36
+            show_as_tooltip = { add_2_free_province_investments = yes }
         }
     }
     bithynia_missions_task_37 = {   #Kings of Asia
-        icon = "task_political"
+        icon = "task_atlas"
         requires = { bithynia_missions_task_35 bithynia_missions_task_33 }
 
         highlight = {
@@ -890,12 +1401,18 @@
         }
 
         on_completion = {
-            #Claims on taurica region
+            #
             trigger_event = me_bithynia.37
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = kings_of_asia
+                    duration = -1
+                }
+            }
         }
     }
     bithynia_missions_task_38 = {   #Kings of Greece
-        icon = "task_political"
+        icon = "task_atlas"
         requires = { bithynia_missions_task_31 bithynia_missions_task_30 bithynia_missions_task_29 }
 
         highlight = {
@@ -913,27 +1430,55 @@
         }
 
         on_completion = {
-            #Claims on taurica region
+            #
             trigger_event = me_bithynia.38
+            show_as_tooltip = {
+                add_innovation = 2
+                current_ruler = {
+                    add_martial = 2
+                    add_zeal = 2
+                    add_finesse = 2
+                }
+            }
         }
     }
     bithynia_missions_task_39 = {   #Syrian Ambition
         icon = "task_political"
         requires = { bithynia_missions_task_37 }
-
+        duration = 180
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = syria_cyrrestice_area
+                    is_in_area = commagene_area
+                }
+            }
+        }
         allow = {
             owns_or_subject_owns_area = syria_cyrrestice_area
             owns_or_subject_owns_area = commagene_area
+            treasury >= 200
         }
-
+        on_start = { add_treasury = -200 }
         on_completion = {
             #Claims on Syria and Assyria region
             trigger_event = me_bithynia.39
+            #assyria_region & syria_region
+            custom_tooltip = bithynia_missions_task_39_tt
         }
     }
     bithynia_missions_task_40 = {   #Conquest of Syria
-        icon = "task_political"
+        icon = "task_heracles"
         requires = { bithynia_missions_task_39 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = syria_region
+                    is_in_region = assyria_region
+                }
+            }
+        }
 
         allow = {
             owns_or_subject_owns_region = syria_region
@@ -941,27 +1486,81 @@
         }
 
         on_completion = {
-            #Claims on Syria and Assyria region
             trigger_event = me_bithynia.40
+            show_as_tooltip = {
+                ordered_owned_province = {
+                    limit = {
+                        is_in_region = assyria_region
+                    }
+                    order_by = total_population
+                    max = 1
+                    state = {
+                        add_state_modifier = {
+                            name = bithynian_administration
+                            duration = -1
+                        }
+                    }
+                }
+                ordered_owned_province = {
+                    limit = {
+                        is_in_region = syria_region
+                    }
+                    order_by = total_population
+                    max = 1
+                    state = {
+                        add_state_modifier = {
+                            name = bithynian_administration
+                            duration = -1
+                        }
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_41 = {   #Levantine Asipirations
-        icon = "task_political"
+        icon = "task_conquest"
         requires = { bithynia_missions_task_40 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = palestine_region
+            }
+        }
         allow = {
             owns_or_subject_owns_region = palestine_region
         }
 
         on_completion = {
-            #Claims on Syria and Assyria region
+            #
             trigger_event = me_bithynia.41
+            show_as_tooltip = {
+                add_stability = 5
+                ordered_owned_province = {
+                    limit = {
+                        is_in_region = palestine_region
+                    }
+                    order_by = total_population
+                    max = 1
+                    state = {
+                        add_state_modifier = {
+                            name = bithynian_administration
+                            duration = -1
+                        }
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_42 = {   #The Land of Pharaoh's
-        icon = "task_political"
+        icon = "task_heracles"
         requires = { bithynia_missions_task_40 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = sinai_area
+                    is_in_area = eastern_delta_area
+                }
+            }
+        }
         allow = {
             owns_or_subject_owns_area = sinai_area
             owns_or_subject_owns_area = eastern_delta_area
@@ -970,12 +1569,17 @@
         on_completion = {
             #Claims on lower egypt region
             trigger_event = me_bithynia.42
+            custom_tooltip = bithynia_missions_task_42_tt
         }
     }
     bithynia_missions_task_43 = {   #A New Dynasty
         icon = "task_political"
         requires = { bithynia_missions_task_42 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = lower_egypt_region
+            }
+        }
         allow = {
             owns_or_subject_owns_region = lower_egypt_region
         }
@@ -983,12 +1587,41 @@
         on_completion = {
             #Claims on lower egypt region
             trigger_event = me_bithynia.43
+            custom_tooltip = bithynia_missions_task_43_tt
+            show_as_tooltip = {
+                if = {
+                    limit = {
+                        current_ruler = { is_deified = no }
+                    }
+                    current_ruler = {
+                        deify_character = {
+                            deity = deity:omen_zeus
+                            country = ROOT
+                        }
+                    }
+                }
+                current_ruler = {
+                    add_popularity = popularity_large
+                    family = { add_prestige = prestige_huge }
+                }
+                add_country_modifier = {
+                    name = ant_01_6_cmod
+                    duration = 1825 # 5 years
+                }
+            }
         }
     }
     bithynia_missions_task_44 = {   #Mesopotamian Matters
-        icon = "task_political"
+        icon = "task_conquest"
         requires = { bithynia_missions_task_41 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = media_region
+                    is_in_region = mesopotamia_region
+                }
+            }
+        }
         allow = {
             owns_or_subject_owns_region = media_region
             owns_or_subject_owns_region = mesopotamia_region
@@ -997,12 +1630,21 @@
         on_completion = {
             #Gain stuff
             trigger_event = me_bithynia.44
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = priesthood_of_babylon_country_modifier_3
+                }
+            }
         }
     }
     bithynia_missions_task_45 = {   #Take the Boot
-        icon = "task_political"
+        icon = "task_battle"
         requires = { bithynia_missions_task_38 }
-
+        highlight = {
+            scope:province = {
+                is_in_area = tarentum_area
+            }
+        }
         allow = {
             owns_or_subject_owns_area = tarentum_area
         }
@@ -1010,12 +1652,29 @@
         on_completion = {
             #Gain stuff
             trigger_event = me_bithynia.45
+            show_as_tooltip = {
+                random_owned_province = {
+                    limit = {
+                        is_in_area = tarentum_area
+                    }
+                    state = {
+                        add_state_modifier = {
+                            name = bithynian_boot
+                            duration = -1
+                        }
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_46 = {   #Fight for the South
-        icon = "task_political"
+        icon = "task_expansion"
         requires = { bithynia_missions_task_45 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = magna_graecia_region
+            }
+        }
         allow = {
             owns_or_subject_owns_region = magna_graecia_region
         }
@@ -1023,12 +1682,17 @@
         on_completion = {
             #Gain stuff
             trigger_event = me_bithynia.46
+            show_as_tooltip = { add_treasury = 750 }
         }
     }
     bithynia_missions_task_47 = {   #The Fall of Rome
         icon = "task_political"
         requires = { bithynia_missions_task_46 }
-
+        highlight = {
+            scope:province = {
+                province_id = 1
+            }
+        }
         allow = {
             owns = 1
         }
@@ -1036,12 +1700,24 @@
         on_completion = {
             #Gain stuff
             trigger_event = me_bithynia.47
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = conquer_the_conquerors
+                }
+            }
         }
     }
     bithynia_missions_task_48 = {   #Dominate Italia
-        icon = "task_political"
+        icon = "task_conquest"
         requires = { bithynia_missions_task_47 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = central_italy_region
+                    is_in_region = cisalpine_gaul_region
+                }
+            }
+        }
         allow = {
             owns_or_subject_owns_region = central_italy_region
             owns_or_subject_owns_region = cisalpine_gaul_region
@@ -1049,13 +1725,18 @@
 
         on_completion = {
             #Gain stuff
+            show_as_tooltip = { add_stability = 15 }
             trigger_event = me_bithynia.48
         }
     }
     bithynia_missions_task_49 = {   #Illyrian Raid
-        icon = "task_political"
-        requires = { bithynia_missions_task_46 }
-
+        icon = "task_conquest"
+        requires = { bithynia_missions_task_22 }
+        highlight = {
+            scope:province = {
+                is_in_region = moesia_region
+            }
+        }
         allow = {
             owns_or_subject_owns_region = moesia_region
             #owns_or_subject_owns_region = illyria_region
@@ -1065,24 +1746,60 @@
         on_completion = {
             #Gain stuff
             trigger_event = me_bithynia.49
+            show_as_tooltip = {
+                ordered_owned_province = {
+                    limit = {
+                        is_in_region = moesia_region
+                    }
+                    order_by = total_population
+                    max = 5
+                    define_pop = {
+                        type = citizen
+                        culture = root.culture
+                        religion = root.religion
+                    }
+                    add_province_modifier = {
+                        name = bithynian_influx
+                        duration = 9125
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_50 = {   #Kings of Illyria
         icon = "task_political"
         requires = { bithynia_missions_task_49 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = illyria_region
+                    is_in_region = moesia_s_region
+                }
+            }
+        }
         allow = {
             owns_or_subject_owns_region = illyria_region
+            owns_or_subject_owns_region = moesia_s_region
         }
 
         on_completion = {
             #Gain stuff
             trigger_event = me_bithynia.50
+            show_as_tooltip = {
+                current_ruler.family = {
+                    add_prestige = 200
+                }
+                add_legitimacy = 10
+                add_country_modifier = {
+                    name = kings_of_illyria
+                    duration = 36500
+                }
+            }
         }
     }
     bithynia_missions_task_51 = {   #Bithynian Dominance
-        icon = "task_political"
-        requires = { bithynia_missions_task_43 bithynia_missions_task_44 bithynia_missions_task_50 bithynia_missions_task_48 }
+        icon = "task_atlas"
+        requires = { bithynia_missions_task_43 bithynia_missions_task_44 bithynia_missions_task_48 }
         final = yes
 
         allow = {
@@ -1092,25 +1809,36 @@
         on_completion = {
             #Gain stuff
             trigger_event = me_bithynia.51
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = bithynian_dominance
+                }
+            }
         }
     }
     bithynia_missions_task_52 = {   #Expanding Bythynian Influence
-        icon = "task_political"
+        icon = "task_religion"
         requires = { bithynia_missions_task_18 bithynia_missions_task_19 }
 
         allow = {
             any_owned_province = {
                 count >= 5
-                has_province_modifier = bithynian_city
+                has_province_rank = bithynian_city
             }
         }
 
         on_completion = {
             trigger_event = me_bithynia.52
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = spreading_bithynian_influence
+                    duration = 9125
+                }
+            }
         }
     }
     bithynia_missions_task_53 = {   #A Thriving Capital
-        icon = "task_political"
+        icon = "task_calm"
         requires = { bithynia_missions_task_52 }
 
         allow = {
@@ -1122,57 +1850,116 @@
 
         on_completion = {
             trigger_event = me_bithynia.53
+            show_as_tooltip = {
+                capital_scope = {
+                    add_permanent_province_modifier = {
+                        name = zipoetium
+                        mode = add
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_54 = {   #Investments in Asia
-        icon = "task_political"
+        icon = "task_calm"
         requires = { bithynia_missions_task_28 }
-
-        allow = {
-            any_owned_province = {
-                count = all
-                has_city_status = yes
-                has_construction = no
-                num_of_commerce_building >= 1
+        highlight = {
+            scope:province = {
                 OR = {
                     is_in_area = mysia_area
                     is_in_area = mysia_abrettene_area
-                }
-            }
-            any_owned_province = {
-                count = 10
-                has_city_status = yes
-                has_construction = no
-                num_of_total_building_slots >= 5
-                OR = {
                     is_in_area = aeolia_area
                     is_in_area = ionia_area
+                }
+            }
+        }
+        allow = {
+            custom_tooltip = {
+                text = bithynia_missions_task_54_A_tt
+                any_owned_province = {
+                    count = all
+                    has_city_status = yes
+                    has_construction = no
+                    num_of_commerce_building >= 1
+                    OR = {
+                        is_in_area = mysia_area
+                        is_in_area = mysia_abrettene_area
+                    }
+                }
+            }
+            custom_tooltip = {
+                text = bithynia_missions_task_54_B_tt
+                any_owned_province = {
+                    count = 10
+                    has_city_status = yes
+                    has_construction = no
+                    num_of_total_building_slots >= 5
+                    OR = {
+                        is_in_area = aeolia_area
+                        is_in_area = ionia_area
+                    }
                 }
             }
         }
 
         on_completion = {
             trigger_event = me_bithynia.54
+            show_as_tooltip = { add_4_free_province_investments = yes }
         }
     }
     bithynia_missions_task_55 = {   #Coastal Ventures
-        icon = "task_political"
+        icon = "task_religion"
         requires = { bithynia_missions_task_52 }
 
         allow = {
             num_of_ports >= 100
+            num_of_ships >= 125
+            custom_tooltip = {
+                text = bithynia_missions_task_26_tt
+                NOT = {
+                    any_country = {
+                        THIS.num_of_ships > ROOT.num_of_ships
+                    }
+                }
+            }
         }
 
         on_completion = {
             trigger_event = me_bithynia.55
+            show_as_tooltip = {
+                ordered_owned_province = {
+                    limit = {
+                        has_building = port_building
+                        NOT = { has_province_modifier = ports_of_bithynia }
+                    }
+                    order_by = total_population
+                    max = 3
+                    add_province_modifier = {
+                        name = ports_of_bithynia
+                        duration = -1
+                    }
+                }
+                ordered_navy = {
+                    order_by = unit_size
+                    max = 1
+                    add_unit_modifier = {
+                        name = navy_of_bithynia
+                        duration = -1
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_56 = {   #Increase Food Production
-        icon = "task_political"
+        icon = "task_economical"
         requires = { bithynia_missions_task_52 }
 
         allow = {
-            #20 Provinces have farming settlements
+            #20 Provinces have farming settlements and produce a bunch of food
+            custom_tooltip = {
+                text = bithynia_missions_task_56_tooltip
+                    bithynia_missions_task_56_food_current >= bithynia_missions_task_56_food_total
+            }
             any_owned_province = {
                 count >= 20
                 num_of_basic_settlement_infratructure_building = 1
@@ -1182,46 +1969,118 @@
 
         on_completion = {
             trigger_event = me_bithynia.56
+            add_2_free_province_investments = yes
+            add_country_modifier = {
+                name = mac_developed_agriculture
+                duration = -1
+            }            
         }
     }
     bithynia_missions_task_57 = {   #The Bithynian People
-        icon = "task_political"
+        icon = "task_religion"
         requires = { bithynia_missions_task_23 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = bithynia_region
+                    is_in_region = thrace_region
+                }
+            }
+        }
         allow = {
-            #At least 50% of the pops in the regions of Bithynia and Thrace are Bithynian
+            #At least 80% of the pops in the regions of Bithynia and Thrace are Bithynian
+            #bithynia_region & thrace_region
+            custom_tooltip = {
+                text = bithynia_missions_task_57_tt
+                bithynia_missions_task_57_pops_current >= bithynia_missions_task_57_pops_total
+            }
         }
 
         on_completion = {
             trigger_event = me_bithynia.57
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = spreading_bithynian_culture
+                    duration = 9125
+                }
+            }    
         }
     }
     bithynia_missions_task_58 = {   #Cappadocian Construction
-        icon = "task_political"
+        icon = "task_happiness"
         requires = { bithynia_missions_task_35 }
-
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = cappadocia_region
+                    is_in_region = cappadocia_pontica_region
+                }
+            }
+        }
         allow = {
             #Both Cappadocia regions have a 'Bithynian City'
             #Both Regions have 150 building together.
-
+            #cappadocia_region & cappadocia_pontica_region
+            custom_tooltip = {
+                text = bithynia_missions_task_58_tt
+                bithynia_missions_task_58_buildings_current >= bithynia_missions_task_58_buildings_total
+                region:cappadocia_region = {
+                    NOT = {
+                        any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }
+                region:cappadocia_pontica_region = {
+                    NOT = {
+                        any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }                                  
+            }
+            custom_tooltip = {
+                text = bithynia_missions_task_58_B_tt
+                region:cappadocia_region = {
+                    any_region_province = {
+                        count >= 1
+                        owner = root
+                        has_province_rank = bithynian_city
+                    }
+                }
+                region:cappadocia_pontica_region = {
+                    any_region_province = {
+                        count >= 1
+                        owner = root
+                        has_province_rank = bithynian_city
+                    }
+                }
+            }
         }
 
         on_completion = {
             trigger_event = me_bithynia.58
+            show_as_tooltip  = { add_4_free_province_investments = yes }
         }
     }
     bithynia_missions_task_59 = {   #The City of Byzantion
         icon = "task_political"
-        requires = { bithynia_missions_task_10 }
-
+        requires = { bithynia_missions_task_4 }
+        highlight = {
+            scope:province = {
+                province_id = 1453
+            }
+        }
         allow = {
             #Release Byzantium As a feudatory
             owns = 1453
-            #p:1453 = {
-            #    total_population >= 50
-            #    num_of_used_building_slots >= 5
-            #    has_construction = no
-            #}
+            p:1453 = {
+                total_population >= 20
+                num_of_used_building_slots >= 5
+                has_construction = no
+            }
         }
 
         on_completion = {
@@ -1230,55 +2089,110 @@
         }
     }
     bithynia_missions_task_60 = {   #Developing Thrace
-        icon = "task_political"
+        icon = "task_happiness"
         requires = { bithynia_missions_task_57 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = thrace_region
+            }
+        }
         allow = {
             #Region of Thrace produces 50 goods.
-            #Region of Thrace has at least 3 Bithynian Cities
+            #Region of Thrace has at least 2 Bithynian Cities
+            custom_tooltip = {
+                text = bithynia_missions_task_60_tooltip
+                bithynia_missions_task_60_goods_current >= bithynia_missions_task_60_goods_total
+            }
+            any_owned_province = {
+                count >= 2
+                OR = {
+                    is_in_area = thracia_area
+                    is_in_area = europa_area
+                    is_in_area = rhodope_area
+                    is_in_area = haemimontus_area
+                }
+                has_province_rank = bithynian_city
+            }
         }
 
         on_completion = {
             trigger_event = me_bithynia.60
+            show_as_tooltip = {
+                ordered_owned_province = {
+                    limit = {
+                        OR = {
+                            is_in_area = thracia_area
+                            is_in_area = europa_area
+                            is_in_area = rhodope_area
+                            is_in_area = haemimontus_area
+                        }
+                    }
+                    order_by = num_goods_produced
+                    max = 5
+                    add_province_modifier = {
+                        name = increased_production
+                        duration = -1
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_61 = {   #Aegean Markets
-        icon = "task_political"
+        icon = "task_happiness"
         requires = { bithynia_missions_task_54 }
-
-        allow = {
-            any_owned_province = {
-                count = all
-                has_city_status = yes
-                has_construction = no
-                num_of_commerce_building >= 1
+        highlight = {
+            scope:province = {
                 OR = {
                     is_in_area = sporades_area
                     is_in_area = crete_area
                     is_in_area = aegean_islands_area
                 }
             }
-            any_owned_province = {
-                count = 10
-                has_city_status = yes
-                has_construction = no
-                num_of_total_building_slots >= 5
-                OR = {
-                    is_in_area = sporades_area
-                    is_in_area = crete_area
-                    is_in_area = aegean_islands_area
+        }
+        allow = {
+            custom_tooltip = {
+                text = bithynia_missions_task_61_A_tt
+                any_owned_province = {
+                    count = all
+                    has_city_status = yes
+                    has_construction = no
+                    num_of_commerce_building >= 1
+                    OR = {
+                        is_in_area = sporades_area
+                        is_in_area = crete_area
+                        is_in_area = aegean_islands_area
+                    }
+                }
+            }
+            custom_tooltip = {
+                text = bithynia_missions_task_61_B_tt
+                any_owned_province = {
+                    count = 10
+                    has_city_status = yes
+                    has_construction = no
+                    num_of_total_building_slots >= 5
+                    OR = {
+                        is_in_area = sporades_area
+                        is_in_area = crete_area
+                        is_in_area = aegean_islands_area
+                    }
                 }
             }
         }
 
         on_completion = {
             trigger_event = me_bithynia.61
+            show_as_tooltip = { add_4_free_province_investments = yes }
         }
     }
     bithynia_missions_task_62 = {   #Greek Cooperation
-        icon = "task_political"
+        icon = "task_happiness"
         requires = { bithynia_missions_task_38 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = greece_region
+            }
+        }
         allow = {
             #Steal some stuff from the third thebes tree
             #25 olives
@@ -1295,49 +2209,363 @@
 
         on_completion = {
             trigger_event = me_bithynia.62
+            show_as_tooltip = {
+                add_2_free_province_investments = yes
+                ordered_owned_province = {
+                    limit = {
+                        is_in_region = greece_region
+                        trade_goods = olive
+                    }
+                    order_by = total_population
+                    max = 2
+                    add_province_modifier = {
+                        name = olives_of_greece
+                        duration = -1
+                    }
+                }
+                ordered_owned_province = {
+                    limit = {
+                        is_in_region = greece_region
+                        trade_goods = wine
+                    }
+                    order_by = total_population
+                    max = 2
+                    add_province_modifier = {
+                        name = bountiful_vineyards
+                        duration = -1
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_63 = {   #Cities of Bithynia
-        icon = "task_political"
-        requires = { bithynia_missions_task_62 }
+        icon = "task_economical"
+        requires = { bithynia_missions_task_52 }
 
         allow = {
             #Have 15 provinces that are Bithynian Cites
-            any_owned_province = {
-                count >= 15
-                total_population >= 40
-                num_of_used_building_slots >= 8
-                has_province_modifier = bithynian_city
-                has_construction = no
+            custom_tooltip = {
+                text = bithynia_missions_task_63_tt
+                any_owned_province = {
+                    count >= 10
+                    total_population >= 40
+                    num_of_used_building_slots >= 8
+                    has_province_rank = bithynian_city
+                    has_construction = no
+                }
             }
         }
 
         on_completion = {
             trigger_event = me_bithynia.63
+            custom_tooltip = bithynia_missions_task_63_C_tt
+            set_variable = no_more_cooldown_on_cities
+            if = {
+                limit = {
+                    has_variable = recently_established_city
+                }
+                remove_variable = recently_established_city
+                set_variable = {
+                    name = recently_established_city
+                    days = 365
+                }
+            }
+            show_as_tooltip = {
+                every_owned_province = {
+                    limit = {
+                        any_pops_in_province = {
+                            NOT = { pop_culture = root.culture }
+                        }
+                        has_province_rank = bithynian_city
+                    }
+                    custom_tooltip = bithynia_missions_task_63_B_tt
+                    hidden_effect = {
+                        ordered_pops_in_province = {
+                            limit = {
+                                NOT = { pop_culture = root.culture }
+                            }
+                            order_by = pop_hapiness
+                            max = 10
+                            set_pop_culture = root.culture
+                        }
+                    }
+                    define_pop = {
+                        type = nobles
+                        culture = root.culture
+                        religion = root.religion
+                    }
+                }
+            }
         }
     }
     bithynia_missions_task_64 = {   #Bithynian Greatness
-        icon = "task_political"
-        requires = { bithynia_missions_task_62 }
-
+        icon = "task_economical"
+        requires = { bithynia_missions_task_53 bithynia_missions_task_63 bithynia_missions_task_55 bithynia_missions_task_56 }
+        highlight = {
+            scope:province = {
+                is_in_region = bithynia_region
+            }
+        }
         allow = {
-            #The Region of Bithynia is the wealthiest in the world (idk how to do this)
+            #The Region of Bithynia is the wealthiest in the world
+            #This causes several million errors need to fix
+            #custom_tooltip = {
+            #    text = bithynia_missions_task_64_tt
+            #    NOT = {
+            #        any_region = {
+            #            count >= 1
+            #            bithynia_missions_task_64_region_income_B_svalue >= bithynia_missions_task_64_bithynia_region_income_svalue
+            #        }
+            #    }
+            #}
+            treasury >= 500
         }
 
         on_completion = {
             trigger_event = me_bithynia.64
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = wealthiest_land_in_the_world
+                    duration = -1
+                }
+            }
         }
     }
     bithynia_missions_task_65 = {   #Macedonian Money
-        icon = "task_political"
+        icon = "task_economical"
         requires = { bithynia_missions_task_38 }
-
+        highlight = {
+            scope:province = {
+                is_in_region = macedonia_region
+            }
+        }
         allow = {
             #The Region of Macedonia has at least 2 Metropolis and 100 buildings.
+            # need to do buildings
+            custom_tooltip = {
+                text = bithynia_missions_task_65_tt
+                region:macedonia_region = {
+                    any_region_province = {
+                        count >= 2
+                        has_province_rank = city_metropolis
+                    }
+                }
+            }
+            custom_tooltip = {
+                text = bithynia_missions_task_65_B_tt
+                bithynia_missions_task_65_buildings_current >= bithynia_missions_task_65_buildings_total
+                region:macedonia_region = {
+                    NOT = {
+                        any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }                                
+            } 
         }
 
         on_completion = {
             trigger_event = me_bithynia.65
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = bithynian_builders
+                    duration = -1
+                }
+                add_2_free_province_investments = yes
+            }
+        }
+    }
+    bithynia_missions_task_66 = {   #Bithynian Commanders
+        icon = "task_political"
+        requires = { bithynia_missions_task_14 }
+
+        allow = {
+            #have a legion with a commander with 10 martial
+            trigger_if = {
+                limit = {
+                    any_governorships = { has_legion_trigger = yes }
+                }
+                custom_tooltip = {
+                    text = bithynia_missions_task_66_tt
+                    any_legion = {
+                        any_legion_commander = {
+                            martial > 10
+                        }
+                    }
+                }
+            }
+            trigger_else = {
+                limit = {
+                    any_governorships = { has_legion_trigger = no }
+                }
+                custom_tooltip = {
+                    text = bithynia_missions_task_66_tt
+                    num_of_ships >= 9999999
+                }
+            }
+        }
+
+        on_completion = {
+            trigger_event = me_bithynia.66
+            #Give all current commanders a martial modifier
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = competent_commanders
+                    duration = -1
+                }
+                ordered_character = {
+                    limit = {
+                        is_general = yes
+                        is_ruler = no
+                    }
+                    order_by = martial
+                    max = 4
+                    add_martial = 1
+                }
+            }
+        }
+    }
+    bithynia_missions_task_67 = {   #Ensuring Control
+        icon = "task_political"
+        requires = { bithynia_missions_task_2 }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = bithynia_inferior_area
+                    is_in_area = heracleotis_area
+                }
+            }
+        }
+        allow = {
+            #At least 8 total forts in the areas of bithynia_inferior_area and heracleotis_area
+            custom_tooltip = {
+                text = bithynia_missions_task_67_tooltip
+                    bithynia_missions_task_67_forts_current >= bithynia_missions_task_67_forts_total
+            }
+        }
+
+        on_completion = {
+            trigger_event = me_bithynia.67
+            show_as_tooltip = {
+                random_owned_province = {
+                    limit = {
+                        is_in_area = bithynia_inferior_area
+                    }
+                    state = {
+                        add_state_modifier = {
+                            name = forts_of_bithynia
+                            duration = -1
+                        }
+                    }
+                }
+                random_owned_province = {
+                    limit = {
+                        is_in_area = heracleotis_area
+                    }
+                    state = {
+                        add_state_modifier = {
+                            name = forts_of_bithynia
+                            duration = -1
+                        }
+                    }
+                }
+            }
+        }
+    }
+    bithynia_missions_task_68 = {   #Empowering Commanders
+        icon = "task_political"
+        requires = { bithynia_missions_task_17 bithynia_missions_task_66 }
+
+        allow = {
+        #[23:47:39][jomini_trigger.cpp:887]: Inconsistent trigger scopes (unit vs. legion) in file: common/missions/03_bythinia_missions.txt line: 2496
+            trigger_if = {
+                limit = {
+                    capital_scope.governorship = { has_legion_trigger = yes }
+                    any_unit = { legion = ROOT.capital_scope.governorship.legion }
+                }
+                custom_tooltip = {
+                    text = bithynia_missions_task_68_tt
+                    any_legion = {
+                        any_legion_unit = {
+                            unit_size >= 20
+                            distinction_count >= 5
+                        }
+                    }
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = bithynia_missions_task_68_tt
+                    num_of_ships >= 1000000 #Random impossible trigger so no error log pain
+                }
+            }
+        }
+
+        on_completion = {
+            trigger_event = me_bithynia.68
+            #Unlock a character interaction to give a special title to commander that only 1 character can have.
+            #This character will gain a triggered modifier and a martial trait
+            #The next task will count the amount of battles that a character with this modifier has won since taking this task.
+            #AAAAAAAAAAAAAAHHHHHHHHHHHHHHH
+            set_variable = bithynia_commanders_allowed
+            custom_tooltip = bithynia_missions_task_68_B_tt
+            show_as_tooltip = { add_political_influence = 50 }
+        }
+    }
+    bithynia_missions_task_69 = {   #Nice
+        icon = "task_political"
+        requires = { bithynia_missions_task_68 }
+
+        allow = {
+            #The Legions of Bithynia have won at least 25 battles with a commander_of_bithynia
+            custom_tooltip = {
+                text = bithynia_missions_task_69_tooltip
+                bithynia_legion_battles_won_svalue >= 25
+            }
+        }
+
+        on_completion = {
+            trigger_event = me_bithynia.69
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = world_renowned_legions
+                    duration = -1
+                }
+            }
+        }
+    }
+    bithynia_missions_task_70 = {   #Hellenic Asia
+        icon = "task_political"
+        requires = { bithynia_missions_task_37 }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = cappadocia_region
+                    is_in_region = cappadocia_pontica_region
+                    is_in_region = asia_region
+                    is_in_region = bithynia_region
+                    is_in_region = galatia_region
+                    is_in_region = cilicia_region
+                }
+            }
+        }
+        allow = {
+            #At least 75% of the pops in Asia are Hellenic
+            custom_tooltip = {
+                text = bithynia_missions_task_70_tt
+                bithynia_missions_task_70_pops_current >= bithynia_missions_task_70_pops_total
+            }
+        }
+
+        on_completion = {
+            trigger_event = me_bithynia.70
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = hellenic_asia
+                    duration = -1
+                }
+            }
         }
     }
 }

@@ -1,0 +1,837 @@
+﻿carthaginian_africa_expansion_mission = {
+    header = "mission_image_carthage"
+    icon = "carthage_2"
+
+	repeatable = no
+
+    chance = {
+		factor = 3
+	}
+
+    potential = {
+        NOT = { has_variable = carthaginian_mission_01_africa }
+        has_dlc = "The Punic Wars"
+    	primary_culture = carthaginian
+        NOT = {
+            has_variable = africa_expansion_completed
+        }
+        any_owned_province = {
+            count > 10
+            OR = {
+                is_in_region = africa_region
+                is_in_region = numidia_region
+                is_in_region = mauretainia_region
+            }
+        }
+        rank >= regional_power
+        is_subject = no
+        has_civil_war = no
+    }
+
+    abort = {
+        ai_mission_back_out_trigger = yes
+    }
+
+    on_start = {
+        start_mission_ai_effect = yes
+        save_scope_as = mission_country
+        add_country_modifier = {
+            name = carthage_mission_africa_start_modifier
+            duration = -1
+        }
+        hidden_effect = {
+            trigger_event = {
+                id = me_carthage_africa.7
+                days = { 1 2 }
+            }
+        }
+    }
+
+    on_abort = { 
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = carthaginian_mission_01_africa
+            days = 7300
+        }
+        scope:mission_country = {
+            remove_country_modifier = carthage_mission_africa_start_modifier
+        }
+    }
+
+    on_completion = {
+        complete_mission_effect = yes
+        hidden_effect = {
+            scope:mission_country = {
+                remove_country_modifier = carthage_mission_africa_start_modifier
+            }
+            set_variable = africa_expansion_completed
+        }
+    }
+
+	carthaginian_africa_expansion_libyphoenician_settlement = { # Integrate the Musulamii
+        icon = "task_political"
+
+        highlight = {
+			scope:province = {
+				exists = c:MSL
+				exists = owner
+				owner = c:MSL
+			}
+        }
+
+        potential = {
+            exists = c:MSL
+            c:MSL = {
+                is_subject_of = root
+            }
+        }
+
+        bypass = {
+            OR = {
+                c:MSL = { has_land = no }
+                c:MSL = { NOT = { is_subject_of = root } }
+            }
+        }
+
+        allow = {
+			custom_tooltip = {
+				text = carthaginian_africa_expansion_libyphoenician_settlement_tt1
+				scope:mission_country = {
+					any_owned_province = {
+						OR = {
+							is_in_area = numidia_maioris_area
+							is_in_area = numidia_minoris_area
+							is_in_area = gaetulia_orientalis_area
+						}
+						trigger_if = {
+                            limit = {
+                                ROOT = { is_ai = no }
+                            }
+                            has_city_status = yes
+						    total_population >= 15
+                        }
+					}
+				}
+			}
+        }
+
+		duration = 365
+
+        on_completion = {
+            if = {
+                limit = { is_ai = yes }
+                if = {
+                    limit = {
+                        NOT = {
+                            any_owned_province = {
+                                OR = {
+                                    is_in_area = numidia_maioris_area
+                                    is_in_area = numidia_minoris_area
+                                    is_in_area = gaetulia_orientalis_area
+                                }
+                                has_city_status = yes
+                                total_population >= 15
+                            }
+                        }
+                    }
+                    ordered_owned_province = {
+                        limit = {
+                            OR = {
+                                is_in_area = numidia_maioris_area
+                                is_in_area = numidia_minoris_area
+                                is_in_area = gaetulia_orientalis_area
+                            }
+                        }
+                        order_by = total_population
+                        save_scope_as = musulami_ai_city_scope
+                    }
+                    ai_build_city_pay_price_effect = { CITY = scope:musulami_ai_city_scope }
+                    scope:musulami_ai_city_scope = {
+                        create_state_pop = freemen
+                        create_state_pop = freemen
+                        create_state_pop = citizen
+                    }
+                }
+            }
+            if = {
+                limit = {
+                    exists = c:MSL # Musulamii is an AI
+                    c:MSL = {
+                        is_ai = yes
+                    }
+                }
+                if = {
+                    limit = { # Musulamii is a tribal vassal of Carthage
+                        c:MSL = {
+                            OR = {
+                                is_subject_type = vassal_tribe
+                                is_subject_type = tributary
+                            }
+                        }
+                    }
+                    set_variable = me_carthage_africa_11_confirmed
+                    release_subject = c:MSL
+                    make_subject = {
+                        target = c:MSL
+                        type = client_state
+                    }
+                }
+                c:MSL = {
+                    save_scope_as = new_tribal_vassal
+                    if = {
+                        limit = {
+                            is_tribal = yes
+                        }
+                        set_variable = me_carthage_africa_11_confirmed_2
+                        change_government = despotic_monarchy 
+                    }
+                }
+                trigger_event = { id = me_carthage_africa.12 }
+            }
+            else = {
+                custom_tooltip = carthaginian_africa_expansion_libyphoenician_settlement_tt
+                c:MSL = {
+                    save_scope_as = new_tribal_vassal
+                    trigger_event = {
+                        id = me_carthage_africa.11
+                    }
+                }
+            }
+        }
+    }
+
+    carthaginian_africa_expansion_integrating_phoenicians = { # The Wicked Sisters
+        icon = "task_diplomatic"
+
+    	requires = { carthaginian_africa_expansion_libyphoenician_settlement }
+        
+        highlight = {
+			scope:province = {
+				OR = {
+					province_id = 3258
+					province_id = 3257
+					province_id = 3255
+					province_id = 3254
+					AND = {
+						exists = c:UTC
+						exists = owner
+						owner = c:UTC
+					}
+					AND = {
+						exists = c:KUA
+						exists = owner
+						owner = c:KUA
+					}
+				}
+            }
+        }
+
+        potential = {
+            tag = CAR
+        }
+
+        allow = {
+        	OR = {
+                AND = {
+                    c:UTC = {
+                		has_land = no
+                	}
+                	c:KUA = {
+                		has_land = no
+                	}
+                	hidden:scope:mission_country = {
+        	     		owns = 3258
+        	     		owns = 3257
+        	     		owns = 3255
+        	     		owns = 3254
+                	}
+                }
+                trigger_if = {
+                    limit = { is_ai = yes }
+                    current_date > 1.1.480
+                    p:3258 = { owned_or_subject_owned = ROOT }
+                    p:3257 = { owned_or_subject_owned = ROOT }
+                    p:3255 = { owned_or_subject_owned = ROOT }
+                    p:3254 = { owned_or_subject_owned = ROOT }
+                }
+            }
+        }
+
+        on_completion = {
+            if = {
+                limit = { is_ai = yes }
+                p:3258 = { add_to_list = wicked_sisters_list }
+                p:3257 = { add_to_list = wicked_sisters_list }
+                p:3255 = { add_to_list = wicked_sisters_list }
+                p:3254 = { add_to_list = wicked_sisters_list }
+                every_in_list = {
+                    list = wicked_sisters_list
+                    limit = {
+                        NOR = {
+                            owner = ROOT
+                            owner = { is_ai = no }
+                        }                   
+                    }
+                    set_conquered_by = ROOT
+                }
+            }
+        	p:3258.state = {
+        		add_state_modifier = {
+        			name = carthage_mission_integrating_phoenicians_modifier
+        			duration = 7300
+        		}
+        	}
+        }
+    }
+
+    carthaginian_africa_expansion_ending_massaesylia = { # The Massaesylian Menace
+        icon = "task_conquest"
+
+        highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = mauretania_caesariensis_orientalis_area
+					is_in_area = mauretania_caesariensis_minoris_area
+					is_in_area = mauretania_caesariensis_maioris_area
+					is_in_area = mauretania_caesariensis_centralis_area
+					is_in_area = mauretania_caesariensis_occidentalis_area
+					province_id = 3095
+					province_id = 3108
+					province_id = 3092
+					province_id = 3080
+				}
+			}
+        }
+
+        allow = {
+            OR = {
+                hidden:c:MSS = {
+                    is_subject_of = scope:mission_country
+                }
+                AND = {
+                    owns_or_subject_owns_area = mauretania_caesariensis_orientalis_area
+                    owns_or_subject_owns_area = mauretania_caesariensis_minoris_area
+                    owns_or_subject_owns_area = mauretania_caesariensis_maioris_area
+                    owns_or_subject_owns_area = mauretania_caesariensis_centralis_area
+                    owns_or_subject_owns_area = mauretania_caesariensis_occidentalis_area
+                }
+            }
+            hidden:scope:mission_country = {
+                owns = 3095
+                owns = 3108
+                owns = 3092
+                owns = 3080
+            }
+        }
+
+        on_completion = {
+            p:3095 = {
+                if = {
+                    limit = {
+                        has_province_rank = settlement
+                        owned_or_subject_owned = scope:mission_country
+                    }
+                    set_city_status = city
+                }
+            }
+            p:3092 = {
+                if = {
+                    limit = {
+                        has_province_rank = settlement
+                        owned_or_subject_owned = scope:mission_country
+                    }
+                    set_city_status = city
+                }
+            }
+            p:3095.state = {
+                add_state_modifier = {
+                    name = carthage_mission_africa_ending_massaesylia_modifier
+                    duration = 3650
+                }
+            }
+            p:3108.state = {
+                add_state_modifier = {
+                    name = carthage_mission_africa_ending_massaesylia_modifier
+                    duration = 3650
+                }
+            }
+        }
+    }
+
+    carthaginian_africa_expansion_securing_coastline = { # Securing the Coast of Africa
+        icon = "task_conquest"
+
+        requires = { carthaginian_africa_expansion_ending_massaesylia }
+
+        highlight = {
+			scope:province = {
+				OR = {
+					AND = {
+						is_coastal = yes
+						OR = {
+							is_in_area = mauretania_caesariensis_centralis_area
+							is_in_area = mauretania_caesariensis_occidentalis_area
+							is_in_area = mauretania_caesariensis_maioris_area
+							is_in_area = mauretania_caesariensis_orientalis_area
+							is_in_area = numidia_occidentalis_area
+							is_in_area = numidia_centralis_area
+							is_in_area = numidia_maioris_area
+							is_in_area = rutubis_area
+						}
+					}
+                    province_id = 3256
+                    province_id = 3257
+                    province_id = 3258
+					is_in_area = mauretania_tingitana_septentrionalis_area
+					is_in_area = mauretania_tingitana_meridionalis_area
+				}
+			}
+        }
+
+        allow = {
+			custom_tooltip = {
+				text = carthaginian_africa_expansion_securing_coastline_tt
+
+                area:mauretania_caesariensis_centralis_area = {
+                    any_area_province = {
+                        count = all
+                        filter = {
+                            is_coastal = yes
+                        }
+                        owned_or_subject_owned = scope:mission_country
+                    }
+                }
+                area:mauretania_caesariensis_occidentalis_area = {
+                    any_area_province = {
+                        count = all
+                        filter = {
+                            is_coastal = yes
+                        }
+                        owned_or_subject_owned = scope:mission_country
+                    }
+                }
+                area:mauretania_caesariensis_maioris_area = {
+                    any_area_province = {
+                        count = all
+                        filter = {
+                            is_coastal = yes
+                        }
+                        owned_or_subject_owned = scope:mission_country
+                    }
+                }
+                area:mauretania_caesariensis_orientalis_area = {
+                    any_area_province = {
+                        count = all
+                        filter = {
+                            is_coastal = yes
+                        }
+                        owned_or_subject_owned = scope:mission_country
+                    }
+                }
+                area:numidia_occidentalis_area = {
+                    any_area_province = {
+                        count = all
+                        filter = {
+                            is_coastal = yes
+                        }
+                        owned_or_subject_owned = scope:mission_country
+                    }
+                }
+                area:numidia_centralis_area = {
+                    any_area_province = {
+                        count = all
+                        filter = {
+                            is_coastal = yes
+                        }
+                        owned_or_subject_owned = scope:mission_country
+                    }
+                }
+                area:numidia_maioris_area = {
+                    any_area_province = {
+                        count = all
+                        filter = {
+                            is_coastal = yes
+                        }
+                        owned_or_subject_owned = scope:mission_country
+                    }
+                }
+                area:rutubis_area = {
+                    any_area_province = {
+                        count = all
+                        filter = {
+                            is_coastal = yes
+                        }
+                        owned_or_subject_owned = scope:mission_country
+                    }
+                }
+                owns_or_subject_owns = 3256
+                owns_or_subject_owns = 3257
+                owns_or_subject_owns = 3258
+                owns_or_subject_owns_area = mauretania_tingitana_septentrionalis_area
+				owns_or_subject_owns_area = mauretania_tingitana_meridionalis_area
+			}
+        }
+
+        on_completion = {
+        	add_country_modifier = {
+        		name = carthage_mission_securing_coastline_modifier
+        		duration = 7300
+        	}
+        }
+    }
+
+    carthaginian_africa_expansion_unruly_subject = { # The Mutiny of the Berbers
+    	icon = "task_diplomatic"
+
+        highlight = {
+			scope:province = {
+				exists = c:MSY
+				exists = owner
+				owner = c:MSY
+			}
+        }
+
+        allow = {
+            hidden:c:MSY = {
+                is_subject_of = scope:mission_country
+            }
+            NOT = { has_truce_with = c:MSY }
+        }
+
+        duration = 365
+
+        monthly_on_action = carthaginian_africa_expansion_unruly_subject_pulse
+
+		on_start = {
+			set_variable = {
+				name = ongoing_mission_pulse_flag
+				days = 365
+			}
+		}
+
+        on_completion = {
+            custom_tooltip = carthage_africa_unruly_subject.tt # info war with MSY
+            add_country_modifier = {
+                name = carthage_mission_unruly_subject_modifier
+                duration = 7300
+            }
+            current_ruler = {
+                add_popularity = popularity_large
+            }
+            hidden_effect = {
+                c:MSY = {
+                    trigger_event = {
+                        id = me_carthage_africa.3
+                        days = { 1 2 }
+                    }
+                }
+            }
+        }
+		
+		bypass = {
+			c:MSY = {
+				has_land = no
+			}
+		}
+    }
+
+    carthaginian_africa_expansion_massylian_hinterland = { # The Massylian Hinterlands
+        icon = "task_conquest"
+
+    	requires = { carthaginian_africa_expansion_unruly_subject }
+
+    	highlight = {
+			scope:province = {
+				province_id = 3203
+			}
+        }
+
+        allow = {
+            hidden:scope:mission_country = {
+                owns = 3203
+            }
+            trigger_if = {
+                limit = { is_ai = no }
+                p:3203 = {
+                    has_city_status = yes
+                    total_population >= 10
+                }
+            }
+            trigger_else = {
+                OR = {
+                    p:3203 = { has_city_status = yes }
+                    can_pay_price = price_found_city
+                }
+            }
+        }
+
+        on_completion = {
+            ai_build_city_pay_price_effect = { CITY = p:3203 } # AI fallback.
+            p:3203 = {
+                create_state_pop = freemen
+                create_state_pop = freemen
+                create_state_pop = citizen
+                create_state_pop = citizen
+                add_province_modifier = {
+                    name = carthage_mission_tbessa_punic_hotspot_modifier
+                    duration = 3650
+                }
+            }
+        }
+    }
+
+    carthaginian_africa_expansion_eastern_coast = { # A Tale of Four Cities
+        icon = "task_economical"
+
+        highlight = {
+			scope:province = {
+				OR = {
+					AND = {
+						exists = c:HDR
+						exists = owner
+						owner = c:HDR
+					}
+					AND = {
+						exists = c:LPT
+						exists = owner
+						owner = c:LPT
+					}
+					AND = {
+						exists = c:TPS
+						exists = owner
+						owner = c:TPS
+					}
+					AND = {
+						exists = c:ACO
+						exists = owner
+						owner = c:ACO
+					}
+					province_id = 3276
+					province_id = 3277
+					province_id = 3278
+					province_id = 3280
+					province_id = 3284
+				}
+			}
+        }
+
+        allow = {
+           OR = {
+                AND = {
+                    c:HDR = {
+                        has_land = no
+                    }
+                    c:LPT = {
+                        has_land = no
+                    }
+                    c:TPS = {
+                        has_land = no
+                    }
+                    c:ACO = {
+                        has_land = no
+                    }
+                    hidden:scope:mission_country = {
+                        owns = 3276
+                        owns = 3277
+                        owns = 3278
+                        owns = 3280
+                        owns = 3284
+                    }
+                }
+                trigger_if = {
+                    limit = { is_ai = yes }
+                    current_date > 1.1.480
+                    p:3276 = { owned_or_subject_owned = ROOT }
+                    p:3277 = { owned_or_subject_owned = ROOT }
+                    p:3278 = { owned_or_subject_owned = ROOT }
+                    p:3280 = { owned_or_subject_owned = ROOT }
+                    p:3284 = { owned_or_subject_owned = ROOT }
+                }
+            } 
+        }
+
+        on_completion = {
+            if = {
+                limit = { is_ai = yes }
+                p:3276 = { add_to_list = tale_of_four_cities_list }
+                p:3277 = { add_to_list = tale_of_four_cities_list }
+                p:3278 = { add_to_list = tale_of_four_cities_list }
+                p:3280 = { add_to_list = tale_of_four_cities_list }
+                p:3284 = { add_to_list = tale_of_four_cities_list }
+                every_in_list = {
+                    list = tale_of_four_cities_list
+                    limit = {
+                        NOR = {
+                            owner = ROOT
+                            owner = { is_ai = no }
+                        }                   
+                    }
+                    set_conquered_by = ROOT
+                }
+            }
+            p:3276.state = {
+                add_state_modifier = {
+                    name = carthage_mission_eastern_coast_modifier
+                    duration = 7300
+                }
+            }
+        }
+    }
+
+    carthaginian_africa_expansion_emporium_tripoli = { # Emporium of Tripoli
+        icon = "task_expansion"
+
+        requires = { carthaginian_africa_expansion_eastern_coast }
+
+        highlight = {
+			scope:province = {
+				OR = {
+					AND = {
+						exists = c:EMP
+						exists = owner
+						owner = c:EMP
+					}
+					AND = {
+						exists = c:TRP
+						exists = owner
+						owner = c:TRP
+					}
+					is_in_area = tripolitania_centralis_area
+					is_in_area = tripolitania_occidentalis_area
+				}
+			}
+        }
+
+        allow = {
+            OR = {
+                AND = {
+                    c:EMP = {
+                        has_land = no
+                    }
+                    c:TRP = {
+                        has_land = no
+                    }
+                    hidden:scope:mission_country = {
+                        owns_area = tripolitania_centralis_area
+                        owns_area = tripolitania_occidentalis_area
+                    }
+                }
+                trigger_if = {
+                    limit = { is_ai = yes }
+                    current_date > 1.1.510
+                    NOR = {
+                        area:tripolitania_centralis_area = {
+                            any_area_province = {
+                                has_owner = yes
+                                owner = {
+                                    NOR = {
+                                        THIS = ROOT
+                                        is_subject_of = ROOT
+                                    }
+                                }
+                            }
+                        }
+                        area:tripolitania_occidentalis_area = {
+                            any_area_province = {
+                                has_owner = yes
+                                owner = {
+                                    NOR = {
+                                        THIS = ROOT
+                                        is_subject_of = ROOT
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        on_completion = {
+            if = {
+                limit = { is_ai = yes }
+                area:tripolitania_centralis_area = {
+                    every_area_province = {
+                        limit = {
+                            OR = {
+                                AND = {
+                                    has_owner = yes
+                                    owner = { is_subject_of = ROOT }
+                                    NOR = {
+                                        owner = ROOT
+                                        owner = { is_ai = no }
+                                    }
+                                }
+                                has_owner = no
+                            } 
+                        }
+                        set_conquered_by = ROOT
+                    }
+                }
+                area:tripolitania_occidentalis_area = {
+                    every_area_province = {
+                        limit = {
+                            OR = {
+                                AND = {
+                                    has_owner = yes
+                                    owner = { is_subject_of = ROOT }
+                                    NOR = {
+                                        owner = ROOT
+                                        owner = { is_ai = no }
+                                    }
+                                }
+                                has_owner = no
+                            } 
+                        }
+                        set_conquered_by = ROOT
+                    }
+                }
+                if = {
+                    limit = {
+                        c:EMP = {
+                            is_subject_of = ROOT
+                            is_ai = yes
+                        }
+                    }
+                    c:EMP = {
+                        every_owned_province = { set_conquered_by = ROOT }
+                    }
+                }
+                if = {
+                    limit = {
+                        c:TRP = {
+                            is_subject_of = ROOT
+                            is_ai = yes
+                        }
+                    }
+                    c:TRP = {
+                        every_owned_province = { set_conquered_by = ROOT }
+                    }
+                }
+            }
+            add_country_modifier = {
+                name = carthage_mission_emporium_tripoli_modifier
+                duration = 7300
+            }
+        }
+    }
+
+    carthaginian_africa_expansion_libyan_empire = { # Libyan Empire
+        icon = "task_political"
+
+    	requires = { carthaginian_africa_expansion_libyphoenician_settlement carthaginian_africa_expansion_securing_coastline carthaginian_africa_expansion_massylian_hinterland }
+
+    	final = yes
+
+    	potential = {}
+
+        allow = {}
+
+        on_completion = {
+            custom_tooltip = carthage_africa_libyan_empire.tt
+            hidden_effect = {
+                    trigger_event = me_carthage_africa.5
+            }
+        }
+    }
+}

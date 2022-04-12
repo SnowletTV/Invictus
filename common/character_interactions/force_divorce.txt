@@ -1,0 +1,148 @@
+﻿force_divorce = { 
+
+	on_other_nation = no
+	on_own_nation = yes
+	
+	sound = "event:/SFX/UI/Character/Unique/sfx_ui_character_arrange_marriage"
+	
+	message = no
+	
+	
+	potential_trigger = {
+		scope:actor = {
+			OR = {
+				is_monarchy = yes 
+				is_tribal = yes
+				is_republic = yes 
+			}
+			tyranny <= 99
+			is_ai = no
+		}
+		hidden:scope:target = {
+			is_alive = yes
+			employer = scope:actor
+			is_married = yes
+			is_mercenary = no
+			#has_same_family = scope:actor.current_ruler
+			spouse = {
+				is_alive = yes
+				is_ruler = no
+			}
+			NOT = {
+				this = scope:actor.current_ruler
+			}
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+		}
+	}
+	
+	
+	allowed_trigger = {
+		hidden:scope:actor = {
+			can_pay_price = price_force_divorce
+			trigger_if = {
+				limit = {
+					has_variable = force_divorce_cooldown
+				}
+				custom_tooltip = {
+					text = force_divorce_cooldown_tooltip
+					always = no
+				}
+			}
+		}
+		#Can only be done on family members with no invention
+		trigger_if = {
+			limit = {
+				scope:actor = {
+					NOT = { invention = monthly_character_loyalty_inv_2 }
+				}
+			}
+			trigger_if = {
+				limit = {
+					scope:target = {
+						has_same_family = scope:actor.current_ruler
+					}
+				}
+				scope:target = {
+					is_married = yes
+					is_adult = yes
+					prisoner = no
+					custom_tooltip = {
+					text = "force_divorce_loyalty_tt"
+					loyalty >= 50
+					}
+				}
+			}
+			trigger_else = {
+				limit = {
+					scope:target = {
+						NOT = {
+							has_same_family = scope:actor.current_ruler
+						}
+					}
+				}
+				custom_tooltip = {
+					text = force_divorce_invention_needed
+					always = no
+				}
+			}
+		}
+		#Can be done on all in country with invention
+		trigger_else = {
+			limit = {
+				scope:actor = {
+					invention = monthly_character_loyalty_inv_2
+				}
+			}
+			scope:target = {
+				is_married = yes
+				is_adult = yes
+				prisoner = no
+				custom_tooltip = {
+				text = "force_divorce_loyalty_tt"
+				loyalty >= 50
+				}
+			}			
+		}
+	}
+	
+	
+	effect = {
+		#Do all of this in an event and show it as a tooltip
+			show_as_tooltip = {
+				scope:target = {
+					divorce_character = spouse
+					add_loyalty = forced_to_divorce
+					hidden_effect = {
+						family = {
+							every_family_member = {
+								limit = {
+									employer = scope:actor
+									is_ruler = no
+								}
+								add_loyalty = family_forced_to_divorce 
+							}
+						} 
+					}
+				}
+				scope:target.spouse = {
+					add_loyalty = forced_to_divorce
+				}
+			}
+			scope:actor = { 
+				trigger_event = character_interactions_inv.1
+				set_variable = {
+					name = force_divorce_cooldown
+					days = 730
+				}
+				add_tyranny = {
+					value = scope:target.power_base
+					divide = 2
+					add = 5
+					min = 5
+					max = 20
+				}
+				pay_price = price_force_divorce
+			}
+	}	
+}

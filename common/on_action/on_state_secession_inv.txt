@@ -1,6 +1,130 @@
-﻿on_state_secession = {
+﻿on_rebellion_in_country = { #root scope parent country
+	effect = {
+		#Invictus
+
+		#Vanilla
+		#This has been moved to revolt_events.2 so it can after the larger revolts so that AI will occasionally get big revolts.
+		#if = {
+		#	limit = {
+		#		is_ai = yes #There are numerous tools to offset rebellions, all of which are situational - the AI will never be able to manage these with the #same ability as a human player, so we reduce the frequency of revolts to balance.
+		#	}
+		#	every_country_state = {
+		#		capital_scope = {
+		#			add_state_loyalty = 30
+		#		}
+		#	}
+		#}
+	}
+}
+on_state_secession = {	#Fired for States that revolt only, for now. Civil wars require refactor.
 	on_actions = {
 		revolt_check
+	}
+	effect = {
+		#Invictus
+		random_state_province = {
+			save_scope_as = revolting_state_province
+		}
+		governorship = {
+			save_scope_as = revolting_state_governorship
+		}
+		owner = {
+			#Owner when this on_action fires = player country
+			#Owner 1 day after the on_action = revolting country
+			if = {
+				limit = {
+					is_ai = no
+				}
+				trigger_event = {
+					id = revolt_events.1
+					days = 1
+				}
+			}
+			else_if = {
+				limit = {
+					is_ai = yes
+					num_of_cities >= 400
+				}
+				trigger_event = {
+					id = revolt_events.1
+					days = 1
+				}
+			}
+			else = {
+				limit = {
+					is_ai = yes
+					num_of_cities < 400
+				}
+				trigger_event = revolt_events.2
+			}
+		}
+		#Vanilla effect, Why was this removed???? Removing it made revolts a lot weaker! Do not remove!
+		if = {
+			limit = {
+				has_variable = num_state_mods
+			}
+			while = {
+				limit = {
+					has_variable = num_state_mods
+					var:num_state_mods > 0
+				}
+				owner = {
+					add_1_free_province_investments = yes
+				}
+				if = {
+					limit = {
+						var:num_state_mods > 1
+					}
+					change_variable = {
+						name = num_state_mods
+						add = -1
+					}
+				}
+				else = {
+					remove_variable = num_state_mods
+				}
+			}
+		}
+		if = {
+			limit = {
+				owner = { is_ai = no }
+			}
+			every_state_province = { #This is a bit convoluted but gives the old owner a culture modifier for any culture dominant in at least 3 territories in the revolting state - unless it is an integrated or primary culture.
+				save_scope_as = revolting_territory
+				owner = {
+					random_country_culture = {
+						limit = { is_culture = scope:revolting_territory.culture }
+						if = {
+							limit = {
+								root = {
+									any_state_province = {
+										count >= 3
+										dominant_province_culture = scope:revolting_territory.culture
+									}
+								}
+							}
+							save_scope_as = revolt_culture
+						}
+					}
+					if = {
+						limit = { exists = scope:revolt_culture }
+						scope:revolt_culture = {
+							if = {
+								limit = {
+									NOT = { has_country_culture_modifier = revolting_culture }
+									is_integrated = no
+									NOT = { is_culture = root.owner.culture }
+								}
+								add_country_culture_modifier = {
+									name = "revolting_culture"
+									duration = 730 #2 years
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }
 

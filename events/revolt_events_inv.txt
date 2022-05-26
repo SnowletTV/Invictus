@@ -1,0 +1,84 @@
+﻿namespace = revolt_events
+
+revolt_events.1 = {
+    type = country_event
+    hidden = yes
+
+    immediate = {
+    	#root = player country
+    	scope:revolting_state_province = {
+    		owner = {
+    			#This is the revolting country
+    			add_military_experience_to_new_country_effect = yes #Give mil experience to revolts so they can compete
+    			random_current_war = {
+    				save_scope_as = revolt_war_scope
+    			}
+    		}
+    	}
+    	#
+    	every_country_state = {
+    		limit = {
+				NOT = {
+					this = root.capital_scope.state
+				}
+				any_state_province = {
+					#Any state with less than 15 loyalty that is in the same governorship as the revolting state OR is a neighboring area of the state.
+					state_loyalty < 15
+					OR = {
+						this.governorship = scope:revolting_state_governorship
+						#any_neighbor_state doesn't exists...so do this instead
+						area = {
+							any_neighbor_area = {
+								this = scope:revolting_state_province.area
+							}
+						}
+					}
+				}
+    		}
+    		capital_scope = {
+    			create_country = {
+    				save_scope_as = revolt_snowball_country
+    			}
+    			if = {
+    				limit = {
+    					exists = scope:revolt_snowball_country
+    				}
+    				scope:revolt_snowball_country = {
+    					add_military_experience_to_new_country_effect = yes #Give mil experience to revolts so they can compete
+						capital_scope.area = {
+							every_area_province = {
+								limit = { owner = root }
+								set_owned_by = scope:revolt_snowball_country
+							}
+						}
+						add_to_war = {
+							target = scope:revolt_war_scope
+				            attacker = yes
+				            leader = no
+						}
+    				}
+    			}
+    		}
+    	}
+    	if = {
+    		limit = { is_ai = yes }
+	    	trigger_event = {
+	    		id = revolt_events.2
+	    		days = 1
+	    	}
+	    }
+    }
+}
+revolt_events.2 = {
+    type = country_event
+    hidden = yes
+
+    immediate = {
+		every_country_state = {
+			capital_scope = {
+				add_state_loyalty = 30
+			}
+		}
+    }
+
+}

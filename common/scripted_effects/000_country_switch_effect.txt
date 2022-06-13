@@ -1,0 +1,788 @@
+﻿###########################################
+#These two scripted effects will allow you to "switch" to a new country
+#Call the setup effect in the immediate of an event and give the input.
+#Then call the actual effect in the option of that same event with the input.
+#And magically you will be in a new country.
+###########################################
+switch_player_country_setup_effect = {
+	##REQUIRED INPUT
+	# RULER_NAME = XXX
+	# RULER_LAST_NAME = XXX
+	# RULER_CULTURE
+	# RULER_RELIGION
+	hidden_effect = {
+	    create_character = {
+	        first_name = $RULER_NAME$
+	        family_name = $RULER_LAST_NAME$
+	       	age = 25
+	        culture = $RULER_CULTURE$
+	        religion = $RULER_RELIGION$
+	        female = no
+	        good_finesse_trait_effect = yes
+	        good_popularity_trait_effect = yes
+	        save_scope_as = new_ruler
+	    }
+    }
+}
+switch_player_country_effect = {
+#Can't figure out how to get truces to transfer...
+#The subjects of the old country that are currently in any war don't rejoin the wars properly.
+	##REQUIRED INPUT
+	# NEW_NAME
+	# NEW_ADJECTIVE
+	# NEW_TAG
+	# NEW_FLAG
+	# NEW_GOVERNMENT
+	# NEW_COLOR
+	# NEW_RELIGION
+	# NEW_CULTURE
+	# NEW_HERITAGE
+	# OLD_COUNTRY_COLOR
+	# OLD_COUNTRY_NAME
+	# OLD_COUNTRY_ADJ
+	# OLD_TAG
+	# OLD_COUNTRY_FLAG
+	# OLD_COUNTRY_HERITAGE
+	# OLD_COUNTRY_CULTURE
+	hidden_effect = {
+		save_scope_as = new_country #Used for money/manpower svalues
+		current_ruler = { save_scope_as = old_ruler }
+		random_owned_province = {
+			limit = { is_capital = yes }
+			save_scope_as = current_capital
+		}
+		save_war_occupiers_effect = yes
+	    change_country_name = $NEW_NAME$
+		change_country_adjective = $NEW_ADJECTIVE$
+		if = { # Created leader
+			limit = {
+				scope:new_ruler = {
+					OR = {
+						is_minor_character = yes
+						family = scope:old_ruler.family
+					}
+				}
+			}
+			create_family = scope:new_ruler
+		}
+		set_as_ruler = scope:new_ruler
+		scope:current_capital = {
+			create_country = {
+				save_scope_as = old_country
+			}
+			scope:old_country = {
+				change_country_color = $OLD_COUNTRY_COLOR$
+				change_country_name = $OLD_COUNTRY_NAME$
+				change_country_adjective = $OLD_COUNTRY_ADJ$
+				change_country_flag = $OLD_COUNTRY_FLAG$
+				set_country_heritage = $OLD_COUNTRY_HERITAGE$
+				if = {
+					limit = {
+						NOT = {
+							primary_culture = $OLD_COUNTRY_CULTURE$
+						}
+					}
+					set_primary_culture_cleanup_effect = {
+						NEW_PRIMARY_CULTURE = $OLD_COUNTRY_CULTURE$
+						MAKE_OLD_CULTURE_INTEGRATED = no
+					}
+				}
+				set_country_religion = $OLD_COUNTRY_RELIGION$
+			}
+		}
+		if = {
+			limit = { has_law = work_for_the_best }
+			scope:old_country = {
+				change_law = work_for_the_best		
+			}
+		}
+		else_if = {
+			limit = { has_law = standing_army_law }
+			scope:old_country = {
+				change_law = standing_army_law		
+			}
+		}
+		scope:old_ruler.family = { move_family = scope:old_country } # Move Old ruler and his family to old country
+		scope:old_ruler = {
+			move_country_with_entire_family_effect = { COUNTRY = scope:old_country }
+		}
+		every_family = {
+			limit = {
+				NOT = { 
+					THIS = scope:new_ruler.family 
+				}
+			}
+			move_family = scope:old_country
+			head_of_family = {
+				move_country_with_entire_family_effect = { COUNTRY = scope:old_country }			
+			}
+		}
+		every_character = {
+			limit = {
+				is_minor_character = yes
+				NOR = {
+					is_close_relative = scope:new_ruler
+					trigger_if = {
+						limit = { is_married = yes }
+						spouse.family = scope:new_ruler.family
+					}
+				}
+			}
+			move_country_with_close_family_effect = { COUNTRY = scope:old_country }
+		}
+		every_owned_province = {
+			limit = {
+				NOT = { is_in_list = new_country_province_list }
+			}
+			set_owned_by = scope:old_country
+		}
+		scope:old_country = {
+			set_as_ruler = scope:old_ruler
+			add_treasury = old_treasury_svalue	#Give old treasury
+			add_manpower = old_manpower_svalue
+			add_political_influence = old_political_influence_svalue
+			add_military_experience_to_new_country_effect = yes
+		}
+		#Remove old gold so you can't game the event chain and save millions of gold before switching.
+		add_treasury = remove_treasury_svalue
+		add_manpower = remove_manpower_svalue
+		add_political_influence = remove_political_influence_svalue
+		add_stability_effect = yes
+		add_treasury = 200
+		add_manpower = 10
+		add_war_exhaustion = -40
+		every_legion = {
+			save_scope_as = old_legion_scope
+			every_legion_commander = {
+				save_scope_as = old_commander_scope
+				scope:old_legion_scope = { remove_commander = scope:old_commander_scope }
+			}
+			move_legion = scope:old_country.capital_scope.governorship
+			#change owner?
+		}
+		every_navy = { add_to_list = old_army_list }
+		every_in_list  = {
+			list = old_army_list
+			if = {
+				limit = { exists = commander }
+				commander = { remove_all_positions = yes }			
+			}
+			change_unit_owner = scope:old_country
+		}
+		every_subject = {
+			limit = {
+				is_subject_type = feudatory
+			}
+			ROOT = {
+				release_subject = PREV
+			}
+			scope:old_country = {
+				make_subject = {
+					target = PREV
+					type = feudatory
+				}
+			}
+		}
+		every_subject = {
+			limit = {
+				is_subject_type = tributary
+			}
+			ROOT = {
+				release_subject = PREV
+			}
+			scope:old_country = {
+				make_subject = {
+					target = PREV
+					type = tributary
+				}
+			}			
+		}
+		every_subject = {
+			limit = {
+				is_subject_type = satrapy
+			}
+			ROOT = {
+				release_subject = PREV
+			}
+			scope:old_country = {
+				make_subject = {
+					target = PREV
+					type = satrapy
+				}
+			}			
+		}
+		every_subject = {
+			limit = {
+				is_subject_type = client_state
+			}
+			ROOT = {
+				release_subject = PREV
+			}
+			scope:old_country = {
+				make_subject = {
+					target = PREV
+					type = client_state
+				}
+			}			
+		}		
+		every_subject = {
+			limit = {
+				is_subject_type = vassal_tribe
+			}
+			ROOT = {
+				release_subject = PREV
+			}
+			scope:old_country = {
+				make_subject = {
+					target = PREV
+					type = vassal_tribe
+				}
+			}			
+		}
+		every_country_treasure = {
+			add_to_list = old_treasures_list
+		}
+		every_in_list = {
+			list = old_treasures_list
+            limit = {
+                NOT = { treasure_owner = scope:old_country }
+            }
+            transfer_treasure_to_country = scope:old_country
+            remove_from_list = old_treasures_list
+		}
+		every_province = {
+			remove_claim = ROOT
+		}
+		change_government = $NEW_GOVERNMENT$
+		change_country_color = $NEW_COLOR$
+		set_country_religion = $NEW_RELIGION$
+		set_country_heritage = $NEW_HERITAGE$
+		#Create a new family
+		while = {
+			count = 12 #The amount needed to fill offices
+			create_character  = {
+	        	culture = $NEW_CULTURE$
+	        	religion = $NEW_RELIGION$
+				set_family = scope:new_ruler.family
+				adapt_family_name = yes
+			}
+		}
+		while = {
+			count = 4
+			create_character  = {
+	        	culture = $NEW_CULTURE$
+	        	religion = $NEW_RELIGION$
+	        	female = yes
+				set_family = scope:new_ruler.family
+				adapt_family_name = yes
+			}
+		}
+		if = {
+			limit = {
+				NOT = {
+					primary_culture = $NEW_CULTURE$
+				}
+			}
+			set_primary_culture_cleanup_effect = {
+				NEW_PRIMARY_CULTURE = $NEW_CULTURE$
+				MAKE_OLD_CULTURE_INTEGRATED = no
+			}
+		}
+		change_country_tag = $NEW_TAG$
+		change_country_flag = $NEW_FLAG$
+		scope:old_country = {
+			change_country_tag = $OLD_TAG$
+			ordered_country_culture = {
+				limit = {
+					is_integrated = no
+					NOT = { THIS.culture = scope:old_country.culture }
+				}
+				order_by = country_culture_pop_count
+				max = 1
+				ROOT = { integrate_country_culture = PREV }
+			}
+			ordered_country_culture = {
+				limit = {
+					is_integrated = no
+					NOT = { THIS.culture = scope:old_country.culture }
+				}
+				order_by = country_culture_pop_count
+				max = 1
+				ROOT = { integrate_country_culture = PREV }
+			}			
+		}
+		#Allies and Wars
+		every_allied_country = {
+			break_alliance = ROOT
+			add_alliance = scope:old_country
+			add_opinion = { target = scope:old_country modifier = opinion_gift }
+		}
+		every_current_war = {
+			limit = {
+				any_war_attacker = { THIS = ROOT }
+				NOT = { is_war_leader = ROOT }
+			}
+			scope:old_country = {
+				add_to_war = {
+					target = PREV
+					attacker = yes
+					leader = no
+				}
+			}
+			every_war_defender = {
+				every_owned_province = {
+					limit = { controller = ROOT }
+					set_controller = scope:old_country
+				}
+			}
+		}
+		every_current_war = {
+			limit = {
+				any_war_attacker = { THIS = ROOT }
+				is_war_leader = ROOT
+			}
+			scope:old_country = {
+				add_to_war = {
+					target = PREV
+					attacker = yes
+					leader = yes
+				}
+			}
+			every_war_defender = {
+				every_owned_province = {
+					limit = { controller = ROOT }
+					set_controller = scope:old_country
+				}
+			}
+		}
+		every_current_war = {
+			limit = {
+				any_war_defender = { THIS = ROOT }
+				is_war_leader = ROOT
+			}
+			scope:old_country = {
+				add_to_war = {
+					target = PREV
+					attacker = no
+					leader = yes
+				}
+			}
+			every_war_attacker = {
+				every_owned_province = {
+					limit = { controller = ROOT }
+					set_controller = scope:old_country
+				}
+			}
+		}
+		every_current_war = {
+			limit = {
+				any_war_defender = { THIS = ROOT }
+				NOT = { is_war_leader = ROOT }
+			}
+			scope:old_country = {
+				add_to_war = {
+					target = PREV
+					attacker = no
+					leader = no
+				}
+			}
+			every_war_attacker = {
+				every_owned_province = {
+					limit = { controller = ROOT }
+					set_controller = scope:old_country
+				}
+			}
+		}
+		transfer_war_occupations_effect = yes
+		every_current_war = {
+			remove_from_war = ROOT
+		}
+		#For some reason the capital levy doesn't always transfer over so destroy it if it's raised.
+		current_ruler = {
+			if = {
+				limit = {
+					in_command = yes
+				}
+				every_character_unit = {
+					destroy_unit = yes
+				}
+			}
+		}
+		reset_scoring = scope:old_country
+		reset_scoring = scope:new_country
+	}
+}
+add_military_experience_to_new_country_effect = {
+	hidden_effect = {
+		#Give mil experience based on date, if date is really late reduce cost to take mil traditions so they can catch up.
+		#If it is too early give nothing.
+		if = {
+			limit = {
+				current_date > 460.1.1
+				current_date < 500.1.1
+			}
+			add_military_experience = 80
+		}
+		else_if = {
+			limit = {
+				current_date > 500.1.1
+				current_date < 550.1.1
+			}
+			add_military_experience = 200
+		}
+		else_if = {
+			limit = {
+				current_date > 550.1.1
+				current_date < 600.1.1
+			}
+			add_military_experience = 200
+			add_country_modifier = {
+				name = released_country_mil_tradition_1_ai_mod
+				duration = 730
+			}
+		}
+		else_if = {
+			limit = {
+				current_date > 650.1.1
+				current_date < 700.1.1
+			}
+			add_military_experience = 200
+			add_country_modifier = {
+				name = released_country_mil_tradition_2_ai_mod
+				duration = 730
+			}
+		}
+		else_if = {
+			limit = {
+				current_date > 700.1.1
+			}
+			add_military_experience = 200
+			add_country_modifier = {
+				name = released_country_mil_tradition_3_ai_mod
+				duration = 730
+			}
+		}
+	}
+}
+save_war_occupiers_effect = {
+	#This has to be done because the occupations are lost when the new country is created
+	#This saves the controllers of your current territory as scopes
+	#Then it uses that scope to save every one of your provinces that they own into a list.
+	#There's probably a better way to do this but it works
+	#This won't work past 7 countries occupying your territory but at that point you should probably just quit anyway
+	if = {
+		limit = {
+			any_owned_province = {
+				NOT = { controller = ROOT }
+			}
+		}
+		random_owned_province = {
+			limit = {
+				NOT = { controller = ROOT }
+			}
+			controller = {
+				save_scope_as = war_occupier_1
+			}
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_1
+			any_owned_province = {
+				NOR = {
+					controller = ROOT
+					controller = scope:war_occupier_1
+				}
+			}
+		}
+		random_owned_province = {
+			limit = {
+				NOR = { 
+					controller = ROOT
+					controller = scope:war_occupier_1
+				}
+			}
+			controller = {
+				save_scope_as = war_occupier_2
+			}
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_1
+			exists = scope:war_occupier_2
+			any_owned_province = {
+				NOR = {
+					controller = ROOT
+					controller = scope:war_occupier_1
+					controller = scope:war_occupier_2
+				}
+			}
+		}
+		random_owned_province = {
+			limit = {
+				NOR = { 
+					controller = ROOT
+					controller = scope:war_occupier_1
+					controller = scope:war_occupier_2
+				}
+			}
+			controller = {
+				save_scope_as = war_occupier_3
+			}
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_1
+			exists = scope:war_occupier_2
+			exists = scope:war_occupier_3
+			any_owned_province = {
+				NOR = {
+					controller = ROOT
+					controller = scope:war_occupier_1
+					controller = scope:war_occupier_2
+					controller = scope:war_occupier_3
+				}
+			}
+		}
+		random_owned_province = {
+			limit = {
+				NOR = { 
+					controller = ROOT
+					controller = scope:war_occupier_1
+					controller = scope:war_occupier_2
+					controller = scope:war_occupier_3
+				}
+			}
+			controller = {
+				save_scope_as = war_occupier_4
+			}
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_1
+			exists = scope:war_occupier_2
+			exists = scope:war_occupier_3
+			exists = scope:war_occupier_4
+			any_owned_province = {
+				NOR = {
+					controller = ROOT
+					controller = scope:war_occupier_1
+					controller = scope:war_occupier_2
+					controller = scope:war_occupier_3
+					controller = scope:war_occupier_4
+				}
+			}
+		}
+		random_owned_province = {
+			limit = {
+				NOR = { 
+					controller = ROOT
+					controller = scope:war_occupier_1
+					controller = scope:war_occupier_2
+					controller = scope:war_occupier_3
+					controller = scope:war_occupier_4
+				}
+			}
+			controller = {
+				save_scope_as = war_occupier_5
+			}
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_1
+			exists = scope:war_occupier_2
+			exists = scope:war_occupier_3
+			exists = scope:war_occupier_4
+			exists = scope:war_occupier_5
+			any_owned_province = {
+				NOR = {
+					controller = ROOT
+					controller = scope:war_occupier_1
+					controller = scope:war_occupier_2
+					controller = scope:war_occupier_3
+					controller = scope:war_occupier_4
+					controller = scope:war_occupier_5
+				}
+			}
+		}
+		random_owned_province = {
+			limit = {
+				NOR = { 
+					controller = ROOT
+					controller = scope:war_occupier_1
+					controller = scope:war_occupier_2
+					controller = scope:war_occupier_3
+					controller = scope:war_occupier_4
+					controller = scope:war_occupier_5
+				}
+			}
+			controller = {
+				save_scope_as = war_occupier_6
+			}
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_1
+			exists = scope:war_occupier_2
+			exists = scope:war_occupier_3
+			exists = scope:war_occupier_4
+			exists = scope:war_occupier_5
+			exists = scope:war_occupier_6
+			any_owned_province = {
+				NOR = {
+					controller = ROOT
+					controller = scope:war_occupier_1
+					controller = scope:war_occupier_2
+					controller = scope:war_occupier_3
+					controller = scope:war_occupier_4
+					controller = scope:war_occupier_5
+					controller = scope:war_occupier_6
+				}
+			}
+		}
+		random_owned_province = {
+			limit = {
+				NOR = { 
+					controller = ROOT
+					controller = scope:war_occupier_1
+					controller = scope:war_occupier_2
+					controller = scope:war_occupier_3
+					controller = scope:war_occupier_4
+					controller = scope:war_occupier_5
+					controller = scope:war_occupier_6
+				}
+			}
+			controller = {
+				save_scope_as = war_occupier_7
+			}
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_1
+		}
+		every_owned_province = {
+			limit = { controller = scope:war_occupier_1 }
+			add_to_list = war_occupier_1_list
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_2
+		}
+		every_owned_province = {
+			limit = { controller = scope:war_occupier_2 }
+			add_to_list = war_occupier_2_list
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_3
+		}
+		every_owned_province = {
+			limit = { controller = scope:war_occupier_3 }
+			add_to_list = war_occupier_3_list
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_4
+		}
+		every_owned_province = {
+			limit = { controller = scope:war_occupier_4 }
+			add_to_list = war_occupier_4_list
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_5
+		}
+		every_owned_province = {
+			limit = { controller = scope:war_occupier_5 }
+			add_to_list = war_occupier_5_list
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_6
+		}
+		every_owned_province = {
+			limit = { controller = scope:war_occupier_6 }
+			add_to_list = war_occupier_6_list
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:war_occupier_7
+		}
+		every_owned_province = {
+			limit = { controller = scope:war_occupier_7 }
+			add_to_list = war_occupier_7_list
+		}
+	}	
+}
+
+transfer_war_occupations_effect = {
+	#This actually transfers the provinces that used to be occupied back to the original occupiers
+	if = {
+		limit = { exists = scope:war_occupier_1 }
+		every_in_list = {
+			list = war_occupier_1_list
+			set_controller = scope:war_occupier_1
+			remove_from_list = war_occupier_1_list
+		}
+	}
+	if = {
+		limit = { exists = scope:war_occupier_2 }
+		every_in_list = {
+			list = war_occupier_2_list
+			set_controller = scope:war_occupier_2
+			remove_from_list = war_occupier_2_list
+		}
+	}
+	if = {
+		limit = { exists = scope:war_occupier_3 }
+		every_in_list = {
+			list = war_occupier_3_list
+			set_controller = scope:war_occupier_3
+			remove_from_list = war_occupier_3_list
+		}
+	}
+	if = {
+		limit = { exists = scope:war_occupier_4 }
+		every_in_list = {
+			list = war_occupier_4_list
+			set_controller = scope:war_occupier_4
+			remove_from_list = war_occupier_4_list
+		}
+	}
+	if = {
+		limit = { exists = scope:war_occupier_5 }
+		every_in_list = {
+			list = war_occupier_5_list
+			set_controller = scope:war_occupier_5
+			remove_from_list = war_occupier_5_list
+		}
+	}
+	if = {
+		limit = { exists = scope:war_occupier_6 }
+		every_in_list = {
+			list = war_occupier_6_list
+			set_controller = scope:war_occupier_6
+			remove_from_list = war_occupier_6_list
+		}
+	}
+	if = {
+		limit = { exists = scope:war_occupier_7 }
+		every_in_list = {
+			list = war_occupier_7_list
+			set_controller = scope:war_occupier_7
+			remove_from_list = war_occupier_7_list
+		}
+	}
+}

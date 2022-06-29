@@ -1,0 +1,147 @@
+﻿secude_governor = {
+
+	on_other_nation = yes
+	on_own_nation = no
+	
+	message = no
+	
+	sound = "event:/SFX/UI/Character/Generic/sfx_ui_character_corruption"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			NOT = { employer = scope:actor }
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+			is_alive = yes
+			is_mercenary = no
+		}
+	}
+	
+	
+	allowed_trigger = {
+		hidden:scope:actor = {
+			can_pay_price = seduce_governor
+			current_ruler = {
+				wealth >= 200
+			}
+		}
+		scope:target = {
+			is_governor = yes
+			is_ruler = no
+			loyalty < 35 #actually disloyal
+			is_friend = scope:actor.current_ruler
+			custom_tooltip = {
+				text = must_have_adjacent_disloyal_state
+				any_governor_state = {
+					any_state_province = {
+						state_loyalty <= 50
+						any_neighbor_province = {
+							has_owner = yes
+							owner = scope:actor
+						}
+					}
+				}
+			}
+			employer = {
+				trigger_if = {
+					limit = { has_variable = entice_governor_cooldown_var }
+					custom_tooltip = {
+						text = entice_governor_cooldown_tt
+						NOT = { has_variable = entice_governor_cooldown_var }
+					}
+				}		
+			}
+		}
+	} 
+	
+	
+
+	effect = {
+		scope:actor = {
+			pay_price = seduce_governor
+			current_ruler = {
+				add_gold = -200
+			}
+		}
+		scope:target = {
+			add_gold = 200
+			if = {
+				limit = {
+					is_friend = scope:target.employer.current_ruler
+				}
+				remove_friend = scope:target.employer.current_ruler
+			}
+			employer = {
+				set_variable = {
+					name = entice_governor_cooldown_var
+					days = 3650
+				}
+				add_opinion = {
+					target = scope:actor
+					modifier = enticed_our_governor
+				}
+			}
+			show_as_tooltip = { move_country = scope:actor }
+			custom_tooltip = adjacent_provinces_enticed
+			custom_tooltip = province_claims_enticed
+			hidden_effect = {
+				every_governor_state = {
+					limit = {
+						any_state_province = {
+							state_loyalty <= 50
+							any_neighbor_province = {
+								owner = scope:actor
+							}
+						}
+					}
+					every_state_province = {
+						set_owned_by = scope:actor
+						add_claim = scope:target.employer
+						save_scope_as = to_set_governor
+					}
+				}
+			}
+			hidden_effect = {
+				if = {
+					limit = {
+						num_of_children > 0
+						any_child = {
+							is_adult = no
+						}
+					}
+					add_character_modifier = {
+						name = abandoned_family
+						duration = -1
+					}
+					every_child = {
+						limit = {
+							is_adult = no
+						}
+						add_character_modifier = {
+							name = absentee_father
+							duration = -1
+						}
+					}
+				}
+			}
+			hidden_effect = {
+				remove_all_positions = yes
+				move_country = scope:actor
+				remove_character_modifier = foreign_citizen
+				set_as_minor_character = THIS
+				set_home_country = scope:actor
+			}
+			hidden_effect = {
+				if = {
+					limit = {
+						exists = scope:to_set_governor 
+					}
+					scope:to_set_governor = {
+						set_as_governor = scope:target
+					}
+				}
+			}
+		}
+	}
+	
+}	

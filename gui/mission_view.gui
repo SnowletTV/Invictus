@@ -16,11 +16,13 @@ base_window = {
 	name = "mission_view"
 	parentanchor = top|left
 	size = { 640 900 }
+	minimumsize = { 640 900 }
 	widgetanchor = top|left
 	movable = no
 	using = main_window_template
 	using = FadeStates
 	using = advice_trigger_highlights
+	resizable = yes
 	### Audio ###
 	state = {
 		name = _show
@@ -33,6 +35,20 @@ base_window = {
 		start_sound = {
 			soundeffect = "event:/SFX/UI/Generic/2.0/sfx_ui_window_tab_close"
 		}
+	}
+	
+	state = {
+		name = expand_missions
+		size = { 1200 900 }
+		position = { 60 138 }
+		trigger_when = "[GetVariableSystem.Exists('expand_missions')]"
+	}
+
+	state = {
+		trigger_when = "[Not(GetVariableSystem.Exists('expand_missions'))]"
+		name = minimize_missions
+		size = { 640 900 }
+		position = { 60 138 }
 	}
 	### TODO THIS TOGGLE DOES NOT WORK (because of above stated FadeStates?)
 	#state = {
@@ -70,6 +86,18 @@ base_window = {
 				tooltip = "PREVIOUS_MISSION_VIEW"
 			}
 			
+			button_slide_out = {
+				visible = "[Not(GetVariableSystem.Exists('expand_missions'))]"
+				onclick = "[GetVariableSystem.Toggle('expand_missions')]"
+				tooltip = "expand_missions"
+			}
+
+			button_slide_in = {
+				tooltip = "resize_missions"
+				visible = "[GetVariableSystem.Exists('expand_missions')]"
+				onclick = "[GetVariableSystem.Toggle('expand_missions')]"
+			}
+			
 			button_close = {
 				onclick = "[MissionView.OnClose]"
 				tooltip = "CLOSE"
@@ -82,6 +110,8 @@ base_window = {
 			layoutpolicy_horizontal = expanding
 			
 			vbox = {
+				margin_top = 8
+				margin_bottom = 10
 				visible = "[MissionView.IsActiveMissionVisible]"
 				enabled = "[MissionView.IsWindowEnabled]"
 				
@@ -94,7 +124,6 @@ base_window = {
 					texture = "[MissionView.GetHeaderImage]"
 					size = { 634 122 }
 					tooltip = "[MissionItem.GetImageTooltip]"
-					
 					
 					icon = {
 						parentanchor = hcenter|top
@@ -131,11 +160,37 @@ base_window = {
 							margin_bottom = 3
 						}
 					}		
+					
+					text_button_square_hollow = {
+						parentanchor = bottom
+						size = { 110 30 }
+						blockoverride "On_click"
+						{
+							onclick = "[GetVariableSystem.Toggle('debug_missions')]"
+						}
+						visible = "[Not(InReleaseMode)]"
+						blockoverride "Center_text" {
+							text = "debug_missions"
+						}
+						tooltip = "debug_missions_tt"
+						
+						icon = {
+							size = { 100% 100% }
+							using = flat_background_white
+							tintcolor = { 0.5 0 0.5 0.1 }
+							visible = "[GetVariableSystem.Exists('debug_missions')]"
+						}
+					}
 				}
+				
 				margin_widget = {
 					size = { 620 640 }
-					using = VerticalScrollAreaCutOff
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					margin = { 10 10 }
+					
 					zoomarea = {
+						using = VerticalScrollAreaCutOff
 						name = "graph_zoomarea" # Do not change this name
 						size = { 100% 100% }
 						position = { 0 0 }
@@ -170,7 +225,7 @@ base_window = {
 						zoomwidget = {
 							container  = {
 								min_width = 620
-								max_width = 1280
+								max_width = 1820
 								flowcontainer = {
 									margin_top = 44
 									margin_bottom = 40
@@ -291,7 +346,8 @@ base_window = {
 															{
 																onclick = "[MissionTaskItem.OnClick]"
 																tooltip = "[MissionTaskItem.GetTooltip]"
-																enabled = "[And(Or(MissionTaskItem.IsPossible, MissionTaskItem.IsInProgress), Not(MissionTaskItem.IsCompleted))]"
+																enabled = "[Or(And(Or(MissionTaskItem.IsPossible, MissionTaskItem.IsInProgress), Not(MissionTaskItem.IsCompleted)), GetVariableSystem.Exists('debug_missions'))]"
+																onrightclick = "[ExecuteConsoleCommand( Concatenate( AddTextIf(GetVariableSystem.Exists('debug_missions'), 'Mission.CompleteTask '), MissionTaskItem.GetKey))]"
 															}
 															blockoverride "PatternVisible"
 															{
@@ -451,7 +507,9 @@ base_window = {
 							}
 						}
 					}
+
 				}
+				
 				hbox = {
 					layoutpolicy_horizontal = expanding
 					using = NoninteractableBG
@@ -467,6 +525,7 @@ base_window = {
 						blockoverride "On_click"
 						{
 							onclick = "[MissionItem.OnAbort]"
+							onclick = "[GetVariableSystem.Clear('expand_missions')]"
 							enabled = "[MissionItem.IsAbortAllowed]"
 							tooltip = "[MissionItem.GetAbortTooltip]"
 						}
@@ -482,6 +541,7 @@ base_window = {
 						
 						blockoverride "On_click"
 						{
+							onclick = "[GetVariableSystem.Clear('expand_missions')]"
 							onclick = "[MissionItem.OnComplete]"
 							enabled = "[MissionItem.IsCompleteAllowed]"
 							tooltip = "[MissionItem.GetCompleteTooltip]"
@@ -641,16 +701,9 @@ base_window = {
 							}
 							margin_bottom = 12
 						}							
-					}
-					
+					}	
 				}
-
 			}
-			
 		}
-		
 	}
-	
-	
-
 }

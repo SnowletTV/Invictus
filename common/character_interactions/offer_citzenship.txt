@@ -1,0 +1,97 @@
+﻿#Offer citizenship to a character in another country that is friends with the current ruler, does not have a job, and has less than 40 loyalty.
+offer_citizenship = {
+
+	on_other_nation = yes
+	on_own_nation = no
+	
+	message = no
+	
+	sound = "event:/SFX/UI/Character/Generic/sfx_ui_character_corruption"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			NOT = { employer = scope:actor }
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+			NOT = { employer = { tag = MER } }
+			is_alive = yes
+			is_adult = yes
+			is_mercenary = no
+			is_ruler = no
+			NOR = {
+				has_tech_office = yes
+				has_any_office = yes
+				is_general = yes
+				is_admiral = yes
+				is_governor = yes
+				is_primary_heir = yes
+			}
+			#Is not married to anyone important
+			trigger_if = {
+				limit = { is_married = yes }
+				spouse = {
+					NOR = {
+						has_tech_office = yes
+						has_any_office = yes
+						is_general = yes
+						is_admiral = yes
+						is_governor = yes
+						is_ruler = yes
+						is_primary_heir = yes
+					}
+				}
+			}
+		}
+	}
+	
+	allowed_trigger = {
+		scope:actor = {
+			trigger_if = {
+				limit = { has_variable = citizenship_cooldown }
+				custom_tooltip = {
+					text = citizenship_cooldown_tt
+					NOT = { has_variable = citizenship_cooldown }
+				}
+			}
+			can_pay_price = offer_citizenship_price
+		}
+		scope:target = {
+			loyalty < 35
+			power_base < 10
+			is_friend = scope:actor.current_ruler
+		}
+	} 
+
+	effect = {
+		scope:target = {
+			employer = {
+	            add_opinion = {
+	                modifier = citizen_taken_neg_opmod
+	                target = scope:actor
+	            }
+			}
+			hidden_effect = {
+				move_country_with_message = scope:actor
+				remove_character_modifier = foreign_citizen
+				add_loyalty = granted_citizenship
+			}
+			set_as_minor_character = THIS	
+			if = {
+				limit = {
+					has_variable = came_from
+				}
+				remove_variable = came_from
+			}
+		}
+		scope:actor = {
+			pay_price = offer_citizenship_price
+			set_variable = {
+				name = citizenship_cooldown
+				days = 3650
+			}
+			trigger_event = {
+				id = character_interactions_inv.5
+			}
+		}
+	}
+}

@@ -1,0 +1,2965 @@
+﻿
+#################################
+# Torugu: Added block trigger ###
+#################################
+
+generic_mission_home_infrastructure = { #Fix up Region
+	header = mission_image_general
+	icon = general_3
+
+	repeatable = yes #[Boolean] (Default no) Whether this mission is repeatable
+	
+	potential = {
+		any_owned_province = {
+			governorship = {
+				NOT = { has_variable = mission_happened_here } #Set on completion
+				NOT = { has_variable = mission_governorship_countdown }
+				exists = governor_or_ruler
+				governor_or_ruler = {
+					location = {
+						has_owner = yes
+						owner = ROOT
+					}
+				}
+				any_governorship_state = {
+					count >= 4
+					any_state_province = { count > 6 }
+				}
+			}
+		}
+		has_civil_war = no
+	}
+	
+	ai_chance = { factor = 0 }
+	
+	#Saved Scopes:
+	#infra_governorship = Main mission affected Governorship
+	#governorship_capital = The Starting Location of the Governor in the Governorship
+	#governorship_capital_area = The Province in which the above territory exists.
+	#Branches:
+	#food_province = Province picked to be focus for Food Branch
+	#mining_province = Province picked for focus for Mining Branch
+	#shrine_province = Province Picked for the Shrine focus Branch
+	#port_province = Province Picked for the Port Focus Branch
+	#ship_building_center - Territory picked for ship building in Port Province.
+	#urbanize_area_province - Province for the Urban improvement Branch
+	#urbanize_area_city - Territory for the Urban Improvement Branch
+	
+	#Variables:
+	#capital_trade_mission_ongoing = Should be cleared
+	#shrine_mission_ongoing = Should be cleared
+	#wants_metropolis_status = Should be cleared
+	#wants_city_status = Should be cleared
+	#capital_fort_needed = Should be cleared
+	#shrine_mission_over = Cleared on end of mission but not before.
+	#food_done = Cleared on end of mission but not before.
+	#infra_mission_branches = Absolutely must be set to 0 in on potential.
+	#
+	#mission_happened_here = Should NOT be cleared
+	
+	on_potential = {
+		ROOT = { set_variable = capital_trade_mission_ongoing } #Must be cleared in both abort and complete!
+		ROOT = {
+			set_variable = {
+				name = infra_mission_branches #Always set to 0 on potential. Otherwise bad things will happen.
+				value = 0
+			}
+		}
+		random_owned_province = {
+			limit = {
+				governorship = {
+					exists = governor_or_ruler
+					NOT = { has_variable = mission_happened_here } #Set on completion
+					NOT = { has_variable = mission_governorship_countdown }
+					any_governorship_state = {
+						count >= 4
+						any_state_province = { count > 6 }
+					}
+				}
+			}
+			governorship = {
+				save_scope_as = infra_governorship
+				governor_or_ruler = {
+					switch = {
+						trigger = is_ruler #If the governor is the ruler then we always want to use the country capital.
+						no = { #This is a normal governor.
+							PREV = {
+								ordered_governorship_state = {
+									max = 1
+									check_range_bounds = no
+									order_by = {
+										every_state_province = {
+											add = total_population
+										}
+									}
+									ordered_state_province = {
+										max = 1
+										check_range_bounds = no
+										order_by = total_population
+										save_scope_as = governorship_capital
+									}
+									save_scope_as = governorship_capital_area
+								}
+							}
+						}
+						yes = { #This was the ruler
+							ROOT = {
+								capital_scope = {
+									save_scope_as = governorship_capital
+									state = {
+										save_scope_as = governorship_capital_area
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		scope:governorship_capital = {
+			if = {
+				limit = { dominant_province_culture = owner.culture }
+				set_variable = was_dominant_culture
+			}
+		}
+		
+		#Setup for specific Branches:
+		#Religion Branch:
+		scope:infra_governorship = {
+			random_governorship_state = {
+				limit = {
+					NOT = { scope:governorship_capital_area = THIS }
+					any_state_province = {
+						own_religious_center_province_trigger = yes
+					}
+				}
+				save_scope_as = shrine_province
+				ROOT = {
+					set_variable = shrine_mission_ongoing
+					set_variable = temple_var
+				} #Must be cleared in both abort and complete!
+				random_state_province = {
+					limit = {
+						own_religious_center_province_trigger = yes
+					}
+					save_scope_as = shrine_territory
+				}
+			}
+		}
+		
+		
+		#Port Branch:
+		if = {
+			limit = {
+				has_variable = infra_mission_branches
+				var:infra_mission_branches <= 2
+			}
+			scope:infra_governorship = {
+				ordered_governorship_state = {
+					limit = {
+						#Number of Areas with 3 ports or more is very limited.
+						OR = {
+							any_state_province = { #Either own a state with at least 3 ports.
+								count >= 3
+								is_port = yes
+							}
+							any_state_province = { #Or Own a state with at least one port where your subjects and you have at least 3 ports together.
+								count >= 1
+								is_port = yes
+								ports_in_subjects_svalue >= 2
+							}
+						}
+						NOT = { THIS = scope:governorship_capital_area }
+						trigger_if = {
+							limit = { exists = scope:food_province }
+							NOT = { THIS = scope:food_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:shrine_province }
+							NOT = { THIS = scope:shrine_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:mining_province }
+							NOT = { THIS = scope:mining_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:urbanize_area_province }
+							NOT = { THIS = scope:urbanize_area_province }
+						}
+					}
+					max = 1
+					check_range_bounds = no
+					order_by = {
+						value = 0
+						every_state_province = {
+							if = {
+								limit = { is_port = yes }
+								add = 1
+							}
+						}
+					}
+					save_scope_as = port_province
+					ROOT = {
+						change_variable = {
+							add = 1
+							name = "infra_mission_branches"
+						}
+						ROOT = { set_variable = port_var }
+					}
+					ordered_state_province = {
+						limit = {
+							is_port = yes
+						}
+						order_by = total_population
+						save_scope_as = ship_building_center
+					}
+					random_sea_and_river_zone = {
+						limit = { is_neighbor = scope:ship_building_center }
+						save_scope_as = valid_sea_or_river_place
+					}
+					random_state_province = {
+						limit = { is_port = yes } 
+						random_sea_and_river_zone = {
+							limit = { is_neighbor = PREV }
+							save_scope_as = trade_sea
+						}
+					}
+				}
+			}
+		}
+		
+		#Mining Branch:
+		if = {
+			limit = {
+				has_variable = infra_mission_branches
+				var:infra_mission_branches <= 2
+			}
+			scope:infra_governorship = {
+				ordered_governorship_state = {
+					limit = {
+						any_state_province = {
+							count >= 3
+							has_city_status = no
+							has_minable_trade_good_trigger = yes
+						}
+						NOT = { THIS = scope:governorship_capital_area }
+						trigger_if = {
+							limit = { exists = scope:food_province }
+							NOT = { THIS = scope:food_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:shrine_province }
+							NOT = { THIS = scope:shrine_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:port_province }
+							NOT = { THIS = scope:port_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:urbanize_area_province }
+							NOT = { THIS = scope:urbanize_area_province }
+						}
+					}
+					max = 1
+					check_range_bounds = no
+					order_by = {
+						value = 0
+						every_state_province = {
+							if = {
+								limit = {
+									has_minable_trade_good_trigger = yes
+								}
+								add = 1
+							}
+						}
+					}
+					save_scope_as = mining_province
+					ROOT = {
+						change_variable = {
+							add = 1
+							name = "infra_mission_branches"
+						}
+					}
+					if = {
+						limit = {
+							any_state_province = {
+								has_city_status = no
+								OR = {
+									terrain = hills
+									terrain = mountain
+									terrain = desert
+								}
+								has_unminable_trade_good_trigger = yes
+							}
+						}
+						ROOT = { set_variable = mining_prospection_var }
+					}
+					else = { ROOT = { set_variable = mining_var } }
+					if = {
+						limit = {
+							any_state_province = {
+								is_state_capital = yes
+								has_unminable_trade_good_trigger = yes
+							}
+						}
+						random_state_province = {
+							limit = {
+								is_state_capital = yes
+							}
+							save_scope_as = mining_capital
+						}
+					}
+					else_if = {
+						limit = {
+							any_state_province = {
+								has_unminable_trade_good_trigger = yes
+							}
+						}
+						ordered_state_province = {
+							limit = {
+								has_unminable_trade_good_trigger = yes
+							}
+							order_by = total_population
+							save_scope_as = mining_capital
+						}
+					}
+					else = {
+						random_state_province = {
+							limit = { is_state_capital = yes }
+							save_scope_as = mining_capital
+						}
+					}
+				}
+			}
+		}
+
+		#Food Branch:
+		if = {
+			limit = {
+				has_variable = infra_mission_branches
+				var:infra_mission_branches <= 2
+			}
+			scope:infra_governorship = {
+				ordered_governorship_state = {
+					limit = {
+						any_state_province = {
+							count >= 2
+							has_food_trade_good_trigger = yes
+							NOT = { trade_goods = fish }
+						}
+						NOT = { THIS = scope:governorship_capital_area }
+						trigger_if = {
+							limit = { exists = scope:port_province }
+							NOT = { THIS = scope:port_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:shrine_province }
+							NOT = { THIS = scope:shrine_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:mining_province }
+							NOT = { THIS = scope:mining_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:urbanize_area_province }
+							NOT = { THIS = scope:urbanize_area_province }
+						}
+					}
+					max = 1
+					check_range_bounds = no
+					order_by = {
+						value = 0
+						every_state_province = {
+							if = {
+								limit = {
+									has_food_trade_good_trigger = yes
+								}
+								add = 1
+							}
+						}
+					}
+					save_scope_as = food_province
+					ROOT = {
+						change_variable = {
+							add = 1
+							name = "infra_mission_branches"
+						}
+						set_variable = food_mission_var
+					}
+					if = {
+						limit = {
+							any_state_province = {
+								is_state_capital = yes
+								has_non_food_trade_good_trigger = yes
+							}
+						}
+						random_state_province = {
+							limit = {
+								is_state_capital = yes
+							}
+							save_scope_as = food_province_capital
+						}
+					}
+					else_if = {
+						limit = {
+							any_state_province = {
+								has_non_food_trade_good_trigger = yes
+							}
+						}
+						ordered_state_province = {
+							limit = {
+								has_non_food_trade_good_trigger = yes
+							}
+							order_by = total_population
+							save_scope_as = food_province_capital
+						}
+					}
+					else = {
+						random_state_province = {
+							limit = {
+								is_state_capital = yes
+							}
+							save_scope_as = food_province_capital
+						}
+					}
+				}
+			}
+		}
+		
+		#Urbanization Branch: #Last resort
+		if = {
+			limit = { #Should not coexist with two wide branches
+				has_variable = infra_mission_branches
+				trigger_if = {
+					limit = {
+						exists = scope:governorship_capital
+						scope:governorship_capital = {
+							is_capital = no
+						}
+						exists = scope:food_province
+					}
+					var:infra_mission_branches < 2
+				}
+				trigger_else = {
+					var:infra_mission_branches <= 2
+				}
+			}
+			scope:infra_governorship = {
+				ordered_governorship_state = {
+					limit = {
+						any_state_province = {
+							count = all
+							OR = {
+								has_city_status = no
+								AND = {
+									is_state_capital = no
+									has_city_status = yes
+								}
+							}
+						}
+						any_state_province = {
+							has_non_food_trade_good_trigger = yes
+						}
+						NOT = { THIS = scope:governorship_capital_area }
+						trigger_if = {
+							limit = { exists = scope:port_province }
+							NOT = { THIS = scope:port_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:shrine_province }
+							NOT = { THIS = scope:shrine_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:mining_province }
+							NOT = { THIS = scope:mining_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:food_province }
+							NOT = { THIS = scope:food_province }
+						}
+						trigger_if = {
+							limit = { exists = scope:urbanize_area_province }
+							NOT = { THIS = scope:urbanize_area_province }
+						}
+					}
+					max = 1
+					check_range_bounds = no
+					order_by = {
+						value = 0
+						every_state_province = {
+							add = total_population
+						}
+					}
+					ROOT = {
+						change_variable = {
+							add = 1
+							name = "infra_mission_branches"
+						}
+						set_variable = food_mission_var
+					}
+					save_scope_as = urbanize_area_province
+					ordered_state_province = {
+						max = 1
+						check_range_bounds = no
+						order_by = total_population
+						save_scope_as = urbanize_area_city
+						if = {
+							limit = { NOT = { dominant_province_culture = owner.culture } }
+							random_list = {
+								75 = { save_scope_as = colonia_mini }
+								25 = { save_scope_as = regiment_urban }
+							}
+						}
+						else_if = {
+							limit = { is_port = yes }
+							random_list = {
+								25 = { save_scope_as = fortify_urban }
+								50 = { save_scope_as = expand_port_urban }
+								12 = { save_scope_as = slave_city }
+								12 = { save_scope_as = regiment_urban }
+							}
+						}
+						else = {
+							random_list = {
+								33 = { save_scope_as = slave_city }
+								33 = { save_scope_as = fortify_urban }
+								33 = { save_scope_as = regiment_urban }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	abort = {
+		OR = {
+			custom_tooltip = {
+				text = abort_for_generic_infra
+				OR = {
+					NOT = { exists = scope:infra_governorship }
+					NOT = { exists = scope:governorship_capital_area }
+				}
+			}
+			ai_mission_back_out_trigger = yes
+		}
+	}
+	
+	on_abort = {
+		scope:infra_governorship = {
+			set_variable = {
+				name = mission_governorship_countdown
+				days = 7300
+			}
+			if = {
+				limit = { has_variable = mission_happened_here }
+				remove_variable = mission_happened_here
+			}
+		}
+		if = {
+			limit = { has_variable = shrine_mission_ongoing }
+			remove_variable = shrine_mission_ongoing
+			scope:shrine_territory = {
+				if = {
+					limit = { has_variable = endowments_made }
+					remove_variable = endowments_made
+				}
+			}
+		}
+		if = {
+			limit = { has_variable = food_done }
+			remove_variable = food_done
+		}
+		if = {
+			limit = { has_variable = shrine_mission_over }
+			remove_variable = shrine_mission_over
+		}
+		if = {
+			limit = { has_variable = capital_trade_mission_ongoing }
+			remove_variable = capital_trade_mission_ongoing
+		}
+		if = {
+			limit = { exists = scope:governorship_capital_area }
+			scope:governorship_capital_area = {
+				if = {
+					limit = { has_variable = trade_routes_added }
+					remove_variable = trade_routes_added #Must be cleared in both abort and complete!
+				}
+			}
+		}
+		if = {
+			limit = {
+				has_variable = specialized_colonia
+			}
+			remove_variable = specialized_colonia
+		}
+		scope:governorship_capital = {
+			if = {
+				limit = { has_variable = wants_city_status }
+				remove_variable = wants_city_status
+			}
+			if = {
+				limit = { has_variable = wants_metropolis_status }
+				remove_variable = wants_metropolis_status
+			}
+			if = {
+				limit = { has_variable = capital_fort_needed }
+				remove_variable = capital_fort_needed
+			}
+			if = {
+				limit = { has_variable = was_dominant_culture }
+				remove_variable = was_dominant_culture
+			}
+		}
+		hidden_effect = {
+			if = {
+				limit = {
+					exists = scope:shrine_territory
+					scope:shrine_territory = {
+						has_province_modifier = ongoing_renovations
+					}
+				}
+				scope:shrine_territory = {
+					remove_province_modifier = ongoing_renovations
+				}
+			}
+			if = {
+				limit = {
+					exists = scope:governorship_capital
+					scope:governorship_capital = {
+						has_variable = capital_fort_needed
+					}
+				}
+				scope:governorship_capital = {
+					remove_variable = capital_fort_needed
+				}
+			}
+		}
+	}
+	
+	chance = { }
+	
+	
+	on_start = {
+		start_mission_ai_effect = yes
+		scope:infra_governorship = { set_variable = mission_happened_here }
+		scope:governorship_capital = {
+			if = {
+				limit = { has_city_status = no }
+				set_variable = wants_city_status
+			}
+			if = {
+				limit = {
+					NOT = { has_province_rank = city_metropolis }
+					total_population > 75
+				}
+				set_variable = wants_metropolis_status
+			}
+			if = {
+				limit = {
+					NOT = { has_variable = capital_fort_needed }
+					fort_level < 1
+				}
+				set_variable = capital_fort_needed
+			}
+		}
+	}
+	
+	shrine_branch_1 = { #Make sure the Shrine is in a City, build temples there.
+		requires = {
+			trader_colony
+			capital_branch_2
+			military_colonia
+		}
+		icon = task_political
+		potential = {
+			exists = scope:shrine_province
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = yes } #This is an optional branch that the AI is ok to fail.
+				scope:shrine_territory = {
+					has_city_status = yes #If this is a city then AI can proceed.
+				}
+			}
+			trigger_else = {
+				scope:shrine_territory = {
+					trigger_if = {
+						limit = { NOT = { owner = ROOT } }
+						owner = ROOT
+					}
+					has_city_status = yes
+					num_of_library_building >= 3
+				}
+			}
+		}
+ 
+		highlight = {
+			scope:province = {
+				exists = scope:shrine_territory
+				THIS = scope:shrine_territory
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -100
+				scope:shrine_territory = {
+					add_building_level = library_building
+					add_building_level = library_building
+				}
+			}
+			add_country_modifier = {
+				name = temples_built 
+				duration = 3650
+			}
+		}
+
+	}
+	
+	shrine_branch_2 = { #Build the Shrine
+		requires = { shrine_branch_1 }
+		icon = task_economical
+		potential = {
+			exists = scope:shrine_province
+		}
+		allow = {
+			treasury >= shrine_cost_afford_svalue 
+			
+			trigger_if = {
+				limit = { scope:shrine_territory = { NOT = { owner = ROOT } } }
+				scope:shrine_territory = {
+					owner = ROOT
+				}
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:shrine_territory
+				THIS = scope:shrine_territory
+			}
+		}
+		
+		monthly_on_action = generic_infra_temple_pulse
+
+		duration = 365
+		
+		on_start = {
+			add_treasury = shrine_cost_svalue
+			trigger_event = { id = generic_infra_mission.5 }
+			show_as_tooltip = {
+				scope:shrine_territory = {
+					add_province_modifier = {
+						name = ongoing_renovations
+						duration = 365
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = shrine_branch_2_effect_tooltip
+			trigger_event = { id = generic_infra_mission.6 }
+		} 
+
+	}
+	
+	shrine_branch_3 = { #Make religious endowments in state - This is the AI option and the AI gets handholding
+		icon = task_economical
+		prevented_by = { shrine_branch_4 shrine_branch_5 }
+		requires = { shrine_branch_2 }
+		bypass = { has_variable = shrine_mission_over }
+		potential = {
+			exists = scope:shrine_province
+			exists = scope:shrine_territory
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:shrine_territory = {
+					num_of_temple_building >= 1
+					state = {
+						custom_tooltip = {
+							text = "have_4_religious_endowments_tooltip"
+							trigger_if = {
+								limit = {
+									has_variable = endowments_made
+								}
+								var:endowments_made >= 4
+							}
+							trigger_else = {
+								always = no
+							}
+						}
+					}
+				}
+			}
+			trigger_else = {
+				always = yes
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:shrine_territory
+				is_in_area = scope:shrine_territory
+			}
+		}
+
+		on_completion = { #These are guaranteed to exist if you have this task.
+			remove_variable = shrine_mission_ongoing #Must be cleared in both abort and complete!
+			set_variable = shrine_mission_over
+			trigger_event = { id = generic_infra_mission.4 }
+			custom_tooltip = ceremony_event.tooltip
+			scope:shrine_territory = {
+				create_5_citizens_effect = yes
+				create_2_nobles_effect = yes
+				if = {
+					limit = {
+						NOT = { has_province_modifier = embelished_great_shrine_modifier }
+					}
+					add_province_modifier = {
+						name = embelished_great_shrine_modifier
+						duration = -1
+					}
+				}
+				if = {
+					limit = {
+						ROOT = { is_ai = yes }
+					}
+					ROOT = {
+						pay_price = price_state_investment_religious
+						pay_price = price_state_investment_religious
+						pay_price = price_state_investment_religious
+						pay_price = price_state_investment_religious
+					}
+					state = {
+						add_state_modifier = {
+							name = state_improvement_religious
+							duration = -1
+							mode = add
+						}
+						add_state_modifier = {
+							name = state_improvement_religious
+							duration = -1
+							mode = add
+						}
+						add_state_modifier = {
+							name = state_improvement_religious
+							duration = -1
+							mode = add
+						}
+						add_state_modifier = {
+							name = state_improvement_religious
+							duration = -1
+							mode = add
+						}
+					}
+				}
+			}
+			
+		}
+	}
+	
+	shrine_branch_4 = { #Create Religious Subject
+		icon = task_diplomatic
+		requires = { shrine_branch_2 }
+		prevented_by = { shrine_branch_3 shrine_branch_5 }
+		bypass = { has_variable = shrine_mission_over }
+		potential = {
+			exists = scope:shrine_province
+			exists = scope:shrine_territory
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = yes }
+				is_ai = no #AI should always pick first option
+			}
+			scope:shrine_territory = {
+				controller = ROOT
+				owner = ROOT
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:shrine_territory
+				THIS = scope:shrine_territory
+			}
+		}
+
+		on_completion = { #These are guaranteed to exist if you have this task.
+			remove_variable = shrine_mission_ongoing #Must be cleared in both abort and complete!
+			set_variable = shrine_mission_over
+			custom_tooltip = ceremony_event.tooltip
+			scope:shrine_territory = {
+				create_country = {
+					hidden_effect = {
+						set_country_heritage = religious_enclave_heritage
+						change_government = theocratic_monarchy
+						add_manpower = 5
+						add_stability_effect = yes
+						add_treasury = 600
+						ROOT = { make_subject = { target = PREV type = feudatory } }
+						save_scope_as = theocratic_enclave
+					}
+				}
+				ROOT = {
+					custom_tooltip = autonomous_shrine_tooltip
+				}
+				create_5_citizens_effect = yes
+				create_2_nobles_effect = yes
+				hidden_effect = {
+					if = {
+						limit = {
+							NOT = { has_province_modifier = embelished_great_shrine_modifier }
+						}
+						add_province_modifier = {
+							name = embelished_great_shrine_modifier
+							duration = -1
+						}
+					}
+				}
+			}
+			trigger_event = { id = generic_infra_mission.29 }
+		}
+	}
+	
+	shrine_branch_5 = { #Lump Sum
+		icon = task_political
+		requires = { shrine_branch_2 }
+		prevented_by = { shrine_branch_3 shrine_branch_4 }
+		bypass = { has_variable = shrine_mission_over }
+		potential = {
+			exists = scope:shrine_province
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = yes }
+				is_ai = no #AI should always pick first option
+			}
+			treasury >= 800
+			scope:shrine_territory = {
+				controller = ROOT
+				owner = ROOT
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:shrine_territory
+				THIS = scope:shrine_territory
+			}
+		}
+
+		on_completion = { #These are guaranteed to exist if you have this task.
+			remove_variable = shrine_mission_ongoing #Must be cleared in both abort and complete!
+			set_variable = shrine_mission_over
+			add_treasury = -800
+			custom_tooltip = ceremony_event.tooltip
+			trigger_event = { id = generic_infra_mission.4 }
+			scope:shrine_territory = {
+				create_5_citizens_effect = yes
+				create_2_nobles_effect = yes
+				if = {
+					limit = {
+						NOT = { has_province_modifier = embelished_great_shrine_modifier }
+					}
+					add_province_modifier = {
+						name = embelished_great_shrine_modifier
+						duration = -1
+					}
+				}
+			}
+		}
+	}
+
+	
+	capital_branch_1_a = { #If the region is not the capital region.
+		#Upgrade Province Capital to City
+		icon = task_political
+		requires = {  } 
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				THIS = scope:governorship_capital
+			}
+		}
+
+		potential = {
+			exists = scope:governorship_capital
+			scope:governorship_capital = {
+				is_capital = no
+				has_variable = wants_city_status
+			}
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = yes }
+				can_pay_price = price_found_city
+				custom_tooltip = { #AI always uses governors so we keep this.
+					text = hire_governor_tooltip
+					trigger_if = {
+						limit = { scope:infra_governorship = { exists = governor_or_ruler } }
+						always = yes
+					}
+					trigger_else = {
+						always = no
+					}
+				}
+			}
+			trigger_else = {
+				scope:governorship_capital = { has_city_status = yes }
+				custom_tooltip = {
+					text = hire_governor_tooltip
+					trigger_if = {
+						limit = { scope:infra_governorship = { exists = governor_or_ruler } }
+						always = yes
+					}
+					trigger_else = {
+						always = no
+					}
+				}
+			}
+		}
+
+		#monthly_on_action = generic_1_pulse 
+
+		on_completion = {
+			if = {
+				limit = { has_variable = wants_city_status }
+				remove_variable = wants_city_status
+			}
+			if = {
+				limit = { is_ai = yes }
+				pay_price = price_found_city
+				scope:governorship_capital = {
+					add_province_modifier = {
+						name = founding_city_in_progress
+						duration = 730
+					}
+					trigger_event = {
+						id = state_improvement.6
+						days = 730
+					}
+				}
+			}
+			scope:governorship_capital = {
+				create_state_pop = citizen
+				create_state_pop = freemen
+			}
+		}
+	}
+	
+	capital_branch_1_b = { #If the region IS the capital region.
+		requires = {  } 
+		icon = task_political
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				THIS = scope:governorship_capital
+			}
+		}
+
+		potential = {
+			exists = scope:governorship_capital
+			scope:governorship_capital = {
+				is_capital = yes
+				has_variable = wants_city_status
+			}
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:governorship_capital = { has_city_status = yes } 
+			}
+			trigger_else = { can_pay_price = price_found_city }
+		}
+
+		on_completion = {
+			if = {
+				limit = { has_variable = wants_city_status }
+				remove_variable = wants_city_status
+			}
+			if = {
+				limit = { is_ai = yes }
+				pay_price = price_found_city
+				scope:governorship_capital = {
+					add_province_modifier = {
+						name = founding_city_in_progress
+						duration = 730
+					}
+					trigger_event = {
+						id = state_improvement.6
+						days = 730
+					}
+				}
+			}
+			scope:governorship_capital = {
+				create_state_pop = citizen
+				create_state_pop = freemen
+			}
+		} 
+	}
+	
+	capital_branch_1_c = { #If the region IS the capital region.
+		requires = {
+			capital_branch_2
+		}
+		icon = task_political
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				THIS = scope:governorship_capital
+			}
+		}
+
+		potential = {
+			exists = scope:governorship_capital
+			scope:governorship_capital = {
+				has_variable = wants_metropolis_status
+			}
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:governorship_capital = { has_province_rank = city_metropolis }
+			}
+			trigger_else = { can_pay_price = price_found_metropolis }
+		}
+
+		on_completion = {
+			if = {
+				limit = { has_variable = wants_metropolis_status }
+				remove_variable = wants_metropolis_status
+			}
+			if = {
+				limit = { is_ai = yes }
+				pay_price = price_found_metropolis
+				scope:governorship_capital = {
+					add_province_modifier = {
+						name = founding_metropolis_in_progress
+						duration = 730
+					}
+					trigger_event = {
+						id = state_improvement.7
+						days = 730
+					}
+				}
+			}
+			scope:governorship_capital = {
+				add_province_modifier = {
+					name = "new_metropole"
+					duration = 1825
+				}
+			}
+		} 
+	}
+	
+	capital_branch_2 = { #A task with unmet Potential is not required.
+		icon = task_economical
+		requires = {
+			capital_branch_1_a
+			capital_branch_1_b
+			granary_of_x
+			food_market_of_x
+			expand_work_force
+			port_branch_2
+			cultural_imperialism
+			fortify_province
+			expand_harbor
+			build_barracks
+			slave_city_task
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				exists = state
+				state = scope:governorship_capital.state
+			}
+		}
+
+		potential = {
+			exists = scope:governorship_capital_area
+			scope:governorship_capital = {
+				is_capital = yes
+			}
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				hidden:scope:governorship_capital = {
+					trigger_if = {
+						limit = { NOT = { owner = ROOT } }
+						owner = ROOT
+					}
+					hidden:state = {
+						custom_tooltip = {
+							text = "have_3_trade_goods_tooltip"
+							trigger_if = {
+								limit = {
+									has_variable = trade_routes_added
+								}
+								var:trade_routes_added >= 3
+							}
+							trigger_else = {
+								always = no
+							}
+						}
+					}
+				}
+			}
+			trigger_else = {
+				always = yes
+			}
+		}
+
+		on_completion = { #
+			if = {
+				limit = {
+					ROOT = { is_ai = yes }
+				}
+				ROOT = {
+					pay_price = price_state_investment_oratory
+				}
+				scope:governorship_capital_area = {
+					add_state_modifier = {
+						name = state_improvement_oratory
+						duration = -1
+						mode = add
+					}
+				}
+			}
+			if = {
+				limit = { has_variable = capital_trade_mission_ongoing }
+				remove_variable = capital_trade_mission_ongoing
+			}
+			scope:governorship_capital_area = {
+				if = {
+					limit = { has_variable = trade_routes_added }
+					remove_variable = trade_routes_added #Must be cleared in both abort and complete!
+				}
+			}
+			scope:governorship_capital = {
+				add_province_modifier = {
+					name = emporion_modifier
+					duration = -1
+				}
+			}
+		} 
+	}
+	
+	found_colonia = {
+		icon = task_expansion
+		requires = {
+			capital_branch_1_c
+		} 
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				THIS = scope:governorship_capital
+			}
+		}
+
+		potential = {
+			exists = scope:governorship_capital
+			scope:governorship_capital = {
+				is_capital = no
+				NOT = { has_variable = was_dominant_culture } #This territory was not dominated by our culture at start.
+			}
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:governorship_capital = {
+					trigger_if = {
+						limit = { has_variable = capital_fort_needed }
+						fort_level >= 1
+					}
+					has_city_status = yes
+					has_building = library_building
+					has_building = commerce_building
+				}
+			}
+			trigger_else = { #if AI
+				treasury > 100
+			}
+		}
+
+		monthly_on_action = generic_infra_colonia_pulse
+
+		duration = 365
+
+		bypass = { #Save Game Compatability
+			has_completed_mission_task = strengthen_governorship_capital
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				scope:governorship_capital = { 
+					create_state_pop = freemen
+					create_state_pop = citizen
+					add_province_modifier = {
+						name = colonia_underway
+						duration = 365
+					}
+				}
+			}
+			scope:governorship_capital = { remove_variable = capital_fort_needed }
+			trigger_event = { id = generic_infra_mission.12 }
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -100
+				scope:governorship_capital = {
+					add_building_level = commerce_building
+					add_building_level = library_building
+				}
+			}
+		}
+
+		on_bypass  = {} 
+	}
+	
+	strengthen_governorship_capital = {
+		icon = task_conquest
+		requires = {
+			capital_branch_1_c
+		} 
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				THIS = scope:governorship_capital
+			}
+		}
+
+		potential = {
+			exists = scope:governorship_capital
+			scope:governorship_capital = {
+				is_capital = no
+				has_variable = was_dominant_culture #This territory was dominated by our culture at start
+			}
+		}
+		allow = {
+			trigger_if = {	
+				limit = { is_ai = no }
+				scope:governorship_capital = {
+					trigger_if = {
+						limit = { has_variable = capital_fort_needed }
+						fort_level >= 1
+					}
+					has_city_status = yes
+					num_of_town_hall_building >= 2
+				}
+			}
+			trigger_else = {
+				treasury > 150
+			}
+		}
+
+		monthly_on_action = generic_infra_governor_residence_pulse
+
+		duration = 365
+		
+		bypass = { #Save Game Compatability
+			has_completed_mission_task = found_colonia
+		}
+
+		on_completion = {
+			scope:governorship_capital = {
+				if = {
+					limit = { has_variable = capital_fort_needed }
+					remove_variable = capital_fort_needed
+				}
+			}
+			
+			if = {
+				limit = {
+					is_ai = yes
+				}
+				add_treasury = -150
+				scope:governorship_capital = {
+					add_building_level = town_hall_building
+					add_building_level = town_hall_building
+					add_building_level = fortress_building
+				}
+			}
+			
+			if = {
+				limit = {
+					scope:governorship_capital = {
+						state = {
+							exists = governor
+						}
+					}
+				}
+				scope:governorship_capital = {
+					state = {
+						governor = {
+							add_loyalty = fortified_residence
+						}
+					}
+				}
+			}
+			scope:governorship_capital = {
+				add_province_modifier = {
+					name = governorship_secured
+					duration = 1825
+				}
+			}
+		}
+
+		on_bypass  = {} 
+	}
+	
+	military_colonia = {
+		icon = task_conquest
+		prevented_by = { trader_colony }
+		requires = { #Only one of the below can have potential met
+			found_colonia
+			strengthen_governorship_capital
+		}
+
+		bypass = {
+			has_completed_mission_task = trader_colony
+			has_variable = specialized_colonia
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				THIS = scope:governorship_capital
+			}
+		}
+
+		potential = {
+			exists = scope:governorship_capital
+			scope:governorship_capital = {
+				is_capital = no
+			}
+		}
+		allow = {
+			NOT = { has_variable = specialized_colonia }
+			trigger_if = {
+				limit = { is_ai = yes }
+				treasury >= 150
+				scope:governorship_capital = {
+					has_city_status = yes
+					NOT = { has_province_modifier = governorship_secured }
+					NOT = { has_province_modifier = colonia_underway }
+				}
+			} #needs to expire first
+			trigger_else = {
+				scope:governorship_capital = {
+					has_city_status = yes
+					num_of_military_building >= 1
+					num_of_commerce_building >= 1
+				}
+			}
+		}
+		
+		on_completion = {
+		
+			if = {
+				limit = {
+					is_ai = yes
+				}
+				add_treasury = -150
+				scope:governorship_capital = {
+					add_building_level = military_building
+					add_building_level = commerce_building
+				}
+			}
+			
+			scope:governorship_capital = {
+				add_province_modifier = {
+					name = military_colony_mission_modifier
+					duration = 3650
+				}
+			}
+			set_variable = specialized_colonia
+		}
+
+		on_bypass  = {} 
+	}
+	
+	trader_colony = {
+		icon = task_economical
+		prevented_by = { military_colonia }
+		requires = { #Only one of the below can have potential met
+			found_colonia
+			strengthen_governorship_capital
+		}
+		
+		bypass = {
+			has_variable = specialized_colonia
+			has_completed_mission_task = military_colonia
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				THIS = scope:governorship_capital
+			}
+		}
+
+		potential = {
+			exists = scope:governorship_capital
+			scope:governorship_capital = {
+				is_capital = no
+			}
+		}
+		allow = {
+			NOT = { has_variable = specialized_colonia }
+			trigger_if = {
+				limit = { is_ai = yes }
+				treasury > 150
+				scope:governorship_capital = {
+					has_city_status = yes
+					NOT =  { has_province_modifier = governorship_secured }
+					NOT =  { has_province_modifier = colonia_underway }
+				}
+			} #needs to expire first
+			trigger_else = {
+				scope:governorship_capital = {
+					has_city_status = yes
+					num_of_commerce_building >= 1
+					num_of_library_building >= 2
+				}
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = {
+					is_ai = yes
+				}
+				add_treasury = -150
+				scope:governorship_capital = {
+					add_building_level = commerce_building
+					add_building_level = commerce_building
+					add_building_level = library_building
+				}
+			}
+			scope:governorship_capital = {
+				add_province_modifier = {
+					name = trade_city_mission_modifier
+					duration = 3650
+				}
+			}
+			set_variable = specialized_colonia
+		}
+
+	}
+	
+	colonia_finish = { #Actually Finish for all
+		icon = task_diplomatic
+		requires = { 
+			trader_colony
+			military_colonia
+			granary_of_x
+			food_market_of_x
+			expand_work_force
+			port_branch_2
+			cultural_imperialism
+			fortify_province
+			expand_harbor
+			build_barracks
+			slave_city_task
+		}
+		final = yes
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				THIS = scope:governorship_capital
+			}
+		}
+		
+		potential = {
+			exists = scope:governorship_capital
+			scope:governorship_capital = {
+				is_capital = no
+			}
+		}
+		allow = {
+			scope:governorship_capital = { has_city_status = yes }
+			trigger_if = {
+				limit = { is_ai = yes }
+				treasury > 100
+				scope:governorship_capital = {
+					NOT =  { has_province_modifier = governorship_secured }
+					NOT =  { has_province_modifier = colonia_underway }
+				}
+			} #needs to expire first
+			trigger_else = {
+				scope:governorship_capital = {
+					has_building = aqueduct_building
+					has_building = court_building
+					has_building = population_building
+				}
+			}
+		}
+
+		on_completion = {
+		
+			if = {
+				limit = {
+					is_ai = yes
+				}
+				scope:governorship_capital = {
+					if = {
+						limit = {
+							NOT = { has_building = aqueduct_building }
+							free_building_slots >= 1
+						}
+						add_building_level = aqueduct_building
+						owner = { add_treasury = -50 }
+					}
+					if = {
+						limit = {
+							NOT = { has_building = population_building }
+							free_building_slots >= 1
+						}
+						add_building_level = population_building
+						owner = { add_treasury = -50 }
+					}
+					if = {
+						limit = {
+							NOT = { has_building = commerce_building }
+							free_building_slots >= 1
+						}
+						add_building_level = commerce_building
+						owner = { add_treasury = -50 }
+					}
+				}
+			}
+			scope:governorship_capital_area = {
+				
+				add_state_modifier = {
+					name = "well_cared_for_governorship_center"
+					duration = -1
+				}
+			}
+			custom_tooltip = governorship_success_char
+			scope:governorship_capital = {
+				create_state_pop = nobles
+			}
+			trigger_event = { id = generic_infra_mission.28 }
+			
+		}
+
+	}
+	
+	
+	
+	fortify_capital = { #Optional and skipped by AI
+		icon = task_conquest
+		requires = {
+			capital_branch_2
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				THIS = scope:governorship_capital
+			}
+		}
+
+		potential = {
+			exists = scope:governorship_capital
+			scope:governorship_capital = {
+				has_variable = capital_fort_needed
+				is_capital = yes
+			}
+		}
+		allow = {
+			scope:governorship_capital = {
+				fort_level >= 1
+			}
+		}
+
+		on_completion = {
+			scope:governorship_capital = {
+				add_province_modifier = {
+					name = capital_secured
+					duration = 1825
+				}
+			}
+			add_political_influence = 15
+		}
+
+		on_bypass  = {} 
+	}
+	
+	
+	monumental_architecture = {
+		icon = task_political
+		requires = {
+			capital_branch_2
+		}
+		final = yes
+		
+		highlight = {
+			scope:province = {
+				exists = scope:governorship_capital
+				exists = state
+				state = scope:governorship_capital.state
+			}
+		}
+
+		potential = {
+			exists = scope:governorship_capital
+			scope:governorship_capital = {
+				is_capital = yes
+			}
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				hidden:scope:governorship_capital = {
+					OR = {
+						custom_tooltip = {
+							text = bring_the_stone_tooltip
+							OR = {
+								state = {
+									any_state_province = {
+										trade_goods = stone
+									}
+								}
+								is_importing_trade_good = stone
+							}
+						}
+						custom_tooltip = {
+							text = bring_the_marble_tooltip
+							OR = {
+								state = {
+									any_state_province = {
+										trade_goods = marble
+									}
+								}
+								is_importing_trade_good = marble
+							}
+						}
+						custom_tooltip = {
+							text = bring_the_iron_tooltip
+							OR = {
+								state = {
+									any_state_province = {
+										trade_goods = iron
+									}
+								}
+								is_importing_trade_good = iron
+							}
+						}
+						custom_tooltip = {
+							text = bring_the_wood_tooltip
+							OR = {
+								state = {
+									any_state_province = {
+										trade_goods = wood
+									}
+								}
+								is_importing_trade_good = wood
+							}
+						}
+					}
+				}
+			}
+			trigger_else = {
+				always = yes
+			}
+		}
+		
+		duration = 365
+		
+		monthly_on_action = generic_infra_monument_pulse
+		
+		on_start = {
+			trigger_event = { id = generic_infra_mission.10 }
+		}
+
+		on_completion = {
+			trigger_event = { id = generic_infra_mission.11 }
+			show_as_tooltip = {
+				if = {
+					limit = {
+						is_monarchy = yes
+					}
+					capital_scope = {
+						create_2_nobles_effect = yes
+						add_province_modifier = {
+							name = "royal_palaces_mission_modifier"
+							duration = -1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						is_republic = yes
+					}
+					capital_scope = {
+						create_2_nobles_effect = yes
+						add_province_modifier = {
+							name = "forum_mission_modifier"
+							duration = -1
+						}
+					}
+				}
+				else = {
+					capital_scope = {
+						create_2_nobles_effect = yes
+						add_province_modifier = {
+							name = "clan_council_compound_mission_modifier"
+							duration = -1
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	food_branch_1 = {
+		icon = task_economical
+		potential = {
+			exists = scope:food_province
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				hidden:scope:food_province = {
+					custom_tooltip = {
+						text = tooltip_building_farms
+						farms_in_province_svalue >= potential_farms_in_province_svalue
+					}
+				}
+			}
+			trigger_else = {
+				treasury > 300
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:food_province
+				exists = state
+				state = scope:food_province
+				has_food_trade_good_trigger = yes
+				has_city_status = no
+			}
+		}
+
+		bypass = {
+			scope:food_province = {
+				potential_farms_in_province_svalue < 2
+			}
+		}
+		
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -300
+				every_owned_province = {
+					limit = {
+						state = scope:food_province
+						has_food_trade_good_trigger = yes
+						free_building_slots >= 1
+						NOT = { has_building = basic_settlement_infratructure_building }
+						has_city_status = no
+					}
+					add_building_level = basic_settlement_infratructure_building
+				}
+			}
+			scope:food_province = {
+				add_state_modifier = {
+					name = "fruits_of_the_land"
+					duration = 3650
+				}
+			}
+		}
+
+		on_bypass = { trigger_event = generic_infra_mission.34 }
+
+	}
+	
+	granary_of_x = {
+		icon = task_economical
+		requires = { food_branch_1 }
+		prevented_by = { food_market_of_x }
+		bypass = { 
+			OR = {
+				has_variable = food_done 
+				scope:food_province = {
+					potential_farms_in_province_svalue < 2
+				}
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:food_province_capital
+				THIS = scope:food_province_capital
+			}
+		}
+		
+		potential = {
+			exists = scope:food_province
+			exists = scope:food_province_capital
+		}
+		allow = {
+			treasury >= food_depot_price
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:food_province_capital = {
+					is_state_capital = yes
+					has_city_status = yes
+					num_of_population_building >= 2
+				}
+			}
+			trigger_else = { always = no } #AI does the other task.
+		}
+		
+		on_completion = {
+			set_variable = food_done
+			add_treasury = food_depot_price_pay
+			scope:food_province_capital = {
+				add_province_modifier = {
+					name = "food_depot"
+					duration = -1
+				}
+			}
+		}
+
+		on_bypass = {
+			if = {
+				limit = {
+					scope:food_province = { potential_farms_in_province_svalue < 2 }
+				}
+				trigger_event = generic_infra_mission.35
+			}
+		}
+	}
+	
+	food_market_of_x = { #AI will use this task
+		icon = task_diplomatic
+		requires = { food_branch_1 }
+		prevented_by = { granary_of_x }
+		bypass = { 
+			OR = {
+				has_variable = food_done 
+				scope:food_province = {
+					potential_farms_in_province_svalue < 2
+				}
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:food_province
+				exists = state
+				state = scope:food_province
+			}
+		}
+		
+		
+		potential = {
+			exists = scope:food_province
+			exists = scope:food_province_capital
+		}
+		allow = {
+			scope:food_province = {
+				has_state_food >= lots_of_stored_food_svalue
+			}
+		}
+
+		on_completion = {
+			set_variable = food_done
+			scope:food_province = { add_state_food = lots_of_stored_food_pay_svalue }
+			add_country_modifier = {
+				name = bread_and_circuses_mission
+				duration = 3650
+			}
+		}
+		on_bypass = {
+			if = {
+				limit = {
+					scope:food_province = { potential_farms_in_province_svalue < 2 }
+				}
+				trigger_event = generic_infra_mission.36
+			}
+		}
+	}
+	
+	breeding_program = { #Optional, AI won't do.
+		icon = task_economical
+		requires = { granary_of_x }
+		potential = {
+			exists = scope:food_province
+			exists = scope:food_province_capital
+			scope:food_province = {
+				potential_farms_in_province_svalue >= 4
+				NOT = {
+					any_state_province = {
+						trade_goods = horses
+					}
+				}
+				NOT = {
+					any_state_province = {
+						trade_goods = steppe_horses
+					}
+				}
+			}
+		}
+		highlight = {
+			scope:province = {
+				exists = scope:food_province_capital
+				THIS = scope:food_province_capital
+			}
+		}
+		allow = {
+			treasury > 800
+			trigger_if = {
+				limit = {
+					heritage = steppe_heritage
+				}
+				scope:food_province_capital = {
+					is_importing_trade_good = steppe_horses
+				}
+			}
+			trigger_else = {
+				scope:food_province_capital = {
+					is_importing_trade_good = horses
+				}
+			}
+		}
+
+		bypass = {
+			scope:food_province = {
+				potential_farms_in_province_svalue < 2
+			}
+		}
+		
+		on_completion = {
+			add_treasury = -800
+			if = {
+				limit = { heritage = steppe_heritage }
+				scope:food_province_capital = {
+					set_trade_goods = steppe_horses
+				}
+			}
+			else = {
+				scope:food_province_capital = {
+					set_trade_goods = horses
+				}
+			}
+		}
+
+		on_bypass = {
+			if = {
+				limit = {
+					scope:food_province = { potential_farms_in_province_svalue < 2 }
+				}
+				trigger_event = generic_infra_mission.37
+			}
+		}
+	}
+
+	mining_branch_1 = {
+		icon = task_economical
+		potential = {
+			exists = scope:mining_province
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				hidden:scope:mining_province = {
+					custom_tooltip = {
+						text = tooltip_building_mines
+						mines_in_province_svalue >= potential_mines_in_province_svalue
+					}
+				}
+			}
+			trigger_else = {
+				treasury > 300
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:mining_province
+				exists = state
+				state = scope:mining_province
+				has_city_status = no
+				has_minable_trade_good_trigger = yes
+			}
+		}
+
+		bypass = {
+			scope:mining_province = {
+				potential_mines_in_province_svalue < 2
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -300
+				every_owned_province = {
+					limit = {
+						state = scope:mining_province
+						has_city_status = no
+						free_building_slots >= 1
+						has_minable_trade_good_trigger = yes
+						NOT = { has_building = slave_mine_building }
+					}
+					add_building_level = slave_mine_building
+				}
+			}
+			scope:mining_province = {
+				show_as_tooltip = {
+					every_state_province = {
+						limit = {
+							has_city_status = no
+							has_minable_trade_good_trigger = yes
+						}
+						add_province_modifier = {
+							name = "thriving_mining_sector"
+							duration = -1
+						}
+					}
+				}
+				hidden_effect = {
+					every_state_province = {
+						limit = { has_building = slave_mine_building }
+						add_province_modifier = {
+							name = "thriving_mining_sector"
+							duration = -1
+						}
+					}
+				}
+			}
+		}	
+
+		on_bypass = { trigger_event = generic_infra_mission.38 }
+	}
+	
+	
+	expand_work_force = {
+		icon = task_expansion
+		requires = { mining_branch_1 }
+		potential = {
+			exists = scope:mining_province
+			exists = scope:mining_capital
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:mining_province
+				exists = state
+				state = scope:mining_province
+			}
+		}
+		
+		allow = {
+			treasury >= slave_cost_svalue
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:mining_capital = {
+					OR = {
+						custom_tooltip = {
+							text = bring_the_wood_tooltip
+							OR = {
+								state = {
+									any_state_province = {
+										trade_goods = wood
+									}
+								}
+								is_importing_trade_good = wood
+							}
+						}
+						custom_tooltip = {
+							text = bring_olives_tooltip
+							OR = {
+								state = {
+									any_state_province = {
+										trade_goods = olive
+									}
+								}
+								is_importing_trade_good = olive
+							}
+						}
+					}
+					is_state_capital = yes
+					has_city_status = yes
+					OR = {
+						custom_tooltip = {
+							text = bring_grain_tooltip
+							OR = {
+								state = {
+									any_state_province = {
+										trade_goods = grain
+									}
+								}
+								is_importing_trade_good = grain
+							}
+						}
+						custom_tooltip = {
+							text = bring_fish_tooltip
+							OR = {
+								state = {
+									any_state_province = {
+										trade_goods = fish
+									}
+								}
+								is_importing_trade_good = fish
+							}
+						}
+						custom_tooltip = {
+							text = bring_the_livestock_tooltip
+							OR = {
+								state = {
+									any_state_province = {
+										trade_goods = cattle
+									}
+								}
+								is_importing_trade_good = cattle
+							}
+						}
+						custom_tooltip = {
+							text = bring_vegetables_tooltip
+							OR = {
+								state = {
+									any_state_province = {
+										trade_goods = vegetables
+									}
+								}
+								is_importing_trade_good = vegetables
+							}
+						}
+					}
+				}
+			}
+			trigger_else = {
+				always = yes
+			}
+		}
+
+		bypass = {
+			scope:mining_province = {
+				potential_mines_in_province_svalue < 2
+			}
+		}
+
+		on_completion = {
+			add_treasury = slave_cost_pay_svalue #Payment for the Slaves
+			scope:mining_province = {
+				every_state_province = {
+					limit = { has_minable_trade_good_trigger = yes }
+					create_3_slaves_effect = yes
+				}
+			}
+		}
+
+		on_bypass = { trigger_event = generic_infra_mission.39 }
+	}
+	
+	prospecting_mission = {
+		icon = task_expansion
+		requires = { expand_work_force }
+		potential = {
+			exists = scope:mining_province
+			scope:mining_province = {
+				any_state_province = {
+					has_city_status = no
+					OR = {
+						terrain = hills
+						terrain = mountain
+						terrain = desert
+					}
+					has_unminable_trade_good_trigger = yes
+				}
+			}
+		}
+		allow = {
+			treasury >= prospecting_cost_svalue #AI does not need help with this.
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:mining_province
+				exists = state
+				state = scope:mining_province
+				has_city_status = no
+				OR = {
+					terrain = hills
+					terrain = mountain
+					terrain = desert
+				}
+				has_unminable_trade_good_trigger = yes
+			}
+		}
+
+		bypass = {
+			scope:mining_province = {
+				potential_mines_in_province_svalue < 2
+			}
+		} 
+		
+		duration = 365
+
+
+		monthly_on_action = prospecting_pulse 
+
+		on_start = {
+			add_treasury = prospecting_cost_pay_svalue
+		}
+
+		on_completion = {
+			custom_tooltip = prospection_tooltip
+		}
+
+		on_bypass = { trigger_event = generic_infra_mission.40 }
+	}
+	
+	
+	port_branch_1 = {
+		icon = task_expansion
+		potential = {
+			exists = scope:port_province
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				hidden:scope:port_province = {
+					custom_tooltip = {
+						text = tooltip_num_ports
+						OR = {
+							any_state_province = { #Either own a state with at least 3 ports.
+								count >= 3
+								is_port = yes
+							}
+							any_state_province = { #Or Own a state with at least one port where your subjects and you have at least 3 ports together.
+								count >= 1
+								is_port = yes
+								ports_in_subjects_svalue >= 2
+							}
+						}
+					}
+				}
+				custom_tooltip = {
+					text = tooltip_building_ports
+					port_cities_in_province_svalue >= port_cities_potential_tooltip_svalue
+				}
+				custom_tooltip = {
+					text = tooltip_fort_ports
+					port_forts_province_svalue >= port_cities_potential_tooltip_svalue
+				}
+			}
+			trigger_else = {
+				treasury > 400
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:port_province
+				exists = state
+				state = scope:port_province
+				is_port = yes
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -400
+				scope:port_province = {
+					every_state_province = {
+						limit = {
+							is_port = yes
+							free_building_slots >= 1
+						}
+						add_building_level = fortress_building
+					}
+				}
+			}
+			scope:port_province = {
+				every_state_province = {
+					limit = { is_port = yes }
+					create_2_citizens_effect = yes
+				}
+				area = {
+					every_area_province = {
+						limit = {
+							is_port = yes
+							owner = { is_subject_of = ROOT }
+						}
+						create_2_citizens_effect = yes
+					}
+				}
+			}
+		}
+
+	}
+	
+	port_branch_2 = {
+		icon = task_expansion
+		requires = { port_branch_1 } #Skips to port_branch_1
+		potential = {
+			exists = scope:port_province
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				hidden:scope:port_province = {
+					custom_tooltip = {
+						text = tooltip_num_ports
+						OR = {
+							any_state_province = { #Either own a state with at least 3 ports.
+								count >= 3
+								is_port = yes
+							}
+							any_state_province = { #Or Own a state with at least one port where your subjects and you have at least 3 ports together.
+								count >= 1
+								is_port = yes
+								ports_in_subjects_svalue >= 2
+							}
+						}
+					}
+				}
+				custom_tooltip = {
+					text = tooltip_building_ports_markets
+					port_markets_in_province_svalue >= port_cities_potential_tooltip_svalue
+				}
+			}
+			trigger_else = {
+				treasury > 120
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:port_province
+				exists = state
+				state = scope:port_province
+				is_port = yes
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -120
+			}
+			scope:port_province = {
+				add_state_modifier = {
+					name = "regional_center_of_trade"
+					duration = -1
+				}
+			}
+		}
+
+	}
+	
+	expanded_shipyards = { #This is where it ends for AI
+		icon = task_conquest
+		requires = { port_branch_2 }
+		potential = {
+			exists = scope:port_province
+			exists = scope:ship_building_center
+			scope:ship_building_center = { owner = ROOT }
+		}
+		allow = {
+			hidden:scope:ship_building_center = {
+				custom_tooltip = {
+					text = bring_the_wood_tooltip
+					OR = {
+						state = {
+							any_state_province = {
+								trade_goods = wood
+							}
+						}
+						is_importing_trade_good = wood
+					}
+				}
+			}
+			scope:ship_building_center = {
+				num_of_foundry_building >= 1
+			}
+		}
+		highlight = {
+			scope:province = {
+				exists = scope:ship_building_center
+				THIS = scope:ship_building_center
+			}
+		}
+		on_completion = {
+			scope:ship_building_center = {
+				add_province_modifier = {
+					name = ship_building_center_modifier
+					duration = -1
+				}
+			}
+		}
+	}
+	
+	flag_ship_mission = {
+		icon = task_conquest
+		requires = { expanded_shipyards }
+		potential = {
+			exists = scope:port_province
+			exists = scope:ship_building_center
+			scope:ship_building_center = { owner = ROOT }
+		}
+		allow = {
+			treasury >= 300
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:ship_building_center
+				THIS = scope:ship_building_center
+			}
+		}
+		
+		duration = 185
+		
+		on_start = { add_treasury = -300 }
+
+		on_completion = {
+			if = {
+				limit = {
+					OR = {
+						is_tradition_tree_allowed = greek_philosophy
+						is_tradition_tree_allowed = levantine_philosophy
+					}
+				}
+				create_unit = {
+					location = scope:valid_sea_or_river_place
+					navy = yes
+					sub_unit = mega_galley
+					add_subunit = octere
+					add_subunit = octere
+					add_subunit = octere
+					add_subunit = octere
+					save_scope_as = new_navy
+				}
+				custom_tooltip = mega_galley_tooltip
+			}
+			else = {
+				create_unit = {
+					location = scope:valid_sea_or_river_place
+					navy = yes
+					sub_unit = octere
+					add_subunit = octere
+					add_subunit = octere
+					add_subunit = octere
+					add_subunit = octere
+					save_scope_as = new_navy
+				}
+				custom_tooltip = octere_tooltip
+			}
+			trigger_event = { id = generic_infra_mission.30 }
+		}
+
+	}
+	
+	urbanize_city = {
+		icon = task_economical
+		potential = {
+			exists = scope:urbanize_area_province
+			exists = scope:urbanize_area_city
+		}
+		allow = {
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:urbanize_area_city = {
+					is_state_capital = yes
+					has_city_status = yes
+				}
+			}
+			trigger_else = {
+				can_pay_price = price_found_city
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:urbanize_area_city
+				THIS = scope:urbanize_area_city
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				pay_price = price_found_city
+				add_political_influence = subtract_influence_large
+				scope:urbanize_area_city = {
+					state = { set_state_capital = PREV }
+					add_province_modifier = {
+						name = founding_city_in_progress
+						duration = 730
+					}
+					trigger_event = {
+						id = state_improvement.6
+						days = 730
+					}
+				}
+			}
+			scope:urbanize_area_city = {
+				if = {
+					limit = {
+						OR = {
+							exists = scope:colonia_mini
+							exists = scope:expand_port_urban
+						}
+					}
+					create_state_pop = citizen
+					create_state_pop = citizen
+				}
+				else_if = {
+					limit = {
+						OR = {
+							exists = scope:fortify_urban
+							exists = scope:regiment_urban
+						}
+					}
+					create_state_pop = freemen
+					create_state_pop = freemen
+				}
+				else = {
+					create_state_pop = slaves
+					create_state_pop = slaves
+				}
+			}
+		}
+
+	}
+	
+	cultural_imperialism = {
+		icon = task_political
+		requires = { urbanize_city }
+		potential = {
+			exists = scope:urbanize_area_province
+			exists = scope:urbanize_area_city
+			exists = scope:colonia_mini
+		}
+		allow = {
+			scope:urbanize_area_city = { has_city_status = yes }
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:urbanize_area_city = {
+					num_of_theathre_building >= 1
+				}
+			}
+			trigger_else = { treasury >= 100 }
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:urbanize_area_city
+				THIS = scope:urbanize_area_city
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -100
+				scope:urbanize_area_city = {
+					while = {
+						limit = {
+							num_of_commerce_building < 2
+							free_building_slots >= 1
+						}
+						add_building_level = commerce_building
+					}
+				}
+			}
+			scope:urbanize_area_city = {
+				add_province_modifier = {
+					name = "cultural_assimilation_trend"
+					duration = 3650
+				}
+			}
+			add_1_free_province_investments = yes
+		}
+	}
+	
+	fortify_province = {
+		icon = task_conquest
+		requires = { urbanize_city }
+		potential = {
+			exists = scope:urbanize_area_province
+			exists = scope:urbanize_area_city
+			exists = scope:fortify_urban
+		}
+		allow = {
+			scope:urbanize_area_city = { has_city_status = yes }
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:urbanize_area_city = {
+					fort_level >= 2
+				}
+			}
+			trigger_else = {
+				treasury >= 100
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:urbanize_area_city
+				THIS = scope:urbanize_area_city
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -100
+				scope:urbanize_area_city = {
+					while = {
+						limit = {
+							num_of_fortress_building < 2
+							free_building_slots >= 1
+						}
+						add_building_level = fortress_building
+					}
+				}
+			}
+			scope:urbanize_area_city = {
+				add_province_modifier = {
+					name = "fortified_stronghold"
+					duration = 3650
+				}
+			}
+			add_1_free_province_investments = yes
+		}	
+
+	}
+	
+	expand_harbor = {
+		icon = task_expansion
+		requires = { urbanize_city }
+		potential = {
+			exists = scope:urbanize_area_province
+			exists = scope:urbanize_area_city
+			exists = scope:expand_port_urban
+		}
+		allow = {
+			scope:urbanize_area_city = { has_city_status = yes }
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:urbanize_area_city = {
+					num_of_commerce_building >= 2
+				}
+			}
+			trigger_else = {
+				treasury > 100
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:urbanize_area_city
+				THIS = scope:urbanize_area_city
+			}
+		}
+		
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -100
+				scope:urbanize_area_city = {
+					while = {
+						limit = {
+							num_of_commerce_building < 2
+							free_building_slots >= 1
+						}
+						add_building_level = commerce_building
+					}
+				}
+			}
+			scope:urbanize_area_city = {
+				add_province_modifier = {
+					name = expanded_port
+					duration = 3650
+				}
+			}
+			add_1_free_province_investments = yes
+		}	
+
+	}
+	
+	build_barracks = {
+		icon = task_conquest
+		requires = { urbanize_city }
+		potential = {
+			exists = scope:urbanize_area_province
+			exists = scope:urbanize_area_city
+			exists = scope:regiment_urban
+		}
+		allow = {
+			scope:urbanize_area_city = { has_city_status = yes }
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:urbanize_area_city = {
+					num_of_military_building >= 2
+				}
+			}
+			trigger_else = {
+				treasury > 100
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:urbanize_area_city
+				THIS = scope:urbanize_area_city
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -100
+				scope:urbanize_area_city = {
+					while = {
+						limit = {
+							num_of_military_building < 2
+							free_building_slots >= 1
+						}
+						add_building_level = military_building
+					}
+				}
+			}
+			scope:urbanize_area_city = {
+				add_province_modifier = {
+					name = "military_regiment_city"
+					duration = 3650
+				}
+			}
+			add_1_free_province_investments = yes
+		}	
+
+	}
+	
+	slave_city_task = {
+		icon = task_conquest
+		requires = { urbanize_city }
+		potential = {
+			exists = scope:urbanize_area_province
+			exists = scope:urbanize_area_city
+			exists = scope:slave_city
+		}
+		allow = {
+			scope:urbanize_area_city = { has_city_status = yes }
+			trigger_if = {
+				limit = { is_ai = no }
+				scope:urbanize_area_city = {
+					num_of_workshop_building >= 2
+				}
+			}
+			trigger_else = {
+				treasury > 100
+			}
+		}
+		
+		highlight = {
+			scope:province = {
+				exists = scope:urbanize_area_city
+				THIS = scope:urbanize_area_city
+			}
+		}
+
+		on_completion = {
+			if = {
+				limit = { is_ai = yes }
+				add_treasury = -100
+				scope:urbanize_area_city = {
+					while = {
+						limit = {
+							num_of_town_hall_building < 2
+							free_building_slots >= 1
+						}
+						add_building_level = town_hall_building
+					}
+				}
+			}
+			scope:urbanize_area_city = {
+				add_province_modifier = {
+					name = "slave_city_modifier"
+					duration = 3650
+				}
+			}
+			add_1_free_province_investments = yes
+		}
+	}
+	
+	on_completion = {
+		complete_mission_effect = yes
+		if = {
+			limit = { exists = scope:shrine_province }
+			scope:shrine_province = {
+				if = {
+					limit = { has_variable = endowments_made }
+					remove_variable = endowments_made #Must be cleared in both abort and complete!
+				}
+			}
+		}
+		if = {
+			limit = { has_variable = shrine_mission_over }
+			remove_variable = shrine_mission_over
+		}
+		if = {
+			limit = { has_variable = food_done }
+			remove_variable = food_done
+		}
+		if = {
+			limit = { has_variable = mining_var }
+			remove_variable = mining_var
+		}
+		if = {
+			limit = { has_variable = mining_prospection_var }
+			remove_variable = mining_prospection_var
+		}
+		if = {
+			limit = { has_variable = food_mission_var }
+			remove_variable = food_mission_var
+		}
+		if = {
+			limit = { has_variable = temple_var }
+			remove_variable = temple_var
+		}
+		if = {
+			limit = { has_variable = port_var }
+			remove_variable = port_var
+		}
+		if = {
+			limit = {
+				has_variable = specialized_colonia
+			}
+			remove_variable = specialized_colonia
+		}
+		if = {
+			limit = {
+				any_owned_province = { has_variable = capital_fort_needed }
+			}
+			every_owned_province = {
+				limit = { has_variable = capital_fort_needed }
+				remove_variable = capital_fort_needed
+			}
+		}
+	}
+	
+}

@@ -1,0 +1,825 @@
+﻿mauryan_reconquest = {
+    header = "indian_mission_header"
+    icon = "seleukid_4"
+
+    repeatable = no
+
+    chance = {
+        factor = 50000
+    }
+
+    potential = {
+    	is_ai = no
+    	tag = MRY
+    	has_variable = reconquest_tree_start_var	#Starts after Shunga rebellion event fires.
+    	NOT = { has_global_variable = mauryan_collapse_prevented }
+    	NOT = { has_variable = mauryan_mission_two_cooldown }
+    }
+
+    abort = {
+
+    }
+
+    on_start = {
+        start_mission_ai_effect = yes
+		save_scope_as = mission_country
+    }
+
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = mauryan_mission_two_cooldown
+            days = 7300
+        }
+    }
+
+    on_completion = {
+        complete_mission_effect = yes
+    }
+
+	mauryan_reconquest_task_1 = {   ##Magadhi Revival
+		icon = "task_political"
+		
+		allow = {
+		#Have at least 40 stability
+			stability >= 40
+		}
+
+		on_completion = {
+			custom_tooltip = mauryan_reconquest_task_1_B_completion_tooltip
+			set_variable = {
+				name = revival_war_goal_enabled
+				days = 9125
+			}
+			#Gain claims on all the land that Maurya starts the game with.
+			custom_tooltip = mauryan_reconquest_task_1_completion_tooltip
+			hidden_effect = {
+				every_in_global_list = {
+    				variable = MRY_land
+    				add_claim = root
+				}
+			}
+		}
+	}
+	mauryan_reconquest_task_2 = {	##Shungan Destruction
+		icon = "task_conquest"
+		requires = { mauryan_reconquest_task_1 }
+		
+		allow = {
+		#Shunga has no land
+			trigger_if = {
+				limit = {
+					exists = var:shunga_country_variable
+				}
+				custom_tooltip = {
+					text = mauryan_reconquest_task_2_allow_tooltip
+					var:shunga_country_variable = {
+						has_land = no
+					}
+				}
+			}
+			trigger_else = {
+				custom_tooltip = mauryan_reconquest_task_2_allow_B_tooltip
+			}
+		}
+
+		on_completion = {
+		#Gain some stuff
+			add_stability = 5
+			custom_tooltip = mauryan_reconquest_task_2_A_tooltip
+			hidden_effect = {
+				every_owned_province = {
+            	    while = {
+            	        random_pops_in_province = {
+            	            limit = {
+            	                OR = {
+            	                    pop_type = nobles
+            	                    pop_type = citizen
+            	                }
+            	                pop_culture = avanti
+            	            }
+            	            kill_pop = yes
+            	        }
+            	    }
+            	}
+            	every_owned_province = {
+            	    while = {
+            	        count = 2
+            	        random_pops_in_province = {
+            	            limit = {
+            	                pop_type = freemen
+            	                pop_culture = avanti
+            	            }
+            	            set_pop_type = slaves
+            	        }
+            	    }
+            	}
+            }
+			random_country_culture = {
+				limit = {
+					is_culture = avanti
+				}
+				add_country_culture_modifier = {
+					name = maurya_shunga_destruction
+					duration = 3650
+				}
+			}
+		}
+	}
+	mauryan_reconquest_task_3 = {	##Challenge Satavahana 
+		icon = "task_political"
+		requires = { mauryan_reconquest_task_1 }
+
+		bypass = {
+			trigger_if = {
+				limit = { 
+					exists = var:satavahana_country_variable
+				}
+				OR = {
+					var:satavahana_country_variable = {
+						has_land = no
+					}
+					NOT = {
+						var:satavahana_country_variable = {
+							owns = p:6854
+							owns = p:6855
+							owns = p:6858
+							owns = p:6859
+							owns = p:6860
+						}
+					}
+				}
+			}
+			trigger_else = {
+				limit = { 
+					NOT = { exists = var:satavahana_country_variable }
+				}
+				always = yes
+			}
+		}
+		
+		allow = {
+		#Border Satavahana
+			trigger_if = {
+				limit = {
+					exists = var:satavahana_country_variable
+				}
+				NOT = { war_with = var:satavahana_country_variable }
+				NOT = { has_truce_with = var:satavahana_country_variable }
+				custom_tooltip = {
+					text = mauryan_reconquest_task_3_A_tooltip
+					var:satavahana_country_variable = {
+		        		any_neighbour_country = {
+		        			tag = MRY
+		        		}
+		        	}
+				}
+			}
+			
+		}
+
+		on_completion = {
+		#Send an ultimatum to Satavahana to either cede the lands Maurya starts the game with back or go to war.
+			custom_tooltip = mauryan_reconquest_task_3_completion_tooltip
+			trigger_event = {
+				id = me_maurya_revival.1
+			}
+		}
+
+		on_bypass = {
+			add_stability = 5
+		}
+	}
+
+	mauryan_reconquest_task_4 = {	##The Indo-Greek Question
+		icon = "task_expansion"
+		requires = { mauryan_reconquest_task_1 }
+		duration = 365
+		
+		allow = {
+		#Border the Indo-Greeks
+			any_neighbour_country = {
+				NOT = { tag = SEL tag = BAC tag = ARS }
+				country_culture_group = hellenic
+				custom_tooltip = {
+					text = mauryan_reconquest_task_4_A_tooltip
+					NOT = { war_with = c:MRY }
+				}
+			}
+		}
+
+		monthly_on_action = mauryan_reconquest_task_4_persuade_indo_greeks_monthly_pulse
+
+		on_start = {
+			set_variable = {
+				name = ongoing_mission_pulse_flag
+				days = 365
+			}
+			set_variable = {
+				name = mry_recent_indo_greek_proposal
+				days = 20
+			}
+		}
+
+		on_completion = {
+		#Fire an event chain that either gives you claims on Indo-Greek Kings or allows you to offer to make them your tributaries if they like you enough.
+		#TODO: create event chain
+			custom_tooltip = mauryan_reconquest_task_4_completion_tooltip
+			add_stability = 5
+		}
+	}
+
+	mauryan_reconquest_task_5 = {	##Mauryan Revival
+		icon = "task_political"
+		requires = { mauryan_reconquest_task_2 mauryan_reconquest_task_3 mauryan_reconquest_task_4 }
+
+		highlight = {
+			scope:province = {
+				is_target_in_global_variable_list = {
+					name = MRY_land
+					target = this
+				}
+				NOT = { owner = c:MRY }
+			}
+		}
+		
+		allow = {
+		#Own all the provinces that Maurya starts the game with
+			custom_tooltip = {
+				text = mauryan_reconquest_task_5_A_tooltip
+				any_in_global_list = {
+				    variable = MRY_land
+				    count = all
+				    owner = root
+				}
+			}
+		}
+
+		on_completion = {
+		#Gain the Mauryan Revival Heritage, Lose the Mauryan collapse modifier
+		#Remove this modifier: mauryan_collapse
+			set_country_heritage = mauryan_revival_heritage
+			remove_country_modifier = mauryan_collapse
+		}
+	}	
+
+	mauryan_reconquest_task_6 = {	##Magadhi Influence
+		icon = "task_political"
+		requires = { mauryan_reconquest_task_8 }
+		
+		allow = {
+		#At least 80% of the pops in the regions of Madhyadesa and Avanti are Magadi or integrated
+            custom_tooltip = {
+                text = mauryan_reconquest_task_6_A_tooltip
+                mauryan_reconquest_task_6_pops_current >= mauryan_reconquest_task_6_pops_total
+            } 		
+		}
+
+		on_completion = {
+		#Add Provincal investments
+			add_4_free_province_investments = yes
+			add_stability = 5
+		}
+	}
+
+	mauryan_reconquest_task_7 = {	##Building our legacy
+		icon = "task_economical"
+		requires = { mauryan_reconquest_task_13 }
+		
+		allow = {
+		#The Pracya region has at least 75 buildings
+			custom_tooltip = {
+                text = mauryan_reconquest_task_7_tooltip
+                mauryan_reconquest_task_7_pracya_buildings_current >= mauryan_reconquest_task_7_pracya_buildings_total            
+                region:pracya_region = {
+                    NOT = {
+                       	any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }
+            }
+		}
+
+		on_completion = {
+		#Add Provincal investments
+			add_3_free_province_investments = yes
+		}
+	}
+
+	mauryan_reconquest_task_8 = {	##Into the Jungle
+		icon = "task_conquest"
+		requires = { mauryan_reconquest_task_5 }
+
+		highlight = {
+			scope:province = {
+                is_in_region = vindhyaprstha_region
+            }
+		}
+		
+		allow = {
+		#Own all provinces in the regions of Vindhy
+			owns_or_subject_owns_region = vindhyaprstha_region
+		}
+
+		on_completion = {
+		#Gain some stuff
+            add_treasury = 300
+            add_legitimacy = 5
+            add_military_experience = 10
+		}
+	}		
+
+	mauryan_reconquest_task_9 = {	##Dominate Aparanta
+		icon = "task_conquest"
+		requires = { mauryan_reconquest_task_5 }
+
+		highlight = {
+			scope:province = {
+                is_in_region = aparanta_region
+            }
+		}
+		
+		allow = {
+		#Own all provinces in the regions of Aparanta
+			owns_or_subject_owns_region = aparanta_region
+		}
+
+		on_completion = {
+		#Gain some stuff
+            add_treasury = 300
+            add_legitimacy = 5
+            add_military_experience = 10
+		}
+	}
+
+	mauryan_reconquest_task_10 = {	##Push South
+		icon = "task_conquest"
+		requires = { mauryan_reconquest_task_8 mauryan_reconquest_task_9 }
+
+		highlight = {
+            scope:province = {
+            	OR = {
+            		is_in_region = dravida_region
+            		is_in_region = karnata_region
+            	}
+                
+            }
+        }
+		
+		allow = {
+		#Own any province in the regions of Dravidia or Karnata
+			custom_tooltip = {
+            	text = mauryan_reconquest_task_10_A_tooltip
+                any_owned_province = {
+                	OR = {
+                		is_in_region = dravida_region
+                		is_in_region = karnata_region
+                	}
+                	owner = root
+                }
+            }
+		}
+
+		on_completion = {
+		#Gain Claims on the regions of Dravidia and Karnata
+			custom_tooltip = mauryan_reconquest_task_10_tooltip
+            hidden_effect = {
+                region:dravida_region = {
+                    every_region_province = { add_claim = ROOT }
+                }
+                region:karnata_region = {
+                    every_region_province = { add_claim = ROOT }
+                }
+            }
+		}
+	}
+
+	mauryan_reconquest_task_11 = {	##Trade of Odisha
+		icon = "task_economical"
+		requires = { mauryan_reconquest_task_8 }
+
+		highlight = {
+			scope:province = {
+				is_in_region = vindhyaprstha_region
+				OR = {
+					trade_goods = amber
+					trade_goods = spices
+					trade_goods = elephants
+					trade_goods = glass
+					trade_goods = silk
+					trade_goods = gems
+					trade_goods = precious_metals
+					trade_goods = dye
+					trade_goods = honey
+					trade_goods = incense
+					trade_goods = dates
+					trade_goods = sugar
+				}
+			}
+		}
+		
+		allow = {
+		#The region of Vindhy produces at least 40 exotic goods.
+			custom_tooltip = {
+				text = mauryan_reconquest_task_11_tooltip
+				mauryan_reconquest_task_11_exotic_current >= mauryan_reconquest_task_11_exotic_total
+			}
+		}
+
+		on_completion = {
+		#Gain some modifiers
+			add_country_modifier = {
+                name = maurya_exotic_business
+                duration = 1825
+            }
+            ordered_owned_province = {
+                limit = {
+                    is_in_region = vindhyaprstha_region
+                    OR = {
+						trade_goods = amber
+						trade_goods = spices
+						trade_goods = elephants
+						trade_goods = glass
+						trade_goods = silk
+						trade_goods = gems
+						trade_goods = precious_metals
+						trade_goods = dye
+						trade_goods = honey
+						trade_goods = incense
+						trade_goods = dates
+						trade_goods = sugar
+					}
+                }
+                order_by = total_population
+                max = 3
+                add_province_modifier = {
+                    name = mauryan_trade_center
+                    duration = -1
+                }
+            }
+		}
+	}
+
+	mauryan_reconquest_task_12 = {	##Ports of the West
+		icon = "task_expansion"
+		requires = { mauryan_reconquest_task_9 }
+		highlight = {
+			scope:province = {
+				owner = root 
+				is_in_region = aparanta_region
+				is_coastal = yes
+			}
+		}
+		allow = {
+		#All areas bordering the sea in the Aparanta region have a total of 30 ports
+            custom_tooltip = {
+                text = mauryan_reconquest_task_12_tooltip
+                mauryan_reconquest_task_12_ports_current >= mauryan_reconquest_task_12_ports_total            
+                region:aparanta_region = {
+                    NOT = {
+                        any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }          
+            }
+            has_law = antipiracy_edict
+            custom_tooltip = {
+                text = mauryan_reconquest_task_12_B_tooltip
+                any_owned_province = {
+                    is_in_region = aparanta_region
+                    has_province_modifier = pirate_haven_modifier
+                    count = egypt_mission_4_border_task_8_pirates_total
+                }
+            }
+		}
+
+		on_completion = {
+		#Gain some modifiers in 3 of those cities.
+			add_country_modifier = {
+                name = thriving_trade_networks
+                duration = 1825
+            }
+            ordered_owned_province = {
+                limit = {
+                    is_in_region = aparanta_region
+                    num_of_port_building >= 1
+                }
+                order_by = total_population 
+                max = 3
+                add_province_modifier = {
+                    name = mauryan_trade_center
+                    duration = -1
+                }
+            }
+		}
+	}		
+
+	mauryan_reconquest_task_13 = {	##The Metropolis of Pataliputra
+		icon = "task_political"
+		
+		allow = {
+		#Pataliputra has at least 100 pops and 10 buildings
+			capital_scope = {
+                total_population >= 100
+                has_province_rank = city_metropolis
+                num_of_used_building_slots >= 10
+            }
+		}
+
+		on_completion = {
+		#Gain a temporary modifier
+			capital_scope = {
+                add_province_modifier = {
+                    name = pataliputran_metropolis
+                    duration = -1
+                }
+            }
+		}
+	}
+
+	mauryan_reconquest_task_14 = {	##Pracyan Silk (Steal from second Lanka tree)
+		icon = "task_economical"
+		requires = { mauryan_reconquest_task_13 }
+
+		highlight = {
+			scope:province = {
+				is_in_region = pracya_region
+				trade_goods = silk
+			}
+		}
+		
+		allow = {
+		#At least 40 silk is produced in pracya
+			custom_tooltip = {
+				text = mauryan_reconquest_task_14_tooltip
+				mauryan_reconquest_task_14_silk_current >= mauryan_reconquest_task_14_silk_total
+			}
+		}
+
+		on_completion = {
+		#Gain modifier in 3 of those provinces
+			add_country_modifier = {
+                name = good_silk_industry
+                duration = 1825
+            }
+            ordered_owned_province = {
+                limit = {
+                    is_in_region = pracya_region
+                    trade_goods = silk
+                }
+                order_by = total_population
+                max = 3
+                add_province_modifier = {
+                    name = mauryan_trade_center
+                    duration = -1
+                }
+            }
+		}
+	}
+
+	mauryan_reconquest_task_15 = {	##Mauryan Trade networks
+		icon = "task_expansion"
+		requires = { mauryan_reconquest_task_13 }
+		
+		allow = {
+		#The Pracya region has at least 30 ports and the capital has at least 15 trade routes.
+			custom_tooltip = {
+                text = mauryan_reconquest_task_15_A_tooltip
+                mauryan_reconquest_task_15_ports_current >= mauryan_reconquest_task_15_ports_total
+                region:pracya_region = {
+                    NOT = {
+                        any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }          
+            }
+            custom_tooltip = {
+                text = mauryan_reconquest_task_15_B_tooltip
+                root.capital_scope.state.incoming_trade_routes >= 15
+            }
+		}
+
+		on_completion = {
+		#Gain modifier in 3 of those provinces
+			add_country_modifier = {
+                name = thriving_trade_networks
+                duration = 1825
+            }
+            ordered_owned_province = {
+                limit = {
+                    is_in_region = pracya_region
+                    num_of_port_building >= 1
+                }
+                order_by = total_population 
+                max = 3
+                add_province_modifier = {
+                    name = silky_silk
+                    duration = -1
+                }
+            }
+		}
+	}
+	mauryan_reconquest_task_16 = {	##Granary of India (Steal from second lanka tree)
+		icon = "task_economical"
+		requires = { mauryan_reconquest_task_13 }
+
+		highlight = {
+			scope:province = {
+				OR = {
+				is_in_region = avanti_region
+				is_in_region = madhyadesa_region
+				}
+				OR = {
+					trade_goods = grain
+					trade_goods = vegetables
+				}
+			}
+		}
+		
+		allow = {
+		#100 grain or vegetables being produced in Avanti region
+			custom_tooltip = {
+				text = mauryan_reconquest_task_16_tooltip
+				mauryan_reconquest_task_16_grain_veggie_current >= mauryan_reconquest_task_16_grain_veggie_total
+			}
+		}
+
+		on_completion = {
+		#Gain Macedon modifier
+			add_country_modifier = {
+				name = maurya_developed_agriculture
+				duration = -1
+			}
+		}
+	}	
+
+	mauryan_reconquest_task_17 = {	##Dravidian Dominance
+		icon = "task_expansion"
+		requires = { mauryan_reconquest_task_10 }
+
+		highlight = {
+			scope:province = {
+				NOT = { owner = root }
+				is_in_region = dravida_region
+			}
+		}
+		
+		allow = {
+		#Own all provinces in the regions of Karnata and Dravidia
+			owns_or_subject_owns_region = dravida_region
+		}
+
+		on_completion = {
+		#Add colony specialization events from the Kush/Bharat missions
+			custom_tooltip = mauryan_reconquest_task_18_tooltip
+			add_country_modifier = {
+                name = masters_of_dravida
+                duration = -1
+            }
+            trigger_event = {
+            	id = me_maurya_revival.8
+            }
+		}
+	}
+
+	mauryan_reconquest_task_18 = {	##Into Karnata
+		icon = "task_expansion"
+		requires = { mauryan_reconquest_task_10 }
+
+		highlight = {
+			scope:province = {
+			NOT = { owner = root }
+				is_in_region = karnata_region
+			}
+		}
+		
+		allow = {
+		#Own all provinces in the regions of Karnata and Dravidia
+			owns_or_subject_owns_region = karnata_region
+		}
+
+		on_completion = {
+		#Add colony specialization events from the Kush/Bharat missions
+			custom_tooltip = mauryan_reconquest_task_18_tooltip
+			add_political_influence = 15
+		    trigger_event = {
+            	id = me_maurya_revival.10
+            }
+		}
+	}
+
+	mauryan_reconquest_task_19 = {	##Reincoporate Taxila
+		icon = "task_expansion"
+		requires = { mauryan_reconquest_task_5 }
+
+		highlight = {
+			scope:province = {
+				province_id = 7314
+			}
+		}
+		
+		allow = {
+			p:7314 = {
+				owner = root
+				has_province_rank = city_metropolis
+			}
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = wisdom_of_taxila
+				duration = 3650
+			}
+			custom_tooltip = mauryan_reconquest_task_19_tooltip
+			hidden_effect = {
+	            create_character = {
+	                age = 25
+	                culture = root.culture
+	                religion = root.religion
+	                female = no
+	                add_trait = wise
+	                add_martial = 4
+	                add_zeal = 9
+	                add_charisma = 4
+	                add_finesse = 9
+	            }
+			}
+		}
+	}	
+
+	mauryan_reconquest_task_20 = {	##Tamil Ways
+		icon = "task_expansion"
+		requires = { mauryan_reconquest_task_10 }
+
+		
+		allow = {
+		#Have one of the Tamil cultures be integrated
+			custom_tooltip = {
+			text = lankan_missions_task_6_A_tooltip
+				any_country_culture = {
+				is_integrated = yes
+					OR = {
+						is_culture = tamil
+						is_culture = pandyan
+						is_culture = cholan
+						is_culture = cheran
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = tamil_traders
+				duration = 3650
+			}
+		}
+	}
+
+	mauryan_reconquest_task_21 = {	##Regain Loyalties
+		icon = "task_expansion"
+		requires = { mauryan_reconquest_task_10 }
+
+		
+		allow = {
+		#All provinces in the regions of Avanti, Madhyadesa, and Pracya have at least 75 loyalty
+			custom_tooltip = {
+			text = mauryan_reconquest_task_21_tooltip
+			mauryan_reconquest_task_21_loyalty_current >= mauryan_reconquest_task_21_loyalty_total
+			}
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = dominant_indian_administration
+				duration = 3650
+			}
+		}
+	}	
+
+	mauryan_reconquest_task_99 = {	##Bharat
+		icon = "task_political"
+		requires = { mauryan_reconquest_task_17 mauryan_reconquest_task_18 }
+		final = yes
+
+		allow = {
+		#Become Bharat via decision
+			custom_tooltip = {
+				text = mauryan_reconquest_task_99_tooltip
+				has_variable = bharat_formed
+			}
+		}
+
+		on_completion = {
+		#Gain some stability
+			add_stability = 10
+		}
+	}
+
+}

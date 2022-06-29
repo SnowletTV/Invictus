@@ -1,0 +1,826 @@
+﻿lankan_missions = {
+    header = "indian_mission_header"
+    icon = "seleukid_4"
+
+    repeatable = no
+
+    chance = {
+        factor = 50000
+    }
+
+    potential = {
+    	tag = ANU
+    	NOT = { has_variable = lankan_mission_cooldown }
+    }
+
+    abort = {
+
+    }
+
+    on_start = {
+        start_mission_ai_effect = yes
+		save_scope_as = mission_country
+    }
+
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = lankan_mission_cooldown
+            days = 7300
+        }
+    }
+
+    on_completion = {
+        complete_mission_effect = yes
+        add_3_free_province_investments = yes
+       	current_ruler = {
+       		add_finesse = 1
+       		add_martial = 1
+       	}
+    }
+
+	lankan_missions_task_1 = {   ##The Kingdom of Anuradhapura
+		icon = "task_political"
+
+		on_completion = {
+			#Fire flavor event
+			show_as_tooltip = {
+		        add_country_modifier = {
+		        	name = anuradhapura_kingdom
+		        	duration = 3650
+		        }
+	        }
+	        custom_tooltip = lankan_missions_task_1_tooltip
+	        hidden_effect = {
+            area:south_tambapamni_area = {
+            	every_area_province = { add_claim = ROOT }
+            }
+            }            	        		
+			trigger_event = {
+				id = me_lanka.1
+			}
+			trigger_event = {
+				id = me_lanka.9
+				days = { 30 180 }
+			}
+		}
+	}
+
+	lankan_missions_task_2 = {   ##Integrate Ruhunu
+		icon = "task_political"
+		requires = { lankan_missions_task_1 }
+
+		highlight = {
+			scope:province = {
+				has_owner = yes
+				owner = c:RHN
+			}
+		}
+
+		bypass = {
+			c:RHN = {
+				OR = {
+					has_land = no
+					is_subject_of = root
+				}
+			}			
+		}
+
+		allow = {
+		#Current ruler is a freind or Ruhunu has 75 opinion
+			custom_tooltip = {
+			text = lankan_missions_task_2_tooltip
+			OR = {
+				current_ruler = { is_friend = c:RHN.current_ruler }
+				c:RHN = {
+	                opinion = {
+						target = scope:mission_country
+						value >= 75
+					}
+				}
+			}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = lankan_missions_task_2_A_tooltip
+			trigger_event = {
+				id = me_lanka.5
+			}
+			add_political_influence = 15
+		}
+
+		on_bypass = {
+			add_political_influence = 15
+		}
+	}
+
+	lankan_missions_task_3 = {   ##Dominate Malaya
+		icon = "task_political"
+		requires = { lankan_missions_task_1 }
+
+		highlight = {
+			scope:province = {
+				has_owner = yes
+				owner = c:MLY
+			}
+		}
+
+		allow = {
+		#Malaya doens't exist or is a subject
+			c:MLY = {
+				OR = {
+					has_land = no
+					is_subject_of = root
+				}
+			}		
+		}
+
+		on_completion = {
+			add_stability = 5
+			current_ruler = {
+				add_popularity = 10
+			}
+		}
+	}
+
+	lankan_missions_task_4 = {   ##Unite Lanka
+		icon = "task_political"
+		requires = { lankan_missions_task_2 lankan_missions_task_3 }
+
+		allow = {
+		#At least 90% of the pops on the island of Lanka are Lankan culture and both of the provinces have 100 loyalty.
+            custom_tooltip = {
+                text = lankan_missions_task_4_tooltip
+                lankan_missions_task_4_current_pop_value >= lankan_missions_task_4_total_pop_value
+            }
+            p:6950 = {
+	            custom_tooltip = {
+	                text = lankan_missions_task_4_tooltip_province_loyalty
+	                state_loyalty >= lankan_missions_task_4_province_loyalty_total
+	            }
+            }
+            p:6970 = {
+	            custom_tooltip = {
+	                text = lankan_missions_task_4_tooltip_province_loyalty
+	                state_loyalty >= lankan_missions_task_4_province_loyalty_total
+	            }            	
+            }            		
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = lankan_unity
+				duration = -1
+			}
+		}
+	}
+
+	lankan_missions_task_5 = {   ##Tamil Turbulence
+		icon = "task_political"
+		requires = { lankan_missions_task_1 }
+
+		allow = {
+		#Is at war with Chola, Chera, or Pandya
+			OR = {
+				war_with = c:CHL
+				war_with = c:CHR
+				war_with = c:PND
+			}
+		}
+
+		on_completion = {
+		#Give Morale and Manpower boost
+			add_country_modifier = {
+				name = tamil_turbulence
+				duration = 730
+			}
+		}
+	}
+
+	lankan_missions_task_6 = {   ##Trusting Tamils
+		icon = "task_political"
+		requires = { lankan_missions_task_5 }
+
+		allow = {
+		#Own at least 10 provinces that have city status that have dominant tamil, pandyan, cholan, or cheran culture.
+		#Have one of those cultures be integrated
+			custom_tooltip = {
+			text = lankan_missions_task_6_A_tooltip
+			any_country_culture = {
+			is_integrated = yes
+				OR = {
+					is_culture = tamil
+					is_culture = pandyan
+					is_culture = cholan
+					is_culture = cheran
+				}
+			}
+			}
+			custom_tooltip = {
+			text = lankan_missions_task_6_B_tooltip		
+			any_owned_province = {
+				has_city_status = yes
+				OR = {
+				dominant_province_culture = tamil
+				dominant_province_culture = pandyan
+				dominant_province_culture = cholan
+				dominant_province_culture = cheran
+				}
+				count >= 10
+			}
+			}
+		}
+
+		on_completion = {
+		#Add a modifier to 5 of those cities.
+			ordered_owned_province = {
+				limit = { 
+					has_city_status = yes
+					OR = {
+					dominant_province_culture = tamil
+					dominant_province_culture = pandyan
+					dominant_province_culture = cholan
+					dominant_province_culture = cheran
+					}
+				}
+				order_by = total_population
+				max = 5
+				hidden_effect = {
+				ordered_pops_in_province = {
+					limit = {
+						NOT = {
+							pop_type = tribesmen
+							pop_culture = lankan
+						}
+					}
+					order_by = pop_hapiness
+					max = 6
+					set_pop_culture = lankan
+
+				}
+				}
+				add_province_modifier = {
+					name = lankan_center_of_tamilakam
+					duration = 3650
+				}
+			}
+		}
+	}
+
+	lankan_missions_task_7 = {   ##Pandyan Pounding
+		icon = "task_political"
+		requires = { lankan_missions_task_5 }
+
+		highlight = {
+			scope:province = {
+				has_owner = yes
+				OR =  {
+				owner = c:PND
+				dominant_province_culture = pandyan
+				}
+			}
+		}
+
+		allow = {
+		#Own all Pandyan provinces and Pandya does not exist or are our subject
+			custom_tooltip = {
+				text = lankan_missions_task_7_A_tooltip
+				lankan_missions_task_7_owned_pandyan_provinces_current >= lankan_missions_task_7_owned_pandyan_provinces_total
+			}		
+			c:PND = {
+				has_land = no
+			}
+		}
+
+		on_completion = {
+		#Small chance to get the blood of Pandya
+			add_political_influence = 25
+			custom_tooltip = lankan_missions_task_7_B_tooltip
+			hidden_effect = {
+				random_list = {
+					25 = {
+						current_ruler = {
+							positive_martial_trait_effect = yes
+						}
+					}
+					25 = {
+						current_ruler = {
+							good_popularity_trait_effect = yes
+						}					
+					}
+					25 = {
+						current_ruler = {
+							good_finesse_trait_effect = yes
+						}					
+					}				
+					25 = {
+						current_ruler = {
+							force_add_trait = pandya
+							family = {
+								ordered_family_member = {
+									limit = {
+										NOT = { has_trait = pandya }
+										OR = {
+											is_primary_heir = yes
+											is_child_of = root.current_ruler
+										}
+									}
+									order_by = loyalty
+									max = 4
+									force_add_trait = pandya
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	lankan_missions_task_8 = {   ##Cholan Challenge
+		icon = "task_political"
+		requires = { lankan_missions_task_5 }
+
+		highlight = {
+			scope:province = {
+				has_owner = yes
+				OR =  {
+				owner = c:CHL
+				dominant_province_culture = cholan
+				}
+			}
+		}
+
+		allow = {
+		#Chola does not exist or are our subject, own all cholan provinces.
+			custom_tooltip = {
+				text = lankan_missions_task_8_A_tooltip
+				lankan_missions_task_8_owned_cholan_provinces_current >= lankan_missions_task_8_owned_cholan_provinces_total
+			}		
+			c:CHL = {
+				has_land = no
+			}		
+		}
+
+		on_completion = {
+		#Small chance to get the blood of Chola
+		add_political_influence = 25
+			custom_tooltip = lankan_missions_task_8_B_tooltip
+			hidden_effect = {
+				random_list = {
+					75 = {
+						current_ruler = {
+							force_add_trait = victorious
+						}
+					}
+					25 = {
+						current_ruler = {
+							force_add_trait = chola
+							force_add_trait = victorious
+							family = {
+								ordered_family_member = {
+									limit = {
+										NOT = { has_trait = chola }
+										OR = {
+											is_primary_heir = yes
+											is_child_of = root.current_ruler
+										}
+									}
+									order_by = loyalty
+									max = 4
+									force_add_trait = chola
+								}
+							}
+						}
+					}
+				}
+			}		
+		}
+	}
+
+	lankan_missions_task_9 = {   ##Lankan Dominance
+		icon = "task_political"
+		requires = { lankan_missions_task_7 lankan_missions_task_8 lankan_missions_task_10 }
+		final = yes
+
+		highlight = {
+			scope:province = {
+				has_owner = yes
+				OR =  {
+				dominant_province_culture = cheran
+				dominant_province_culture = cholan
+				dominant_province_culture = pandyan
+				dominant_province_culture = tamil
+				}
+			}
+		}
+
+		allow = {
+		#Own all provinces of Cholan, Cheran, Pandyan, and Tamil culture.
+			custom_tooltip = {
+				text = lankan_missions_task_9_tooltip
+				lankan_missions_task_9_owned_tamil_provinces_current >= lankan_missions_task_9_owned_tamil_provinces_total
+			}
+		}
+
+		on_completion = {
+		#
+			add_country_modifier = {
+				name = lankan_dominance
+				duration = 9125	#25 years
+			}
+		}
+	}
+
+	lankan_missions_task_10 = {   ##Cheran Consolidation
+		icon = "task_political"
+		requires = { lankan_missions_task_5 }
+
+		highlight = {
+			scope:province = {
+				has_owner = yes
+				OR =  {
+				owner = c:CHR
+				dominant_province_culture = cheran
+				}
+			}
+		}
+
+		allow = {
+		#Own all Cheran provinces and Chera doesn't exist.
+			custom_tooltip = {
+				text = lankan_missions_task_10_A_tooltip
+				lankan_missions_task_10_owned_cheran_provinces_current >= lankan_missions_task_10_owned_cheran_provinces_total
+			}
+			c:CHR = {
+				has_land = no
+			}			
+		}
+
+		on_completion = {
+			add_stability = 5
+			custom_tooltip = lankan_missions_task_10_B_tooltip
+			hidden_effect = {
+				random_list = {
+					75 = {}
+					25 = {
+						current_ruler = {
+							force_add_trait = chera
+							family = {
+								ordered_family_member = {
+									limit = {
+										NOT = { has_trait = chera }
+										OR = {
+											is_primary_heir = yes
+											is_child_of = root.current_ruler
+										}
+									}
+									order_by = loyalty
+									max = 4
+									force_add_trait = chera
+								}
+							}
+						}
+					}
+				}
+			}		
+		}
+	}
+
+	lankan_missions_task_13 = {   ##Import Food
+		icon = "task_political"
+
+		highlight = {
+			scope:province = {
+				is_in_area = north_tambapamni_area
+			}
+		}
+
+		allow = {
+		#Import 4 of the following trade goods: Wheat, vegtables, fish, or livestock.
+			custom_tooltip = {
+				text = lankan_missions_task_13_A_tooltip
+				lankan_missions_task_13_trade_goods_current >= lankan_missions_task_13_trade_goods_total
+			}												
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = me_lanka.2
+			}
+			custom_tooltip = lankan_missions_task_13_tooltip
+			add_1_free_province_investments = yes
+		}
+	}
+
+	lankan_missions_task_14 = {   ##Local food sources
+		icon = "task_political"
+
+		highlight = {
+			scope:province = {
+				OR = {
+				province_id = 6972
+				province_id = 6968
+				province_id = 6952
+				}
+			}
+		}
+
+		allow = {
+		#All provinces that can build a farming settlement have a farming settlement.
+			p:6972 = {
+	   			OR = {
+				num_of_basic_settlement_infratructure_building = 1
+				num_of_population_building >= 2
+				}			
+			}
+			p:6968 = {
+	   			OR = {
+				num_of_basic_settlement_infratructure_building = 1
+				num_of_population_building >= 2
+				}			
+			}
+			p:6952 = {
+	   			OR = {
+				num_of_basic_settlement_infratructure_building = 1
+				num_of_population_building >= 2
+				}			
+			}								
+		}
+
+		on_completion = {
+		#Pick one of the three provinces to give a goods produced and food modifier
+			custom_tooltip = lankan_missions_task_14_tooltip
+			trigger_event = {
+				id = me_lanka.4
+			}		
+			add_1_free_province_investments = yes
+		}
+	}
+
+	lankan_missions_task_15 = {   ##The city of Anuradhapura
+		icon = "task_political"
+
+		highlight = {
+			scope:province = {
+				province_id = 6950
+			}
+		}
+
+		allow = {
+		#Province of Anuradhapura has 5 buildings
+			p:6950 = {
+				num_of_used_building_slots >= 5
+				total_population >= 45
+				has_construction = no
+			}
+		}
+
+		on_completion = {
+			add_legitimacy = 10
+			current_ruler = {
+				add_popularity = 10
+			}
+			p:6950 = {
+				add_permanent_province_modifier = {
+					name = city_of_anuradhapura
+					mode = add
+				}
+			}
+		}
+	}
+
+	lankan_missions_task_16 = {   ##The Spices of Lanka
+		icon = "task_political"
+		requires = { lankan_missions_task_14 }
+		highlight = {
+			scope:province = {
+				is_in_area = north_tambapamni_area
+				trade_goods = spices
+			}
+		}
+		allow = {
+		#All spice producing provinces on Island produce at least 2 goods.
+			area:north_tambapamni_area = {
+				any_area_province = {
+					count >= 2
+					trade_goods = spices
+					num_goods_produced >= 2
+				}
+			}					
+		}
+
+		on_completion = {
+			ordered_owned_province = {
+				limit = {
+					is_in_area = north_tambapamni_area
+					trade_goods = spices
+				}
+				order_by = total_population 
+				max = 2
+				add_province_modifier = {
+					name = spicy_spices
+					duration = -1
+				}
+			}
+		}
+	}
+
+	lankan_missions_task_17 = {   ##Glorious Gemstones
+		icon = "task_political"
+		requires = { lankan_missions_task_13 }
+
+		highlight = {
+			scope:province = {
+				OR = {
+				province_id = 6971
+				province_id = 6979
+				province_id = 6980
+				}
+			}
+		}
+
+		allow = {
+		#All Gem producing provinces on Island produce at least 2 goods.
+			custom_tooltip = {
+				text = lankan_missions_task_17_tooltip
+				any_owned_province = {
+					OR = {
+						is_in_area = north_tambapamni_area
+						is_in_area = south_tambapamni_area
+					}
+					trade_goods = gems
+					num_goods_produced >= 2
+					count >= 2
+				}
+			}				
+		}
+
+		on_completion = {
+		#
+			ordered_owned_province = {
+				limit = {
+					OR = {
+					is_in_area = south_tambapamni_area
+					is_in_area = north_tambapamni_area
+					}
+					trade_goods = gems
+				}
+				order_by = total_population 
+				max = 2
+				add_province_modifier = {
+					name = glorious_gemstones
+					duration = 3650
+				}
+			}		
+		}
+	}
+
+	lankan_missions_task_18 = {   ##State Investments
+		icon = "task_political"
+		requires = { lankan_missions_task_16 lankan_missions_task_17 }
+
+		highlight = {
+			scope:province = {
+				OR = {
+				is_in_area = south_tambapamni_area
+				is_in_area = north_tambapamni_area
+				}
+			}
+		}
+		allow = {
+		#Both the provinces on the island have at least 2 provincal investments.
+		custom_tooltip = {
+		text = lankan_missions_task_18_A_tooltip
+			hidden:p:6950.state = {
+                calc_true_if = {
+                    amount >= 2
+                    state_improvement_military_trigger = yes
+                    state_improvement_civic_trigger = yes
+                    state_improvement_oratory_trigger = yes
+                    state_improvement_religious_trigger = yes
+                }
+            }
+        }
+        custom_tooltip = {
+        text = lankan_missions_task_18_B_tooltip
+			hidden:p:6970.state = {
+                calc_true_if = {
+                    amount >= 2
+                    state_improvement_military_trigger = yes
+                    state_improvement_civic_trigger = yes
+                    state_improvement_oratory_trigger = yes
+                    state_improvement_religious_trigger = yes
+                }
+            }
+        }            		
+		}
+
+		on_completion = {
+		#
+		add_stability = 10
+		add_country_modifier = {
+			name = state_investment_benefits
+			duration = 9125
+		}
+		}
+	}
+
+	lankan_missions_task_19 = {   ##Developing Anuradhapura
+		icon = "task_political"
+		requires = { lankan_missions_task_15 lankan_missions_task_18 }
+
+		highlight = {
+			scope:province = {
+				province_id = 6950
+			}
+		}
+		allow = {
+		#Province of Anuradhapura has at least 10 buildings and 60 pops.
+			p:6950 = {
+				num_of_used_building_slots >= 10
+				total_population >= 60
+				has_construction = no
+			}			
+		}
+		on_completion = {
+			p:6950 = {
+				add_permanent_province_modifier = {
+					name = city_of_anuradhapura
+					mode = add
+				}
+			}		
+		}
+	}
+
+	lankan_missions_task_20 = {   ##Dharmashoka
+		icon = "task_political"
+
+		bypass = {
+			OR = {
+				char:66 = {
+					is_alive = no
+				}
+				char:457 = {
+					is_alive = no
+				}
+			}
+		}
+
+		allow = {
+			custom_tooltip = {
+			text = lankan_missions_task_20_A_tooltip
+				c:MRY = {
+					char:66 = {
+						is_ruler = yes
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = lankan_missions_task_20_B_tooltip
+			trigger_event = {
+				id = me_lanka.6
+			}
+		}
+	}
+
+	lankan_missions_task_21 = {   ##Mahinda Thera
+		icon = "task_political"
+		requires = { lankan_missions_task_20 }
+
+
+		allow = {
+			political_influence >= 200
+			stability >= 50
+		}
+
+		on_completion = {
+			custom_tooltip = lankan_missions_task_21_A_tooltip
+			trigger_event = {
+				id = me_lanka.7
+			}			
+		}
+	}
+
+	lankan_missions_task_22 = {   ##Planting of the Sacred Maha Bodhi
+		icon = "task_political"
+		requires = { lankan_missions_task_20 }
+
+
+		allow = {
+			treasury >= 200
+		}
+
+		on_completion = {
+			add_treasury = -200
+			custom_tooltip = lankan_missions_task_22_A_tooltip
+			trigger_event = {
+				id = me_lanka.8
+			}			
+		}
+	}
+
+}

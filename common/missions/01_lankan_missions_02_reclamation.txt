@@ -1,0 +1,796 @@
+﻿lankan_missions_reclamation = {
+    header = "indian_mission_header"
+    icon = "carthage_3"
+
+    repeatable = no
+
+    chance = {
+        factor = 50000
+    }
+
+    potential = {
+    	tag = ANU
+    	NOT = { has_variable = lankan_mission_two_cooldown }
+        has_completed_mission = lankan_missions
+    }
+
+    abort = {
+
+    }
+
+    on_start = {
+        start_mission_ai_effect = yes
+		save_scope_as = mission_country
+    }
+
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = lankan_mission_two_cooldown
+            days = 7300
+        }
+    }
+
+    on_completion = {
+        complete_mission_effect = yes
+        add_3_free_province_investments = yes
+       	current_ruler = {
+       		add_finesse = 2
+       		add_martial = 2
+       	}
+    }
+
+    lankan_missions_reclamation_task_1 = {   ##Pushing North
+        icon = "task_conquest"
+
+        on_completion = {
+            #Fire flavor event
+            current_ruler = {
+                add_character_modifier = {
+                    name = ambitious_lankan_raja
+                    duration = -1
+                }
+            }
+            custom_tooltip = lankan_missions_reclamation_task_1_tooltip
+            hidden_effect = {
+            region:karnata_region = {
+                every_region_province = { add_claim = ROOT }
+            }
+            region:dravida_region = {
+                every_region_province = { add_claim = ROOT }
+            }
+            }
+            trigger_event = { id = me_lanka_reclamation.1 }                                 
+        }
+    }
+
+    lankan_missions_reclamation_task_2 = {   ##Southern Consolidation
+        icon = "task_conquest"
+
+        requires = { lankan_missions_reclamation_task_1 }
+
+        highlight = {
+            scope:province = {
+                has_owner = yes
+                OR =  {
+                    is_in_region = karnata_region
+                    is_in_region = dravida_region
+                }
+            }
+        }
+
+        allow = {
+            #Own all provinces in the regions of Dravida and Karnata.
+            owns_or_subject_owns_region = karnata_region
+            owns_or_subject_owns_region = dravida_region
+        }
+
+        on_completion = {
+            add_treasury = 100
+            add_country_modifier = {
+                name = masters_of_dravida
+                duration = 3650
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_3 = {   ##Dravidian Dominance
+        icon = "task_conquest"
+
+        requires = { lankan_missions_reclamation_task_1 }
+
+        highlight = {
+            scope:province = {
+                has_owner = yes
+                province_dominant_culture_group = indian
+            }
+        }        
+
+        allow = {
+            #Own all provinces of the Dravidian culture group
+            custom_tooltip = {
+                text = lankan_missions_reclamation_task_3_tooltip
+                lankan_reclamation_task_3_owned_dravidian_provinces_current >= lankan_reclamation_task_3_owned_dravidian_provinces_total
+            }
+            custom_tooltip = {
+            text = lankan_missions_reclamation_task_3_A_tooltip
+                any_country_culture = {
+                is_integrated = yes
+                this.culture.culture_group = culture_group:indian
+                } 
+            }          
+        }
+
+        on_completion = {
+            #Gain claims on Vindhyaprstha region
+            add_stability = 5
+            current_ruler = {
+                add_popularity = 10
+            }
+            ordered_country_culture = {
+                limit = {
+                    is_integrated = yes
+                    this.culture.culture_group = culture_group:indian
+                }
+                max = 1
+                check_range_bounds = no
+                order_by = country_culture_pop_count
+                add_country_culture_modifier = {
+                    name = dravidian_cultural_unity
+                    duration = -1
+                }                
+            }            
+        }
+    }
+
+    lankan_missions_reclamation_task_4 = {   ##Assimilating the Tamils
+        icon = "task_diplomatic"
+
+        requires = { lankan_missions_reclamation_task_2 }
+
+        allow = {
+            #At least 80% of owned provinces in the regions of Karnata and Dravida are Lankan or integrated.
+            custom_tooltip = {
+                text = lankan_missions_reclamation_task_4_tooltip
+                lankan_reclamation_task_4_current_pop_value >= lankan_reclamation_task_4_total_pop_value
+            }            
+        }
+
+        on_completion = {
+            add_2_free_province_investments = yes
+            add_treasury = 200
+        }
+    }
+
+    lankan_missions_reclamation_task_5 = {   ##Lankan Construction
+        icon = "task_economical"
+
+        requires = { lankan_missions_reclamation_task_2 }
+
+        allow = {
+            #Have at least 50 buildings in the region of Dravida.
+            custom_tooltip = {
+                text = lankan_missions_reclamation_task_5_tooltip
+                lankan_reclamation_task_5_buildings_current >= lankan_reclamation_task_5_buildings_total            
+                    region:dravida_region = {
+                        NOT = {
+                        any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }
+            }            
+        }
+
+        on_completion = {
+            add_country_modifier = {
+                name = grand_lankan_builders
+                duration = -1
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_6 = {   ##Lankan Trade
+        icon = "task_economical"
+        requires = { lankan_missions_reclamation_task_2 }
+        prevented_by = { lankan_missions_reclamation_task_17 }
+        bypass = {
+            has_completed_mission_task = lankan_missions_reclamation_task_17
+        }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = dravida_region
+                    is_in_region = karnata_region
+                    is_in_region = aparanta_region
+                    is_in_region = vindhyaprstha_region
+                }
+                owner = root
+                has_province_modifier = pirate_haven_modifier
+            }
+        }        
+        allow = {
+            #The regions of Karnata and Dravida have at least 25 port buildings.
+            custom_tooltip = {
+                text = lankan_missions_reclamation_task_6_tooltip
+                lankan_reclamation_task_6_ports_current >= lankan_reclamation_task_6_ports_total            
+                region:dravida_region = {
+                    NOT = {
+                        any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }
+                region:karnata_region = {
+                    NOT = {
+                        any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }                
+            }
+            has_law = antipiracy_edict
+            custom_tooltip = {
+                text = lankan_missions_reclamation_task_6_B_tooltip
+                any_owned_province = {
+                    OR = {
+                        is_in_region = dravida_region
+                        is_in_region = karnata_region
+                        is_in_region = aparanta_region
+                        is_in_region = vindhyaprstha_region
+                    }
+                    has_province_modifier = pirate_haven_modifier
+                    count = egypt_mission_4_border_task_8_pirates_total
+                }
+            }                        
+        }
+
+        on_completion = {
+            #3 ports get a modifier by total population
+            add_country_modifier = {
+                name = thriving_trade_networks
+                duration = 1825
+            }
+            ordered_owned_province = {
+                limit = {
+                    OR = {
+                    is_in_region = dravida_region
+                    is_in_region = karnata_region
+                    }
+                    num_of_port_building >= 1
+                }
+                order_by = total_population 
+                max = 3
+                add_province_modifier = {
+                    name = lankan_trade_center
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_7 = {   ##City of the Worlds Desire
+        icon = "task_economical"
+
+        allow = {
+            #The capital has at least 100 pops and 15 buildings
+            capital_scope = {
+                total_population >= 100
+                has_province_rank = city_metropolis
+                num_of_used_building_slots >= 15
+            }
+        }
+
+        on_completion = {
+            capital_scope = {
+                add_province_modifier = {
+                    name = anuradhapuran_metropolis
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_8 = {   ##The trade of Sugar
+        icon = "task_economical"
+
+        requires = { lankan_missions_reclamation_task_7 }
+
+        allow = {
+            #Capital scope imports Sugar or any owned province produces sugar.
+                OR = {
+                    custom_tooltip = {
+                    text = lankan_missions_reclamation_task_8_A_tooltip
+                        any_owned_province = {
+                            is_importing_trade_good = sugar
+                        }
+                    }
+                    custom_tooltip = {
+                    text = lankan_missions_reclamation_task_8_B_tooltip
+                    any_owned_province = {
+                        trade_goods = sugar
+                    }
+                    }
+                }
+        }
+
+        on_completion = {
+        #Start producing sugar in a chosen province on the Island.
+            custom_tooltip = lankan_missions_reclamation_task_8_C_tooltip
+            trigger_event = { id =  me_lanka_reclamation.2 }
+        }
+    }
+
+    lankan_missions_reclamation_task_9 = {   ##An Island Paradise
+        icon = "task_economical"
+
+        requires = { lankan_missions_reclamation_task_7 }
+
+        allow = {
+            #There are at least 500 Lankan root.religion pops on the Island and at least 4 provinces on the Island have metropolis status.
+            custom_tooltip = {
+                text = lankan_missions_reclamation_task_9_A_tooltip
+                lankan_reclamation_task_9_island_pops_current >= lankan_reclamation_task_9_island_pops_total
+            }
+            custom_tooltip = {
+                text = lankan_missions_reclamation_task_9_B_tooltip
+                lankan_reclamation_task_9_metropolis_current >= lankan_reclamation_task_9_metropolis_total
+            }             
+        }
+
+        on_completion = {
+            add_innovation = 2
+            add_2_free_province_investments = yes
+            add_political_influence = 25
+        }
+    }
+
+    lankan_missions_reclamation_task_10 = {   ##Lankan Nobility
+        icon = "task_economical"
+
+        requires = { lankan_missions_reclamation_task_7 }
+
+        allow = {
+            #There are at least 15 academies and there are at least 100 nobles living on the Island.
+           custom_tooltip = {
+                text = lankan_missions_reclamation_task_10_B_tooltip
+                lankan_reclamation_task_10_nobles_current >= lankan_reclamation_task_10_nobles_total
+           }            
+            custom_tooltip = {
+                text = lankan_missions_reclamation_task_10_A_tooltip
+                lankan_reclamation_task_10_academy_current >= lankan_reclamation_task_10_academy_total
+                area:north_tambapamni_area = {
+                    NOT = {
+                        any_area_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }
+                area:south_tambapamni_area = {
+                    NOT = {
+                        any_area_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }
+            }                         
+        }
+
+        on_completion = {
+            ordered_owned_province = {
+                limit = {
+                    OR = {
+                        is_in_area = south_tambapamni_area
+                        is_in_area = north_tambapamni_area
+                    }
+                }
+                order_by = num_of_nobles
+                max = 5
+                add_permanent_province_modifier = {
+                    name = nobles_of_anuradhapura
+                }
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_11 = {   ##Into Vindhyaprstha
+        icon = "task_conquest"
+
+        requires = { lankan_missions_reclamation_task_3 }
+
+        highlight = {
+            scope:province = {
+                is_in_region = vindhyaprstha_region
+            }
+        }
+        allow = {
+            #Owns Vindhy
+            owns_or_subject_owns_region = vindhyaprstha_region
+        }
+
+        on_completion = {
+            p:7173 = {
+                add_province_modifier = {
+                    name = sweet_sugar
+                    duration = 3650
+                }
+            }
+            add_treasury = 300
+            add_legitimacy = 5
+            add_military_experience = 10
+        }
+    }
+
+    lankan_missions_reclamation_task_12 = {   ##Pracyan Push
+        icon = "task_conquest"
+
+        requires = { lankan_missions_reclamation_task_11 }
+        highlight = {
+            scope:province = {
+                is_in_region = pracya_region
+            }
+        }
+        allow = {
+            #Any owned province is in the region of Pracya
+            custom_tooltip = {
+            text = lankan_missions_reclamation_task_12_A_tooltip
+                any_owned_province = {
+                    is_in_region = pracya_region
+                    owner = root
+                }
+            }
+        }
+
+        on_completion = {
+            #Gain claims on the region of Pracya.
+            custom_tooltip = lankan_missions_reclamation_task_12_tooltip
+            hidden_effect = {
+                region:pracya_region = {
+                    every_region_province = { add_claim = ROOT }
+                }
+            }            
+        }
+    }
+
+    lankan_missions_reclamation_task_13 = {   ##Reclaiming our Heritage
+        icon = "task_diplomatic"
+
+        requires = { lankan_missions_reclamation_task_3 }
+        highlight = {
+            scope:province = {
+                is_in_area = radha_area
+            }
+        }
+        allow = {
+            #Own all provinces of Vanga culture
+            owns_area = radha_area
+        }
+
+        on_completion = {
+            #Get the option to change your heritage to "Heritage of Sinhapura"
+            custom_tooltip = lankan_missions_reclamation_task_13_tooltip
+            trigger_event = { id =  me_lanka_reclamation.3 }
+#               add_stability = 5
+        }
+    }
+
+    lankan_missions_reclamation_task_14 = {   ##Pracyan Power
+        icon = "task_conquest"
+        requires = { lankan_missions_reclamation_task_12 }
+        highlight = {
+            scope:province = {
+                is_in_region = pracya_region
+            }
+        }
+        allow = {
+            #Own all provinces in the region of Pracya
+            owns_or_subject_owns_region = pracya_region
+        }
+
+        on_completion = {
+            add_stability = 10
+            add_country_modifier = {
+                name = pracyan_power
+                duration = 3650
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_15 = {   ##The Tooth of the Buddha
+        icon = "task_diplomatic"
+        requires = { lankan_missions_reclamation_task_11 }
+
+        allow = {
+            #The Tooth of Buddha is inside the reliquary in the province of Avakana
+            treasure:treasure_tooth_of_buddha = {
+                treasure_owned_or_altared_trigger = { SHINY = treasure:treasure_tooth_of_buddha }
+            }
+        }
+
+        on_completion = {
+            treasure:treasure_tooth_of_buddha = { transfer_treasure_to_province = p:6978 }
+            p:6978 = {
+                add_province_modifier = {
+                    name = house_of_buddhas_tooth
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_16 = {   ##Indian Ocean Trade
+        icon = "task_economical"
+        requires = { lankan_missions_reclamation_task_6 lankan_missions_reclamation_task_17 }
+
+        allow = {
+            custom_tooltip = {
+                text = lankan_missions_reclamation_task_16_tooltip
+                invention = monsoon_navigation_inv
+            }
+        }
+
+        on_completion = {
+            #Gain even more diplo range
+            add_country_modifier = {
+                name = indian_ocean_traders
+                duration = -1
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_17 = {   ##Non-Interference Policies
+        icon = "task_diplomatic"
+        requires = { lankan_missions_reclamation_task_2 }
+        prevented_by = { lankan_missions_reclamation_task_6 }
+        bypass = {
+            has_completed_mission_task = lankan_missions_reclamation_task_6
+        }
+        allow = {
+            custom_tooltip = {
+                text = lankan_missions_reclamation_task_6_tooltip
+                lankan_reclamation_task_6_ports_current >= lankan_reclamation_task_6_ports_total            
+                region:dravida_region = {
+                    NOT = {
+                        any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }
+                region:karnata_region = {
+                    NOT = {
+                        any_region_province = {
+                            owner = root
+                            has_construction = yes
+                        }
+                    }
+                }                
+            }
+            has_law = free_ports_monarchy_law            
+        }
+
+        on_completion = {
+            #Gain the ability to establish Pirate havens in your ports and unlock slave raiding.
+            custom_tooltip = lankan_missions_reclamation_task_17_A_tooltip
+            add_treasury = 300
+        }
+    }
+
+    lankan_missions_reclamation_task_18 = {   ##Jungle Elephants
+        icon = "task_economical"
+        requires = { lankan_missions_reclamation_task_11 }
+        highlight = {
+            scope:province = {
+                is_in_region = vindhyaprstha_region
+                trade_goods = elephants
+                owner = root
+            }
+        }
+        allow = {
+            #At least 30 elephants are produced in the Vindhyaprstha region
+           custom_tooltip = {
+                text = lankan_missions_reclamation_task_18_A_tooltip
+                lankan_reclamation_task_18_elephant_current >= lankan_reclamation_task_18_elephant_total
+           }            
+        }
+
+        on_completion = {
+            #Elephant modifier
+            add_country_modifier = {
+                name = jungle_elephants
+                duration = -1
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_19 = {   ##Avanti Assualt
+        icon = "task_expansion"
+        requires = { lankan_missions_reclamation_task_11 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = anartta_area
+                    is_in_area = avanti_area
+                    is_in_area = dahala_area
+                }
+            }
+        }
+        allow = {
+            #Own a few areas in Avanti. 
+            owns_or_subject_owns_area = anartta_area
+            owns_or_subject_owns_area = avanti_area
+            owns_or_subject_owns_area = dahala_area
+        }
+
+        on_completion = {
+            #Gain claims on Avanti.
+            custom_tooltip = lankan_missions_reclamation_task_19_tooltip
+            hidden_effect = {
+                region:avanti_region = {
+                    every_region_province = { add_claim = ROOT }
+                }
+            }            
+        }
+    }
+
+    lankan_missions_reclamation_task_20 = {   ##Madhyadesa Meddlings
+        icon = "task_expansion"
+        requires = { lankan_missions_reclamation_task_11 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = kasi_area
+                    is_in_area = malla_area  
+                }
+            }
+        }
+        allow = {
+            #Own a few areas in Madhyadesa. 
+            owns_or_subject_owns_area = kasi_area
+            owns_or_subject_owns_area = malla_area
+        }
+
+        on_completion = {
+            #Gain claims on Madhyadesa
+            custom_tooltip = lankan_missions_reclamation_task_20_tooltip
+            hidden_effect = {
+                region:madhyadesa_region = {
+                    every_region_province = { add_claim = ROOT }
+                }
+            }
+        }
+    }    
+
+    lankan_missions_reclamation_task_21 = {   ##Lankan Madhyadesa
+        icon = "task_expansion"
+        requires = { lankan_missions_reclamation_task_20 }
+
+        highlight = {
+            scope:province = {
+                is_in_region = madhyadesa_region
+            }
+        }
+        allow = {
+            #Own Madhyadesa region
+            owns_or_subject_owns_region = madhyadesa_region
+        }
+
+        on_completion = {
+            #
+            add_stability = 5
+        }
+    }
+
+    lankan_missions_reclamation_task_22 = {   ##Avanti Advances
+        icon = "task_expansion"
+        requires = { lankan_missions_reclamation_task_19 }
+
+        highlight = {
+            scope:province = {
+                is_in_region = avanti_region
+            }
+        }
+        allow = {
+            #Own Avanti region
+            owns_or_subject_owns_region = avanti_region
+        }
+
+        on_completion = {
+            add_country_modifier = {
+                name = rulers_of_avanti
+                duration = 3650
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_23 = {   ##Masters of India
+        icon = "task_political"
+        requires = { lankan_missions_reclamation_task_14 lankan_missions_reclamation_task_21 lankan_missions_reclamation_task_22 }
+        final = yes
+
+        allow = {
+            num_of_cities >= 650
+        }
+
+        on_completion = {
+            add_country_modifier = {
+                name = master_of_india
+                duration = -1
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_24 = {   ##Pracyan Silk
+        icon = "task_economical"
+        requires = { lankan_missions_reclamation_task_12 }
+        highlight = {
+            scope:province = {
+                is_in_region = pracya_region
+                trade_goods = silk
+                owner = root
+            }
+        }
+        allow = {   #pracya_region produces 50 silk
+           custom_tooltip = {
+                text = lankan_missions_reclamation_task_24_A_tooltip
+                lankan_reclamation_task_24_silk_current >= lankan_reclamation_task_24_silk_total
+           }
+        }
+
+        on_completion = {
+            #Add modifier to 5 silk territiories.
+            ordered_owned_province = {
+                limit = {
+                    is_in_region = pracya_region
+                }
+                order_by = num_goods_produced
+                max = 3
+                add_province_modifier = {
+                    name = pracyan_silk
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    lankan_missions_reclamation_task_25 = {   ##Granary of India
+        icon = "task_economical"
+        requires = { lankan_missions_reclamation_task_19 }
+        highlight = {
+            scope:province = {
+                OR = {
+                is_in_region = avanti_region
+                is_in_region = madhyadesa_region
+                }
+                OR = {
+                trade_goods = grain
+                trade_goods = vegetables
+                }
+                owner = root
+            }
+        }
+        allow = {   #avanti_region produces 50 vegetables or grain.
+           custom_tooltip = {
+                text = lankan_missions_reclamation_task_25_A_tooltip
+                lankan_reclamation_task_25_food_current >= lankan_reclamation_task_25_food_total
+           }
+        }
+
+        on_completion = {
+            #Add Macedonian modifier
+            add_2_free_province_investments = yes
+            add_country_modifier = {
+                name = mac_developed_agriculture
+                duration = -1
+            }
+        }
+    }
+
+}

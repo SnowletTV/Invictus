@@ -44,7 +44,7 @@ PixelShader =
 		MipFilter = "Linear"
 		SampleModeU = "Wrap"
 		SampleModeV = "Wrap"
-	}	
+	}
 	TextureSampler EnvironmentMap
 	{
 		Ref = JominiEnvironmentMap
@@ -84,13 +84,13 @@ PixelShader =
 		SampleModeU = "Wrap"
 		SampleModeV = "Wrap"
 	}
-	
-	
+
+
 	TextureSampler TreeTintMap
 	{
 		file = "gfx/models/mapitems/trees/tree_tint_01.dds"
 		srgb = yes
-		
+
 		Index = 3
 		MagFilter = "Linear"
 		MinFilter = "Linear"
@@ -115,16 +115,16 @@ VertexStruct VS_OUTPUT
 
 
 VertexShader =
-{	
+{
 	Code
-	[[	
+	[[
 		struct VS_INPUT
 		{
 			float3 Position;
 			float3 Normal;
 			float4 Tangent;
-			float2 UV0;					
-		#ifdef PDX_MESH_UV1		
+			float2 UV0;
+		#ifdef PDX_MESH_UV1
 			float2 UV1;
 		#endif
 		};
@@ -140,7 +140,7 @@ VertexShader =
 			Out.WorldSpacePos 	= Output.WorldSpacePos;
 			return Out;
 		}
-		
+
 		VS_INPUT ConvertInput( in VS_INPUT_PDXMESHSTANDARD Input )
 		{
 			VS_INPUT Out;
@@ -155,7 +155,7 @@ VertexShader =
 		}
 		VS_INPUT ConvertInput( in VS_INPUT_PDXMESH_MAPOBJECT Input )
 		{
-			VS_INPUT Out;		
+			VS_INPUT Out;
 			Out.Position = Input.Position;
 			Out.Normal = Input.Normal;
 			Out.Tangent = Input.Tangent;
@@ -165,7 +165,7 @@ VertexShader =
 		#endif
 			return Out;
 		}
-		
+
 		float3 WindTransform( float3 Position, float4x4 WorldMatrix )
 		{
 			const float NoiseSwayTemporalSpeed = 0.8;
@@ -175,7 +175,7 @@ VertexShader =
 			const float3 SwayWorldDirection = float3(1, 0, 1); //will be normalized
 			const float HeightImpactOnSway = 0.33;
 			const float SwayScale = 1.1;
-			
+
 			float WorldX = GetMatrixData( WorldMatrix, 0, 3); //Always included
 			float WorldY = GetMatrixData( WorldMatrix, 2, 3 );
 			float Noise = CalcNoise( GlobalTime * NoiseSwayTemporalSpeed + NoiseSwaySpatialSpeed * float2( WorldX, WorldY ) ); // included: cw/random.fxh
@@ -187,25 +187,25 @@ VertexShader =
 			Position += SwayScale * HeightFactor * sin(Phase) * Offset * Noise * Noise;
 			return Position;
 		}
-		
+
 		VS_OUTPUT CommonVertexShader( VS_INPUT Input, uint InstanceIndex, float4x4 WorldMatrix )
 		{
 			VS_OUTPUT Out;
-	
+
 			float4 Position = float4( WindTransform( Input.Position.xyz, WorldMatrix ), 1.0 );
-			
+
 			Out.Normal = normalize( mul( CastTo3x3( WorldMatrix ), Input.Normal ) );
 			Out.Tangent = normalize( mul( CastTo3x3( WorldMatrix ), Input.Tangent.xyz ) );
 			Out.Bitangent = normalize( cross( Out.Normal, Out.Tangent ) * Input.Tangent.w );
-			
+
 			Out.Position = mul( WorldMatrix, Position );
 		#ifdef SNAP_VERTICES_TO_TERRAIN
 			Out.Position.y = GetHeight( Out.Position.xz ) + Input.Position.y; // included: cw/heightmap.fxh
 		#endif
 			Out.WorldSpacePos = Out.Position.xyz;
-			
+
 			Out.Position = FixProjectionAndMul( ViewProjectionMatrix, Out.Position ); // included: always
-	
+
 			Out.UV0 = Input.UV0;
 		#ifdef PDX_MESH_UV1
 			Out.UV1 = Input.UV1;
@@ -215,10 +215,10 @@ VertexShader =
 			Out.InstanceIndex = InstanceIndex;
 			float4 SeedPos = mul( WorldMatrix, float4(0,0,0,1) );
 			Out.RandomSeed = CalcRandom( SeedPos.xz ); // included: cw/random.fxh
-	
+
 			return Out;
 		}
-		
+
 		VS_OUTPUT_PDXMESHSHADOW CommonShadowVertexShader( VS_INPUT Input, in float4x4 WorldMatrix )
 		{
 			VS_OUTPUT_PDXMESHSHADOW Out;
@@ -229,7 +229,7 @@ VertexShader =
 		#endif
 			Out.Position = FixProjectionAndMul( ViewProjectionMatrix, Out.Position );
 			Out.UV = Input.UV0;
-			
+
 			return Out;
 		}
 	]]
@@ -247,11 +247,11 @@ VertexShader =
 		]]
 	}
 	MainCode VS_mapobject
-	{		
+	{
 		Input = "VS_INPUT_PDXMESH_MAPOBJECT"
 		Output = "VS_OUTPUT"
 		Code
-		[[						
+		[[
 			PDX_MAIN
 			{
 				VS_OUTPUT Out = CommonVertexShader( ConvertInput( Input ), Input.InstanceIndex24_Opacity8, UnpackAndGetMapObjectWorldMatrix( Input.InstanceIndex24_Opacity8 ) ); // included: jomini/jomini/jomini_mapobject.fxh
@@ -277,11 +277,11 @@ VertexShader =
 		]]
 	}
 	MainCode VS_mapobject_shadow
-	{		
+	{
 		Input = "VS_INPUT_PDXMESH_MAPOBJECT"
 		Output = "VS_OUTPUT_MAPOBJECT_SHADOW"
 		Code
-		[[						
+		[[
 			PDX_MAIN
 			{
 				VS_OUTPUT_MAPOBJECT_SHADOW Out = ConvertOutputMapObjectShadow( CommonShadowVertexShader( ConvertInput( Input ), UnpackAndGetMapObjectWorldMatrix( Input.InstanceIndex24_Opacity8 ) ) );
@@ -293,7 +293,7 @@ VertexShader =
 }
 
 PixelShader =
-{		
+{
 	Code
 	[[
 		float GetOpacity( uint InstanceIndex )
@@ -310,51 +310,51 @@ PixelShader =
 		Input = "VS_OUTPUT"
 		Output = "PDX_COLOR"
 		Code
-		[[			
+		[[
 			PDX_MAIN
 			{
 				float4 Diffuse = PdxTex2D( DiffuseMap, Input.UV0 );
 				Diffuse.a = PdxMeshApplyOpacity( Diffuse.a, Input.Position.xy, GetOpacity( Input.InstanceIndex ) );
 				clip( Diffuse.a - 0.01 );
-				
+
 				float2 TintUV;
 				TintUV.x = Input.UV1.x + Input.RandomSeed;
 				TintUV.y = 0.0f;//todo - season
-				
+
 				float4 Properties = PdxTex2D( PropertiesMap, Input.UV0 );
-				
+
 				float3 NormalSample = UnpackRRxGNormal( PdxTex2D( NormalMap, Input.UV0 ) ); // included: cw/utility.fxh
-				
+
 				float3 InNormal = normalize( Input.Normal );
 				float3x3 TBN = Create3x3( normalize( Input.Tangent ), normalize( Input.Bitangent ), InNormal );
 				float3 Normal = normalize( mul( NormalSample, TBN ) );
-				
-				//only leaves (emissive 1.0) should be tinted  
+
+				//only leaves (emissive 1.0) should be tinted
 				float Emissive =  PdxTex2D( NormalMap, Input.UV0 ).b;
 				Diffuse.rgb = lerp( Diffuse.rgb, GetOverlay( Diffuse.rgb, PdxTex2DLod0( TreeTintMap, TintUV ).rgb, 1.0f - Input.UV1.y ), Emissive );
-				
+
 				#if defined( ENABLE_SNOW )
 					ApplySnowTree( Diffuse.rgb, Normal, Properties, Input.WorldSpacePos, ColorTexture, WinterMap, DetailTextures, NormalTextures, MaterialTextures ); // included: winter.fxh
 				#endif
-				
+
 				float3 BorderColor;
 				float BorderPreLightingBlend;
 				float BorderPostLightingBlend;
 				GetBorderColorAndBlend( Input.WorldSpacePos.xz * WorldSpaceToTerrain0To1, BorderColor, BorderPreLightingBlend, BorderPostLightingBlend ); // included: terrain.fxh
 				Diffuse.rgb = lerp( Diffuse.rgb, BorderColor, BorderPreLightingBlend );
-				
+
 				SMaterialProperties MaterialProps = GetMaterialProperties( Diffuse.rgb, Normal, Properties.a, Properties.g, Properties.b ); // included: cw/lighting.fxh
 				SLightingProperties LightingProps = GetSunLightingProperties( Input.WorldSpacePos, ShadowTexture ); // included: jomini/jomini_lighting.fxh
-	
+
 				float3 Color = CalculateSunLighting( MaterialProps, LightingProps, EnvironmentMap );
-			
+
 				Color = lerp( Color, BorderColor, BorderPostLightingBlend );
-				
+
 				Color = ApplyFogOfWar( Color, Input.WorldSpacePos, FogOfWarAlpha ); // included :jomini/jomini_fog_of_war.fxh
 				Color = ApplyDistanceFog( Color, Input.WorldSpacePos ); // included :jomini/jomini_fog.fxh
-				
+
 				float Alpha = Diffuse.a;
-				
+
 				DebugReturn( Color, MaterialProps, LightingProps, EnvironmentMap ); // included: jomini/jomini_lighting.fxh
 				return float4( Color, Alpha );
 			}
@@ -385,7 +385,7 @@ RasterizerState ShadowRasterizerState
 
 DepthStencilState DepthStencilState
 {
-	StencilEnable = false
+	StencilEnable = no
 	FrontStencilPassOp = replace
 	StencilRef = 1
 }
@@ -401,8 +401,8 @@ Effect tree
 Effect treeShadow
 {
 	VertexShader = "VS_shadow"
-	PixelShader = "PixelPdxMeshStandardShadow"	
-	
+	PixelShader = "PixelPdxMeshStandardShadow"
+
 	RasterizerState = ShadowRasterizerState
 }
 
@@ -417,9 +417,9 @@ Effect tree_alpha_to_coverage
 Effect tree_alpha_to_coverageShadow
 {
 	VertexShader = "VS_shadow"
-	PixelShader = "PixelPdxMeshAlphaBlendShadow"	
+	PixelShader = "PixelPdxMeshAlphaBlendShadow"
 	BlendState = "alpha_to_coverage"
-	
+
 	RasterizerState = ShadowRasterizerState
 }
 
@@ -432,9 +432,9 @@ Effect tree_cluster
 Effect tree_clusterShadow
 {
 	VertexShader = "VS_shadow"
-	PixelShader = "PixelPdxMeshStandardShadow"	
+	PixelShader = "PixelPdxMeshStandardShadow"
 	Defines = { "SNAP_VERTICES_TO_TERRAIN" }
-	
+
 	RasterizerState = ShadowRasterizerState
 }
 
@@ -450,9 +450,9 @@ Effect tree_cluster_alpha_to_coverageShadow
 {
 	VertexShader = "VS_shadow"
 	PixelShader = "PixelPdxMeshAlphaBlendShadow"
-	Defines = { "SNAP_VERTICES_TO_TERRAIN" }	
+	Defines = { "SNAP_VERTICES_TO_TERRAIN" }
 	BlendState = "alpha_to_coverage"
-	
+
 	RasterizerState = ShadowRasterizerState
 }
 
@@ -462,15 +462,15 @@ Effect tree_cluster_mapobject
 {
 	VertexShader = "VS_mapobject"
 	PixelShader = "PS_standard"
-	Defines = { "SNAP_VERTICES_TO_TERRAIN" "ENABLE_SNOW" }	
+	Defines = { "SNAP_VERTICES_TO_TERRAIN" "ENABLE_SNOW" }
 }
 Effect tree_clusterShadow_mapobject
 {
 	VertexShader = "VS_mapobject_shadow"
-	PixelShader = "PS_jomini_mapobject_shadow"	
-	
+	PixelShader = "PS_jomini_mapobject_shadow"
+
 	RasterizerState = ShadowRasterizerState
-	Defines = { "SNAP_VERTICES_TO_TERRAIN" }	
+	Defines = { "SNAP_VERTICES_TO_TERRAIN" }
 }
 
 Effect tree_cluster_alpha_to_coverage_mapobject
@@ -478,15 +478,15 @@ Effect tree_cluster_alpha_to_coverage_mapobject
 	VertexShader = "VS_mapobject"
 	PixelShader = "PS_standard"
 	BlendState = "alpha_to_coverage"
-	Defines = { "SNAP_VERTICES_TO_TERRAIN" "ENABLE_SNOW" }	
+	Defines = { "SNAP_VERTICES_TO_TERRAIN" "ENABLE_SNOW" }
 }
 Effect tree_cluster_alpha_to_coverageShadow_mapobject
 {
 	VertexShader = "VS_mapobject_shadow"
 	PixelShader = "PS_jomini_mapobject_shadow_alphablend"
-	
+
 	RasterizerState = ShadowRasterizerState
-	Defines = { "SNAP_VERTICES_TO_TERRAIN" }	
+	Defines = { "SNAP_VERTICES_TO_TERRAIN" }
 }
 
 Effect tree_mapobject
@@ -498,8 +498,8 @@ Effect tree_mapobject
 Effect treeShadow_mapobject
 {
 	VertexShader = "VS_mapobject_shadow"
-	PixelShader = "PS_jomini_mapobject_shadow"	
-	
+	PixelShader = "PS_jomini_mapobject_shadow"
+
 	RasterizerState = ShadowRasterizerState
 }
 
@@ -515,6 +515,6 @@ Effect tree_alpha_to_coverageShadow_mapobject
 	VertexShader = "VS_mapobject_shadow"
 	PixelShader = "PS_jomini_mapobject_shadow_alphablend"
 	BlendState = "alpha_to_coverage"
-	
+
 	RasterizerState = ShadowRasterizerState
 }

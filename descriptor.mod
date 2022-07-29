@@ -5,4 +5,5 @@ tags={
 }
 name="Imperator: Invictus"
 supported_version="2.*"
+dependencies={"2.0 Better UI"}
 remote_file_id="2532715348"

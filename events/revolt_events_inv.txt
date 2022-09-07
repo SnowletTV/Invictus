@@ -51,17 +51,7 @@ revolt_events.1 = {
 								limit = { owner = root }
 								set_owned_by = scope:revolt_country
 							}
-						}
-						scope:revolt_country = {
-							if = {
-								limit = { 
-									scope:new_culture_revolt = {
-										is_integrated = no
-									}
-								}
-								integrate_country_culture = new_culture_revolt
-							}
-						}					
+						}				
 					}
 				}
 	    	}
@@ -69,7 +59,38 @@ revolt_events.1 = {
     			trigger = {
     				num_of_cities > 100
     			}
-    			scope:revolt_country = {
+				every_country_state = {
+		    		limit = {
+						NOT = {
+							this = root.capital_scope.state
+						}
+						any_state_province = {
+							#Any state with less than 15 loyalty that is in the same governorship as the revolting state OR is a neighboring area of the state.
+							state_loyalty < 15
+							OR = {
+								governorship = scope:revolting_state_governorship
+								#any_neighbor_state doesn't exists...so do this instead
+								area = {
+									any_neighbor_area = {
+										this = scope:revolting_state_province.area
+									}
+								}
+							}
+						}
+		    		}
+					capital_scope.culture = {
+						save_scope_as = new_culture_revolt
+					}
+		    		capital_scope = {		
+						area = {
+							every_area_province = {
+								limit = { owner = root }
+								set_owned_by = scope:revolt_country
+							}
+						}
+		    		}
+		    	}
+				scope:revolt_country = {
     				random_list = {
     					1 = {
 			    			create_unit = {
@@ -104,47 +125,6 @@ revolt_events.1 = {
 	    				duration = 730
 	    			}
     			}
-				every_country_state = {
-		    		limit = {
-						NOT = {
-							this = root.capital_scope.state
-						}
-						any_state_province = {
-							#Any state with less than 15 loyalty that is in the same governorship as the revolting state OR is a neighboring area of the state.
-							state_loyalty < 15
-							OR = {
-								governorship = scope:revolting_state_governorship
-								#any_neighbor_state doesn't exists...so do this instead
-								area = {
-									any_neighbor_area = {
-										this = scope:revolting_state_province.area
-									}
-								}
-							}
-						}
-		    		}
-					capital_scope.culture = {
-						save_scope_as = new_culture_revolt
-					}
-		    		capital_scope = {		
-						area = {
-							every_area_province = {
-								limit = { owner = root }
-								set_owned_by = scope:revolt_country
-							}
-						}
-						if = {
-							limit = { 
-								scope:new_culture_revolt = {
-									is_integrated = no
-								}
-							}
-							scope:revolt_country = {
-								integrate_country_culture = new_culture_revolt
-							}
-						}
-		    		}
-		    	}
     		}
 			20 = { #Multiple revolts
 		    	every_country_state = {
@@ -196,6 +176,12 @@ revolt_events.1 = {
 										add_claim = root
 									}
 								}
+								random_country_culture = {
+									limit = { 
+										is_integrated = no
+									}
+									ROOT = { integrate_country_culture = PREV }
+								}
 								add_to_war = {
 									target = scope:revolt_war_scope
 						            attacker = yes
@@ -207,6 +193,15 @@ revolt_events.1 = {
 		    	}
 	    	}
     	}
+		scope:revolt_country = {
+			#Let them integrate a random culture
+			random_country_culture = {
+				limit = { 
+					is_integrated = no
+				}
+				ROOT = { integrate_country_culture = PREV }
+			}
+		}
 		if = {
 			limit = { is_ai = yes }
 			trigger_event = {

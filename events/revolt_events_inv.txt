@@ -13,61 +13,203 @@ revolt_events.1 = {
     			random_current_war = {
     				save_scope_as = revolt_war_scope
     			}
+    			save_scope_as = revolt_country
+    		}
+    		area = {
+    			every_area_province = {
+    				add_claim = root
+    			}
     		}
     	}
-    	#
-    	every_country_state = {
-    		limit = {
-				NOT = {
-					this = root.capital_scope.state
-				}
-				any_state_province = {
-					#Any state with less than 15 loyalty that is in the same governorship as the revolting state OR is a neighboring area of the state.
-					state_loyalty < 15
-					OR = {
-						this.governorship = scope:revolting_state_governorship
-						#any_neighbor_state doesn't exists...so do this instead
-						area = {
-							any_neighbor_area = {
-								this = scope:revolting_state_province.area
+    	random_list = {
+    		60 = { #Single large rebellion
+				every_country_state = {
+					limit = {
+						NOT = {
+							this = root.capital_scope.state
+						}
+						any_state_province = {
+							#Any state with less than 15 loyalty that is in the same governorship as the revolting state OR is a neighboring area of the state.
+							state_loyalty < 15
+							OR = {
+								governorship = scope:revolting_state_governorship
+								#any_neighbor_state doesn't exists...so do this instead
+								area = {
+									any_neighbor_area = {
+										this = scope:revolting_state_province.area
+									}
+								}
 							}
 						}
 					}
-				}
-    		}
-    		capital_scope = {
-    			create_country = {
-    				save_scope_as = revolt_snowball_country
-    			}
-    			if = {
-    				limit = {
-    					exists = scope:revolt_snowball_country
-    				}
-    				scope:revolt_snowball_country = {
-    					add_military_experience_to_new_country_effect = yes #Give mil experience to revolts so they can compete
-						capital_scope.area = {
+					capital_scope.culture = {
+						save_scope_as = new_culture_revolt
+					}
+					capital_scope = {		
+						area = {
 							every_area_province = {
 								limit = { owner = root }
-								set_owned_by = scope:revolt_snowball_country
+								set_owned_by = scope:revolt_country
+							}
+						}				
+					}
+				}
+	    	}
+			20 = { #Revolt buffed
+    			trigger = {
+    				num_of_cities > 100
+    			}
+				every_country_state = {
+		    		limit = {
+						NOT = {
+							this = root.capital_scope.state
+						}
+						any_state_province = {
+							#Any state with less than 15 loyalty that is in the same governorship as the revolting state OR is a neighboring area of the state.
+							state_loyalty < 15
+							OR = {
+								governorship = scope:revolting_state_governorship
+								#any_neighbor_state doesn't exists...so do this instead
+								area = {
+									any_neighbor_area = {
+										this = scope:revolting_state_province.area
+									}
+								}
 							}
 						}
-						add_to_war = {
-							target = scope:revolt_war_scope
-				            attacker = yes
-				            leader = no
+		    		}
+					capital_scope.culture = {
+						save_scope_as = new_culture_revolt
+					}
+		    		capital_scope = {		
+						area = {
+							every_area_province = {
+								limit = { owner = root }
+								set_owned_by = scope:revolt_country
+							}
 						}
-    				}
+		    		}
+		    	}
+				scope:revolt_country = {
+    				random_list = {
+    					1 = {
+			    			create_unit = {
+			    				location = prev.capital_scope
+			    				add_subunit = heavy_infantry
+			    				add_subunit = heavy_infantry
+			    				add_subunit = heavy_infantry
+			    				add_subunit = light_infantry
+			    				add_subunit = light_infantry
+			    				add_subunit = light_infantry
+			    				add_subunit = light_infantry
+			    				add_subunit = archers
+			    				add_subunit = archers
+			    				add_subunit = supply_train
+			    			}
+		    			}
+		    			2 = {
+			    			create_unit = {
+			    				location = prev.capital_scope
+			    				add_subunit = heavy_infantry
+			    				add_subunit = light_infantry
+			    				add_subunit = light_infantry
+			    				add_subunit = light_infantry
+			    				add_subunit = light_infantry
+			    				add_subunit = archers
+			    				add_subunit = archers
+			    			}
+		    			}
+	    			}
+	    			add_country_modifier = {
+	    				name = lucky_revolt_mod
+	    				duration = 730
+	    			}
     			}
     		}
-    	}
-    	if = {
-    		limit = { is_ai = yes }
-	    	trigger_event = {
-	    		id = revolt_events.2
-	    		days = 1
+			20 = { #Multiple revolts
+		    	every_country_state = {
+		    		limit = {
+						NOT = {
+							this = root.capital_scope.state
+						}
+						any_state_province = {
+							#Any state with less than 15 loyalty that is in the same governorship as the revolting state OR is a neighboring area of the state.
+							state_loyalty < 15
+							OR = {
+								governorship = scope:revolting_state_governorship
+								#any_neighbor_state doesn't exists...so do this instead
+								area = {
+									any_neighbor_area = {
+										this = scope:revolting_state_province.area
+									}
+								}
+							}
+						}
+		    		}
+		    		capital_scope = {						
+						if = {
+							limit = {
+								dominant_province_culture = scope:revolt_country.culture #capital_scope.culture doesnt work in capital_scope, use dominant instead
+							}
+							area = {
+								every_area_province = {
+									limit = { owner = root }
+									set_owned_by = scope:revolt_country
+								}
+							}
+						}
+						else = {
+							create_country = {
+								save_scope_as = revolt_snowball_country
+							}
+						}	
+		    			if = {
+		    				limit = {
+		    					exists = scope:revolt_snowball_country
+		    				}
+		    				scope:revolt_snowball_country = {
+		    					add_military_experience_to_new_country_effect = yes #Give mil experience to revolts so they can compete
+								capital_scope.area = {
+									every_area_province = {
+										limit = { owner = root }
+										set_owned_by = scope:revolt_snowball_country
+										add_claim = root
+									}
+								}
+								random_country_culture = {
+									limit = { 
+										is_integrated = no
+									}
+									ROOT = { integrate_country_culture = PREV }
+								}
+								add_to_war = {
+									target = scope:revolt_war_scope
+						            attacker = yes
+						            leader = no
+								}
+		    				}
+		    			}
+		    		}
+		    	}
 	    	}
-	    }
-    }
+    	}
+		scope:revolt_country = {
+			#Let them integrate a random culture
+			random_country_culture = {
+				limit = { 
+					is_integrated = no
+				}
+				ROOT = { integrate_country_culture = PREV }
+			}
+		}
+		if = {
+			limit = { is_ai = yes }
+			trigger_event = {
+				id = revolt_events.2
+				days = 1
+			}
+		}
+	}
 }
 revolt_events.2 = {
     type = country_event
@@ -76,9 +218,21 @@ revolt_events.2 = {
     immediate = {
 		every_country_state = {
 			capital_scope = {
-				add_state_loyalty = 30
+				add_state_loyalty = 25
 			}
 		}
     }
+}
 
+revolt_events.3 = { #test
+    type = country_event
+    hidden = yes
+
+    immediate = {
+    	random_country_state = {
+    		capital_scope = {
+    			add_state_loyalty = -99
+    		}
+    	}
+    }
 }

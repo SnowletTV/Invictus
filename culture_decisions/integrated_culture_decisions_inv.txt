@@ -97,6 +97,173 @@
 		}
 	}
 
+	city_self_rule = {
+		potential = {
+			NOT = { primary_culture = scope:target_culture.culture }
+			scope:target_culture = {
+				OR = {
+					has_pop_type_right = citizen
+					has_pop_type_right = nobles
+				}
+			}
+		}
+		allow = {
+			is_tribal = no
+			is_subject = no
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = bestowed_city_rights }
+			}
+			custom_tooltip = {
+				text = must_not_already_have_a_municipal_subject_of_this_culture_tt
+				NOT = {
+					any_subject = {
+						capital_scope = { has_province_modifier = municipal_self_rule_modifier }
+						primary_culture = scope:target_culture.culture
+					}
+				}
+			}
+			any_owned_province = {
+				dominant_province_culture = scope:target_culture.culture
+				has_city_status = yes
+				total_population >= 25
+				is_capital = no
+			}
+		}
+		effect = {
+			add_stability = -5
+			culture_state_loyalty_effect = yes
+			if = {
+				limit = {
+					any_owned_province = {
+						dominant_province_culture = scope:target_culture.culture
+						has_city_status = yes
+						total_population >= 25
+						is_capital = no
+					}
+				}
+				ordered_owned_province = { #HAS to be deterministic
+					order_by = total_population
+					limit = {
+						dominant_province_culture = scope:target_culture.culture
+						has_city_status = yes
+						total_population >= 25
+						is_capital = no
+					}
+					save_scope_as = municipium
+					create_country = {
+						hidden_effect = {
+							if = {
+								limit = {
+									NOT = {
+										primary_culture = scope:target_culture.culture
+									}
+								}
+								set_primary_culture_cleanup_effect = {
+									NEW_PRIMARY_CULTURE = scope:target_culture.culture
+									MAKE_OLD_CULTURE_INTEGRATED = yes
+								}
+							}
+							add_treasury = 50.0
+							PREV = {
+								if = {
+									limit = {
+										OR = {
+											civilization_value >= 40
+											scope:target_culture.culture.culture_group = root.culture_group
+										}
+									}
+									owner = {
+										change_government = oligarchic_republic
+									}
+								}
+								else = {
+									owner = {
+										change_government = tribal_kingdom
+									}
+								}
+							}
+						}
+					}
+					if = {
+						limit = {
+							scope:target_culture.culture.culture_group = root.culture_group
+						}
+						custom_tooltip = municipium_feoderati_tt 
+						hidden_effect = {
+							ROOT = {
+								make_subject = {
+									target = prev.owner
+									type = feudatory
+								}
+							}
+						}
+					}
+					else_if = {
+						limit = {
+							civilization_value < 40
+						}
+						custom_tooltip = feoderati_tribes_tt
+						hidden_effect = {
+							ROOT = {
+								make_subject = {
+									target = prev.owner
+									type = vassal_tribe
+								}
+							}
+						}
+					}
+					else = {
+						custom_tooltip = municipium_client_state_tt
+						hidden_effect = {
+							ROOT = {
+								make_subject = {
+									target = prev.owner
+									type = client_state
+								}
+							}
+						}
+					}
+					hidden_effect = {
+						add_province_modifier = {
+							name = "municipal_self_rule_modifier"
+							duration = 7300
+						}
+					}
+				}
+			}
+			else_if = {
+				limit = {
+					scope:target_culture.culture.culture_group = root.culture_group
+				}
+				custom_tooltip = municipium_explain_feudatory_tt
+			}
+			else = {
+				custom_tooltip = municipium_explain_tt
+			}
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "bestowed_city_rights" 
+					duration = 7300
+				}
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			modifier = {
+				factor = 0
+				NOT = { scope:target_culture.culture.culture_group = root.culture_group }
+			}
+			modifier = {
+				factor = 0
+				stability < 50
+			}
+			modifier = {
+				factor = 0
+				num_of_cities < 100
+			}
+		}
+	}
+
 	#Integrate Military Traditions - Afro-Arabian
 	study_afro_arabian_ways_of_war = {
 		potential = {

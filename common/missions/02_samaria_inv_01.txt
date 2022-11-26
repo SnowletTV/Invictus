@@ -1,0 +1,1053 @@
+﻿samaria_inv_mission = {
+    header = "mission_image_sparta"
+    icon = "athens_3"
+    repeatable = no
+
+    chance = {
+        factor = 10
+    }
+
+    ai_chance = {
+        factor = 0
+    }
+
+    potential = {
+        OR = {
+            tag = SMA
+            heritage = samaria_heritage
+        }
+        religion = judaism
+        NOT = { has_variable = samaria_mission_cooldown }
+    }
+    abort = {
+        NOT = { religion = judaism }
+    }
+    on_start = {
+        save_scope_as = mission_country_scope
+        add_country_modifier = {
+            name = judea_modifier_8
+            duration = 18250 #50 yrs
+        }
+        hidden_effect = {
+            random_list = {
+                10 = {
+                    region:arabia_region = {
+                        random_region_province = {
+                            limit = {
+                                trade_goods = incense
+                                has_city_status = no
+                            }
+                            save_scope_as = incense_city
+                        }
+                    }
+                }
+                10 = {
+                    region:arabia_felix_region = {
+                        random_region_province = {
+                            limit = {
+                                NOR = {
+                                    is_in_area = hadramut_occidentalis_area
+                                    is_in_area = hadramut_orientalis_area
+                                }
+                                trade_goods = incense
+                                has_city_status = no
+                            }
+                            save_scope_as = incense_city
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    on_abort = {
+        custom_tooltip = samaria_mission_abortion.tt
+        set_variable = {
+            name = samaria_mission_cooldown
+            days = 3650 #10 yrs
+        }
+        remove_country_modifier = judea_modifier_8
+    }
+
+    on_completion = {
+      complete_mission_effect = yes
+      remove_country_modifier = judea_modifier_8
+      current_ruler = { add_nickname = NICKNAME_SMJ }
+		  change_country_name = "SMJ_NAME"
+		  hidden_effect = {
+        change_country_adjective = "SMJ_ADJECTIVE"
+			  change_country_tag = SMJ
+        change_country_color = kod_color
+			  #change_country_flag = SMJ_FLAG #todo
+        #change_government = samaritan_judgedom #todo
+		  }
+		  capital_scope = {
+			  capital_formable_small_effect = yes
+        add_2_free_province_investments = yes
+		  }
+      trigger_event = {
+        id = samaria_inv.100
+      }
+    }
+
+
+    samaria_inv_mission_task_1 = { #Join the Diadochi war.
+        icon = "task_conquest"
+        duration = 90
+
+        allow = {
+            custom_tooltip = {
+                text = samaria_inv_mission_task_1.tt
+                NOT = { has_variable = antigonus_death }
+                c:EGY = {
+                    war_with = c:PRY
+                }
+            }
+        }
+
+        bypass = {
+            current_date > 460.1.1
+        }
+
+        on_bypass = {
+            set_variable = no_want_war
+        }
+
+        on_start = {
+            c:PRY = {
+                if = {
+                    limit = {
+                        c:JUD = {
+                            is_ai = no
+                            is_subject_of = c:PRY
+                        }
+                    }
+                    release_subject = c:JUD
+                }
+                if = {
+                    limit = {
+                        c:SMA = {
+                            is_ai = no
+                            is_subject_of = c:PRY
+                        }
+                    }
+                    release_subject = c:SMA
+                }
+            }
+        }
+
+        on_completion = {
+            trigger_event = {
+                id = samaria_inv.1
+            }
+        }
+    }
+
+    samaria_inv_mission_task_2 = { #Incite Unrest
+        icon = "task_political"
+
+        requires = { samaria_inv_mission_task_3 }
+
+        bypass = {
+            owns_or_subject_owns_region = palestine_region
+        }
+
+        allow = {
+            political_influence >= 25
+        }
+
+        on_completion = {
+            add_political_influence = -25
+            custom_tooltip = samaria_inv_mission_task_2.tt
+            hidden_effect = {
+                region:palestine_region = {
+                    every_region_province = {
+                        limit = {
+                            NOT = {
+                                OR = {
+                                    owner = c:JUD
+                                    owner = c:SMA
+                                    owner = c:ISR
+                                }
+                            }
+                            province_dominant_culture_group = west_levantine
+                        }
+                        add_province_modifier = {
+                            name = judea_modifier_2
+                            duration = 3650 #10 yrs
+                        }
+                    }
+                }
+                trigger_event = {
+                    id = samaria_inv.7
+
+                }
+            }
+            show_as_tooltip = {
+                p:761 = {
+                    add_province_modifier = {
+                        name = judea_modifier_2
+                        duration = 3650 #10 yrs
+                    }
+                }
+            }
+        }
+    }
+
+    samaria_inv_mission_task_3 = { #Claim your land
+        icon = "task_political"
+
+        requires = { samaria_inv_mission_task_1 }
+
+        bypass = {
+            has_variable = no_want_war
+        }
+
+        allow = {
+            custom_tooltip = {
+                text = samaria_inv_mission_task_3.tt
+                NOT = {
+                    c:EGY = {
+                     war_with = c:PRY
+                    }
+                }
+                OR = {
+                    has_variable = pry_jud
+                    has_variable = egy_jud
+                }
+            }
+        }
+
+        on_completion = {
+            trigger_event = {
+				id = samaria_inv.8
+
+			}
+            if = {
+                limit = { has_variable = egy_jud }
+                c:EGY = {
+                    trigger_event = {
+                        id = samaria_inv.2
+
+                    }
+                }
+            }
+            if = {
+                limit = { has_variable = pry_jud }
+                c:PRY = {
+                    trigger_event = {
+                        id = samaria_inv.2
+                        days = { 5 10 }
+                    }
+                }
+            }
+        }
+    }
+
+    samaria_inv_mission_task_4 = { #Make Feudatory
+        icon = "task_diplomatic"
+
+        duration = 30
+
+        requires = { samaria_inv_mission_task_1 }
+
+        #prevented_by = { samaria_inv_mission_task_5 }
+
+        bypass = {
+            OR = {
+                has_variable = bypass_task_5_pls
+                has_completed_mission_task = samaria_inv_mission_task_5
+                c:JUD = {
+                    has_land = no
+                }
+            }
+        }
+
+        allow = {
+            political_influence >= 25
+            c:JUD = {
+                opinion = {
+                    target = root
+                    value >= 100
+                }
+            }
+        }
+
+        on_start = {
+            set_variable = bypass_task_4_pls
+            c:PRY = {
+                if = {
+                    limit = {
+                        c:JUD = {
+                            is_subject_of = c:PRY
+                        }
+                    }
+                }
+                release_subject = c:JUD
+                if = {
+                    limit = {
+                        c:SMA = {
+                            is_subject_of = c:PRY
+                        }
+                    }
+                }
+                release_subject = c:SMA
+            }
+        }
+
+        on_completion = {
+            add_political_influence = -25
+            trigger_event = {
+                id = samaria_inv.9
+
+            }
+            if = {
+                limit = { root = c:SMA }
+                root = {
+                    make_subject = {
+                        type = feudatory
+                        target = c:JUD
+                    }
+                }
+            }
+            if = {
+                limit = { root = c:JUD }
+                root = {
+                    make_subject = {
+                        type = feudatory
+                        target = c:SMA
+                    }
+                }
+            }
+        }
+    }
+
+    samaria_inv_mission_task_5 = { #Annex
+        icon = "task_political"
+
+        requires = { samaria_inv_mission_task_1 }
+
+        bypass = {
+            OR = {
+                has_variable = bypass_task_4_pls
+                has_completed_mission_task = samaria_inv_mission_task_4
+                c:JUD = {
+                    has_land = no
+                }
+            }
+        }
+
+        #prevented_by = { samaria_inv_mission_task_4 }
+
+        allow = {
+            political_influence >= 25
+            c:JUD = {
+                opinion = {
+                    target = root
+                    value >= 100
+                }
+            }
+        }
+
+        on_completion = {
+            set_variable = bypass_task_5_pls
+            add_political_influence = -25
+            add_aggressive_expansion = 5
+            trigger_event = {
+                id = samaria_inv.9
+
+            }
+            if = {
+                limit = { root = c:JUD }
+                c:SMA = {
+                    every_owned_province = {
+                        set_owned_by = root
+                    }
+                }
+            }
+            if = {
+                limit = { root = c:SMA }
+                c:JUD = {
+                    every_owned_province = {
+                        set_owned_by = root
+                    }
+                }
+            }
+        }
+    }
+
+    samaria_inv_mission_task_6 = { #Alliance Event chain
+        icon = "task_diplomatic"
+
+        duration = 180
+
+        requires = { samaria_inv_mission_task_3 }
+
+        allow = {
+            treasury >= 300
+            political_influence >= 25
+            custom_tooltip = {
+                text = samaria_inv_mission_task_6_2.tt
+                any_country = {
+                    NOT = { this = root}
+                    NOT = { alliance_with = root }
+                    rank = major_power
+				    in_diplomatic_range = ROOT
+				    opinion = {
+                        target = root
+					    value > 0
+				    }
+                }
+            }
+        }
+
+        on_completion = {
+            add_treasury = -300
+            add_political_influence = -25
+            custom_tooltip = samaria_inv_mission_task_6.tt
+            hidden_effect = {
+                trigger_event = {
+                    id = samaria_inv.3
+
+                }
+            }
+        }
+    }
+
+
+    samaria_inv_mission_task_7 = { #enforce samaritanism
+      icon = "task_religion"
+
+      requires = {
+        samaria_inv_mission_task_4
+        samaria_inv_mission_task_5
+      }
+
+      bypass = {
+        NOT = {
+          p:687={
+            has_ancient_wonder = "second_temple_herod"
+          }
+        }
+      }
+
+      allow = {
+        owns_or_subject_owns = 687
+        political_influence >= 200
+      }
+
+      on_completion = {
+        set_variable = destroyed_jerusalem_temple
+        custom_tooltip = "samaria_inv_mission_task_7.tt"
+        if = { #destroy menorah if in jersualem temple
+          limit = {
+            p:687 = {
+              any_province_treasure = {
+                this = treasure:treasure_it_second_temple_menorah
+              }
+            }
+          }
+          treasure:treasure_it_second_temple_menorah = { destroy_treasure = yes }
+          add_treasury = 500
+        }
+        else = {
+          add_treasury = 250
+        }
+        add_country_modifier = { #permanent effects to country
+          name = temple_destroyed_country_permanent
+        }
+        add_country_modifier = { #temporary effects to country
+          name = recently_destroyed_jerusalem_temple
+          duration = 3650
+        }
+        if = {
+          limit = {
+            exists = c:JUD
+            c:JUD = {
+              is_subject_of = ROOT
+            }
+          }
+          ROOT = {
+            remove_opinion = {
+              modifier = samaritan_judaean_schism
+              target = JUD
+            }
+          }
+          c:JUD = {
+            remove_opinion = {
+              modifier = samaritan_judaean_schism
+              target = ROOT
+            }
+            add_opinion = {
+              modifier = samaritanism_enforced
+              target = ROOT
+            }
+          }
+        }
+        custom_tooltip = "second_temple_samaria_tooltip"
+        p:687 = {
+          add_state_loyalty = -85
+          add_province_modifier = { #effects to jerusalem itself
+            name = temple_destroyed_jerusalem
+          }
+        }
+        hidden_effect = { #destroys wonders
+          p:687 = {#save off building counts and move pops to uninhabitable prov; todo save off modifiers
+            owner = {
+              save_scope_as = "JERUSALEM_OWNER"
+            }
+            set_variable = { #save off building counts
+              name = fortress
+              value = num_of_fortress_building
+            }
+            set_variable = {
+              name = fortress_ramparts
+              value = num_of_fortress_ramparts_building
+            }
+            set_variable = {
+              name = port
+              value = num_of_port_building
+            }
+            set_variable = {
+              name = barracks
+              value = num_of_barracks_building
+            }
+            set_variable = {
+              name = foundries
+              value = num_of_foundry_building
+            }
+            set_variable = {
+              name = aqueduct
+              value = num_of_aqueduct_building
+            }
+            set_variable = {
+              name = temple
+              value = num_of_temple_building
+            }
+            set_variable = {
+              name = population
+              value = num_of_population_building
+            }
+            set_variable = {
+              name = theathre
+              value = num_of_theathre_building
+            }
+            set_variable = {
+              name = library
+              value = num_of_library_building
+            }
+            set_variable = {
+              name = academy
+              value = num_of_academy_building
+            }
+            set_variable = {
+              name = commerce
+              value = num_of_commerce_building
+            }
+            set_variable = {
+              name = court
+              value = num_of_court_building
+            }
+            set_variable = {
+              name = military
+              value = num_of_military_building
+            }
+            set_variable = {
+              name = forum
+              value = num_of_forum_building
+            }
+            set_variable = {
+              name = town_hall
+              value = num_of_town_hall_building
+            }
+            set_variable = {
+              name = latifundia
+              value = num_of_latifundia_building
+            }
+            set_variable = {
+              name = slave_mine
+              value = num_of_slave_mine_building
+            }
+            set_variable = {
+              name = basic_settlement_infratructure
+              value = num_of_basic_settlement_infratructure_building
+            }
+            set_variable = {
+              name = hill_fort
+              value = num_of_hill_fort
+            }
+            set_variable = {
+              name = local_forum
+              value = num_of_local_forum_building
+            }
+            set_variable = {
+              name = workshop
+              value = num_of_workshop_building
+            }
+            #save off modifiers
+            every_pops_in_province = { move_pop = 5288} #can use any uninhabitable province
+            set_owned_by = scope:JERUSALEM_OWNER #recolonize
+            add_city_fire_effect = yes
+            if = {
+              limit = {
+                scope:JERUSALEM_OWNER = c:JUD
+              }
+              c:JUD = {
+                set_capital = p:687
+              }
+            }
+          }
+          p:5288 = { #bring pops back from uninhabitable province
+            every_pops_in_province = { move_pop = 687 }
+          }
+          p:687 = { #rebuild buildings to original levels; todo replace original modifiers
+            while = {
+              limit = {
+                var:fortress >= 1
+              }
+              add_building_level = fortress_building
+              change_variable = {
+                name = fortress
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:fortress_ramparts >= 1
+              }
+              add_building_level = fortress_ramparts_building
+              change_variable = {
+                name = fortress_ramparts
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:port >= 1
+              }
+              add_building_level = port_building
+              change_variable = {
+                name = port
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:barracks >= 1
+              }
+              add_building_level = barracks_building
+              change_variable = {
+                name = barracks
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:foundries >= 1
+              }
+              add_building_level = foundry_building
+              change_variable = {
+                name = foundries
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:aqueduct >= 1
+              }
+              add_building_level = aqueduct_building
+              change_variable = {
+                name = aqueduct
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:temple >= 1
+              }
+              add_building_level = temple_building
+              change_variable = {
+                name = temple
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:population >= 1
+              }
+              add_building_level = population_building
+              change_variable = {
+                name = population
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:theathre >= 1
+              }
+              add_building_level = theathre_building
+              change_variable = {
+                name = theathre
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:library >= 1
+              }
+              add_building_level = library_building
+              change_variable = {
+                name = library
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:academy >= 1
+              }
+              add_building_level = academy_building
+              change_variable = {
+                name = academy
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:commerce >= 1
+              }
+              add_building_level = commerce_building
+              change_variable = {
+                name = commerce
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:court >= 1
+              }
+              add_building_level = court_building
+              change_variable = {
+                name = court
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:military >= 1
+              }
+              add_building_level = military_building
+              change_variable = {
+                name = military
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:forum >= 1
+              }
+              add_building_level = forum_building
+              change_variable = {
+                name = forum
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:town_hall >= 1
+              }
+              add_building_level = town_hall_building
+              change_variable = {
+                name = town_hall
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:latifundia >= 1
+              }
+              add_building_level = latifundia_building
+              change_variable = {
+                name = latifundia
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:slave_mine >= 1
+              }
+              add_building_level = slave_mine_building
+              change_variable = {
+                name = slave_mine
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:basic_settlement_infratructure >= 1
+              }
+              add_building_level = basic_settlement_infratructure_building
+              change_variable = {
+                name = basic_settlement_infratructure
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:hill_fort >= 1
+              }
+              add_building_level = hill_fort
+              change_variable = {
+                name = hill_fort
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:local_forum >= 1
+              }
+              add_building_level = local_forum_building
+              change_variable = {
+                name = local_forum
+                subtract = 1
+              }
+            }
+            while = {
+              limit = {
+                var:workshop >= 1
+              }
+              add_building_level = workshop_building
+              change_variable = {
+                name = workshop
+                subtract = 1
+              }
+            }
+            #replace modifiers
+          }
+          area:samaria_area = {
+            random_area_province = {
+              limit = {
+                owner = ROOT
+                dominant_province_religion = judaism
+              }
+              add_state_loyalty = 25
+            }
+            every_area_province = { #effects to each owned jewish province in peraea
+              limit =  {
+                owner = ROOT
+                dominant_province_religion = judaism
+              }
+              add_province_modifier = {
+                name = temple_destroyed_samaria
+                duration = 9125
+              }
+            }
+          }
+        }
+      }
+
+    }
+
+    samaria_inv_mission_task_8 = { #restore samaria
+      icon = "task_economical"
+
+      requires = {
+        samaria_inv_mission_task_7
+        samaria_inv_mission_task_11
+      }
+
+      #679 has city status
+      allow = {
+        p:679 = {
+          has_city_status = yes
+        }
+      }
+
+
+      #choose to move capital there or keep in shechem near gerizim
+      #whichever chosen gets a bonus modifier
+    }
+
+    samaria_inv_mission_task_9 = { #embellish gerizim
+      icon = "task_religion"
+
+      requires = {
+        samaria_inv_mission_task_7
+        samaria_inv_mission_task_12
+        samaria_inv_mission_task_20
+      }
+
+      #judea loyal
+    }
+
+    samaria_inv_mission_task_10 = { #Ephraim and Manasseh
+      icon = "task_happiness"
+
+      #own 680 shechem, 732 edrei, 673 betshean, 667 dora
+    }
+
+    samaria_inv_mission_task_11 = { #Northern tribes
+      icon = "task_conquest"
+
+      #own 716 heshbon, 672 jezreel, 670 acre, 740 dan, 742 qadesh, 743 tyre, 747 sidon
+
+      requires = { samaria_inv_mission_task_10 }
+    }
+
+    samaria_inv_mission_task_12 = { #southern tribes
+      icon = "task_battle"
+
+      #own 687 jerusalem, 684 jericho, 686 emmaos, 695 elousa
+
+      requires = { samaria_inv_mission_task_10 }
+    }
+
+    samaria_inv_mission_task_13 = { #vengence on Aram
+      icon = "task_battle"
+    #conquer coele-syria
+      requires = { samaria_inv_mission_task_11 }
+    }
+
+    samaria_inv_mission_task_14 = { #the footsteps of Samson
+      icon = "task_heracles"
+    #take philistia
+      requires = { samaria_inv_mission_task_12 }
+    }
+
+    samaria_inv_mission_task_15 = { #moab and edom
+      icon = "task_conquest"
+    #take peraea
+      requires = { samaria_inv_mission_task_14 }
+    }
+
+    samaria_inv_mission_task_16 = { #the ishmaelites
+      icon = "task_political"
+    #conquer or subjugate an arabian culture to south
+      requires = { samaria_inv_mission_task_15 }
+    }
+
+    samaria_inv_mission_task_17 = {#develop holy cities of judea cf 2
+      icon = "task_calm"
+    #city in heshbon and hebron, both holy sites
+      requires = { samaria_inv_mission_task_12 }
+    }
+
+    samaria_inv_mission_task_18 = {#moses met him here, cf 11
+      icon = "task_economical"
+
+    }
+
+    samaria_inv_mission_task_19 = {#sinai cf 12
+      icon = "task_expansion"
+      requires = { samaria_inv_mission_task_18 }
+    }
+
+    samaria_inv_mission_task_20 = {#treasure hunt cf 24
+      icon = "task_political"
+      requires = { samaria_inv_mission_task_19 }
+    }
+
+    samaria_inv_mission_task_21 = {#fortify western border cf 13
+      icon = "task_economical"
+      requires = {
+        samaria_inv_mission_task_15
+        samaria_inv_mission_task_19
+      }
+    }
+
+    samaria_inv_mission_task_22 = {#veneration of the prophets cf 9
+      icon = "task_political"
+      requires = {
+        samaria_inv_mission_task_21
+        samaria_inv_mission_task_24
+      }
+    }
+
+    samaria_inv_mission_task_23 = {#enslave egypt cf 22
+      icon = "task_political"
+      requires = { samaria_inv_mission_task_21 }
+    }
+
+    samaria_inv_mission_task_24 = {#house of learning cf 35
+      icon = "task_political"
+      requires = { samaria_inv_mission_task_17 }
+    }
+
+    samaria_inv_mission_task_25 = {#city of marble and gold cf 20
+      icon = "task_economical"
+      requires = {
+        samaria_inv_mission_task_8
+        samaria_inv_mission_task_17
+      }
+    }
+
+    samaria_inv_mission_task_26 = {#mediterranean ports cf 34
+      icon = "task_economical"
+      requires = { samaria_inv_mission_task_25 }
+    }
+
+    samaria_inv_mission_task_27 = {#fill the shrines cf 4
+      icon = "task_political"
+      requires = {
+        samaria_inv_mission_task_22
+        samaria_inv_mission_task_26
+      }
+    }
+
+    samaria_inv_mission_task_28 = {#shrines and synagogues cf 10
+      icon = "task_economical"
+      requires = { samaria_inv_mission_task_22 }
+    }
+
+    samaria_inv_mission_task_29 = {#beacon of civilisation cf 23, final mission task
+      icon = "task_happiness"
+      requires = {
+        samaria_inv_mission_task_27
+        samaria_inv_mission_task_28
+        samaria_inv_mission_task_34
+      }
+    }
+
+    samaria_inv_mission_task_30 = {#into syria cf 6
+      icon = "task_conquest"
+      requires = {
+        samaria_inv_mission_task_13
+      }
+    }
+
+    samaria_inv_mission_task_31 = {#convert syria cf 30
+      icon = "task_economical"
+      requires = {
+        samaria_inv_mission_task_30
+      }
+    }
+
+    samaria_inv_mission_task_32 = {#Assyria cf 28
+      icon = "task_expansion"
+      requires = {
+        samaria_inv_mission_task_30
+      }
+    }
+
+    samaria_inv_mission_task_33 = {#proselytise assyria cf 32
+      icon = "task_economical"
+      requires = {
+        samaria_inv_mission_task_32
+      }
+    }
+
+    samaria_inv_mission_task_34 = {#nineveh despoiled cf 21
+      icon = "task_heracles"
+      requires = {
+        samaria_inv_mission_task_32
+      }
+    }
+
+    samaria_inv_mission_task_35 = {#babylon cf 7
+      icon = "task_conquest"
+      requires = {
+        samaria_inv_mission_task_32
+      }
+    }
+
+
+}

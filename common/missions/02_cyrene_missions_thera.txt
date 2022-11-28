@@ -1,0 +1,600 @@
+﻿#AI will follow conquer missions with a highlight field set. It will hand in any task as long as the allow conditions are fulfilled, however, it will not understand especially complex triggers, especially those involving character manipulation. 
+
+cyrene_1_thera = {
+	icon = carthage_3
+	header = mission_image_general
+	
+	repeatable = no
+
+    chance = {
+		factor = 50
+	}
+
+	ai_chance = { factor = 100 }
+
+	potential = { 
+		NOT = { has_variable = cyrene_1_mission_thera }
+		tag = CYR
+		is_subject = no
+		has_civil_war = no
+		has_completed_mission = cyrene_1_magas
+	}
+	
+	abort = {
+		ai_mission_back_out_trigger = yes
+	}
+
+    on_start = {
+    	start_mission_ai_effect = yes
+    	save_scope_as = thera_mission_country
+    }
+
+    on_abort = {
+    	custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+			name = cyrene_1_mission_thera
+			days = 7300
+			value = 1
+		}
+		remove_variable = cyr_wooing_DEL_flag
+    }
+
+    on_completion = {
+    	complete_mission_effect = yes #
+		remove_variable = cyr_wooing_DEL_flag
+    }
+
+	cyrene_1_thera_task_1 = { 			# The Waring States of Crete
+
+		icon = task_conquest
+
+		highlight = {
+            scope:province = {
+            	owner.capital_scope = { is_in_area = crete_area}
+            	owner = {
+            		war = yes
+            		is_subject = no
+            	}
+            }
+        }
+
+		allow = {
+			trigger_if = {
+				limit = {
+					any_country = {
+						capital_scope = {
+							is_in_area = crete_area
+						}
+					}
+				}
+				custom_tooltip = {
+					text = cyrene_1_thera_task_1.tt
+					any_country = {
+						capital_scope = {is_in_area = crete_area}
+						is_subject = no
+						war = yes
+						NOT = {war_with = ROOT}
+					}
+				}
+			}
+		}
+
+		bypass = {
+			NOT = {
+				any_country = {
+					capital_scope = {is_in_area = crete_area}
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = cyr_thera_01.1}
+		}
+
+	}
+
+	cyrene_1_thera_task_2 = { 			# Expanding Influence on Crete
+
+		icon = task_expansion
+		requires = {cyrene_1_thera_task_1}
+
+		highlight = {
+            scope:province = {
+            	is_in_area = crete_area
+				NOT = {
+					owner = { tag = CYR }
+				}
+				NOT = {
+					owner = { is_subject_of = c:CYR }
+				}
+            }
+        }
+
+		allow = {
+			custom_tooltip = {
+				text = cyrene_1_thera_task_2.tt
+				area:crete_area = {
+					any_area_province = {
+						count >= 3
+						owned_or_subject_owned = root
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			p:370 = {
+                custom_tooltip = seleukid_mission_02_syria_task_1_effect_tt
+                hidden_effect = {
+                    area = {
+                        every_area_province = {
+                            limit = {
+                                NOT = { owner = root }
+                            }
+                            add_claim = root
+                        }
+                    }
+                }
+            }
+		}
+
+	}
+
+	cyrene_1_thera_task_3 = { 			# Pacifying Crete
+
+		highlight = {
+            scope:province = {
+            	is_in_area = crete_area
+				NOT = {
+					owner = { tag = CYR }
+				}
+				NOT = {
+					owner = { is_subject_of = c:CYR }
+				}
+            }
+        }
+
+		icon = task_economical
+		requires = {cyrene_1_thera_task_2}
+
+		allow = {
+			owns_or_subject_owns_area = crete_area
+			custom_tooltip = {
+				text = cyrene_1_thera_task_3.tt
+				NOT = {
+					any_subject = {
+						capital_scope = {is_in_area = crete_area}
+						has_subject_loyalty <= 50
+					}
+				}
+			}
+			custom_tooltip = {
+				text = cyrene_1_thera_task_3_A.tt
+	        	any_owned_province = {
+		        	state_loyalty >= 80
+		        	is_in_area = crete_area
+		        }
+	        }
+		}
+
+		on_completion = {
+			every_country_culture = {
+				limit = {is_culture = cretan} 
+				add_country_culture_modifier = {
+					name = cyr_crete_pacified
+					duration = -1
+				}
+			}
+			
+		}
+	}
+
+	cyrene_1_thera_task_10 = { 			# Cretan Archers
+
+		icon = task_conquest
+		requires = {cyrene_1_thera_task_2}
+
+		highlight = {
+            scope:province = {
+            	is_in_area = crete_area
+            	has_city_status = no
+            	owner = root
+            }
+        }
+
+		allow = {
+			custom_tooltip = {
+				text = cyrene_1_thera_task_10_A.tt
+				area:crete_area = {
+					any_area_province = {
+						count >= 3
+						owner = ROOT
+						has_building = barracks_building 
+						has_construction = no
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = cyr_cretan_archers
+				duration = -1
+			}
+		}
+
+	}
+
+
+	cyrene_1_thera_task_4 = { 			# Wooing the Cycladic Islands
+
+		icon = task_diplomatic
+
+		highlight = {
+            scope:province = {
+            	is_in_area = aegean_islands_area
+            }
+        }
+
+        bypass = {
+        	OR = {
+	        	p:454 = { 
+	        		NOT = {owner = c:DEL} 
+	        	}
+	        	c:DEL = {is_subject = no}
+	        }
+        }
+
+#        on_start = {
+#
+#        	trigger_event = {id = cyr_thera_01.7}
+#
+#        }
+
+        on_completion = {
+        	c:DEL = { save_scope_as = cyr_wooing_DEL_target_scope}
+        	ROOT = { save_scope_as = cyr_wooing_DEL_root_scope}
+        	random_country = {
+        		limit = {
+        			c:DEL = { is_subject_of = prev }
+        		}
+        		save_scope_as = cyr_wooing_DEL_overlord_scope
+        	}
+        	custom_tooltip = cyrene_1_thera_task_4.tt
+#        	trigger_event = {id = cyr_thera_01.17}
+        	trigger_event = {id = cyr_thera_01.7}
+        	set_variable = {
+        		name = cyr_wooing_DEL_flag
+        	}
+			set_variable = {
+        		name = wooing_DEL_progress
+				value = 1
+        	}
+        }
+
+	}
+
+	cyrene_1_thera_task_5 = { 			# Return to Thera
+
+		icon = task_political
+		requires = {cyrene_1_thera_task_4}
+
+		highlight = {
+            scope:province = {
+            	this = p:454
+            }
+        }
+
+		allow = {
+			owns_or_subject_owns = 454
+		}
+
+		on_completion = {
+			p:454 = {
+				set_owned_by = ROOT
+			}
+			while = {
+				count = 8
+				random_owned_province = {
+					limit = {
+						any_pops_in_province = {pop_culture = cyrenaican}
+					}
+					random_pops_in_province ={
+						limit = {pop_culture = cyrenaican}
+						move_pop = p:454
+					}
+				}
+			}
+			trigger_event = { id = cyr_thera_01.21 }
+		}
+
+	}
+
+	cyrene_1_thera_task_6 = { 			# Heart of the Aegean Trade
+
+		icon = task_economical
+		requires = {cyrene_1_thera_task_5}
+		prevented_by = { cyrene_1_thera_task_7}
+
+		highlight = {
+            scope:province = {
+            	this = p:454
+            }
+        }
+
+		bypass = { has_completed_mission_task = cyrene_1_thera_task_7 }
+
+		allow = {
+			p:454 = {
+				has_city_status = yes
+				num_of_port_building >= 1
+				num_of_commerce_building >= 2
+				num_of_academy_building >= 1
+				has_construction = no
+			}
+		}
+
+		on_completion = {
+			p:454 = {
+				add_province_modifier = {
+					name = cyr_aegean_trade_capital
+					duration = -1
+				}
+			}
+			while = {
+				count = 8
+				random_owned_province = {
+					limit = {
+						any_pops_in_province = {pop_culture = cyrenaican}
+					}
+					random_pops_in_province ={
+						limit = {pop_culture = cyrenaican}
+						move_pop = p:454
+					}
+				}
+			}
+		}
+	}
+
+	cyrene_1_thera_task_7 = { 			# A Grand Harbour for the War Fleet  
+
+		icon = task_expansion
+		requires = {cyrene_1_thera_task_5}
+		prevented_by = { cyrene_1_thera_task_6}
+
+		highlight = {
+            scope:province = {
+            	this = p:454
+            }
+        }
+
+		bypass = { has_completed_mission_task = cyrene_1_thera_task_6 }
+
+		allow = {
+			p:454 = {
+				has_city_status = yes
+				num_of_foundry_building >= 1
+				num_of_port_building >= 3
+				has_construction = no
+			}
+		}
+
+		on_completion = {
+			p:454 = {
+				add_province_modifier = {
+					name = cyr_aegean_naval_base
+					duration = -1
+				}
+			}
+			while = {
+				count = 8
+				random_owned_province = {
+					limit = {
+						any_pops_in_province = {pop_culture = cyrenaican}
+					}
+					random_pops_in_province ={
+						limit = {pop_culture = cyrenaican}
+						move_pop = p:454
+					}
+				}
+			}
+			hidden_effect = {
+	            create_character= {
+	                age = 25
+	                culture = peloponnesian
+	                religion = root.religion
+	                add_martial = 8
+	                add_charisma = 4
+	                add_trait = seadog 
+	                add_trait = oarmaster  
+	            }
+			}
+			custom_tooltip = cyrene_1_thera_task_7.tt
+		}
+	}
+
+	cyrene_1_thera_task_8 = { 			# Thera Rising from the Ashes
+
+		icon = task_economical
+		requires = {cyrene_1_thera_task_6 cyrene_1_thera_task_7}
+
+		highlight = {
+            scope:province = {
+            	this = p:454
+            }
+        }
+
+		allow = {
+			p:454 = {
+				has_city_status = yes
+				total_population >= 25
+				free_building_slots = 0
+				has_construction = no
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = cyr_thera_01.22 }
+			add_2_free_province_investments = yes
+		}
+
+	}
+
+	cyrene_1_thera_task_9 = { 			# Rivals in Rhodes
+
+		icon = task_political
+		requires = {cyrene_1_thera_task_3 cyrene_1_thera_task_8}
+
+		highlight = {
+            scope:province = {
+            	OR = {
+					this = p:266
+					this = p:1830
+					this = p:8015
+					this = p:280
+				}
+				NOT = {
+					owner = { tag = CYR }
+				}
+            }
+        }
+
+		allow = {
+			owns_or_subject_owns = p:266
+			owns_or_subject_owns = p:1830
+			owns_or_subject_owns = p:8015
+			owns_or_subject_owns = p:280
+		}
+
+		on_completion = {
+		    p:1996 = {
+                custom_tooltip = seleukid_mission_02_syria_task_1_effect_tt
+                hidden_effect = {
+                    area = {
+                        every_area_province = {
+                            limit = {
+                                NOT = { owner = root }
+                            }
+                            add_claim = root
+                        }
+                    }
+                }
+            }
+            p:454 = {
+                custom_tooltip = seleukid_mission_02_syria_task_1_effect_tt
+                hidden_effect = {
+                    area = {
+                        every_area_province = {
+                            limit = {
+                                NOT = { owner = root }
+                            }
+                            add_claim = root
+                        }
+                    }
+                }
+            }
+            p:220 = {add_to_list = cyr_aegean_claim_list}
+            p:277 = {add_to_list = cyr_aegean_claim_list}
+            p:270 = {add_to_list = cyr_aegean_claim_list}
+            p:283 = {add_to_list = cyr_aegean_claim_list}
+            p:284 = {add_to_list = cyr_aegean_claim_list}
+            p:286 = {add_to_list = cyr_aegean_claim_list}
+            p:297 = {add_to_list = cyr_aegean_claim_list}
+            p:356 = {add_to_list = cyr_aegean_claim_list}
+            p:420 = {add_to_list = cyr_aegean_claim_list}
+            p:442 = {add_to_list = cyr_aegean_claim_list}
+            p:443 = {add_to_list = cyr_aegean_claim_list}
+            p:452 = {add_to_list = cyr_aegean_claim_list}
+            p:472 = {add_to_list = cyr_aegean_claim_list}
+            p:1774 = {add_to_list = cyr_aegean_claim_list}
+            p:1903 = {add_to_list = cyr_aegean_claim_list}
+            p:1974 = {add_to_list = cyr_aegean_claim_list}
+            custom_tooltip = cyrene_1_thera_task_9_A.tt
+            hidden_effect = {
+	        every_in_list = {
+	           	list = cyr_aegean_claim_list
+	            limit = {
+	                NOT = { owner = root }
+	            }
+	            add_claim = root
+	        }
+	        }
+		}
+
+	}
+
+	#### Note: There are 11 tasks. cyrene_1_thera_task_10 is above, between task 3 and 4. ###
+
+	cyrene_1_thera_task_final = { 			# Aegean Thalassocracy 
+
+		icon = task_expansion
+		requires = {cyrene_1_thera_task_9}
+		final = yes
+
+		highlight = {
+            scope:province = {
+				OR = {
+					is_in_area = crete_area
+					is_in_area = aegean_islands_area
+					is_in_area = sporades_area            
+					this = p:220
+		            this = p:277
+		            this = p:270
+		            this = p:283
+		            this = p:284
+		            this = p:286
+		            this = p:297
+		            this = p:356
+		            this = p:420
+		            this = p:442
+		            this = p:443
+		            this = p:452
+		            this = p:472
+		            this = p:1774
+		            this = p:1903
+		            this = p:1974
+				}
+            }
+        }
+
+		allow = {
+			custom_tooltip = {
+				text = cyrene_1_thera_task_final_A.tt
+				any_province = {
+					count >= 30
+					owned_or_subject_owned = ROOT
+					OR = {
+						is_in_area = crete_area
+						is_in_area = aegean_islands_area
+						is_in_area = sporades_area
+						this = p:220
+			            this = p:277
+			            this = p:270
+			            this = p:283
+			            this = p:284
+			            this = p:286
+			            this = p:297
+			            this = p:356
+			            this = p:420
+			            this = p:442
+			            this = p:443
+			            this = p:452
+			            this = p:472
+			            this = p:1774
+			            this = p:1903
+			            this = p:1974
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = cyr_aegean_thalassocracy 
+				duration = -1
+			}
+		}
+
+	}
+
+}

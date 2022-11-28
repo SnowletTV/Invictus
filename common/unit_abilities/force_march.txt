@@ -1,0 +1,116 @@
+﻿force_march = {
+
+	duration = -1
+	enable = yes
+	toggle = yes
+	
+	army_only = yes
+	
+	soundeffect = "event:/SFX/UI/Unit/sfx_ui_unit_force_march"
+	#soundeffect = "event:/sfx_ui_debug_duck"
+
+	allow = {
+		is_army = yes
+		in_combat = no
+		OR = {
+			is_moving = no
+			unit_owner = { is_ai = yes } #AI doesn't know how to stop for abilities.
+		}
+		is_exiled = no
+		trigger_if = {
+			limit = {
+				exists = commander
+			}
+			commander = {
+				loyalty > 33
+			}
+		}
+		unit_owner = {
+			invention = army_movement_speed_inv
+		}
+	}
+	modifier = {
+		land_morale_recovery = -1.0
+		army_weight_modifier = 0.5
+		army_movement_speed = 0.5
+	}
+	
+	on_entering_province = {
+		hidden_effect = {	
+			if = {
+				limit = {
+					unit_location = {
+						OR = {
+							terrain = mountains
+							terrain = hills
+							terrain = desert
+							terrain = marsh
+							terrain = jungle
+							terrain = desert_hills
+						}
+					}
+				}
+				random_list = {
+					90 = {}
+					10 = {
+						trigger = {
+							has_dlc = "Heirs of Alexander"
+							has_legion_trigger = yes
+						}
+						save_scope_as = barca_legion
+						unit_owner = {
+							trigger_event = {
+								days = 5
+								id = distinction.12
+							}
+						}
+					}	
+				}				
+			}	
+		}
+	}
+	#Currently, a conservative approach to avoid attrition: Enable forced march ASAP in own territory where attrition is unlikely (it's then effectively free)
+	#and disable as soon as we stop in enemy controlled territory.
+	
+	ai_will_do = {
+		modifier = {
+			trigger = {
+				is_moving = yes
+			}
+			add = {
+				value = 100
+				divide = unit_size_rank
+			}
+		}
+		modifier = {
+			trigger = {
+				is_moving = no
+			}
+			add = {
+				value = 20 #Will lead to revoke, don't prioritize it quite as highly.
+				divide = unit_size_rank
+			}
+		}
+	}
+	
+	#Since ai_will_do is always, revoke for this ability also defines when not to do it. 
+	#Attempt to make use this ability  when chasing or escaping reasonably significant enemy armies.
+	ai_will_revoke = {
+		NAND = {
+			is_moving = yes
+			morale_percentage >= 1.0
+			OR = {
+				strength_percentage >= 1.0
+				unit_threat > 1.2
+			}
+			OR = {
+				unit_destination = {
+					has_enemy_army = root.unit_owner
+				}
+				unit_threat > 0.4
+			}
+		}
+	}
+	
+	move_entity_state = force_march
+}

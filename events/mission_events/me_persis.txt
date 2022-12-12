@@ -195,19 +195,7 @@ me_persis.11 = {
         }
     }
 }
-me_persis.12 = {
-    type = country_event
 
-    title = me_persis_12_title
-    desc = me_persis_12_desc
-    picture = great_library
-
-    option = {
-        name = me_persis_12.a
-        custom_tooltip = me_persis_12_tooltip
-
-    }
-}
 me_persis.13 = {
     type = country_event
 
@@ -271,11 +259,181 @@ me_persis.16 = {
     title = me_persis_16_title
     desc = me_persis_16_desc
     picture = great_library
-
-    option = {
+    left_portrait = current_ruler
+    right_portrait = c:SEL.current_ruler
+    option = { # Demand the entire province
         name = me_persis_16.a
         custom_tooltip = me_persis_16_tooltip
+        set_variable = {
+            name = offer_flag
+            days = 90
+            value = flag:entire_area
+        }
+        c:SEL = {
+            trigger_event = me_persis.160
+        }
+    }
+    option = { # Only ask for Margastana (p:4780)
+        name = me_persis_16.b
+        custom_tooltip = me_persis_16_tooltip_B
+        set_variable = {
+            name = offer_flag
+            days = 90
+            value = flag:only_prov
+        }
+        c:SEL = {
+            trigger_event = me_persis.160
+        }
+    }
+}
+me_persis.160 = {
+    type = country_event
+    title = me_persis.160.t
+    desc = {
+        first_valid = {
+            triggered_desc = {
+                trigger = {
+                    c:PES = { var:offer_flag = flag:only_prov }
+                }
+                desc = "me_persis.160.desc"
+            }
+            triggered_desc = {
+                trigger = {
+                    c:PES = { var:offer_flag = flag:entire_area }
+                }
+                desc = "me_persis.160.desc2"
+            }
+        }
+    }
+    picture = aqueducts
+    left_portrait = current_ruler
+    right_portrait = c:PES.current_ruler
 
+    option = {  # Accept the offer
+        name = me_persis.160.a
+        add_opinion = {
+            modifier = shared_wealth_pos_opmod
+            target = c:PES
+        }
+        c:PES = {
+            set_variable = {
+                name = response_flag
+                days = 90
+                value = flag:accepted
+            }
+            trigger_event = {
+                id = me_persis.161
+                days = { 20 30 }
+            }
+        }
+        ai_chance = {
+            factor = 5
+            modifier = {
+                factor = 10
+                c:PES = { var:offer_flag = flag:only_prov }
+            }
+        }
+    }
+    option = {  # Nah, fuck em
+        name = me_persis.160.b
+        add_opinion = {
+            modifier = overlord_neg_opmod
+            target = c:PES
+        }
+        c:PES = {
+            set_variable = {
+                name = response_flag
+                days = 90
+                value = flag:rejected
+            }
+            trigger_event = {
+                id = me_persis.161
+                days = { 20 30 }
+            }
+        }
+        ai_chance = {
+            factor = 3
+            modifier = {
+                factor = 2
+                c:PES = { var:offer_flag = flag:entire_area }
+            }
+        }
+    }
+}
+
+me_persis.161 = {
+    type = country_event
+    title = me_persis.161.t
+    desc = {
+        first_valid = {
+            triggered_desc = {
+                trigger = {
+                    var:response_flag = flag:accepted
+                    var:offer_flag = flag:entire_area
+                }
+                desc = "me_persis.161.desc"
+            }
+            triggered_desc = {
+                trigger = {
+                    var:response_flag = flag:accepted
+                    var:offer_flag = flag:only_prov
+                }
+                desc = "me_persis.161.desc2"
+            }
+            triggered_desc = {
+                trigger = {
+                    var:response_flag = flag:rejected
+                    var:offer_flag = flag:only_prov
+                }
+                desc = "me_persis.161.desc3"
+            }
+            triggered_desc = {
+                trigger = {
+                    var:response_flag = flag:rejected
+                    var:offer_flag = flag:entire_area
+                }
+                desc = "me_persis.161.desc4"
+            }
+        }
+    }
+    picture = aqueducts
+    
+    left_portrait = current_ruler
+
+    option = {      
+        name = me_persis.161.a
+        trigger = {
+            var:response_flag = flag:accepted
+        }
+        if = {
+            limit = {
+                var:offer_flag = flag:entire_area
+            }
+            p:4780.area = {
+                every_area_province = {
+                    limit = { owner = c:SEL }
+                    set_owned_by = c:PES
+                }
+            }
+            add_political_influence = 15
+        }
+        else = {    
+            p:4780 = {
+                set_owned_by = c:PES
+            }
+            add_political_influence = 10
+        }
+    }
+    option = {      
+        name = me_persis.161.b
+        trigger = {
+            var:response_flag = flag:rejected
+        }
+        add_opinion = {
+            modifier = overlord_neg_opmod
+            target = c:PES
+        }
+        add_political_influence = -5
     }
 }
 me_persis.17 = {
@@ -365,6 +523,13 @@ me_persis.22 = {
             add_zeal = 3
             add_popularity = 20
         }
+        custom_tooltip = "create_high_martial_rising_star"
+        hidden_effect = {
+            create_character = {
+                add_martial = 8
+                add_trait = conqueror
+            }
+        }
     }
 }
 me_persis.23 = {
@@ -377,19 +542,19 @@ me_persis.23 = {
     option = {
         name = me_persis_23.a
         custom_tooltip = me_persis_23_tooltip
-
-    }
-}
-me_persis.24 = {
-    type = country_event
-
-    title = me_persis_24_title
-    desc = me_persis_24_desc
-    picture = great_library
-
-    option = {
-        name = me_persis_24.a
-        custom_tooltip = me_persis_24_tooltip
-
+        capital_scope = {
+            while = {
+                count = 6
+                define_pop = {
+                    type = nobles
+                    culture = pasargadi
+                    religion = zoroaster
+                }
+            }
+        }
+        add_country_modifier = {
+            name = persis_mod_15
+            duration = 2880
+        }
     }
 }

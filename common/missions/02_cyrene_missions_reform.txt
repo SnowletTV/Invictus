@@ -1,0 +1,1057 @@
+﻿#AI will follow conquer missions with a highlight field set. It will hand in any task as long as the allow conditions are fulfilled, however, it will not understand especially complex triggers, especially those involving character manipulation. 
+
+cyrene_1_reform = {
+	icon = generic_greek_2
+	header = mission_image_general
+	
+	repeatable = no
+
+    chance = {
+		factor = 50
+	}
+
+	ai_chance = { factor = 100 }
+
+	potential = { 
+		NOT = { has_variable = cyrene_1_mission_reform }
+		tag = CYR
+		is_subject = no
+		is_monarchy = yes
+		has_civil_war = no
+		has_completed_mission = cyrene_1_magas
+        var:num_of_completed_missions >= 3
+	}
+	
+	abort = {
+		ai_mission_back_out_trigger = yes
+	}
+
+    on_start = {
+    	start_mission_ai_effect = yes
+    	save_scope_as = reform_mission_root_scope
+    	set_variable = {
+			name = cyr_republican_support
+			value = 0
+		}
+		set_variable = {
+			name = cyr_royalist_support
+			value = 0
+		}
+    }
+
+    on_abort = {
+    	custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+			name = cyrene_1_mission_reform
+			days = 7300
+			value = 1
+		}
+    }
+
+    on_completion = {
+    	complete_mission_effect = yes #
+    }
+
+
+
+	cyrene_1_reform_task_1 = { 			# A New Age for Cyrenaica
+
+		icon = task_political
+
+		allow = {
+			owns_area = cyrenaica_superioris_area
+			owns_area = cyrenaica_inferioris_area
+			war = no
+			is_subject = no
+		}
+
+		on_completion = {
+			trigger_event = { id = cyr_reform_01.1}
+
+		}
+
+	}
+
+
+	cyrene_1_reform_task_2 = { 			# Touring the Five Cities
+
+		icon = task_economical
+		requires = {cyrene_1_reform_task_1}
+		prevented_by = {cyrene_1_reform_task_11 cyrene_1_reform_task_12 cyrene_1_reform_task_13 cyrene_1_reform_task_14}
+		bypass = { 
+			OR = {
+				has_completed_mission_task = cyrene_1_reform_task_11
+				has_completed_mission_task = cyrene_1_reform_task_12
+				has_completed_mission_task = cyrene_1_reform_task_13 
+				has_completed_mission_task = cyrene_1_reform_task_14
+			}
+		}
+		duration = 180
+		monthly_on_action = cyr_touring_cities_pulse
+
+		allow = {	
+			war = no
+			current_ruler = {
+				is_general = no
+			}
+		}
+
+		on_start = {
+			trigger_event = { id = cyr_reform_01.12} 
+			current_ruler = {
+				add_character_modifier = {
+					name = cyr_touring_cyrenaica
+					duration = -1
+				}
+			}       
+		}
+
+		on_completion = {
+			trigger_event = { id = cyr_reform_01.17}
+			current_ruler = {
+				remove_character_modifier = cyr_touring_cyrenaica
+			}
+		}
+
+	}
+
+
+	cyrene_1_reform_task_3 = { 			# Last Battiads
+
+		icon = task_political
+		requires = {cyrene_1_reform_task_1}
+		prevented_by = {cyrene_1_reform_task_12 cyrene_1_reform_task_13 cyrene_1_reform_task_14}
+		bypass = { has_completed_mission_task = cyrene_1_reform_task_12 }
+		duration = 60
+
+		on_start = {
+	        hidden_effect = {
+	        	while = {
+	        		count = 3
+		            create_character = {
+			            family_name = "Battiad"
+			            culture = root.culture
+			            religion = root.religion
+		                add_trait = battiad
+		                add_prominence = 50
+		  			}
+		  		}
+		  		while = {
+	        		count = 2
+		            create_character = {
+			            family_name = "Battiad"
+			            culture = root.culture
+			            religion = root.religion
+		                add_trait = battiad
+		                add_prominence = 50
+		                female = yes
+		  			}
+		  		}
+		  		every_character = {
+		  			limit = { has_trait = battiad }
+		  			add_to_list = cyr_battiad_characters
+	        	}
+	        	trigger_event = { 
+	        		id = cyr_reform_01.7
+	        		days = { 15 20 }
+	        	}
+		  	}
+		}	
+	}
+
+	cyrene_1_reform_task_4 = { 			# Empower Local Assemblies
+
+		icon = task_expansion
+		requires = {cyrene_1_reform_task_3}
+		prevented_by = {cyrene_1_reform_task_10 cyrene_1_reform_task_12 cyrene_1_reform_task_13 cyrene_1_reform_task_14}
+		bypass = { has_completed_mission_task = cyrene_1_reform_task_12 }
+
+		allow = {
+				p:3360 = {   # Cyrenaica province
+					governor_policy = local_autonomy 
+				}
+				p:3357 = {  # Barka province
+					governor_policy = local_autonomy 
+				}
+		}
+
+		on_completion = {
+			region:cyrenaica_region = {
+				random_region_province = {
+					limit ={
+						has_city_status = yes
+						owner = ROOT
+					}
+					add_province_modifier = {
+						name = cyr_local_assemblies
+						duration = -1
+					}
+				}
+			}
+			custom_tooltip = cyrene_1_reform_task_3.tt
+			hidden_effect = {
+				region:cyrenaica_region ={
+					every_region_province ={
+						limit ={
+							has_city_status = yes
+							owner = ROOT
+							NOT = {has_province_modifier = cyr_local_assemblies}
+						}
+						add_province_modifier = {
+							name = cyr_local_assemblies
+							duration = -1
+						}
+					}
+				}
+			}
+			cyr_republican_support_large_effect = yes
+		}
+
+	}
+
+	cyrene_1_reform_task_5 = { 			# The Three Tribes of Cyrenaica
+
+		icon = task_conquest
+		requires = {cyrene_1_reform_task_2}
+		prevented_by = {cyrene_1_reform_task_8 cyrene_1_reform_task_11 cyrene_1_reform_task_12 cyrene_1_reform_task_13 cyrene_1_reform_task_14}
+		bypass = { 
+			OR = {
+				has_completed_mission_task = cyrene_1_reform_task_8 
+				has_completed_mission_task = cyrene_1_reform_task_11 
+				has_completed_mission_task = cyrene_1_reform_task_12 
+				has_completed_mission_task = cyrene_1_reform_task_14
+			}
+		}
+
+		allow = {
+	        any_owned_province = {
+                any_pops_in_province = {
+                    pop_culture_group = hellenic
+                    NOT = {pop_culture = cyrenaican}
+                    NOT = {pop_type = slaves}
+                    country_culture = {is_integrated = yes}
+                }
+            }
+		}
+
+		on_completion = {
+
+			random_country_culture = {
+				limit = {
+					OR = {
+						is_culture = macedonian
+						is_culture = italiotian
+						is_culture = thracian
+						is_culture = cretan
+						is_culture = achaean 
+						is_culture = argolian 
+						is_culture = arcadian 
+						is_culture = epirote 
+						is_culture = boeotian
+						is_culture = peloponnesian 
+						is_culture = athenian
+						is_culture = euboean
+						is_culture = aetolian
+						is_culture = aegean
+						is_culture = greco_pontic
+						is_culture = aeolian
+						is_culture = troan
+						is_culture = ionian
+						is_culture = cypriot
+						is_culture = thessalian
+						is_culture = bosporan 
+						is_culture = syracusan
+						is_culture = massalian
+						is_culture = hellenistic
+					}
+				}
+				add_country_culture_modifier = {
+					name = cyr_three_tribes
+					duration = -1
+				}
+			}
+			custom_tooltip = cyrene_1_reform_task_5.tt	
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						NOT = {has_country_culture_modifier = cyr_three_tribes}
+						OR = {
+							is_culture = macedonian
+							is_culture = italiotian
+							is_culture = thracian
+							is_culture = cretan
+							is_culture = achaean 
+							is_culture = argolian 
+							is_culture = arcadian 
+							is_culture = epirote 
+							is_culture = boeotian
+							is_culture = peloponnesian 
+							is_culture = athenian
+							is_culture = euboean
+							is_culture = aetolian
+							is_culture = aegean
+							is_culture = greco_pontic
+							is_culture = aeolian
+							is_culture = troan
+							is_culture = ionian
+							is_culture = cypriot
+							is_culture = thessalian
+							is_culture = bosporan 
+							is_culture = syracusan
+							is_culture = massalian
+							is_culture = hellenistic
+						}
+					}
+					add_country_culture_modifier = {
+						name = cyr_three_tribes
+						duration = -1
+					}
+				}
+			}
+			cyr_republican_support_moderate_effect = yes
+		}
+
+	}
+
+	cyrene_1_reform_task_6 = { 			# Embelish the Pentapolis
+
+		icon = task_economical
+		requires = {cyrene_1_reform_task_5}
+		prevented_by = {cyrene_1_reform_task_8 cyrene_1_reform_task_11 cyrene_1_reform_task_12 cyrene_1_reform_task_13 cyrene_1_reform_task_14}
+		bypass = { 
+			OR = {
+				has_completed_mission_task = cyrene_1_reform_task_8 
+				has_completed_mission_task = cyrene_1_reform_task_11
+				has_completed_mission_task = cyrene_1_reform_task_12 
+				has_completed_mission_task = cyrene_1_reform_task_14 
+			}
+		}
+
+		allow = {
+			p:3353 = { # Taucheira
+				has_city_status = yes 
+				free_building_slots = 0
+				has_construction = no 
+			}
+			p:3350 = { # Euesperides
+				has_city_status = yes 
+				free_building_slots = 0
+				has_construction = no 
+			}
+			OR = {
+				p:3354 = { # Limane Barke
+					has_city_status = yes 
+					free_building_slots = 0
+					has_construction = no 
+				}
+				p:3357 = { # Barke
+					has_city_status = yes 
+					free_building_slots = 0
+					has_construction = no 
+				}
+			}
+			p:3361 = { # Appolonia Kyrenaike
+				num_of_port_building >= 1
+				free_building_slots = 0
+				has_construction = no 
+			}
+		}
+
+		on_completion = {
+			p:3360 = {
+				add_province_modifier = {
+					name = cyr_pentapolis
+					duration = -1
+				}
+			}	
+			p:3353 = {
+				add_province_modifier = {
+					name = cyr_pentapolis
+					duration = -1
+				}
+			}
+			p:3350 = {
+				add_province_modifier = {
+					name = cyr_pentapolis
+					duration = -1
+				}
+			}		
+			p:3361 = {
+				add_province_modifier = {
+					name = cyr_pentapolis
+					duration = -1
+				}
+			}
+			if = {
+				limit = {
+					p:3354 = { has_city_status = yes}
+				}
+				p:3354 = {
+					add_province_modifier = {
+						name = cyr_pentapolis
+						duration = -1
+					}
+				}
+			}
+			else = {
+				p:3357 = {
+					add_province_modifier = {
+						name = cyr_pentapolis
+						duration = -1
+					}
+				}
+			}
+
+			cyr_republican_support_moderate_effect = yes
+		}
+
+	}
+
+	cyrene_1_reform_task_7 = { 			# Mint Royal Coinage
+
+		icon = task_diplomatic
+		requires = {cyrene_1_reform_task_2}
+		prevented_by = {cyrene_1_reform_task_6 cyrene_1_reform_task_11 cyrene_1_reform_task_12 cyrene_1_reform_task_13 cyrene_1_reform_task_14}
+		bypass = { 
+			OR = {
+				has_completed_mission_task = cyrene_1_reform_task_6 
+				has_completed_mission_task = cyrene_1_reform_task_11 
+				has_completed_mission_task = cyrene_1_reform_task_12 
+				has_completed_mission_task = cyrene_1_reform_task_13 
+				has_completed_mission_task = cyrene_1_reform_task_14
+			}
+		}
+
+		allow = {
+			area:cyrenaica_superioris_area = {
+				any_area_province = {
+					owner = ROOT
+					has_city_status = yes
+					num_of_town_hall_building >= 2
+				}
+			}
+			any_character = {
+				has_office = office_steward 
+				finesse >= 8
+			}
+			treasury >= 300
+		}
+
+		on_completion = {
+			add_treasury = -300
+			add_country_modifier = {
+				name = cyr_royal_mint
+				duration = 3650
+			}
+			cyr_royalist_support_moderate_effect = yes
+		}
+
+	}
+
+	cyrene_1_reform_task_8 = { 			# Expand the Royal City
+
+		icon = task_political
+		requires = {cyrene_1_reform_task_7}
+		prevented_by = {cyrene_1_reform_task_6 cyrene_1_reform_task_11 cyrene_1_reform_task_12 cyrene_1_reform_task_13 cyrene_1_reform_task_14}
+		bypass = { 
+			OR = {
+				has_completed_mission_task = cyrene_1_reform_task_6 
+				has_completed_mission_task = cyrene_1_reform_task_11 
+				has_completed_mission_task = cyrene_1_reform_task_12 
+				has_completed_mission_task = cyrene_1_reform_task_13 
+				has_completed_mission_task = cyrene_1_reform_task_14
+			}
+		}
+		duration = 365
+
+		allow = {
+			root.capital_scope = p:3360
+			p:3360 = {
+				total_population >= 45
+			}
+		}
+
+		on_start = {
+			trigger_event = { id = cyr_reform_01.2}
+		}
+
+		on_completion = { 
+			trigger_event = { id = cyr_reform_01.6 }	
+		}
+
+	}
+
+	cyrene_1_reform_task_9 = { 			# Coastal Powerbase - Barke and Euesperides
+
+		icon = task_expansion
+		requires = {cyrene_1_reform_task_1}
+		prevented_by = {cyrene_1_reform_task_11 cyrene_1_reform_task_12 cyrene_1_reform_task_13 }
+		bypass = { has_completed_mission_task = cyrene_1_reform_task_13 }
+		duration = 250
+
+		allow = {
+			p:3350 = { # Euesperides
+				has_city_status = yes 
+			}
+			OR = {
+				p:3354 = { # Limane Barke
+					has_city_status = yes 
+				}
+				p:3357 = { # Barke
+					has_city_status = yes 
+				}
+			}
+			p:3361 = { # Appolonia Kyrenaike
+				num_of_port_building >= 1
+			}
+		}
+		
+		on_start = {
+			trigger_event = {
+				id = cyr_reform_01.9
+				days = { 20 150 }
+			}
+			trigger_event = {
+				id = cyr_reform_01.10
+				days = { 20 150 }
+			}
+		}
+
+
+	}
+
+	cyrene_1_reform_task_10 = { 			# Form a Royal Army
+
+		icon = task_political
+		requires = {cyrene_1_reform_task_9}
+		prevented_by = {cyrene_1_reform_task_4 cyrene_1_reform_task_11 cyrene_1_reform_task_12 cyrene_1_reform_task_13}
+		bypass = { has_completed_mission_task = cyrene_1_reform_task_13 }
+
+		allow = {
+			has_law = work_for_the_best 
+			any_legion = {
+				any_legion_unit = {
+					unit_size >= 14
+				}
+			}
+		}
+
+		on_completion = {
+			add_manpower = -14
+			while = {
+				count = 7
+				p:3360 = {
+	                define_pop = {
+	                    type = freemen
+	                    culture = macedonian
+	                    religion = roman_pantheon
+	                }
+				}
+			}
+			add_country_modifier = {
+				name = cyr_macedonian_settlers 
+				duration = 3650
+			}
+			random_country_culture = {
+				limit = {is_culture = macedonian}
+				add_country_culture_modifier = {
+					name = cyr_favoured_culture
+					duration = 10950 # 30 years
+				}
+			}
+			random_country_culture = {
+				limit = {is_culture = cyrenaican}
+				add_country_culture_modifier = {
+					name = cyr_foreign_interlopers
+					duration = 3650 # 30 years
+				}
+			}			
+			cyr_royalist_support_large_effect = yes
+		}
+
+	}
+
+
+	cyrene_1_reform_task_11 = { 			# Expel the Foreign Kings 
+
+		icon = task_diplomatic
+		requires = {cyrene_1_reform_task_4}
+		prevented_by = {cyrene_1_reform_task_10 cyrene_1_reform_task_12 cyrene_1_reform_task_13 cyrene_1_reform_task_14}
+		bypass = { has_completed_mission_task = cyrene_1_reform_task_12 }
+
+		allow = {
+			legitimacy < 50
+			custom_tooltip = {
+        	   text = cyrene_1_reform_task_11.tt
+         	   var:cyr_republican_support >= 8
+       		}
+		}
+
+		on_completion = {
+
+			current_ruler = { save_scope_as = instigator }
+			random_character = {
+				limit = {
+					is_adult = yes
+					is_governor = no
+					is_general = no
+					is_admiral = no
+					is_ruler = no
+					from_ruler_family = no
+					has_legion_trigger = no
+				}
+				remove_all_positions = yes
+				save_scope_as = cyr_republican_champion
+			}			
+
+			set_as_ruler = scope:cyr_republican_champion	
+			every_character = {
+				limit = {has_same_family = scope:instigator}
+				add_loyalty = cyr_loyalty_republic_declared
+			}
+
+			if ={
+				limit = {var:cyr_royalist_support >= 5}
+
+				scope:instigator = { remove_all_positions = yes	}
+				custom_tooltip = "creates_stability_scaled_civil_war"
+				hidden_effect = {
+					start_civil_war = scope:instigator
+					scope:instigator.employer = {
+						save_scope_as = civil_war_country
+					}
+					set_variable = {
+						name = lcounter
+						value = civil_war_percent_svalue
+					}
+					while = {
+						limit = {
+							root.var:lcounter > 0
+							any_country_state = {
+								is_capital_state = no
+							}
+						}
+						random_country_state = {
+							limit = {
+								is_capital_state = no
+							}
+							weight = {
+								modifier = {
+									factor = 10000
+									any_state_province = {
+										any_neighbor_province = {
+											has_owner = yes
+											owner = scope:civil_war_country
+										}
+									}
+								}
+							}
+							every_state_province = {
+								set_owned_by = scope:civil_war_country
+							}
+						}
+						root = {
+							change_variable = {
+								name = lcounter
+								subtract = 1
+							}
+						}  # Adds provinces to revolter
+					}
+					scope:civil_war_country = {
+						random_country_culture = {
+							limit = {
+								is_integrated = no
+							}
+							weight = {
+								modifier = {
+									factor = country_culture_pop_count
+								}
+							}
+							scope:civil_war_country = {
+								integrate_country_culture = prev
+							}
+						}
+						random_country_culture = {
+							limit = {
+								is_integrated = no
+							}
+							weight = {
+								modifier = {
+									factor = country_culture_pop_count
+								}
+							}
+							scope:civil_war_country = {
+								integrate_country_culture = prev
+							}
+						}
+						random_country_culture = {
+							limit = {
+								is_integrated = no
+							}
+							weight = {
+								modifier = {
+									factor = country_culture_pop_count
+								}
+							}
+							scope:civil_war_country = {
+								integrate_country_culture = prev
+							}
+						}
+						add_treasury = 3000
+						random_country_culture = {
+							limit = {
+								is_integrated = no
+							}
+							weight = {
+								modifier = {
+									factor = country_culture_pop_count
+								}
+							}
+							scope:civil_war_country = {
+								integrate_country_culture = prev
+							}
+						}
+						every_governorships = {
+							random_governorship_state = {
+								if = {
+									limit = {
+										has_governor = no
+									}
+									scope:civil_war_country = {
+										create_character = {
+											female = no
+											age = 32
+											save_scope_as = sbgnq1
+										}
+									}
+									random_state_province = {
+										set_as_governor = scope:sbgnq1
+									}
+								}
+								every_state_province = {
+									every_pops_in_province = {
+										set_pop_culture = scope:civil_war_country.culture
+									}
+								}
+							}
+						} # Adds cultures to revolter
+					}
+				}
+			}
+			monarchy_to_republic_law_variable_effect = yes
+			change_government = oligarchic_republic 
+			switch_government_type_event_clearup_effect = yes
+			monarchy_to_republic_law_change_effect = yes
+
+		}
+
+	}
+
+	cyrene_1_reform_task_12 = { 			# The Vision of Demonax
+
+		icon = task_economical
+		requires = {cyrene_1_reform_task_6 cyrene_1_reform_task_8}
+		prevented_by = {cyrene_1_reform_task_11 cyrene_1_reform_task_13 cyrene_1_reform_task_14}
+		bypass = { has_completed_mission_task = cyrene_1_reform_task_11 }
+
+		allow = {
+			tyranny <= 10
+			NOT = {
+				any_character = {
+						has_any_office = yes
+						loyalty < 50
+				}
+			}
+		}
+
+		on_completion = {
+			change_government = aristocratic_monarchy 
+			add_country_modifier = {
+				name = cyr_demonax_principles
+				duration = -1
+			}
+
+		}
+	}
+
+	cyrene_1_reform_task_13 = { 			# The Second Kingdom of Cyrenaica
+
+		icon = task_expansion
+		requires = {cyrene_1_reform_task_6 cyrene_1_reform_task_8}
+		prevented_by = {cyrene_1_reform_task_11 cyrene_1_reform_task_12 cyrene_1_reform_task_14}
+		bypass = { has_completed_mission_task = cyrene_1_reform_task_14	}
+
+		allow = {
+			legitimacy >= 70
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = cyr_renewed_kingdom
+				duration = -1
+			}
+			current_ruler = {
+				add_finesse = 2
+				add_zeal = 2
+			}
+		}
+
+	}
+
+
+	cyrene_1_reform_task_14 = { 			# A Diadochi King
+
+		icon = task_conquest
+		requires = {cyrene_1_reform_task_10}
+		prevented_by = {cyrene_1_reform_task_4 cyrene_1_reform_task_11 cyrene_1_reform_task_12 cyrene_1_reform_task_13}
+		bypass = { has_completed_mission_task = cyrene_1_reform_task_13 }
+
+		allow = {
+			num_of_cities >= 100
+			var:cyr_royalist_support >= 8
+			current_ruler = {has_same_family = char:46}
+			any_country_culture = {
+				is_culture = macedonian
+				is_integrated = yes
+				has_pop_type_right = nobles
+			}
+			custom_tooltip = {
+        	   text = cyrene_1_reform_task_14.tt
+         	   var:cyr_royalist_support >= 8
+       		}
+		}
+
+		on_completion = {
+			change_country_name = "MAGID_KINGDOM_NAME"
+			hidden_effect = {
+				change_country_adjective = "MAGID_KINGDOM_ADJECTIVE"
+		        change_country_color =  "magid_blue_2"
+		        change_country_flag = MAGID_FLAG
+		    }
+			add_country_modifier = {
+				name = cyr_magid_kingdom
+				duration = -1
+			}
+			set_variable = {
+				name = magid_kingdom_flag
+			}
+			set_primary_culture_cleanup_effect = {
+				NEW_PRIMARY_CULTURE = macedonian
+				MAKE_OLD_CULTURE_INTEGRATED = yes
+			}
+			hidden_effect = {
+				every_character = {
+					limit = { from_ruler_family = yes }
+					set_culture = macedonian
+				}
+				capital_scope = {
+					every_pops_in_province = {
+						limit = {
+							pop_culture = cyrenaican
+							OR = {
+								pop_type = citizen
+								pop_type = nobles
+								pop_type = freemen
+							}
+						}
+						random_list = {
+	                        15 = { set_pop_culture = hellenistic }
+	                        85 = {}
+	                    }
+						
+					}
+				}
+			}
+			random_country_culture = {
+				limit = {is_culture = cyrenaican}
+				hidden_effect = { set_country_culture_right = nobles }
+				add_country_culture_modifier = {
+					name = cyr_traditions_spurned
+					duration = 3650 # 30 years
+				}
+			}
+
+			if ={
+				limit = {var:cyr_republican_support >= 5}
+
+				random_character = {
+					limit = {
+						is_adult = yes
+						is_governor = no
+						is_general = no
+						is_admiral = no
+						is_ruler = no
+						from_ruler_family = no
+						has_legion_trigger = no
+					}
+					remove_all_positions = yes
+					save_scope_as = instigator
+				}
+				custom_tooltip = "creates_stability_scaled_civil_war"
+				hidden_effect = {
+					start_civil_war = scope:instigator
+					scope:instigator.employer = {
+						save_scope_as = civil_war_country
+					}
+					set_variable = {
+						name = lcounter
+						value = civil_war_percent_svalue
+					}
+					while = {
+						limit = {
+							root.var:lcounter > 0
+							any_country_state = {
+								is_capital_state = no
+							}
+						}
+						random_country_state = {
+							limit = {
+								is_capital_state = no
+							}
+							weight = {
+								modifier = {
+									factor = 10000
+									any_state_province = {
+										any_neighbor_province = {
+											has_owner = yes
+											owner = scope:civil_war_country
+										}
+									}
+								}
+							}
+							every_state_province = {
+								set_owned_by = scope:civil_war_country
+							}
+						}
+						root = {
+							change_variable = {
+								name = lcounter
+								subtract = 1
+							}
+						}  # Adds provinces to revolter
+					}
+					scope:civil_war_country = {
+						random_country_culture = {
+							limit = {
+								is_integrated = no
+							}
+							weight = {
+								modifier = {
+									factor = country_culture_pop_count
+								}
+							}
+							scope:civil_war_country = {
+								integrate_country_culture = prev
+							}
+						}
+						random_country_culture = {
+							limit = {
+								is_integrated = no
+							}
+							weight = {
+								modifier = {
+									factor = country_culture_pop_count
+								}
+							}
+							scope:civil_war_country = {
+								integrate_country_culture = prev
+							}
+						}
+						random_country_culture = {
+							limit = {
+								is_integrated = no
+							}
+							weight = {
+								modifier = {
+									factor = country_culture_pop_count
+								}
+							}
+							scope:civil_war_country = {
+								integrate_country_culture = prev
+							}
+						}
+						add_treasury = 3000
+						random_country_culture = {
+							limit = {
+								is_integrated = no
+							}
+							weight = {
+								modifier = {
+									factor = country_culture_pop_count
+								}
+							}
+							scope:civil_war_country = {
+								integrate_country_culture = prev
+							}
+						}
+						every_governorships = {
+							random_governorship_state = {
+								if = {
+									limit = {
+										has_governor = no
+									}
+									scope:civil_war_country = {
+										create_character = {
+											female = no
+											age = 32
+											save_scope_as = sbgnq1
+										}
+									}
+									random_state_province = {
+										set_as_governor = scope:sbgnq1
+									}
+								}
+								every_state_province = {
+									every_pops_in_province = {
+										set_pop_culture = scope:civil_war_country.culture
+									}
+								}
+							}
+						} # Adds cultures to revolter
+					}
+				}
+			}	
+		}
+
+	}
+
+
+
+
+	cyrene_1_reform_task_final_democracy = { 			# Liberty Secured
+
+		icon = task_political
+		requires = {cyrene_1_reform_task_11 cyrene_1_reform_task_12}
+		prevented_by = {cyrene_1_reform_task_final_authocracy}
+		final = yes
+
+		allow = {
+			has_civil_war = no
+		}
+
+		on_completion = {
+			custom_tooltip = cyrene_1_reform_task_final_democracy.tt
+			add_tyranny = {subtract = var:cyr_republican_support}
+		}
+
+	}
+
+
+	cyrene_1_reform_task_final_authocracy = { 			# Royal Rights Preserved
+
+		icon = task_political
+		requires = {cyrene_1_reform_task_13 cyrene_1_reform_task_14}
+		prevented_by = {cyrene_1_reform_task_final_democracy}
+		final = yes
+
+		allow = {
+			has_civil_war = no
+		}
+
+		on_completion = {
+			custom_tooltip = cyrene_1_reform_task_final_authocracy.tt
+			add_legitimacy =  var:cyr_royalist_support
+		}
+	}
+
+}

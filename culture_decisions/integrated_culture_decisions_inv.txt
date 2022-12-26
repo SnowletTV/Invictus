@@ -97,864 +97,169 @@
 		}
 	}
 
-	#Integrate Military Traditions - Italians
-	study_italic_ways_of_war = {
+	city_self_rule = {
 		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			NOT = { primary_culture = scope:target_culture.culture }
 			scope:target_culture = {
-				is_integrated = yes
-				is_italian_culture_group_trigger = yes
-			}
-			NOT = {
-				has_variable = italic_influence
+				OR = {
+					has_pop_type_right = citizen
+					has_pop_type_right = nobles
+				}
 			}
 		}
 		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_latin
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_italian_culture_group_trigger = yes
+			is_tribal = no
+			is_subject = no
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = bestowed_city_rights }
+			}
+			custom_tooltip = {
+				text = must_not_already_have_a_municipal_subject_of_this_culture_tt
+				NOT = {
+					any_subject = {
+						capital_scope = { has_province_modifier = municipal_self_rule_modifier }
+						primary_culture = scope:target_culture.culture
+					}
 				}
 			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			any_owned_province = {
+				dominant_province_culture = scope:target_culture.culture
+				has_city_status = yes
+				total_population >= 25
+				is_capital = no
 			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
+		}
 		effect = {
 			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
 			culture_state_loyalty_effect = yes
+			if = {
+				limit = {
+					any_owned_province = {
+						dominant_province_culture = scope:target_culture.culture
+						has_city_status = yes
+						total_population >= 25
+						is_capital = no
+					}
+				}
+				ordered_owned_province = { #HAS to be deterministic
+					order_by = total_population
+					limit = {
+						dominant_province_culture = scope:target_culture.culture
+						has_city_status = yes
+						total_population >= 25
+						is_capital = no
+					}
+					save_scope_as = municipium
+					create_country = {
+						hidden_effect = {
+							if = {
+								limit = {
+									NOT = {
+										primary_culture = scope:target_culture.culture
+									}
+								}
+								set_primary_culture_cleanup_effect = {
+									NEW_PRIMARY_CULTURE = scope:target_culture.culture
+									MAKE_OLD_CULTURE_INTEGRATED = yes
+								}
+							}
+							add_treasury = 50.0
+							PREV = {
+								if = {
+									limit = {
+										OR = {
+											civilization_value >= 40
+											scope:target_culture.culture.culture_group = root.culture_group
+										}
+									}
+									owner = {
+										change_government = oligarchic_republic
+									}
+								}
+								else = {
+									owner = {
+										change_government = tribal_kingdom
+									}
+								}
+							}
+						}
+					}
+					if = {
+						limit = {
+							scope:target_culture.culture.culture_group = root.culture_group
+						}
+						custom_tooltip = municipium_feoderati_tt 
+						hidden_effect = {
+							ROOT = {
+								make_subject = {
+									target = prev.owner
+									type = feudatory
+								}
+							}
+						}
+					}
+					else_if = {
+						limit = {
+							civilization_value < 40
+						}
+						custom_tooltip = feoderati_tribes_tt
+						hidden_effect = {
+							ROOT = {
+								make_subject = {
+									target = prev.owner
+									type = vassal_tribe
+								}
+							}
+						}
+					}
+					else = {
+						custom_tooltip = municipium_client_state_tt
+						hidden_effect = {
+							ROOT = {
+								make_subject = {
+									target = prev.owner
+									type = client_state
+								}
+							}
+						}
+					}
+					hidden_effect = {
+						add_province_modifier = {
+							name = "municipal_self_rule_modifier"
+							duration = 7300
+						}
+					}
+				}
+			}
+			else_if = {
+				limit = {
+					scope:target_culture.culture.culture_group = root.culture_group
+				}
+				custom_tooltip = municipium_explain_feudatory_tt
+			}
+			else = {
+				custom_tooltip = municipium_explain_tt
+			}
 			scope:target_culture = {
 				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
+					name = "bestowed_city_rights" 
+					duration = 7300
 				}
-			}
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_italics"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = italic_influence
-				days = -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
 			}
 		}
 		ai_will_do = {
 			factor = 1
 			modifier = {
 				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
+				NOT = { scope:target_culture.culture.culture_group = root.culture_group }
 			}
-		}
-	}	
-
-	#Integrate Military Traditions - Celts
-	study_celtic_ways_of_war = {
-		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
-			scope:target_culture = {
-				is_integrated = yes
-				is_celtic_culture_group_trigger	= yes
-			}
-			NOT = {
-				has_variable = celtic_influence
-			}
-		}
-		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_celtic_invictus
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_celtic_culture_group_trigger = yes
-				}
-			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
-			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
-		effect = {
-			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
-			culture_state_loyalty_effect = yes
-			scope:target_culture = {
-				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
-				}
-			}	
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_celts"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = celtic_influence
-				days= -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
-			}
-		}
-		ai_will_do = {
-			factor = 1
 			modifier = {
 				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
+				stability < 50
 			}
-		}
-	}	
-
-	#Integrate Military Traditions - Iberians
-	study_iberian_ways_of_war = {
-		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
-			scope:target_culture = {
-				is_integrated = yes
-				is_iberian_culture_group_trigger = yes
-			}
-			NOT = {
-				has_variable = iberian_influence
-			}
-		}
-		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_iberian
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_iberian_culture_group_trigger = yes
-				}
-			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
-			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
-		effect = {
-			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
-			culture_state_loyalty_effect = yes
-			scope:target_culture = {
-				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
-				}
-			}	
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_iberians"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = iberian_influence
-				days = -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
-			}
-		}
-		ai_will_do = {
-			factor = 1
 			modifier = {
 				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
-			}
-		}
-	}	
-
-	#Integrate Military Traditions - North Africans
-	study_north_african_ways_of_war = {
-		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
-			scope:target_culture = {
-				is_integrated = yes
-				is_north_african_culture_group_trigger = yes
-			}
-			NOT = {
-				has_variable = north_african_influence
-			}
-		}
-		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_numidian
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_north_african_culture_group_trigger = yes
-				}
-			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
-			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
-		effect = {
-			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
-			culture_state_loyalty_effect = yes
-			scope:target_culture = {
-				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
-				}
-			}	
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_north_africans"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = north_african_influence
-				days = -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
-			}
-		}
-	}	
-
-	#Integrate Military Traditions - Levantines
-	study_levantine_ways_of_war = {
-		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
-			scope:target_culture = {
-				is_integrated = yes
-				is_levantine_culture_group_trigger = yes
-			}
-			NOT = {
-				has_variable = levantine_influence
-			}
-		}
-		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_levantine
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_levantine_culture_group_trigger = yes
-				}
-			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
-			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
-		effect = {
-			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
-			culture_state_loyalty_effect = yes
-			scope:target_culture = {
-				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
-				}
-			}	
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_levantines"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = levantine_influence
-				days = -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
-			}
-		}
-	}	
-
-	#Integrate Military Traditions - Persians
-	study_persian_ways_of_war = {
-		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
-			scope:target_culture = {
-				is_integrated = yes
-				is_big_persia_culture_group_trigger = yes					
-			}
-			NOT = {
-				has_variable = persian_influence
-			}
-		}
-		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_persian
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_big_persia_culture_group_trigger = yes						
-				}
-			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
-			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
-		effect = {
-			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
-			culture_state_loyalty_effect = yes
-			scope:target_culture = {
-				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
-				}
-			}	
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_persians"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = persian_influence
-				days = -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
-			}
-		}
-	}	
-
-	#Integrate Military Traditions - Greeks
-	study_greek_ways_of_war = {
-		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
-			scope:target_culture = {
-				is_integrated = yes
-				is_greek_culture_group_trigger = yes						
-			}
-			NOT = {
-				has_variable = greek_influence
-			}
-		}
-		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_greek_ecd
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_greek_culture_group_trigger = yes							
-				}
-			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
-			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
-		effect = {
-			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
-			culture_state_loyalty_effect = yes
-			scope:target_culture = {
-				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
-				}
-			}	
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_greeks"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = greek_influence
-				days = -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
-			}
-		}
-	}
-
-	#Integrate Military Traditions - Illyro-Daco-Thracian (Haemic)
-	study_haemic_ways_of_war = {
-		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
-			scope:target_culture = {
-				is_integrated = yes
-				is_haemic_culture_group_trigger = yes
-			}
-			NOT = {
-				has_variable = haemic_influence
-			}
-		}
-		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_haemic
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_haemic_culture_group_trigger = yes
-				}
-			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
-			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
-		effect = {
-			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
-			culture_state_loyalty_effect = yes
-			scope:target_culture = {
-				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
-				}
-			}	
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_haemics"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = haemic_influence
-				days = -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
-			}
-		}
-	}
-	#Integrate Military Traditions - Indians
-	study_indian_ways_of_war = {
-		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
-			scope:target_culture = {
-				is_integrated = yes
-				is_indian_culture_group_trigger = yes						
-			}
-			NOT = {
-				has_variable = indian_influence
-			}
-		}
-		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_indian
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_indian_culture_group_trigger = yes		
-				}
-			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
-			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
-		effect = {
-			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
-			culture_state_loyalty_effect = yes
-			scope:target_culture = {
-				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
-				}
-			}	
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_indians"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = indian_influence
-				days = -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue	
-				}
+				num_of_cities < 100
 			}
 		}
 	}
@@ -1004,8 +309,8 @@
 					is_integrated = yes 
 				}
 				add_country_culture_modifier = {
-					name = "too_many_afro_arabians"
-					duration = -1
+					mode = add
+					name = too_many_foreigners
 				}
 			}
 			custom_tooltip = culture_group_embraced_tt
@@ -1044,206 +349,7 @@
 			}
 		}
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
-			}
-		}
-	}
-
-	#Integrate Military Traditions - Steppe/Bactrian
-	study_steppe_ways_of_war = {
-		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
-			scope:target_culture = {
-				is_integrated = yes
-				is_steppe_culture_group_trigger = yes
-			}
-			NOT = {
-				has_variable = steppe_influence
-			}
-		}
-		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_steppe
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_steppe_culture_group_trigger = yes
-				}
-			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
-			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
-		effect = {
-			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
-			culture_state_loyalty_effect = yes
-			scope:target_culture = {
-				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
-				}
-			}	
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_steppes"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = steppe_influence
-				days = -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
-			}
-		}
-	}
-
-	#Integrate Military Traditions - Germanic/Baltic
-	study_germanic_ways_of_war = {
-		potential = {
-			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
-			scope:target_culture = {
-				is_integrated = yes
-				is_germanic_culture_group_trigger = yes
-			}
-			NOT = {
-				has_variable = germanic_influence
-			}
-		}
-		allow = {
-			scope:target_culture = {
-				custom_tooltip = {
-					text = tradition_unlock_requirement_germanic
-					is_integrated = yes
-					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
-					is_germanic_culture_group_trigger = yes
-				}
-			}
-			NOT = {
-				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
-			}
-			num_of_cities >= 10
-			stability > 40
-			military_experience >= 50
-		}	
-		effect = {
-			add_stability = -5
-			add_military_experience = -50
-			add_political_influence = -20
-			culture_state_loyalty_effect = yes
-			scope:target_culture = {
-				add_country_culture_modifier = {
-					name = "foreign_traditions_embraced"
-					duration = 10950
-				}
-			}	
-			every_integrated_culture = {
-				limit = { 
-					is_culture = root.culture
-					is_integrated = yes 
-				}
-				add_country_culture_modifier = {
-					name = "too_many_germans"
-					duration = -1
-				}
-			}
-			custom_tooltip = culture_group_embraced_tt
-			hidden_effect = {
-				every_country_culture = {
-					limit = {
-						this.culture.culture_group = scope:target_culture.culture.culture_group
-						NOT = { this = scope:target_culture }
-						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
-					}
-					add_country_culture_modifier = {
-						name = "foreign_traditions_embraced"
-						duration = 10950
-					}
-				}
-			}
-			set_variable = {
-				name = germanic_influence
-				days = -1
-			}
-			approval_effect = {
-				PARTY = optimates_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = populares_party
-				VALUE = party_approval_small_svalue
-			}
-			approval_effect = {
-				PARTY = oligarchic_party
-				VALUE = party_disapproval_small_svalue
-			}
-			approval_effect = {
-				PARTY = democratic_party
-				VALUE = party_approval_small_svalue
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
-				}
-			}
+			factor = 5
 		}
 	}
 
@@ -1292,8 +398,8 @@
 					is_integrated = yes 
 				}
 				add_country_culture_modifier = {
-					name = "too_many_anatolians"
-					duration = -1
+					mode = add
+					name = too_many_foreigners
 				}
 			}
 			custom_tooltip = culture_group_embraced_tt
@@ -1332,14 +438,986 @@
 			}
 		}
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				scope:target_culture = { #There must be more pops from other cultures in this group than this culture has for AI to do it.
-					num_pops_same_group_mil_trads >= num_of_pops_in_country_cultures_in_same_group_svalue
-					num_of_pops_in_country_cultures_in_same_group_svalue > 400 #Never do it unless you have at least this many pops in that culture group.
+			factor = 5
+		}
+	}
+
+	#Integrate Military Traditions - Celts/Celtic
+	study_celtic_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_celtic_culture_group_trigger	= yes
+			}
+			NOT = {
+				has_variable = celtic_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_celtic
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_celtic_culture_group_trigger = yes
 				}
 			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}	
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = celtic_influence
+				days= -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
+		}
+	}
+
+	#Integrate Military Traditions - Germanic/Baltic
+	study_germanic_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_germanic_culture_group_trigger = yes
+			}
+			NOT = {
+				has_variable = germanic_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_germanic
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_germanic_culture_group_trigger = yes
+				}
+			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}	
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = germanic_influence
+				days = -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
+		}
+	}
+
+	#Integrate Military Traditions - Greeks
+	study_greek_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_greek_culture_group_trigger = yes						
+			}
+			NOT = {
+				has_variable = greek_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_greek
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_greek_culture_group_trigger = yes							
+				}
+			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}	
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = greek_influence
+				days = -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
+		}
+	}
+
+	#Integrate Military Traditions - Illyro-Daco-Thracian (Haemic)
+	study_haemic_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_haemic_culture_group_trigger = yes
+			}
+			NOT = {
+				has_variable = haemic_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_haemic
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_haemic_culture_group_trigger = yes
+				}
+			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}	
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = haemic_influence
+				days = -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
+		}
+	}
+
+	#Integrate Military Traditions - Iberians
+	study_iberian_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_iberian_culture_group_trigger = yes
+			}
+			NOT = {
+				has_variable = iberian_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_iberian
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_iberian_culture_group_trigger = yes
+				}
+			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}	
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = iberian_influence
+				days = -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
+		}
+	}
+
+	#Integrate Military Traditions - Italians/Latin
+	study_italic_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_italian_culture_group_trigger = yes
+			}
+			NOT = {
+				has_variable = italic_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_latin
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_italian_culture_group_trigger = yes
+				}
+			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = italic_influence
+				days = -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
+		}
+	}
+	
+	#Integrate Military Traditions - Levantines
+	study_levantine_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_levantine_culture_group_trigger = yes
+			}
+			NOT = {
+				has_variable = levantine_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_levantine
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_levantine_culture_group_trigger = yes
+				}
+			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}	
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = levantine_influence
+				days = -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
+		}
+	}
+
+	#Integrate Military Traditions - Indians/Mauryan
+	study_indian_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_indian_culture_group_trigger = yes						
+			}
+			NOT = {
+				has_variable = indian_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_mauryan
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_indian_culture_group_trigger = yes		
+				}
+			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}	
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = indian_influence
+				days = -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
+		}
+	}
+
+	#Integrate Military Traditions - North Africans
+	study_north_african_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_north_african_culture_group_trigger = yes
+			}
+			NOT = {
+				has_variable = north_african_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_north_african
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_north_african_culture_group_trigger = yes
+				}
+			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}	
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = north_african_influence
+				days = -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
+		}
+	}		
+
+	#Integrate Military Traditions - Persians
+	study_persian_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_big_persia_culture_group_trigger = yes					
+			}
+			NOT = {
+				has_variable = persian_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_persian
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_big_persia_culture_group_trigger = yes						
+				}
+			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}	
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = persian_influence
+				days = -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
+		}
+	}
+
+	#Integrate Military Traditions - Steppe/Bactrian
+	study_steppe_ways_of_war = {
+		potential = {
+			NOT = { root.culture.culture_group = scope:target_culture.culture.culture_group }
+			scope:target_culture = {
+				is_integrated = yes
+				is_steppe_culture_group_trigger = yes
+			}
+			NOT = {
+				has_variable = steppe_influence
+			}
+		}
+		allow = {
+			scope:target_culture = {
+				custom_tooltip = {
+					text = tradition_unlock_requirement_steppe
+					is_integrated = yes
+					num_pops_same_group_mil_trads >= percent_size_culture_group_comparison
+					is_steppe_culture_group_trigger = yes
+				}
+			}
+			NOT = {
+				scope:target_culture = { has_country_culture_modifier = foreign_traditions_embraced }
+			}
+			num_of_cities >= 10
+			stability > 40
+			military_experience >= 50
+		}	
+		effect = {
+			add_stability = -5
+			add_military_experience = -50
+			add_political_influence = -20
+			culture_state_loyalty_effect = yes
+			scope:target_culture = {
+				add_country_culture_modifier = {
+					name = "foreign_traditions_embraced"
+					duration = 10950
+				}
+			}	
+			every_integrated_culture = {
+				limit = { 
+					is_culture = root.culture
+					is_integrated = yes 
+				}
+				add_country_culture_modifier = {
+					mode = add
+					name = too_many_foreigners
+				}
+			}
+			custom_tooltip = culture_group_embraced_tt
+			hidden_effect = {
+				every_country_culture = {
+					limit = {
+						this.culture.culture_group = scope:target_culture.culture.culture_group
+						NOT = { this = scope:target_culture }
+						NOT = { has_country_culture_modifier = foreign_traditions_embraced }
+					}
+					add_country_culture_modifier = {
+						name = "foreign_traditions_embraced"
+						duration = 10950
+					}
+				}
+			}
+			set_variable = {
+				name = steppe_influence
+				days = -1
+			}
+			approval_effect = {
+				PARTY = optimates_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = populares_party
+				VALUE = party_approval_small_svalue
+			}
+			approval_effect = {
+				PARTY = oligarchic_party
+				VALUE = party_disapproval_small_svalue
+			}
+			approval_effect = {
+				PARTY = democratic_party
+				VALUE = party_approval_small_svalue
+			}
+		}
+		ai_will_do = {
+			factor = 5
 		}
 	}
 
@@ -1386,5 +1464,4 @@
 			factor = 0
 		}
 	}
-	
 }

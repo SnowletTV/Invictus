@@ -1,0 +1,905 @@
+﻿egypt_mission_4_border = {		#The Eastern Border
+	header = "mission_image_egypt"
+    icon = "egypt_1"
+
+    repeatable = no
+
+    chance = {
+		factor = 30
+	}
+
+	potential = {
+        has_dlc = "Heirs of Alexander"
+		NOT = { has_variable = egypt_mission_4_border }
+		is_subject = no
+		tag = EGY
+		is_monarchy = yes
+        primary_culture = macedonian
+        owns = 516
+        exists = c:EGY.current_ruler
+        OR = {
+            AND = {
+                exists = fam:Lagid
+                c:EGY.current_ruler.family = fam:Lagid
+            }
+            current_ruler = { has_trait = argeads }
+            current_ruler = { has_trait = lagids }
+        }
+	}
+
+    abort = {
+        OR = {
+            is_monarchy = no
+            NOR = {
+                OR = {
+                    current_ruler = { has_trait = argeads }
+                    current_ruler = { has_trait = lagids }
+                    c:EGY.current_ruler.family = fam:Lagid 
+                }
+                primary_culture = macedonian  
+            }
+            ai_mission_back_out_trigger = yes
+        }
+    }
+
+	on_start = {
+        start_mission_ai_effect = yes
+		save_scope_as = egypt_scope
+	}
+
+	on_abort = {
+		custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+			name = egypt_mission_4_border
+			days = 7300
+		}
+	}
+
+	on_completion = {
+		complete_mission_effect = yes
+        trigger_event = { id = me_egypt_4_border.26 }
+	}
+
+    egypt_mission_4_border_task_1 = {			#The King of Sidonians
+        icon = "task_political"
+
+        highlight = {
+        	scope:province = {
+        		province_id = 747
+        	}
+        }
+
+        allow = {
+        	owns_or_subject_owns = 747
+        }
+
+        on_completion = {
+        	show_as_tooltip = {
+        		p:516 = {
+					add_province_modifier = {
+						name = egypt_sidonian_cedars
+						duration = 7300
+					}
+				}
+			}
+			custom_tooltip = me_egypt_4_border.1.a.tt
+        	if = {
+        		limit = {
+        			char:253 = {
+        				OR = {
+        					is_alive = no
+        					prisoner = yes
+        					AND = {
+        						is_ruler = no
+        						NOT = {
+        							employer = ROOT
+        						}
+        					}
+        				}
+        			}
+        		}
+        		trigger_event = { id = me_egypt_4_border.1 }
+        		custom_tooltip = egypt_mission_4_border_task_1.tt
+        	}
+        	else_if = {
+        		limit = {
+        			char:253 = {
+        				is_ruler = yes
+        			}
+        			c:SID = {
+        				is_subject = yes
+        				overlord = c:EGY
+        			}
+        		}
+        		trigger_event = { id = me_egypt_4_border.3 }
+        	}
+        	else = {
+        		trigger_event = { id = me_egypt_4_border.2 }
+        		custom_tooltip = egypt_mission_4_border_task_1.tt
+        	}
+        }
+    }
+
+    egypt_mission_4_border_task_2 = {			#Phoenician Sailors
+        icon = "task_expansion"
+
+        highlight = {
+        	scope:province = {
+                OR = {
+                    province_id = 743
+                    province_id = 766
+                    province_id = 769
+                    province_id = 779
+                    province_id = 786
+                }
+        	}
+        }
+
+        allow = {
+        	owns = 743
+        	owns = 766
+        	owns = 769
+        	owns = 779
+        	owns = 786
+        }
+
+        on_completion = {
+        	trigger_event = { id = me_egypt_4_border.5 }
+        	custom_tooltip = me_egypt_4_border.5.a.tt
+        	show_as_tooltip = {
+        		add_country_modifier = {
+					name = egypt_phoenician_sailors_mod
+					duration = 18250 #50 years
+				}
+        	}
+        }
+    }
+
+    egypt_mission_4_border_task_3 = {			#Border Safety
+        icon = "task_conquest"
+
+        highlight = {
+        	scope:province = {
+        		is_in_area = philistia_area
+        		NOT = {
+        			owner = root
+        		}
+        	}
+        }
+
+        allow = {
+        	owns_area = philistia_area
+        	trigger_if = {
+                limit = { is_ai = no }
+                custom_tooltip = {
+                    text = egypt_mission_4_border_task_3.tt
+                    p:659 = {
+                        num_of_fortress_building >= egypt_mission_4_border_task_3_fortress_total
+                    }
+                }
+            }
+            trigger_else = { treasury >= 150 }
+        }
+
+        on_completion = {
+        	trigger_event = { id = me_egypt_4_border.6 }
+            if = {
+                limit = {
+                    is_ai = yes
+                    p:659 = {
+                        num_of_fortress_building < egypt_mission_4_border_task_3_fortress_total
+                    }
+                }
+                add_treasury = -100
+                p:659 = {
+                    if ={
+                        limit = { has_city_status = no }
+                        set_city_status = city
+                    }
+                    while = {
+                        limit = {
+                            num_of_fortress_building < egypt_mission_4_border_task_3_fortress_total
+                        }
+                        if = {
+                            limit = { free_building_slots < 1 }
+                            destroy_building_effect = yes
+                        }
+                        add_building_level = fortress_building
+                    }
+                }
+            }
+        	show_as_tooltip = {
+        		p:516 = {
+            		random_pops_in_province = {
+            		    limit = {
+            		        pop_type = citizen
+            		        pop_culture_group = hellenic
+            		    }
+            		    move_pop = p:690
+            		}
+            		random_pops_in_province = {
+            		    limit = {
+            		        pop_type = freemen
+            		        pop_culture_group = hellenic
+            		    }
+            		    move_pop = p:690
+            		}
+        		}
+        		p:690.state = {
+        			add_state_modifier = {
+        				name = egypt_philistia_hellenization
+        				duration = -1
+        			}
+        		}
+                add_1_free_province_investments = yes
+        	}
+        }
+    }
+
+    egypt_mission_4_border_task_4 = {			#The Judean Matter
+        icon = "task_political"
+
+        highlight = {
+        	scope:province = {
+        		OR = {
+        			is_in_area = judea_area
+        			is_in_area = samaria_area
+        			is_in_area = galilee_area
+        		}
+        		NOT = {
+        			owner = root
+        		}
+        	}
+        }
+
+        allow = {
+        	owns_or_subject_owns_area = judea_area
+        	owns_or_subject_owns_area = samaria_area
+        	owns_or_subject_owns_area = galilee_area
+        }
+
+        on_completion = {
+        	trigger_event = { id = me_egypt_4_border.7 }
+        	show_as_tooltip = {
+        		p:687 = {
+            		random_pops_in_province = {
+            		    limit = {
+            		        pop_type = nobles
+            		        pop_culture = hebrew
+            		    }
+            		    move_pop = p:516
+            		}
+            		random_pops_in_province = {
+            		    limit = {
+            		        pop_type = citizen
+            		        pop_culture = hebrew
+            		    }
+            		    move_pop = p:516
+            		}
+        		}
+        		p:516 = {
+        			add_province_modifier = {
+        				name = egypt_jewish_court_intellectuals
+        				duration = 3650
+        			}
+        		}
+        	}
+        }
+    }
+
+    egypt_mission_4_border_task_5 = {			#Docks of Purple
+        icon = "task_economical"
+
+        requires = { egypt_mission_4_border_task_1 egypt_mission_4_border_task_2 }
+
+        highlight = {
+        	scope:province = {
+        		OR = {
+        			is_in_area = north_phoenicia_area
+        			is_in_area = south_phoenicia_area
+        		}
+                is_coastal = yes
+        	}
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = {
+                        owns_or_subject_owns_area = north_phoenicia_area
+                    }
+                }
+                owns_or_subject_owns_area = north_phoenicia_area
+            }
+            trigger_if = {
+                limit = {
+                    NOT = {
+                        owns_or_subject_owns_area = south_phoenicia_area
+                    }
+                }
+                owns_or_subject_owns_area = south_phoenicia_area
+            }
+            custom_tooltip = {
+                text = egypt_mission_4_border_task_5.tt
+                p:743.state = {
+                    trade_routes >= egypt_mission_4_border_task_5_s_trade_total
+                }
+            }
+            custom_tooltip = {
+                text = egypt_mission_4_border_task_5.tt.2
+                p:779.state = {
+                    trade_routes >= egypt_mission_4_border_task_5_n_trade_total
+                }
+            }
+        }
+
+        on_completion = {
+        	trigger_event = { id = me_egypt_4_border.8 }
+        	show_as_tooltip = {
+        		p:743.state = {
+					add_state_modifier = {
+						name = egypt_phoenician_docks_develop
+						duration = -1
+					}
+				}
+        	}
+        	custom_tooltip = me_egypt_4_border.8.a.tt
+        }
+    }
+
+    egypt_mission_4_border_task_6 = {			#The Antigonid Enemy
+        icon = "task_conquest"
+
+        requires = { egypt_mission_4_border_task_3 egypt_mission_4_border_task_4 }
+
+        highlight = {
+        	scope:province = {
+        		province_id = 790
+        	}
+        }
+
+        allow = {
+        	owns = 790
+        }
+
+        on_completion = {
+        	trigger_event = { id = me_egypt_4_border.9 }
+        	show_as_tooltip = {
+				p:790 = {
+					add_province_modifier = {
+						name = antigonid_memory_violated
+						duration = 1825
+					}
+				}
+        	}
+        	custom_tooltip = me_egypt_4_border.9.a.tt
+        	custom_tooltip = me_egypt_4_border.9.a.tt.2
+        }
+    }
+
+    egypt_mission_4_border_task_7 = {			#Telmessos
+        icon = "task_political"
+
+        requires = { egypt_mission_4_border_task_5 egypt_mission_4_border_task_6 }
+
+        highlight = {
+        	scope:province = {
+        		province_id = 1992
+        	}
+        }
+
+        allow = {
+        	owns_or_subject_owns = 1992
+        }
+
+        on_completion = {
+        	trigger_event = { id = me_egypt_4_border.10 }
+            custom_tooltip = egypt_mission_4_border_task_7.tt
+        }
+    }
+
+    egypt_mission_4_border_task_8 = {			#Cilician Traders
+        icon = "task_conquest"
+
+        requires = { egypt_mission_4_border_task_6 }
+
+        highlight = {
+        	scope:province = {
+        		OR = {
+        			is_in_area = cilicia_pedias_area
+        			is_in_area = cilicia_trachea_area
+        		}
+                is_inhabitable = yes
+                OR = {
+                    NOT = { owner = root }
+                    AND = {
+                        province_id = 795
+                        has_city_status = no
+                    }
+                }
+        	}
+        }
+
+        prevented_by = { egypt_mission_4_border_task_9 }
+
+        bypass = {
+        	has_completed_mission_task = egypt_mission_4_border_task_9
+        }
+
+        allow = {
+        	owns_area = cilicia_pedias_area
+        	owns_area = cilicia_trachea_area
+        	trigger_if = {
+                limit = { is_ai = no }
+                hidden:p:795 = { has_city_status = yes }
+                has_law = antipiracy_edict
+                custom_tooltip = {
+                    text = egypt_mission_4_border_task_8.tt
+                    any_owned_province = {
+                        OR = {
+                            is_in_area = cilicia_pedias_area
+                            is_in_area = cilicia_trachea_area
+                        }
+                        has_province_modifier = pirate_haven_modifier
+                        count = egypt_mission_4_border_task_8_pirates_total
+                    }
+                }
+            }
+            trigger_else = {
+                OR = {
+                    p:795 = { has_city_status = yes }
+                    can_pay_price = price_found_city
+                }
+            }
+        }
+
+        on_completion = {
+            ai_build_city_pay_price_effect = { CITY = p:795 } # AI fallback.
+            if = {
+                limit = { is_ai = yes }
+                if = {
+                    limit = {
+                        any_owned_province = {
+                            OR = {
+                                is_in_area = cilicia_pedias_area
+                                is_in_area = cilicia_trachea_area
+                            }
+                            has_province_modifier = pirate_haven_modifier
+                        }
+                    }
+                    every_owned_province = {
+                        limit = {
+                            OR = {
+                                is_in_area = cilicia_pedias_area
+                                is_in_area = cilicia_trachea_area
+                            }
+                            has_province_modifier = pirate_haven_modifier
+                        }
+                        remove_province_modifier = pirate_haven_modifier
+                    }
+                }
+                if = {
+                    limit = {
+                        NOT = { has_law = antipiracy_edict }
+                    }
+                    change_law = antipiracy_edict
+                }
+            }
+        	trigger_event = { id = me_egypt_4_border.15 }
+        	custom_tooltip = me_egypt_4_border.15.a.tt
+        	show_as_tooltip = {
+				p:1892.state = {
+					add_state_modifier = {
+						name = egy_cilicia_safe_trade
+						duration = -1
+					}
+				}
+				custom_tooltip = me_egypt_4_border.15.a.tt.2
+        	}
+        }
+    }
+
+    egypt_mission_4_border_task_9 = {			#Cilician Pirates
+        icon = "task_expansion"
+
+        requires = { egypt_mission_4_border_task_6 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = cilicia_pedias_area
+                    is_in_area = cilicia_trachea_area
+                }
+                is_inhabitable = yes
+                OR = {
+                    NOT = { owner = root }
+                    AND = {
+                        province_id = 796
+                        has_city_status = no
+                    }
+                }
+            }
+        }
+
+        prevented_by = { egypt_mission_4_border_task_8 }
+
+        bypass = {
+        	has_completed_mission_task = egypt_mission_4_border_task_8
+        }
+
+        allow = {
+        	owns_area = cilicia_pedias_area
+        	owns_area = cilicia_trachea_area
+        	trigger_if = {
+                limit = { is_ai = no }
+                hidden:p:795 = { has_city_status = yes }
+                has_law = free_ports_monarchy_law
+        	}
+            trigger_else = {
+                OR = {
+                    p:795 = { has_city_status = yes }
+                    can_pay_price = price_found_city
+                }
+            }
+        }
+
+        on_completion = {
+            ai_build_city_pay_price_effect = { CITY = p:795 } # AI fallback.
+            if = {
+                limit = {
+                    is_ai = yes
+                    NOT = { has_law = free_ports_monarchy_law }
+                }
+                change_law = free_ports_monarchy_law
+            }
+        	trigger_event = { id = me_egypt_4_border.16 }
+        	show_as_tooltip = {
+        		p:1892 = {
+					add_province_modifier = {
+						name = pirate_colony_established_modifier
+						duration = -1
+					}
+				}
+        	}
+        }
+    }
+
+    egypt_mission_4_border_task_10 = {			#Northern Docks
+        icon = "task_expansion"
+
+        requires = { egypt_mission_4_border_task_5 }
+
+        highlight = {
+        	scope:province = {
+        		is_in_area = pamphylia_area
+        		NOT = {
+        			owner = root
+        		}
+        	}
+        }
+
+        allow = {
+        	owns_area = pamphylia_area
+        	trigger_if = {
+                limit = { is_ai = no }
+                custom_tooltip = {
+                    text = egypt_mission_4_border_task_10.tt
+                    p:1910 = {
+                        num_of_port_building >= egypt_mission_4_border_task_10_port_total
+                    }
+                }
+            }
+            trigger_else = {
+                treasury >= 150
+            }
+        }
+
+        on_completion = {
+            if = {
+                limit = {
+                    is_ai = yes
+                    p:1910 = {
+                        num_of_port_building < egypt_mission_4_border_task_10_port_total
+                    }
+                }
+                add_treasury = -100
+                p:1910 = {
+                    if ={
+                        limit = { has_city_status = no }
+                        set_city_status = city
+                    }
+                    while = {
+                        limit = {
+                            num_of_port_building < egypt_mission_4_border_task_10_port_total
+                        }
+                        if = {
+                            limit = { free_building_slots < 1 }
+                            destroy_building_effect = yes
+                        }
+                        add_building_level = port_building
+                    }
+                }
+            }
+        	trigger_event = { id = me_egypt_4_border.17 }
+        	show_as_tooltip = {
+        		p:1910.state = {
+					add_state_modifier = {
+						name = pamphylian_docks_for_egy
+						duration = -1
+					}
+				}
+        	}
+        }
+    }
+
+    egypt_mission_4_border_task_11 = {			#The Greeks of Asia
+        icon = "task_political"
+
+        requires = { egypt_mission_4_border_task_8 egypt_mission_4_border_task_9 egypt_mission_4_border_task_10 }
+
+        highlight = {
+        	scope:province = {
+        		OR = {
+        			is_in_area = ionia_area
+        			is_in_area = aeolia_area
+        			province_id = 278
+        		}
+        		NOT = {
+        			owner = root
+        		}
+        	}
+        }
+
+        allow = {
+        	owns_or_subject_owns_area = ionia_area
+        	owns_or_subject_owns_area = aeolia_area
+        	owns_or_subject_owns = 278
+        }
+
+        on_completion = {
+        	trigger_event = { id = me_egypt_4_border.18 }
+        	custom_tooltip = egypt_mission_4_border_task_11.tt
+        }
+    }
+
+    egypt_mission_4_border_task_12 = {			#Thracian Menace
+        icon = "task_conquest"
+
+        requires = { egypt_mission_4_border_task_10 }
+
+        highlight = {
+        	scope:province = {
+        		OR = {
+        			province_id = 1774
+        			province_id = 354
+        			province_id = 357
+        		}
+        	}
+        }
+
+        allow = {
+        	custom_tooltip = {
+                text = egypt_mission_4_border_task_12.tt.1
+                owns = 1774
+                trigger_if = {
+                    limit = { is_ai = no }
+                    p:1774 = {
+                        OR = {
+                            num_of_fortress_building >= 1
+                            num_of_port_building >= 1
+                        }
+                    }
+                }
+            }
+            custom_tooltip = {
+                text = egypt_mission_4_border_task_12.tt.2
+                owns = 354
+                p:354 = {
+                    OR = {
+                        num_of_fortress_building >= 1
+                        num_of_port_building >= 1
+                    }
+                }
+            }
+            custom_tooltip = {
+                text = egypt_mission_4_border_task_12.tt.3
+                owns = 357
+                p:357 = {
+                    OR = {
+                        num_of_fortress_building >= 1
+                        num_of_port_building >= 1
+                    }
+                }
+            }
+        }
+
+        on_completion = {
+        	trigger_event = { id = me_egypt_4_border.20 }
+            if = {
+                limit = { is_ai = yes }
+                if = {
+                    limit = {
+                        OR = {
+                            p:1774 = {
+                                OR = {
+                                    num_of_fortress_building < 1
+                                    num_of_port_building < 1
+                                }
+                            }
+                            p:354 = {
+                                OR = {
+                                    num_of_fortress_building < 1
+                                    num_of_port_building < 1
+                                }
+                            }
+                            p:357 = {
+                                OR = {
+                                    num_of_fortress_building < 1
+                                    num_of_port_building < 1
+                                }
+                            }
+                        }
+                    }
+                    add_treasury = -100
+                    p:1774 = { egy_ai_port_fort_effect = yes }
+                    p:354 = { egy_ai_port_fort_effect = yes }
+                    p:357 = { egy_ai_port_fort_effect = yes }
+                }
+            }
+        	show_as_tooltip = {
+        		if = {
+                    limit = {
+                        c:TRE = {
+                            has_land = yes
+                        }
+                    }
+                    c:TRE = {
+					   add_opinion = {
+					   	modifier = egy_thrace_invasors
+					   	target = root
+					   }
+                    }
+                }
+			}
+            p:1774 = {
+                add_province_modifier = {
+                    name = egy_thracian_outpost_mod
+                    duration = 3650
+                }
+            }
+			custom_tooltip = me_egypt_4_border.20.a.tt
+        }
+    }
+
+    egypt_mission_4_border_task_13 = {			#Judea Pacified
+    	icon = "task_political"
+
+        requires = { egypt_mission_4_border_task_4 }
+
+        highlight = {
+        	scope:province = {
+        		is_in_region = palestine_region
+        		NOT = {
+        			is_in_area = philistia_area
+        		}
+        		owned_or_subject_owned = root
+        	}
+        }
+
+        allow = {
+        	trigger_if = {
+        		limit = {
+        			any_owned_province = {
+        				is_in_area = judea_area
+        			}
+        		}
+        		custom_tooltip = {
+        			text = egypt_mission_4_border_task_13.tt.2
+        			p:687 = {
+        				state_loyalty = 100
+        			}
+        		}
+        	}
+        	trigger_if = {
+        		limit = {
+        			any_owned_province = {
+        				is_in_area = samaria_area
+        			}
+        		}
+        		custom_tooltip = {
+        			text = egypt_mission_4_border_task_13.tt.3
+        			p:680 = {
+        				state_loyalty = 100
+        			}
+        		}
+        	}
+        	trigger_if = {
+        		limit = {
+        			any_owned_province = {
+        				is_in_area = galilee_area
+        			}
+        		}
+        		custom_tooltip = {
+        			text = egypt_mission_4_border_task_13.tt.4
+        			p:670 = {
+        				state_loyalty = 100
+        			}
+        		}
+        	}	
+        	trigger_if = {
+        		limit = {
+        			any_subject = {
+        				any_owned_province = {
+        					is_in_region = palestine_region
+        				}
+        			}
+        		}
+        		custom_tooltip = {
+        			text = egypt_mission_4_border_task_13.tt
+        			any_subject = {
+        				count = all
+        				filter = {
+							any_owned_province = {
+        						is_in_region = palestine_region
+        					}
+        					overlord = root
+        				}
+        				has_subject_loyalty > 60
+        				opinion = {
+        					target = root
+        					value > 150
+        				}
+        			}
+        		}
+        	}
+        }
+        						
+        on_completion = {
+        	trigger_event = { id = me_egypt_4_border.21 }
+        	show_as_tooltip = {
+        		random_country_culture = {
+            		limit = {
+            		    is_culture = hebrew
+            		}
+            		add_country_culture_modifier = {
+            		    name = egy_pacified_judea_mod
+            		    duration = 7300
+            		}
+       			}
+        	}
+        }
+    }
+
+    egypt_mission_4_border_task_final = {			#Coastal Dominion
+        icon = "task_political"
+
+        requires = { egypt_mission_4_border_task_11 }
+
+        final = yes
+
+        allow = {
+        	trigger_if = {
+        		limit = {
+        			NOT = {
+        				owns_area = western_delta_area
+        			}
+        		}
+        		owns_area = western_delta_area
+        	}
+        }
+
+        on_completion = {
+        	trigger_event = { id = me_egypt_4_border.25 }
+        	show_as_tooltip = {
+        		add_country_modifier = {
+					name = egy_coastal_dominion_mod
+					duration = 7300
+				}
+				current_ruler = {
+					add_popularity = 10
+				}
+				add_political_influence = 30
+        	}
+        }
+    }
+}

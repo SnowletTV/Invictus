@@ -1,0 +1,886 @@
+﻿egypt_mission_2_pharaoh = { # The Macedonian Pharaoh
+    header = "mission_image_egypt"
+    icon = "egypt_4"
+
+    repeatable = no
+
+    chance = {
+		factor = 15
+	}
+
+	potential = {
+        has_dlc = "Heirs of Alexander"
+		NOT = { has_variable = egypt_mission_2_pharaoh }
+		is_subject = no
+		tag = EGY
+		is_monarchy = yes
+		owns_area = western_delta_area
+        owns_area = heptanomis_area
+        primary_culture = macedonian
+        exists = c:EGY.current_ruler
+        OR = {
+            AND = {
+                exists = fam:Lagid
+                c:EGY.current_ruler.family = fam:Lagid
+            }
+            current_ruler = { has_trait = argeads }
+            current_ruler = { has_trait = lagids }
+        }
+	}
+
+    abort = {
+        OR = {
+            is_monarchy = no
+            NOR = {
+                OR = {
+                    current_ruler = { has_trait = argeads }
+                    current_ruler = { has_trait = lagids }
+                    c:EGY.current_ruler.family = fam:Lagid 
+                }
+                primary_culture = macedonian  
+            }
+            ai_mission_back_out_trigger = yes
+        }
+    }
+
+	on_start = {
+        start_mission_ai_effect = yes
+		save_scope_as = egypt_scope
+	}
+
+	on_abort = {
+		custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+			name = egypt_mission_2_pharaoh
+			days = 7300
+		}
+	}
+
+	on_completion = {
+		complete_mission_effect = yes
+        trigger_event = { id = me_egypt_2_pharaoh.35 }
+	}
+
+    egypt_mission_2_pharaoh_task_1 = { # A Royal Capital
+        icon = "task_expansion"
+
+        highlight = {
+			scope:province = {
+				province_id = 516
+			}
+		}
+
+        allow = {
+        	trigger_if = {
+                limit = {
+                    NOT = { owns = 516 }
+                }
+                owns = 516
+            }
+            trigger_if = {
+                limit = { is_ai = no }
+                hidden:p:516 = { has_province_rank = city_metropolis }
+            }
+            trigger_else = {
+                OR = {
+                    can_pay_price = price_found_metropolis
+                    p:516 = { has_province_rank = city_metropolis }
+                }
+            }
+        }
+
+        on_completion = {
+            if = {
+                limit = {
+                    is_ai = yes
+                    NOT = {
+                        p:516 = { has_province_rank = city_metropolis }
+                    }
+                }
+                pay_price = price_found_metropolis
+                p:516 = { set_city_status = city_metropolis }
+            }
+            trigger_event = { id = me_egypt_2_pharaoh.1 }   
+            show_as_tooltip = {
+                p:500 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = nobles
+                        }
+                        move_pop = p:516
+                    }
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = citizen
+                            pop_culture_group = hellenic
+                        }
+                        move_pop = p:516
+                    }
+                }
+                p:515 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = citizen
+                            pop_culture_group = hellenic
+                        }
+                        move_pop = p:516
+                    }
+                }
+            }
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_2 = { # Gifts of the Nile
+        icon = "task_economical"
+
+        requires = { egypt_mission_2_pharaoh_task_4 }
+
+        highlight = {
+            scope:province = {
+                is_in_area = heptanomis_area
+                has_city_status = no
+                OR = {
+                    has_food_trade_good_trigger = yes
+                    AND = {
+                        has_minable_trade_good_trigger = no
+                        has_food_trade_good_trigger = no
+                    }
+                }
+            }
+        }
+
+        allow = {
+            trigger_if = {
+                limit = { is_ai = no }
+                custom_tooltip = {
+                    text = "egypt_mission_2_pharaoh_task_2_al.tt"
+                    area:heptanomis_area = {
+                        any_area_province = {
+                            count = all
+                            filter = {
+                                has_city_status = no
+                                has_food_trade_good_trigger = yes
+                            }
+                            has_building = basic_settlement_infratructure_building
+                        }
+                    }
+                }
+                custom_tooltip = {
+                    text = "egypt_mission_2_pharaoh_task_2_al_2.tt"
+                    area:heptanomis_area = {
+                        any_area_province = {
+                            count = all
+                            filter = {
+                                has_city_status = no
+                                has_minable_trade_good_trigger = no
+                                has_food_trade_good_trigger = no
+                            }
+                            has_building = latifundia_building
+                        }
+                    }
+                }
+            }
+            trigger_else = {
+                is_ai = yes
+                owns_area = heptanomis_area
+                treasury >= 300
+            }
+        }
+
+        on_completion = {
+            if = { # AI fallback.
+                limit = { is_ai = yes }
+                add_treasury = -150
+                area:heptanomis_area = {
+                    every_area_province = {
+                        limit = {
+                            has_city_status = no
+                            OR = {
+                                has_food_trade_good_trigger = yes
+                                AND ={ 
+                                    has_minable_trade_good_trigger = no
+                                    has_food_trade_good_trigger = no
+                                }
+                            }
+                        }
+                        if = {
+                            limit = { 
+                                has_food_trade_good_trigger = yes
+                                NOT = { has_building = basic_settlement_infratructure_building }
+                            }
+                            if = {
+                                limit = { free_building_slots < 0 }
+                                destroy_building_effect = yes
+                            }
+                            add_building_level = basic_settlement_infratructure_building
+                        }
+                        else_if = {
+                            limit = {
+                                has_minable_trade_good_trigger = no
+                                has_food_trade_good_trigger = no
+                                NOT = { has_building = latifundia_building }
+                            }
+                            if = {
+                                limit = { free_building_slots < 0 }
+                                destroy_building_effect = yes
+                            }
+                            add_building_level = latifundia_building
+                        }
+                    }
+                }
+            }
+            trigger_event = { id = me_egypt_2_pharaoh.2 }
+            show_as_tooltip = {
+                p:5547 = {
+                    set_trade_goods = grain
+                    add_province_modifier = {
+                        name = "philoteris_dam"
+                        duration = -1
+                    }
+                }
+                p:539.state = {
+                    add_state_modifier = {
+                        name = "egypt_canalization_works"
+                        duration = -1
+                    }
+                }
+                p:516 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = freemen
+                            pop_culture_group = hellenic
+                        }
+                        move_pop = p:544
+                    }
+                }
+                p:515 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = freemen
+                            pop_culture_group = hellenic
+                        }
+                        move_pop = p:545
+                    }
+                }
+                if = {
+                    limit = { 
+                        p:3360 = {
+                            owned_or_subject_owned = root
+                        }
+                    }
+                    p:3360 = {
+                        random_pops_in_province = {
+                            limit = {
+                                pop_type = freemen
+                                pop_culture_group = hellenic
+                            }
+                            move_pop = p:540
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_3 = { # Entryway of the Mediterranean Sea
+        icon = "task_economical"
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 529
+                    province_id = 515
+                }
+            }
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    ROOT = { is_ai = no }
+                }
+                hidden:p:529 = { has_city_status = yes }
+                p:515 = {
+                    custom_tooltip = {
+                        text = egypt_mission_2_pharaoh_task_3_trigger_1
+                        num_of_commerce_building >= egypt_mission_2_pharaoh_task_3_total_commerce_building
+                    }
+                    custom_tooltip = {
+                        text = egypt_mission_2_pharaoh_task_3_trigger_2
+                        num_of_town_hall_building >= egypt_mission_2_pharaoh_task_3_total_town_hall_building
+                    }
+                }
+            }
+            trigger_else = { # AI fallback.
+                OR = {
+                    p:529 = { has_city_status = yes }
+                    can_pay_price = price_found_city 
+                }
+            }
+        }
+
+        on_completion = {
+            ai_build_city_pay_price_effect = { CITY = p:529 } # AI fallback.
+            trigger_event = { id = me_egypt_2_pharaoh.3 }
+            show_as_tooltip = {
+                p:529.state = {
+                    add_state_modifier = {
+                        name = "western_delta_trade_invest"
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_4 = { # The Cleruchs
+        icon = "task_expansion"
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 5547
+                    province_id = 545
+                }
+            }
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    ROOT = { is_ai = no }
+                }
+                hidden:p:5547 = { has_city_status = yes }
+                hidden:p:545 = {
+                    has_city_status = yes
+                    is_state_capital = yes
+                }
+            }
+            trigger_else = {
+                OR = {
+                    p:5547 = { has_city_status = yes }
+                    can_pay_price = price_found_city 
+                }
+                OR = {
+                    p:545 = { has_city_status = yes }
+                    can_pay_price = price_found_city 
+                }
+            }
+        }
+
+        on_completion = {
+            ai_build_city_pay_price_effect = { CITY = p:5547 } # AI fallback.
+            ai_build_city_pay_price_effect = { CITY = p:545 } # AI fallback.
+            if = {
+                limit = {
+                    is_ai = yes
+                    p:545 = { is_state_capital = no }
+                }
+                p:545.state = { set_state_capital = p:545 }
+            }
+            trigger_event = { id = me_egypt_2_pharaoh.4 }
+            show_as_tooltip = {
+                p:516 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = freemen
+                            pop_culture_group = hellenic
+                        }
+                        move_pop = p:5547
+                    }
+                }
+                p:516 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = freemen
+                            pop_culture_group = hellenic
+                        }
+                        move_pop = p:545
+                    }
+                }
+                p:545.state = {
+                    add_state_modifier = {
+                        name = "egypt_veteran_cleruchs"
+                        duration = 7300
+                    }
+                }
+            }
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_5 = { # The City of Sages
+        icon = "task_political"
+
+        requires = { egypt_mission_2_pharaoh_task_1 }
+
+        duration = 180
+
+        monthly_on_action = egypt_mission_2_pharaoh_task_5_pulse
+
+        highlight = {
+            scope:province = {
+                province_id = 516
+            }
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 516 }
+                }
+                owns = 516
+            }
+            treasury >= 200
+            trigger_if = {
+                limit = { is_ai = no }
+                p:516 = { free_building_slots >= 2 }
+            }
+        }
+
+        bypass = {
+            NOT = { owns = 516 }
+            has_variable = egypt_mission_2_pharaoh_task_5_bypass_flag
+        }
+
+        on_start = {
+            trigger_event = { id = me_egypt_2_pharaoh.8 }
+            set_variable = {
+                name = egypt_mission_2_pharaoh_task_5_bypass_flag
+                days = 180
+            }
+        }
+
+        on_bypass = {
+            trigger_event = { id = me_egypt_2_pharaoh.10 }
+        }
+
+        on_completion = {
+            trigger_event = { id = me_egypt_2_pharaoh.9 }
+            custom_tooltip = egypt_mission_2_pharaoh_task_5.tt
+            show_as_tooltip = {
+                add_military_experience = 10
+                p:516 = {
+                    add_province_modifier = {
+                        name = alexandria_cultural_capital_greek
+                        duration = -1
+                    }
+                }
+                p:416 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = nobles
+                            pop_culture_group = hellenic
+                        }
+                        move_pop = p:516
+                    }
+                }
+            }
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_6 = { # The City of Bureaucracy
+        icon = "task_political"
+
+        requires = { egypt_mission_2_pharaoh_task_1 }
+
+        duration = 365
+
+        highlight = {
+            scope:province = {
+                province_id = 516
+            }
+        }
+
+        allow = {
+            treasury >= 200
+            political_influence >= 80
+        }
+
+        on_start = {
+            trigger_event = { id = me_egypt_2_pharaoh.11 }
+        }
+
+        on_completion = {
+            trigger_event = { id = me_egypt_2_pharaoh.12 }
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = egypt_census_reformed_mod
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_7 = { # The Center of World Trade
+        icon = "task_economical"
+
+        requires = { egypt_mission_2_pharaoh_task_3 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = western_delta_area
+                    is_in_area = central_delta_area
+                }
+            }
+        }
+
+        allow = {
+            p:516.state = {
+                custom_tooltip = {
+                    text = egypt_mission_2_pharaoh_task_7_trigger_1
+                    incoming_trade_routes >= egypt_mission_2_pharaoh_task_7_total_trade_routes_wda
+                }
+            }
+            p:504.state = {
+                custom_tooltip = {
+                    text = egypt_mission_2_pharaoh_task_7_trigger_2
+                    incoming_trade_routes >= egypt_mission_2_pharaoh_task_7_total_trade_routes_cda
+                }
+            }
+        }
+
+        on_completion = {
+            trigger_event = { id = me_egypt_2_pharaoh.13 }
+            show_as_tooltip = {
+                add_1_free_province_investments = yes
+                p:516.state = {
+                    add_state_modifier = {
+                        name = egypt_delta_trade_center
+                        duration = 7300
+                    }
+                }
+            }
+            custom_tooltip = me_egypt_2_pharaoh.13.a.tt
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_8 = { # Nilotic Trade
+        icon = "task_economical"
+
+        requires = { egypt_mission_2_pharaoh_task_2 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 566
+                    province_id = 576
+                    AND = {
+                        owner = ROOT
+                        has_city_status = yes
+                        OR = {
+                            is_in_area = luxor_area
+                            is_in_area = aswan_area
+                        }
+                    }
+                }
+            }
+        }
+
+        allow = {
+            trigger_if = {
+                limit = { is_ai = no }
+                hidden:p:566 = { has_city_status = yes }
+                hidden:p:576 = { has_city_status = yes }
+                custom_tooltip = {          
+                    text = egypt_mission_2_pharaoh_task_8.tt.a
+                    area:luxor_area = {
+                        any_area_province = {
+                            count = all
+                            filter = {
+                                owner = ROOT
+                                has_city_status = yes
+                            }
+                            has_building = commerce_building
+                            has_building = town_hall_building
+                        }
+                    }
+                }
+                custom_tooltip = {                
+                    text = egypt_mission_2_pharaoh_task_8.tt.b
+                    area:aswan_area = {
+                        any_area_province = {
+                            count = all
+                            filter = {
+                                owner = ROOT
+                                has_city_status = yes
+                            }
+                            has_building = commerce_building
+                            has_building = town_hall_building
+                        }
+                    }
+                }
+            }
+            trigger_else = {
+                p:566 = {
+                    OR = {
+                        has_city_status = yes
+                        ROOT = { can_pay_price = price_found_city }
+                    }
+                }
+                p:576 = {
+                    OR = {
+                        has_city_status = yes
+                        ROOT = { can_pay_price = price_found_city }
+                    }
+                }
+            }
+        }
+
+        on_completion = {
+            ai_build_city_pay_price_effect = { CITY = p:566 } # AI fallback.
+            ai_build_city_pay_price_effect = { CITY = p:576 } # AI fallback.
+            trigger_event = { id = me_egypt_2_pharaoh.14 }
+            custom_tooltip = me_egypt_2_pharaoh.14.a.tt
+            custom_tooltip = me_egypt_2_pharaoh.14.a.tt.2
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_9 = { # The City of Gods
+        icon = "task_political"
+
+        requires = { egypt_mission_2_pharaoh_task_5 egypt_mission_2_pharaoh_task_6 }
+
+        duration = 180
+
+        highlight = {
+            scope:province = {
+                province_id = 516
+            }
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 516 }
+                }
+                owns = 516
+            }
+            treasury >= 500
+        }
+
+        on_start = {
+            trigger_event = { id = me_egypt_2_pharaoh.15 }
+            add_treasury = -500
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = egypt_gods_festival_alexander
+                    duration = 180
+                }
+            }
+            custom_tooltip = me_egypt_2_pharaoh.15.a.tt
+        }
+
+        on_completion = {
+            if = {
+                limit = {
+                    any_character = {
+                        family = c:EGY.fam:Lagid
+                        is_female = yes
+                        is_alive = no
+                    }
+                }
+                random_character = {
+                    limit = {
+                        family = c:EGY.fam:Lagid
+                        is_female = yes
+                        is_alive = no
+                    }
+                    save_scope_as = lagid_goddess_candidate
+                }
+            }
+            if = {
+                limit = {
+                    exists = scope:lagid_goddess_candidate
+                }
+                trigger_event = { id = me_egypt_2_pharaoh.16 }
+                custom_tooltip = egypt_mission_2_pharaoh_task_9.tt.1
+            }
+            else = {
+                trigger_event = { id = me_egypt_2_pharaoh.17 }
+                custom_tooltip = egypt_mission_2_pharaoh_task_9.tt.2
+            }
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_10 = { # The City of Wonders
+        icon = "task_diplomatic"
+
+        requires = { egypt_mission_2_pharaoh_task_2 egypt_mission_2_pharaoh_task_7 }
+
+        highlight = {
+            scope:province = {
+                province_id = 516
+            }
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_dlc = "Hellenistic World Flavor Pack"
+                }
+                custom_tooltip = {
+                    text = egypt_mission_2_pharaoh_task_10.tt
+                    p:516 = {
+                        OR = {
+                            has_variable = built_pharos
+                            has_variable = museion_of_alexandria_var
+                        }
+                    }
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = egypt_mission_2_pharaoh_task_10.tt.2
+                    p:516 = {
+                        has_variable = built_pharos
+                    }
+                }
+            }      
+        }
+
+        on_completion = {           
+            if = {
+                limit = {
+                    has_variable = built_pharos
+                }
+                trigger_event = { id = me_egypt_2_pharaoh.18 }
+            }
+            else_if = {
+                limit = {
+                    has_variable = museion_of_alexandria_var
+                }
+                trigger_event = { id = me_egypt_2_pharaoh.19 }
+            }
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_11 = { # Ptolemaia Festival
+        icon = "task_diplomatic"
+
+        requires = { egypt_mission_2_pharaoh_task_9 egypt_mission_2_pharaoh_task_10 }
+
+        highlight = {
+            scope:province = {
+                province_id = 516
+            }
+        }
+
+        bypass = {
+            current_ruler = {
+                NOT = {
+                    family = c:EGY.fam:Lagid
+                }
+            }
+        }
+
+        allow = {
+            treasury >= 800
+            political_influence >= 200
+        }
+
+        on_completion = {
+            add_treasury = -800
+            add_political_influence = -200
+            trigger_event = { id = me_egypt_2_pharaoh.21 }
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_12 = {   # Syncretism
+        icon = "task_political"
+
+        requires = { egypt_mission_2_pharaoh_task_9 }
+
+        duration = 365
+
+        highlight = {
+            scope:province = {
+                province_id = 516
+            }
+        }
+
+        potential = {
+            NOT = {
+                has_country_modifier = royal_serapis_cult
+            }
+        }
+
+        on_start = {
+            trigger_event = { id = me_egypt_2_pharaoh.25 }
+        }
+
+        on_completion = { 
+            trigger_event = { id = me_egypt_2_pharaoh.26 }
+            custom_tooltip = me_egypt_2_pharaoh.26.tt
+        }
+    }
+
+    egypt_mission_2_pharaoh_task_final = { # Apotheosis
+        icon = "task_diplomatic"
+
+        requires = { egypt_mission_2_pharaoh_task_11 egypt_mission_2_pharaoh_task_12 }
+
+        final = yes
+
+        highlight = {
+            scope:province = {
+                province_id = 516
+            }
+        }
+
+        allow = {
+            
+            }
+
+        on_completion = {
+            if = {
+                limit = {
+                    NOT = {
+                        has_dlc = "Magna Graecia"
+                    }
+                }
+                trigger_event = { id = me_egypt_2_pharaoh.32 }
+                show_as_tooltip = {
+                   add_country_modifier = {
+                        name = egypt_divine_basileus
+                        duration = -1
+                    } 
+                }
+                custom_tooltip = me_egypt_2_pharaoh.32.tt
+            }
+            else_if = {
+                limit = {
+                    char:42 = {
+                        is_alive = yes
+                    }
+                }
+                trigger_event = { id = me_egypt_2_pharaoh.29 }
+                show_as_tooltip = {
+                    add_country_modifier = {
+                        name = almost_divine_basileus
+                        duration = -1
+                    }
+                }
+                custom_tooltip = me_egypt_2_pharaoh.29.tt
+            }
+            else_if = {
+                limit = {
+                    char:42 = {
+                        is_alive = no
+                        is_deified = yes
+                    }
+                }
+                trigger_event = { id = me_egypt_2_pharaoh.31 }
+                custom_tooltip = me_egypt_2_pharaoh.31.tt
+            }
+            else = {
+                trigger_event = { id = me_egypt_2_pharaoh.30 }
+                custom_tooltip = me_egypt_2_pharaoh.30.tt
+            }
+            set_variable = {
+                name = almost_divine_basileus_unlocked
+                days = -1
+            }
+        }
+    }
+}

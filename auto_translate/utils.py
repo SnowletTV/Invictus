@@ -36,12 +36,14 @@ def set_proxy_queue(_q: multiprocessing.Queue):
 
 def load_proxies(_proxy_q: Union[queue.Queue, multiprocessing.Queue]):
     """
-    | Loads the list of proxies. Only needs to be loaded once
+    | Loads the list of HTTP SOCKS 5proxies. Only needs to be loaded once
 
     :param _proxy_q: Regular Queue or Multiprocessing Manager Queue
     :return:
     """
     print("Loading proxies")
+    # example format for HTTP SOCKS5 proxies:
+    # http://user:password@IP:PORT
     with open(path.abspath(path.join(__file__, "../proxies.json")), "r") as f:
         proxies = json.load(f)
         for proxy in proxies:

@@ -108,4 +108,6 @@ if __name__ == '__main__':
         raise ValueError(f'The source and target language cannot be the same!')
     if _source not in LANGUAGE_MAPPER.values() or _target not in LANGUAGE_MAPPER.values():
         raise ValueError(f'The language is not supported. Allowed languages: {LANGUAGE_MAPPER.values()}')
+    if not _source or not _target:
+        raise ValueError('Please ensure to provide no empty values for source and target language!')
     asyncio.run(main(source=_source, target=_target))

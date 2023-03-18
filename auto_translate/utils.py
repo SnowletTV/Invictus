@@ -4,6 +4,48 @@ import json
 import auto_translate.extras as extras
 import httpx
 from itertools import islice
+import threading
+import multiprocessing
+from typing import Union
+import queue
+
+#: Thread Event to cancel threads when necessary
+T_EVENT = threading.Event()
+#: List of SOCKS5 proxies for client sessions
+PROXIES = {}
+#: Threading Lock to enter a code section one at a time
+T_LOCK = threading.Lock()
+#: Proxy Queue which contains all the proxies
+PROXY_QUEUE: Union[queue.Queue, multiprocessing.Queue, None] = None
+#: Multiprocessing Manager Queue which contains all the proxies
+MULTI_PROXY_QUEUE: Union[multiprocessing.Queue, None] = None
+
+
+def set_proxy_queue(_q: multiprocessing.Queue):
+    """
+    | Required to call once in the child process if running
+    from a multiprocessing environment with create_session() callbacks
+
+    :param _q: Multiprocessing Manager Queue
+    :return: None
+    """
+    global MULTI_PROXY_QUEUE
+    if not MULTI_PROXY_QUEUE:
+        MULTI_PROXY_QUEUE = _q
+
+
+def load_proxies(_proxy_q: Union[queue.Queue, multiprocessing.Queue]):
+    """
+    | Loads the list of proxies. Only needs to be loaded once
+
+    :param _proxy_q: Regular Queue or Multiprocessing Manager Queue
+    :return:
+    """
+    print("Loading proxies")
+    with open(path.abspath(path.join(__file__, "../proxies.json")), "r") as f:
+        proxies = json.load(f)
+        for proxy in proxies:
+            _proxy_q.put(proxy)
 
 
 def create_session(
@@ -24,22 +66,38 @@ def create_session(
     :param str base_url:  A URL to use as the base when building request URLs.
     :return: HTTPX Session
     """
-    with open(path.abspath(path.join(__file__, "../proxies.json")), "r") as f:
-        proxies = json.load(f)
-    chosen_agent = random.choice(extras.POSSIBLE_AGENTS)
-    chosen_proxy = random.choice(proxies)
-    limits = httpx.Limits(
-        max_keepalive_connections=max_alive, max_connections=max_con
-    )
-    ses = httpx.AsyncClient(
-        headers=chosen_agent,
-        limits=limits,
-        timeout=max_timeout,
-        proxies=chosen_proxy,
-        verify=verify,
-        base_url=base_url,
-    )
-    return ses
+    global PROXY_QUEUE
+    if not PROXY_QUEUE and MULTI_PROXY_QUEUE:
+        # coming from multiprocessing environment
+        PROXY_QUEUE = MULTI_PROXY_QUEUE
+    try:
+        if T_EVENT.is_set():
+            raise InterruptedError(f"Thread execution cancelled!")
+        chosen_agent = random.choice(extras.POSSIBLE_AGENTS)
+        with T_LOCK:  # ensure that proxies are loaded only once
+            if not PROXY_QUEUE or PROXY_QUEUE.empty():
+                if not PROXY_QUEUE:
+                    # queue was not initialized yet, coming from single process
+                    PROXY_QUEUE = queue.Queue()
+                load_proxies(PROXY_QUEUE)
+        proxy = PROXY_QUEUE.get()
+        limits = httpx.Limits(
+            max_keepalive_connections=max_alive, max_connections=max_con
+        )
+        ses = httpx.AsyncClient(
+            headers=chosen_agent,
+            limits=limits,
+            timeout=max_timeout,
+            proxies=proxy,
+            verify=verify,
+            base_url=base_url,
+        )
+        return ses
+    finally:
+        # ensure that the proxy reference exists
+        if proxy := locals().get("proxy"):
+            # add the used proxy back into the queue for later use
+            PROXY_QUEUE.put(proxy)
 
 
 def chunks(data, size):

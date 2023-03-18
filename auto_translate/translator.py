@@ -3,7 +3,7 @@ import os.path as path
 import os
 import yaml
 from tqdm import tqdm
-
+from argparse import ArgumentParser
 from google_translate import GoogleTranslator
 
 LANGUAGE_MAPPER = {
@@ -34,7 +34,7 @@ def load_yaml(file_name: str) -> dict:
     return data
 
 
-def save(translated, output_file, target_language):
+def save(translated: dict, output_file, target_language):
     with open(output_file, "w", encoding="UTF-8-sig") as f:
         f.write(f"_{target_language}:\n")
         for k, v in translated.items():
@@ -75,19 +75,37 @@ def get_all_files(source_language: str, target_language: str) -> list[tuple]:
     return all_files
 
 
-async def main():
-    source_language: str = 'english'
-    target_language: str = 'german'
-    all_files: list[tuple] = get_all_files(source_language, target_language)
+async def main(source: str, target: str):
+    all_files: list[tuple] = get_all_files(source, target)
     progress = tqdm(total=len(all_files),
-                    desc=f'Translating files from {source_language} to {target_language}')
+                    desc=f'Translating files from {source} to {target}')
     for source_path, target_path in all_files:
-        translated = await translate_document(source_path, source_language, target_language)
-        save(translated, target_path, target_language)
+        translated = await translate_document(source_path, source, target)
+        save(translated, target_path, target)
         progress.update(1)
     progress.close()
     print('Translation is completed!')
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    parser = ArgumentParser(description='Argument Parser for the auto-translator')
+    parser.add_argument(
+        "-src",
+        "--source",
+        type=str,
+        help=f'Specify the source language. Allowed values: {LANGUAGE_MAPPER.keys()}',
+    )
+    parser.add_argument(
+        "-tgt",
+        "--target",
+        type=str,
+        help=f'Specify the target language. Allowed values: {LANGUAGE_MAPPER.keys()}',
+    )
+    _args = parser.parse_args()
+    _source = _args.source.lower()
+    _target = _args.target.lower()
+    if _source == _target:
+        raise ValueError(f'The source and target language cannot be the same!')
+    if _source not in LANGUAGE_MAPPER.values() or _target not in LANGUAGE_MAPPER.values():
+        raise ValueError(f'The language is not supported. Allowed languages: {LANGUAGE_MAPPER.values()}')
+    asyncio.run(main(source=_source, target=_target))

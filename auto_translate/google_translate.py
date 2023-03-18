@@ -56,7 +56,7 @@ class GoogleTranslator:
                 new_text += c
         return re.sub(self.extra_placeholder, "", new_text)
 
-    async def translate_batch(self, texts: dict) -> list[str]:
+    async def translate_batch(self, texts: dict) -> dict:
         """
         | Translates a given dict of texts asynchronously while taking care of the client management.
         | Ensures to switch up the client regularly for new proxies and user agents.

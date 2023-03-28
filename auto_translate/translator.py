@@ -1,10 +1,15 @@
 import asyncio
+import multiprocessing
 import os.path as path
 import os
+import queue
+import time
 import yaml
 from tqdm import tqdm
 from argparse import ArgumentParser
 from google_translate import GoogleTranslator
+import concurrent.futures as cft
+from utils import set_proxy_queue, chunk_list_of_tuples
 
 LANGUAGE_MAPPER = {
     'english': 'en',
@@ -75,16 +80,62 @@ def get_all_files(source_language: str, target_language: str) -> list[tuple]:
     return all_files
 
 
-async def main(source: str, target: str):
+async def main_translate(source: str, target: str, source_path: str, target_path: str,
+                         _progress: multiprocessing.Queue):
+    translated = await translate_document(source_path, source, target)
+    save(translated, target_path, target)
+    _progress.put(1)
+
+
+def worker_main(source: str, target: str, all_files: tuple, _queue: multiprocessing.Queue,
+                _progress: multiprocessing.Queue):
+    set_proxy_queue(_queue)
+    asyncio.run(
+        main_translate(
+            source,
+            target,
+            all_files[0],
+            all_files[1],
+            _progress)
+    )
+
+
+def update_progress(progress_queue: multiprocessing.Queue, total_items: list[tuple], pieces: list[list],
+                    finished: multiprocessing.Value):
+    with tqdm(total=len(total_items)) as progress:
+        while True:
+            try:
+                progress_queue.get(block=False)
+                progress.update(1)
+            except queue.Empty:
+                time.sleep(1)
+            if finished.value == len(pieces):
+                break  # done all
+
+
+def increment_finished(finished: multiprocessing.context, finished_lock: multiprocessing.context):
+    with finished_lock:
+        finished.value += 1
+
+
+def main(source: str, target: str):
     all_files: list[tuple] = get_all_files(source, target)
-    progress = tqdm(total=len(all_files),
-                    desc=f'Translating files from {source} to {target}')
-    for source_path, target_path in all_files:
-        translated = await translate_document(source_path, source, target)
-        save(translated, target_path, target)
-        progress.update(1)
-    progress.close()
-    print('Translation is completed!')
+    with cft.ProcessPoolExecutor(
+            max_workers=8
+    ) as pool, multiprocessing.Manager() as manager:
+        _queue = manager.Queue()
+        _progress = manager.Queue()
+        _finished_lock = manager.Lock()
+        _finished = manager.Value('i', 0)
+        futures = [pool.submit(update_progress, _progress, all_files, all_files, _finished)]
+        futures.extend([pool.submit(worker_main, source, target, _p, _queue,
+                                    _progress) for _p in all_files])
+        for future in cft.as_completed(futures):
+            future.result()
+            increment_finished(_finished, _finished_lock)
+            if future.cancelled() or future.exception() is not None:
+                print(f'Future failed unexpectedly: {future}')
+    print('Translation is fully completed!')
 
 
 if __name__ == '__main__':
@@ -106,8 +157,8 @@ if __name__ == '__main__':
     _target = _args.target.lower()
     if _source == _target:
         raise ValueError(f'The source and target language cannot be the same!')
-    if _source not in LANGUAGE_MAPPER.values() or _target not in LANGUAGE_MAPPER.values():
-        raise ValueError(f'The language is not supported. Allowed languages: {LANGUAGE_MAPPER.values()}')
+    if _source not in LANGUAGE_MAPPER.keys() or _target not in LANGUAGE_MAPPER.keys():
+        raise ValueError(f'The language is not supported. Allowed languages: {LANGUAGE_MAPPER.keys()}')
     if not _source or not _target:
         raise ValueError('Please ensure to provide no empty values for source and target language!')
-    asyncio.run(main(source=_source, target=_target))
+    main(source=_source, target=_target)

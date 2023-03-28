@@ -3,7 +3,7 @@ import random
 import json
 import auto_translate.extras as extras
 import httpx
-from itertools import islice
+from itertools import islice, zip_longest
 import threading
 import multiprocessing
 from typing import Union
@@ -41,7 +41,6 @@ def load_proxies(_proxy_q: Union[queue.Queue, multiprocessing.Queue]):
     :param _proxy_q: Regular Queue or Multiprocessing Manager Queue
     :return:
     """
-    print("Loading proxies")
     # example format for HTTP SOCKS5 proxies:
     # http://user:password@IP:PORT
     with open(path.abspath(path.join(__file__, "../proxies.json")), "r") as f:
@@ -106,3 +105,14 @@ def chunks(data, size):
     it = iter(data)
     for i in range(0, len(data), size):
         yield {k: data[k] for k in islice(it, size)}
+
+
+def chunk_list_of_tuples(lst, n):
+    """Chunk a list of tuples into equally sized list of lists of tuples"""
+
+    def grouper(iterable, n, fillvalue=None):
+        "Collect data into fixed-length chunks or blocks"
+        args = [iter(iterable)] * n
+        return zip_longest(*args, fillvalue=fillvalue)
+
+    return [list(filter(lambda x: x is not None, chunk)) for chunk in grouper(lst, n)]

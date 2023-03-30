@@ -19,7 +19,7 @@ class GoogleTranslator:
     def __init__(
             self,
             client: httpx.AsyncClient | httpx.Client = None,
-            size: int = 10,
+            size: int = 15,
             source: str = "auto",
             target: str = "de",
     ):
@@ -83,7 +83,7 @@ class GoogleTranslator:
         final = {key: result[key] for key in key_order}
         return final
 
-    async def translate_async(self, key: str, text: str) -> str:
+    async def translate_async(self, key: str, text: str) -> tuple[str, str]:
         """
         | Translates a given text asynchronously.
         If no client is set yet, an asynchronous client will be created.

@@ -1,0 +1,722 @@
+﻿me_syracuse_1_democracy = {
+	icon = syracuse_1
+	header = mission_image_syracuse
+	repeatable = yes
+    chance = { factor = 3 }
+
+	potential = { 
+		NOT = { has_variable = syracuse_mission_01_democracy }
+		has_dlc = "Magna Graecia"
+		OR = {
+			tag = SYR
+			has_variable = me_syracuse_start_flag
+		}
+		is_monarchy = yes
+		country_culture_group = hellenic
+		current_date > 460.1.1
+		custom_tooltip = {
+			text = democracy_eligible_tooltip
+			current_ruler = {
+				NOR = {
+					age > 65
+					char_is_ill_trigger = yes
+				}
+			}
+		}
+		has_civil_war = no
+	}
+
+	abort = { 
+		custom_tooltip = {
+			text = me_syracuse_1_democracy_abort_tt
+			OR = {
+				AND = {
+					is_monarchy = no
+					NOR = { 
+						has_completed_mission_task = syracuse_1_8_civil_war
+						has_completed_mission_task = syracuse_1_7_assassinate
+						has_variable = me_syr_demo_civil_war_active
+						has_variable = me_syr_taking_stock_republic_flag
+					}
+				}
+				num_of_provinces <= 1
+				has_variable = syracuse_demo_plot_abort
+				AND = {
+					has_variable = me_syr_6_bypass
+					has_variable = me_syr_2_bypass
+					has_variable = me_syr_3_bypass
+					has_variable = me_syr_4_bypass
+				}
+				is_subject = yes
+				ai_mission_back_out_trigger = yes
+			}
+		}
+	}
+
+    on_start = { 
+    	start_mission_ai_effect = yes
+		save_scope_as = me_syracuse_scope
+		current_ruler = { 
+			save_scope_as = syracuse_current_tyrant
+			set_variable = {
+				name = me_syr_current_tyrant_flag
+				days = 1825
+			}
+		}
+		set_variable = { name = death_to_tyrants_flag }
+		current_ruler = { save_scope_as = syracuse_current_tyrant } 
+	}
+
+    on_abort = {
+    	custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+			name = syracuse_mission_01_democracy
+			days = 7300 # 20 years
+		}
+		if = {
+			limit = {
+				any_country = { has_variable = me_syr_foreign_country_flag }
+				OR = {
+					any_country = {
+						has_variable = me_syr_foreign_country_flag
+						any_character = { has_variable = me_syr_foreign_leader_flag }
+					}
+					any_character = { has_variable = me_syr_foreign_leader_flag }
+				}
+			}
+			random_country = {
+				limit = { has_variable = me_syr_foreign_country_flag }
+				trigger_event = { id = me_syracuse_1_democracy.50 }
+			}
+		}
+		if = {
+			limit = {
+				any_country = { has_variable = me_syr_deal_with_devil_flag }
+			}
+			random_country = {
+				limit = { has_variable = me_syr_deal_with_devil_flag }
+				trigger_event = { id = me_syracuse_1_democracy.50 }
+			}
+		}
+		syracuse_democracy_variable_clearer = yes
+		if = {
+			limit = {
+				is_republic = yes
+				OR = {
+					has_completed_mission_task = syracuse_1_7_assassinate
+					has_completed_mission_task = syracuse_1_8_civil_war
+				}
+				NOT = { has_completed_mission_task = syracuse_1_9_taking_stock }
+			}
+			ordered_character = {
+				limit = {
+					prisoner = no
+					is_adult = yes
+					has_culture_group = hellenic
+					trigger_if = {
+						limit = {
+							employer = { gender_equality = no }
+						}
+						is_female = no
+					}
+					NOR = {
+						AND = {
+							exists = scope:democracy_leader
+							this = scope:democracy_leader
+						}
+						has_variable = me_syr_democracy_leader
+						has_variable = rebel_character_flag
+					}
+				}
+				order_by = martial
+				save_scope_as = me_syr_abort_ruler
+			}
+			custom_tooltip = me_syr_1_abort_effects_tt
+			hidden_effect = { 
+				set_as_ruler = scope:me_syr_abort_ruler
+				change_government = despotic_monarchy
+			}
+			trigger_event = { id = me_syracuse_1_democracy.74 }
+			add_stability = -10
+		}
+		if = {
+			limit = { has_variable = ongoing_mission_pulse_flag }
+			remove_variable = ongoing_mission_pulse_flag
+		}
+    }
+
+    on_completion = {
+    	complete_mission_effect = yes
+    	add_country_modifier = {
+    		name = me_syr_nascent_republic_cmod
+    		duration = 7300
+    	}
+    	add_political_influence = 100
+    	add_stability = 10
+    	syracuse_democracy_variable_clearer = yes
+    }
+	
+	syracuse_1_1_tentative_whispers = {
+		icon = task_political
+		duration = 180 #
+		monthly_on_action = syracuse_1_1_tentative_whispers_monthly_pulse
+		
+		allow = {
+			custom_tooltip = {
+				text = demo_leader_eligible_tooltip
+				any_character = { syracuse_democracy_leader_trigger = yes }
+			}
+		}
+		
+		on_start = {
+			set_variable = {
+				name = ongoing_mission_pulse_flag
+				days = 180
+			}
+			random_character = {
+				limit = { syracuse_democracy_leader_trigger = yes }
+				weight = {
+					modifier = {
+						factor = 4
+						loyalty <= 25
+					}
+					modifier = {
+						factor = 3
+						loyalty <= 50
+					}
+					modifier = {
+						factor = 2
+						loyalty <= 75
+					}
+					modifier = {
+						factor = 8
+						age < 50
+					}
+					modifier = {
+						factor = 8
+						has_culture = syracusan
+					}
+					modifier = {
+						factor = 2
+						has_culture_group = hellenic
+					}
+				}
+				save_scope_as = democracy_leader
+				set_variable = { # To find and replace leader if dies prematurely
+					name = me_syr_democracy_leader
+					days = -1
+				}
+			}
+			trigger_event = { id = me_syracuse_1_democracy.1 }
+		}
+		
+		on_completion = {
+			custom_tooltip = syracuse_1_1_reward_tt
+			trigger_event = { id = me_syracuse_1_democracy.18 }
+		}
+		
+		bypass = {}
+	}
+
+	syracuse_1_2_mercenary_motives = {
+		icon = task_conquest
+		requires = { syracuse_1_1_tentative_whispers }
+		duration = 90
+		
+		allow = {
+			custom_tooltip = {
+				text = ongoing_revolutionary_route_tt
+				NOT = { has_variable = ongoing_revolutionary_route }
+			}
+		}
+		
+		on_start = {
+			set_variable = {
+				name = ongoing_revolutionary_route
+				days = 90
+				value = 2
+			}
+			set_variable = {
+				name = ongoing_mission_pulse_flag
+				days = 90
+			}
+			trigger_event = { id = me_syracuse_1_democracy.36 }
+		}
+		
+		on_completion = {
+			custom_tooltip = syracuse_1_2_reward_tt
+			trigger_event = {
+				id = me_syracuse_1_democracy.45
+			}
+			set_variable = {
+				name = syracuse_1_2_mercenary_motives_flag
+				days = -1
+			}
+		}
+		
+		bypass = {
+			OR = {
+				has_variable = me_syr_2_bypass
+				AND = {
+					has_completed_mission_task = syracuse_1_3_greek_help
+					has_variable = syracuse_1_3_greek_help_flag
+				}
+				AND = {
+					has_completed_mission_task = syracuse_1_4_deal_with_devil
+					has_variable = syracuse_1_4_deal_with_devil_flag
+				}
+				AND = {
+					has_completed_mission_task = syracuse_1_6_approach_heir
+					has_variable = syracuse_1_6_approach_heir_flag
+				}
+			}
+		}
+
+		on_bypass = {
+			remove_variable = ongoing_revolutionary_route
+		}
+	}
+	
+	syracuse_1_3_greek_help = {
+		requires = { syracuse_1_1_tentative_whispers }
+		icon = task_expansion
+		duration = 180 #
+		monthly_on_action = syracuse_1_3_greek_help_monthly_pulse
+		
+		potential = {
+			any_country = {
+				country_culture_group = hellenic
+				capital_scope = { is_in_region = greece_region }
+				is_republic = yes
+				is_subject = no
+				any_character = {
+					prisoner = no
+					is_adult = yes
+					is_ruler = no
+					NOR = {
+						is_friend = scope:me_syracuse_scope.current_ruler
+						has_character_modifier = foreign_citizen
+					}
+					trigger_if = {
+						limit = {
+							scope:me_syracuse_scope = { gender_equality = no }
+							employer = { gender_equality = no }
+						}
+						is_female = no
+					}
+				}
+			}
+		}
+
+		allow = {
+			custom_tooltip = {
+				text = ongoing_revolutionary_route_tt
+				NOT = { has_variable = ongoing_revolutionary_route }
+			}
+			custom_tooltip = {
+				text = syracuse_1_3_greek_help_allow_tt
+				any_country = {
+					country_culture_group = hellenic
+					capital_scope = { is_in_region = greece_region }
+					is_republic = yes
+					is_subject = no
+					any_character = {
+						prisoner = no
+						is_adult = yes
+						is_ruler = no
+						NOR = {
+							is_friend = scope:me_syracuse_scope.current_ruler
+							has_character_modifier = foreign_citizen
+						}
+						trigger_if = {
+							limit = {
+								scope:me_syracuse_scope = { gender_equality = no }
+								employer = { gender_equality = no }
+							}
+							is_female = no
+						}
+					}
+				}
+			}
+		}
+		
+		on_start = {
+			set_variable = {
+				name = ongoing_revolutionary_route
+				days = 180
+				value = 63
+			}
+			set_variable = {
+				name = ongoing_mission_pulse_flag
+				days = 180
+			}
+			trigger_event = { id = me_syracuse_1_democracy.57 }
+		}
+		
+		on_completion = {
+			custom_tooltip = syracuse_1_3_reward_tt
+			trigger_event = { id = me_syracuse_1_democracy.27 }
+			set_variable = {
+				name = syracuse_1_3_greek_help_flag
+				days = -1
+			}
+		}
+		
+		bypass = {
+			OR = {
+				has_variable = me_syr_3_bypass
+				AND = {
+					has_completed_mission_task = syracuse_1_2_mercenary_motives
+					has_variable = syracuse_1_2_mercenary_motives_flag
+				}
+				AND = {
+					has_completed_mission_task = syracuse_1_4_deal_with_devil
+					has_variable = syracuse_1_4_deal_with_devil_flag
+				}
+				AND = {
+					has_completed_mission_task = syracuse_1_6_approach_heir
+					has_variable = syracuse_1_6_approach_heir_flag
+				}
+			}
+		}
+
+		on_bypass = {
+			if = {
+				limit = { has_variable = me_syr_3_bypass }
+				
+				remove_variable = me_syr_3_bypass
+			}
+			remove_variable = ongoing_revolutionary_route
+			if = {
+				limit = { exists = scope:me_syracuse_foreign_request_scope }
+				scope:me_syracuse_foreign_request_scope = { clear_saved_scope = me_syracuse_foreign_request_scope }
+			}
+			if = {
+				limit = { exists = scope:me_syracuse_foreign_request_character_scope }
+				scope:me_syracuse_foreign_request_character_scope = { clear_saved_scope = me_syracuse_foreign_request_character_scope }
+			}
+		}
+	}
+	
+	syracuse_1_4_deal_with_devil = {
+		icon = task_economical
+		requires = { syracuse_1_1_tentative_whispers }
+		duration = 180
+		
+		potential = {
+			is_subject = no
+			any_country = {
+				has_land = yes
+				num_of_provinces >= root.num_of_provinces
+				any_owned_province = {
+					OR = {
+						is_in_area = west_sicily_area
+						is_in_area = east_sicily_area
+						AND = {
+							is_in_area = syracuse_area
+							NOT = { province_id = 1471 }
+						}
+					}
+				}
+				NOR = { 
+					alliance_with = c:SYR
+					primary_culture = syracusan 
+					tag = SYR
+				}
+				opinion = { target = c:SYR value < 25 }
+			}
+		}
+
+		allow = {
+			custom_tooltip = {
+				text = ongoing_revolutionary_route_tt
+				NOT = { has_variable = ongoing_revolutionary_route }
+			}
+			custom_tooltip = {
+				text = syracuse_1_4_deal_with_devil_allow_tt
+				any_country = { syracuse_foreign_devils_trigger = yes }
+			}
+		}
+
+		on_start = {
+			set_variable = {
+				name = ongoing_revolutionary_route
+				days = 180
+				value = 4
+			}
+			set_variable = {
+				name = ongoing_mission_pulse_flag
+				days = 180
+			}
+			if = {
+				limit = {
+					c:CAR = {
+						has_land = yes
+						num_of_provinces >= root.num_of_provinces
+						any_owned_province = {
+							OR = {
+								is_in_area = west_sicily_area
+								is_in_area = east_sicily_area
+								AND = {
+									is_in_area = syracuse_area
+									NOT = { province_id = 1471 }
+								}
+							}
+						}
+						is_subject = no
+						NOR = { 
+							alliance_with = c:SYR
+							primary_culture = syracusan 
+						}
+						opinion = { target = c:SYR value < 0 }
+					}
+				}
+				c:CAR = { 
+					set_variable = me_syr_deal_with_devil_flag
+					save_scope_as = me_syr_deal_with_devil_scope
+				}
+			}
+			else = {
+				ordered_country = {
+					limit = {
+						has_land = yes
+						num_of_provinces >= root.num_of_provinces
+						any_owned_province = {
+							OR = {
+								is_in_area = west_sicily_area
+								is_in_area = east_sicily_area
+								AND = {
+									is_in_area = syracuse_area
+									NOT = { province_id = 1471 }
+								}
+							}
+						}
+						is_subject = no
+						NOR = { 
+							alliance_with = c:SYR
+							primary_culture = syracusan 
+							tag = SYR
+						}
+						opinion = { target = c:SYR value < 0 }
+					}
+					order_by = num_of_provinces
+					set_variable = me_syr_deal_with_devil_flag
+					save_scope_as = me_syr_deal_with_devil_scope
+				}
+			}
+			trigger_event = { id = me_syracuse_1_democracy.49 }
+		}
+		
+		on_completion = {
+			custom_tooltip = syracuse_1_4_reward_tt
+			trigger_event = { id = me_syracuse_1_democracy.69 }
+			set_variable = syracuse_1_4_deal_with_devil_flag
+		}
+		
+		bypass = {
+			OR = {
+				has_variable = me_syr_4_bypass
+				AND = {
+					has_completed_mission_task = syracuse_1_2_mercenary_motives
+					has_variable = syracuse_1_2_mercenary_motives_flag
+				}
+				AND = {
+					has_completed_mission_task = syracuse_1_3_greek_help
+					has_variable = syracuse_1_3_greek_help_flag
+				}
+				AND = {
+					has_completed_mission_task = syracuse_1_6_approach_heir
+					has_variable = syracuse_1_6_approach_heir_flag
+				}
+			}
+		}
+
+		on_bypass = {
+			if = {
+				limit = { has_variable = me_syr_4_bypass }
+				remove_variable = me_syr_4_bypass
+			}
+			remove_variable = ongoing_revolutionary_route
+			if = {
+				limit = { exists = scope:me_syr_deal_with_devil_scope }
+				scope:me_syr_deal_with_devil_scope = { clear_saved_scope = me_syr_deal_with_devil_scope }
+			}
+		}
+	}
+	
+	syracuse_1_6_approach_heir = {
+		icon = task_political
+		requires = { syracuse_1_1_tentative_whispers }
+		duration = 90
+		
+		allow = {
+			custom_tooltip = {
+				text = ongoing_revolutionary_route_tt
+				NOT = { has_variable = ongoing_revolutionary_route }
+			}
+		}
+		
+		on_start = {
+			primary_heir = {
+				set_variable = me_syr_heir_flag
+				save_scope_as = me_syr_heir_scope
+			}
+			trigger_event = { id = me_syracuse_1_democracy.67 }
+			set_variable = {
+				name = ongoing_revolutionary_route
+				days = 90
+				value = 6
+			}
+			set_variable = {
+				name = ongoing_mission_pulse_flag
+				days = 90
+			}
+		}
+		
+		on_completion = {
+			custom_tooltip = syracuse_1_6_reward_tt
+			trigger_event = { id = me_syracuse_1_democracy.68 }
+			set_variable = {
+				name = syracuse_1_6_approach_heir_flag
+				days = -1
+			}
+		}
+		
+		bypass = {
+			OR = {
+				has_variable = me_syr_6_bypass
+				AND = {
+					has_completed_mission_task = syracuse_1_2_mercenary_motives
+					has_variable = syracuse_1_2_mercenary_motives_flag
+				}
+				AND = {
+					has_completed_mission_task = syracuse_1_3_greek_help
+					has_variable = syracuse_1_3_greek_help_flag
+				}
+				AND = {
+					has_completed_mission_task = syracuse_1_4_deal_with_devil
+					has_variable = syracuse_1_4_deal_with_devil_flag
+				}
+			}
+		}
+
+		on_bypass = {
+			if = {
+				limit = { has_variable = me_syr_6_bypass }
+				remove_variable = me_syr_6_bypass
+			}
+			remove_variable = ongoing_revolutionary_route
+		}
+	}
+	
+	syracuse_1_7_assassinate = {
+		requires = { syracuse_1_2_mercenary_motives syracuse_1_6_approach_heir }
+		prevented_by = { syracuse_1_8_civil_war }
+		icon = task_expansion
+		
+		allow = {
+			OR = {
+				has_completed_mission_task = syracuse_1_2_mercenary_motives
+				has_completed_mission_task = syracuse_1_6_approach_heir
+			}
+			trigger_if = {
+				limit = { has_completed_mission_task = syracuse_1_2_mercenary_motives }
+				custom_tooltip = {
+					text = syracuse_1_7_assassinate_allow_tt_2
+					c:MER = { 
+						any_character = { has_variable = me_syr_2_mer_lead_flag }
+					}
+				}
+			}
+			trigger_if = {
+				limit = { has_completed_mission_task = syracuse_1_6_approach_heir }
+				custom_tooltip = {
+					text = syracuse_1_7_assassinate_allow_tt_6
+					root.primary_heir = { has_variable = me_syr_heir_flag }
+				}
+			}
+		}
+		
+		on_completion = {
+			custom_tooltip = syracuse_1_7_reward_tt
+			trigger_event = { id = me_syracuse_1_democracy.46 }
+			set_variable = me_syr_7_ongoing
+		}
+		
+		bypass = {
+			has_completed_mission_task = syracuse_1_8_civil_war
+		}
+	}
+	
+	syracuse_1_8_civil_war = {
+		requires = { syracuse_1_3_greek_help syracuse_1_4_deal_with_devil }
+		icon = task_conquest
+		prevented_by = { syracuse_1_7_assassinate }
+		
+		allow = {
+			war = no
+			OR = {
+				has_completed_mission_task = syracuse_1_3_greek_help
+				has_completed_mission_task = syracuse_1_4_deal_with_devil
+			}
+		}
+		
+		on_completion = {
+			custom_tooltip = syracuse_1_8_reward_tt
+			trigger_event = { id = me_syracuse_1_democracy.22 }
+		}
+		
+		bypass = {
+			has_completed_mission_task = syracuse_1_7_assassinate
+		}
+	}
+
+	syracuse_1_9_taking_stock = {
+		requires = { syracuse_1_7_assassinate syracuse_1_8_civil_war }
+		icon = task_diplomatic
+		duration = 90
+		monthly_on_action = syracuse_1_9_taking_stock_monthly_pulse
+		final = yes
+
+		allow = {
+			trigger_if = {
+				limit = { has_completed_mission_task = syracuse_1_8_civil_war }
+				has_completed_mission_task = syracuse_1_8_civil_war
+				has_civil_war = no
+			}
+			trigger_if = {
+				limit = { has_completed_mission_task = syracuse_1_7_assassinate }
+				has_completed_mission_task = syracuse_1_7_assassinate
+				custom_tooltip = {
+					text = syracuse_1_9_taking_stock_allow_tt
+					NOT = { has_variable = me_syr_7_ongoing }
+				}
+			}
+		}
+
+		on_start = {
+			if = { 
+				limit = { has_variable = me_syr_demo_civil_war_active }
+				remove_variable = me_syr_demo_civil_war_active
+			}
+			trigger_event = { id = me_syracuse_1_democracy.64 }
+			set_variable = {
+				name = ongoing_mission_pulse_flag
+				days = 90
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = syracuse_1_9_reward_tt
+			trigger_event = { id = me_syracuse_1_democracy.72 }
+			if = {
+				limit = { has_variable = me_syr_7_ongoing }
+				remove_variable = me_syr_7_ongoing
+			}
+			if = {
+				limit = { has_variable = debtor_flag }
+				remove_variable = debtor_flag
+			}
+		}
+	}
+}

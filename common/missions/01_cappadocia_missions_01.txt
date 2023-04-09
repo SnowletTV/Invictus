@@ -17,10 +17,12 @@
 		}
 	}
 
-	abort = {}
+	abort = {
+		ai_mission_back_out_trigger = yes
+	}
 
 	on_start = {
-		ai_mission_back_out_trigger = yes
+		start_mission_ai_effect = yes
 	}
 
 	on_completion = {
@@ -39,10 +41,11 @@
 
 		highlight = {
 			scope:province = {
+				owner = root
 				OR = {
-					any_owned_province = {
+					this = {
 						any_pops_in_province = {
-							pop_hapiness < 0.5
+							pop_hapiness < 0.35
 						}
 					}
 				}
@@ -50,24 +53,36 @@
 		}
 
 		allow = {
-			invention = global_cohort_recruit_speed_inv
-			custom_tooltip = {
-				text = cappadocia_fort_svalue_tt
-				cappadocia_fort_svalue >= 10
-			}
-			any_owned_province = {
-				count = all
-				any_pops_in_province = {
-					count = all
-					pop_hapiness >= 0.5
+			trigger_if = {
+				limit = {
+					is_ai = no
 				}
-			}
+				invention = global_cohort_recruit_speed_inv
+				custom_tooltip = {
+					text = cappadocia_fort_svalue_tt
+					cappadocia_fort_svalue >= 10
+				}
+				custom_tooltip = {
+					text = pops_happy_in_province_tt
+					any_owned_province = {
+						count = all
+						any_pops_in_province = {
+							count = all
+							pop_hapiness >= 0.35 # not disloyal
+						}
+					}	
+				}
+			}	
+			trigger_else = { # for ai
+				cappadocia_fort_svalue >= 5
+			}	
 		}
 
 		on_completion = {
 			add_political_influence = 100
 			add_treasury = 300
 			add_manpower = 10 #1 Manpower = 500 Manpower in the game
+			add_stability = 5
 		}
 	}
 
@@ -77,15 +92,16 @@
 		icon = task_diplomatic
 
 		requires = { cappadocia_mission_inv_1_task }
+		prevented_by = { cappadocia_mission_inv_26_task cappadocia_mission_inv_2B_task }
 
 		allow = { 
-			c:PRY = { 
+			hidden:c:PRY = { 
 				opinion = { 
 					target = root 
-					value >= 90 
+					value >= 120
 				} 
 			}
-            current_ruler = { is_friend = c:PRY.current_ruler }
+            hidden:current_ruler = { is_friend = c:PRY.current_ruler }
 		}
 
 		on_completion = {
@@ -105,71 +121,171 @@
 
 		requires = { cappadocia_mission_inv_2A_task }
 
-		allow = {}
+		bypass = { # Eumenes' Wife and Children are dead
+			char:432 = { is_alive = no }
+			char:433 = { is_alive = no }
+			char:434 = { is_alive = no }
+			char:435 = { is_alive = no }
+		}
 
 		on_completion = {
+			custom_tooltip = eumenes_heirs_rise_up_tt
+			trigger_event = {
+				id = cappadocia_event.1
+			}
 			# char:431 is eumenes of cardia (dead)
 			# char:433 is the oldest son
 			# char:432 is wife of eumenes
 			# char:434 is 2nd son, char:435 is daughter
-			# p:1790 is Komana Pontike
+			# p:1954 is Garsaura
+			# p:1788 is Nora
+			add_country_modifier = {
+				name = dealing_with_eumenes
+				duration = 3650 
+			}
 		}
 	}
 
 	cappadocia_mission_inv_4A_task = { #Rewards for Loyalty
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_3A_task}
+		duration = 180
 
-		allow = {}
+		requires = { cappadocia_mission_inv_2A_task }
 
-		on_completion = {}
+		bypass = {
+			NOT = { is_subject_of = c:PRY }
+		}
+
+		allow = {
+			manpower >= 10
+			treasury >= 300
+		}
+
+		on_start = {
+			custom_tooltip = gift_to_overlord_cap_tt
+			trigger_event = {
+				id = cappadocia_event.2
+			}
+		}
 	}
 
 	cappadocia_mission_inv_5A_task = { #Pushing Back to Satrapy boundaries
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_4A_task}
+		requires = { cappadocia_mission_inv_3A_task }
 
-		allow = {}
+		bypass = {
+			OR = {
+				AND = {
+					exists = overlord
+					p:1790.owner = root.overlord
+				}
+				owns_area = p:1790.area
+			}
+		}
 
-		on_completion = {}
+		on_completion = {
+			custom_tooltip = one_v_one_pontus_tt # kinda; ai's allies can join
+			declare_war_with_wargoal = {
+                war_goal = conquer_wargoal
+                province = 1790
+                target = p:1790.owner
+            }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = satrapy_borders_restored
+					duration = -1
+				}
+			}
+		}
 	}
 
 	cappadocia_mission_inv_6A_task = { #The Persian Remnant
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_5A_task}
+		requires = { cappadocia_mission_inv_3A_task }
 
-		allow = {}
-
-		on_completion = {}
+		on_completion = {
+			custom_tooltip = ariarathes_returns_tt
+			trigger_event = {
+				id = cappadocia_event.7
+			}
+		}
 	}
 
 	cappadocia_mission_inv_7A_task = { #Reclaiming Armenian Theft
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_6A_task }
+		requires = { cappadocia_mission_inv_6A_task }
 
-		allow = {}
+		bypass = {
+			OR = {
+				AND = {
+					exists = overlord
+					p:1767.owner = root.overlord
+				}
+				owns_area = p:1767.area
+			}
+		}
 
-		on_completion = {}
+		on_completion = {
+			custom_tooltip = one_v_one_armenia_tt # kinda; ai's allies can join
+			declare_war_with_wargoal = {
+                war_goal = conquer_wargoal
+                province = 1767
+                target = p:1767.owner
+            }
+		}
 	}
 
 	cappadocia_mission_inv_8A_task = { #The Richest Satrapy
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_7A_task}
+		requires = { cappadocia_mission_inv_6A_task }
 
-		allow = {}
+		highlight = {
+			scope:province = {
+				owner = root
+				is_capital = yes
+			}
+		}
 
-		on_completion = {}
+		allow = {
+			has_monthly_income >= 25
+			capital_scope.state = { incoming_trade_routes >= 12 }
+			capital_scope = {
+				civilization_value >= 50
+				any_pops_in_province = {
+					count >= 10
+					pop_type = nobles
+				}
+			}
+			any_owned_province = {
+				count >= 8
+				has_city_status = yes
+				civilization_value >= 35
+				any_pops_in_province = {
+					count >= 5
+					pop_type = nobles
+				}
+			}
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = richest_satrapy
+				duration = -1
+			}
+		}
 	}
 
 	cappadocia_mission_inv_9A_task = { #Content in One’s Station
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_8A_task}
+		requires = { cappadocia_mission_inv_8A_task }
+		prevented_by = { cappadocia_mission_inv_10A_task cappadocia_mission_inv_11A_task }
+		final = yes
 
 		allow = {}
 
@@ -179,7 +295,8 @@
 	cappadocia_mission_inv_10A_task = { #Rival to the Antigonids
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_9A_task}
+		requires = { cappadocia_mission_inv_8A_task }
+		prevented_by = { cappadocia_mission_inv_9A_task cappadocia_mission_inv_11A_task }
 
 		allow = {}
 
@@ -189,7 +306,8 @@
 	cappadocia_mission_inv_11A_task = { #An Independent Hellenistic Kingdom
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_10A_task}
+		requires = { cappadocia_mission_inv_8A_task }
+		prevented_by = { cappadocia_mission_inv_9A_task cappadocia_mission_inv_10A_task }
 
 		allow = {}
 
@@ -199,7 +317,8 @@
 	cappadocia_mission_inv_12A_task = { #Antigonid Successor
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_11A_task}
+		requires = { cappadocia_mission_inv_10A_task }
+		final = yes
 
 		allow = {}
 
@@ -209,47 +328,266 @@
 	cappadocia_mission_inv_13A_task = { #Hegemon of Anatolia
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_12A_task}
+		requires = { cappadocia_mission_inv_11A_task }
+		final = yes
 
 		allow = {}
 
 		on_completion = {}
 	}
 
-	cappadocia_mission_inv_2B_task = {
+	# Legacy of Persia
+	cappadocia_mission_inv_2B_task = { # The Ariarathid Dynasty
 		icon = task_expansion
 
-		requires = {}
+		requires = { cappadocia_mission_inv_1_task }
+		prevented_by = { cappadocia_mission_inv_2A_task cappadocia_mission_inv_26_task }
 
 		allow = {}
 
 		on_completion = {}
 	}
 
-	cappadocia_mission_inv_15_task = {
+	cappadocia_mission_inv_15_task = { # A Cappadocian Kingdom
 		icon = task_expansion
 
-		requires = {}
+		requires = { cappadocia_mission_inv_2B_task }
+		#prevented_by = { cappadocia_mission_inv_16_task } # this would prevent the mission, the bypass doesn't. 
+		# There sadly is no requires_or for the following task
+		bypass = {
+			has_variable = mission_task_15_bypass_var
+		}
+
+		allow = {}
+
+		on_completion = {
+			set_variable = mission_task_16_bypass_var
+		}
+	}
+
+	cappadocia_mission_inv_16_task = { #An Armenian Partner
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_2B_task }
+		#prevented_by = { cappadocia_mission_inv_15_task } # this would prevent the mission, the bypass doesn't. 
+		bypass = {
+			has_variable = mission_task_16_bypass_var
+		}
+
+		allow = {}
+
+		on_completion = {
+			set_variable = mission_task_15_bypass_var
+		}
+	}
+
+	cappadocia_mission_inv_17_task = { # The Seleukid Ultimatum
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_15_task }
 
 		allow = {}
 
 		on_completion = {}
 	}
 
-	cappadocia_mission_inv_16_task = {
+	cappadocia_mission_inv_18_task = { # Persian Cappadocia
 		icon = task_expansion
 
-		requires = {}
+		requires = { cappadocia_mission_inv_16_task cappadocia_mission_inv_15_task}
 
 		allow = {}
 
 		on_completion = {}
 	}
 
-	cappadocia_mission_inv_17_task = {
+	cappadocia_mission_inv_19_task = { # A Greco-Persian World
 		icon = task_expansion
 
-		requires = {}
+		requires = { cappadocia_mission_inv_17_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_19A_task = { # Zoroastrian Cappadocia
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_18_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_19B_task = { # An Armenian Presence
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_16_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_20_task = { # A True Persian Army
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_17_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_21_task = { # A Tolerant Realm
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_19A_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_22_task = { # Outliving the Armenians
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_19B_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_23_task = { # A Pontic Expedition
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_19B_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_24_task = { # The New Achaemenids
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_23_task cappadocia_mission_inv_21_task cappadocia_mission_inv_20_task }
+		final = yes
+
+		allow = {}
+
+		on_completion = {}
+	}
+	cappadocia_mission_inv_25_task = { # A Reliable Partner
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_23_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	### Eumenes' Path
+	cappadocia_mission_inv_26_task = { # Heir to the Secretary of Alexander
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_1_task }
+		prevented_by = { cappadocia_mission_inv_2A_task cappadocia_mission_inv_2B_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_27_task = { # The Ariarathid Threat
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_26_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_28_task = { # Accepting the Persians
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_26_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_29_task = { # Revenge for Eumenes of Cardia
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_27_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_30_task = { # Securing the Anatolian Landmass
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_29_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_31_task = { # Stamping Out the Antigonid Realm
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_29_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_32_task = { # Competitors in Asia
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_30_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_33_task = { # The Spoils of Cilicia Pedias
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_31_task }
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_34_task = { # Alexander’s Empire
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_32_task }
+		final = yes
+
+		allow = {}
+
+		on_completion = {}
+	}
+
+	cappadocia_mission_inv_35_task = { # Alexander’s Vision
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_32_task }
 
 		allow = {}
 
@@ -260,7 +598,11 @@
 	cappadocia_mission_inv_1d_task = { #The Trading Hub of Mazaka
 		icon = task_economical
 
-		requires = {}
+		highlight = {
+			scope:province = {
+				province_id = 1799
+			}
+		}
 
 		allow = {
 			p:1799 = { #Mazaka
@@ -273,23 +615,24 @@
 			}
 		}
 
-		on_completion = { add_4_free_province_investments = yes
+		on_completion = { 
+			add_4_free_province_investments = yes
 		}
 	}
 	cappadocia_mission_inv_2d_task = {  #Cappadocian Cavalry
 
 		icon = task_economical
 
-		requires = {cappadocia_mission_inv_1d_task}
+		requires = { cappadocia_mission_inv_1d_task }
 
 		allow = {}
 
 		on_completion = {}
 	}   
-	cappadocia_mission_inv_3d_task = { #The Palace of Gazioura
+	cappadocia_mission_inv_3d_task = { #The Palace of Gazioura p:7998
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_1d_task}
+		requires = { cappadocia_mission_inv_1d_task }
 
 		allow = {}
 
@@ -299,7 +642,7 @@
 
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_2d_task}
+		requires = { cappadocia_mission_inv_2d_task }
 
 		allow = {}
 
@@ -308,7 +651,7 @@
 	cappadocia_mission_inv_5d_task = { #Expand the Underground Cities
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_2d_task cappadocia_mission_inv_3d_task  }
+		requires = { cappadocia_mission_inv_2d_task cappadocia_mission_inv_3d_task }
 
 		allow = {}
 
@@ -317,7 +660,7 @@
 	cappadocia_mission_inv_6d_task = { #Administration in Tyana
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_3d_task}
+		requires = { cappadocia_mission_inv_3d_task }
 
 		allow = {}
 
@@ -327,7 +670,7 @@
 
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_4d_task}
+		requires = { cappadocia_mission_inv_4d_task }
 
 		allow = {}
 
@@ -336,7 +679,7 @@
 	cappadocia_mission_inv_8d_task = { # A Cappadocian Coast
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_6d_task}
+		requires = { cappadocia_mission_inv_6d_task }
 
 		allow = {}
 
@@ -345,7 +688,7 @@
 	cappadocia_mission_inv_9d_task = { # Cilician Enterprise
 		icon = task_expansion
 
-		requires = {cappadocia_mission_inv_6d_task}
+		requires = { cappadocia_mission_inv_6d_task }
 
 		allow = {}
 

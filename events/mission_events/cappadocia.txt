@@ -707,7 +707,7 @@ cappadocia_event.13 = { # negotiate for better political standing; POV overlord
 		name = cappadocia_event.13.c
 		ai_chance = {
 			modifier = {
-				multiply = 0
+				factor = 0
 			}
 		}
 		reverse_add_opinion = {
@@ -751,7 +751,7 @@ cappadocia_event.14 = { # negotiate for permanent military support; POV overlord
 		name = cappadocia_event.14.b
 		ai_chance = {
 			modifier = {
-				multiply = 0
+				factor = 0
 			}
 		}
 		reverse_add_opinion = {
@@ -796,7 +796,7 @@ cappadocia_event.15 = { # negotiate for technological help; POV overlord
 		name = cappadocia_event.15.b
 		ai_chance = {
 			modifier = {
-				multiply = 0
+				factor = 0
 			}
 		}
 		reverse_add_opinion = {
@@ -911,7 +911,7 @@ cappadocia_event.17 = { # negotiate for economic development; POV overlord
 		name = cappadocia_event.17.b
 		ai_chance = {
 			modifier = {
-				multiply = 0
+				factor = 0
 			}
 		}
 		reverse_add_opinion = {
@@ -1133,5 +1133,595 @@ cappadocia_event.22 = { # ping back politcial standing, 2nd try
 	option = { # denied
 		name = cappadocia_event.22.b
 		add_manpower = 5 # sent back
+	}
+}
+
+cappadocia_event.23 = { # declare imperial challenge cb on overlord to take their place.
+	type = country_event
+	title = cappadocia_event.23.t
+	desc = cappadocia_event.23.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+	left_portrait = scope:rebelling_governor_char
+
+	immediate = {
+		if = {
+			limit = {
+				overlord = {
+					any_character = {
+						has_variable = cap_suppoorting_coup
+					}
+				}
+			}
+			overlord = {
+				random_character = {
+					limit = { has_variable = cap_suppoorting_coup }
+					save_scope_as = rebelling_governor_char
+				}
+			}
+		}
+		if = {
+			limit = {
+				exists = scope:rebelling_governor_char
+				scope:rebelling_governor_char = { #might have been removed...
+					is_governor = yes
+				}
+			}
+			custom_tooltip = gov_defected_cap_tt
+			scope:rebelling_governor_char = {
+				hidden_effect = {
+					governorship = {
+						every_governor_state = {
+							every_state_province = {
+								set_owned_by = root
+								save_scope_as = to_set_as_gov
+							}
+						}
+					}
+					remove_all_positions = yes
+					move_country = root
+					remove_character_modifier = foreign_citizen
+					set_as_minor_character = THIS
+					set_home_country = root
+					hidden_effect = {
+						if = {
+							limit = {
+								exists = scope:to_set_as_gov 
+							}
+							scope:to_set_governor = {
+								set_as_governor = scope:rebelling_governor_char
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	option = {
+		name = cappadocia_event.23.a
+		if = {
+			limit = {
+				overlord.current_ruler = {
+					has_variable = cap_risk_to_die
+					var:cap_risk_to_die > 0
+				}
+			}
+			if = {
+				limit = {
+					overlord = {
+						any_character = {
+							has_variable = cap_assasin_var
+							save_temporary_scope_as = jdgajda
+						}
+					}
+				}
+			}
+			overlord.current_ruler = {
+				death = {
+					death_reason = death_murder
+					killer = scope:jdgajda
+				}
+			}
+			scope:jdgajda = {
+				move_country = root
+				remove_variable = cap_assasin_var
+			}
+		}
+		declare_war_with_wargoal = {
+			war_goal = imperial_conquest_wargoal
+			target = overlord
+		}
+	}
+}
+
+cappadocia_event.24 = { # try to subvert a governor 
+	type = country_event
+	title = cappadocia_event.24.t
+	desc = cappadocia_event.24.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+	right_portrait = scope:cap_beguile_gov_char_1
+	right_portrait = scope:cap_beguile_gov_char_2
+
+	trigger = {
+		OR = {
+			region:cilicia_region = {
+				any_region_province = {
+					owner = overlord
+				}
+			}
+			region:phrygia_region = {
+				any_region_province = {
+					owner = overlord
+				}
+			}
+		}
+	}
+
+	immediate = {
+		overlord = {
+			random_owned_province = {
+				limit = {
+					OR = {
+						is_in_region = phrygia_region
+						is_in_region = cilicia_region
+					}
+				}
+				governor = {
+					save_scope_as = cap_beguile_gov_char_1
+				}
+			}
+			random_owned_province = {
+				limit = {
+					OR = {
+						is_in_region = phrygia_region
+						is_in_region = cilicia_region
+					}
+					NOT = {
+						governor = scope:cap_beguile_gov_char_1
+					}
+				}
+				governor = {
+					save_scope_as = cap_beguile_gov_char_2
+				}
+			}
+		}
+	}
+
+	option = { # try to sway gov 1
+		name = cappadocia_event.24.a
+		trigger_event = {
+			id = cappadocia_event.25
+			days = { 7 21 }
+		}
+		#add_political_influence = -25
+	}
+
+	option = { # try to sway gov 2
+		name = cappadocia_event.24.b
+		trigger_event = {
+			id = cappadocia_event.26
+			days = { 7 21 }
+		}
+		#add_political_influence = -25
+	}
+
+	option = { # ignore, we can do it alone
+		name = cappadocia_event.24.c
+	}
+}
+
+cappadocia_event.25 = { # bribe first governor (you have to chose which one in the beginning)
+	type = country_event
+	title = cappadocia_event.25.t
+	desc = cappadocia_event.25.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+	right_portrait = scope:cap_beguile_gov_char_1
+
+	option = { # bribe
+		name = cappadocia_event.25.a
+		add_treasury = {
+			subtract = has_monthly_income
+		}
+		scope:cap_beguile_gov_char_1 = {
+			add_gold = root.has_monthly_income
+		}
+	}
+
+	option = { # promise favours
+		name = cappadocia_event.25.b
+		add_political_influence = -25
+	}
+
+	after = {
+		trigger_event = {
+			id = cappadocia_event.27
+			days = { 7 21 }
+		}
+	}
+}
+
+cappadocia_event.26 = { # bribe second governor (you have to chose which one in the beginning)
+	type = country_event
+	title = cappadocia_event.26.t
+	desc = cappadocia_event.26.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+	right_portrait = scope:cap_beguile_gov_char_2
+
+	option = { # bribe
+		name = cappadocia_event.26.a
+		add_treasury = {
+			subtract = has_monthly_income
+		}
+		scope:cap_beguile_gov_char_2 = {
+			add_gold = root.has_monthly_income
+		}
+	}
+
+	option = { # promise favours
+		name = cappadocia_event.26.b
+		add_political_influence = -25
+	}
+
+	after = {
+		trigger_event = {
+			id = cappadocia_event.28
+			days = { 7 21 }
+		}
+	}
+}
+
+cappadocia_event.27 = { # char's answer
+	type = country_event
+	title = cappadocia_event.27.t
+	desc = cappadocia_event.27.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+	right_portrait = scope:cap_beguile_gov_char_1
+
+	immediate = {
+		random = {
+			chance = scope:cap_beguile_gov_char_1.loyalty # the more loyal he is, the more likely he is to demand extra stuff
+			set_variable = demands_extra_stuff_var
+		}
+	}
+
+	option = { # deal done
+		name = cappadocia_event.27.a
+		trigger = {
+			NOT = {
+				has_variable = demands_extra_stuff_var
+			}
+		}
+		scope:cap_beguile_gov_char_1 = {
+			set_variable = cap_suppoorting_coup
+		}
+	}
+
+	option = { # he demands extra stuff, pay him extra
+		name = cappadocia_event.27.b
+		trigger = {
+			has_variable = demands_extra_stuff_var
+		}
+	}
+
+	option = { # he demands extra stuff, don't pay him extra
+		name = cappadocia_event.27.c
+		trigger = {
+			has_variable = demands_extra_stuff_var
+		}
+	}
+
+	after = {
+		if = {
+			limit = {
+				has_variable = demands_extra_stuff_var
+			}
+			remove_variable = demands_extra_stuff_var
+		}
+		trigger_event = {
+			id = cappadocia_event.29
+			days = { 7 21 }
+		}
+	}
+}
+
+cappadocia_event.28 = { # char's answer
+	type = country_event
+	title = cappadocia_event.28.t
+	desc = cappadocia_event.28.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+	right_portrait = scope:cap_beguile_gov_char_2
+
+	immediate = {
+		random = {
+			chance = scope:cap_beguile_gov_char_2.loyalty # the more loyal he is, the more likely he is to demand extra stuff
+			set_variable = demands_extra_stuff_var
+		}
+	}
+
+	option = { # deal done
+		name = cappadocia_event.28.a
+		trigger = {
+			NOT = {
+				has_variable = demands_extra_stuff_var
+			}
+		}
+		scope:cap_beguile_gov_char_2 = {
+			set_variable = cap_suppoorting_coup
+		}
+	}
+
+	option = { # he demands extra stuff, pay him extra
+		name = cappadocia_event.28.b
+		trigger = {
+			has_variable = demands_extra_stuff_var
+		}
+	}
+
+	option = { # he demands extra stuff, don't pay him extra
+		name = cappadocia_event.28.c
+		trigger = {
+			has_variable = demands_extra_stuff_var
+		}
+	}
+
+	after = {
+		if = {
+			limit = {
+				has_variable = demands_extra_stuff_var
+			}
+			remove_variable = demands_extra_stuff_var
+		}
+		trigger_event = {
+			id = cappadocia_event.30
+			days = { 7 21 }
+		}
+	}
+}
+
+cappadocia_event.29 = {
+	type = country_event
+	title = cappadocia_event.29.t
+	desc = cappadocia_event.29.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+	right_portrait = scope:cap_beguile_gov_char_1
+
+	trigger = {
+		scope:cap_beguile_gov_char_1 = {
+			NOT = {
+				has_variable = cap_suppoorting_coup
+			}
+		}
+	}
+
+	## Maybe add a failure %? Idk, I wouldn't like it, but would add realism...
+
+	option = { #
+		name = cappadocia_event.29.a
+		scope:cap_beguile_gov_char_1 = {
+			set_variable = cap_suppoorting_coup
+		}
+	}
+}
+
+cappadocia_event.30 = {
+	type = country_event
+	title = cappadocia_event.30.t
+	desc = cappadocia_event.30.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+	right_portrait = scope:cap_beguile_gov_char_2
+
+	trigger = {
+		scope:cap_beguile_gov_char_2 = {
+			NOT = {
+				has_variable = cap_suppoorting_coup
+			}
+		}
+	}
+
+	## Maybe add a failure %? Idk, I wouldn't like it, but would add realism...
+
+	option = { #
+		name = cappadocia_event.29.a
+		scope:cap_beguile_gov_char_2 = {
+			set_variable = cap_suppoorting_coup
+		}
+	}
+}
+
+cappadocia_event.31 = {
+	type = country_event
+	title = cappadocia_event.31.t
+	desc = cappadocia_event.31.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+
+	option = { # try
+		name = cappadocia_event.31.a
+		trigger_event = {
+			id = cappadocia_event.32
+		}
+		add_treasury = -250
+	}
+
+	option = { # try not to
+		name = cappadocia_event.31.b
+	}
+}
+
+cappadocia_event.32 = {
+	type = country_event
+	title = cappadocia_event.32.t
+	desc = cappadocia_event.32.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+	left_portrait = scope:cap_martial_assassin
+	left_portrait = scope:cap_charisma_assassin
+
+	immediate = {
+		hidden_effect = {
+			create_character = {
+				female = no
+				add_martial = 4
+				save_scope_as = cap_martial_assassin
+			}
+		}
+		hidden_effect = {
+			create_character = {
+				female = yes
+				add_charisma = 4
+				save_scope_as = cap_charisma_assassin
+			}
+		}
+	}
+
+	option = { # send char 1 (martial)
+		name = cappadocia_event.32.a
+		custom_tooltip = cap_martial_assination_tt
+		hidden_effect = {
+			overlord.current_ruler = {
+				set_variable = {
+					name = cap_risk_to_die
+					value = {
+						value = scope:cap_martial_assassin.martial
+						subtract = this.martial
+					}
+				}
+			}
+			scope:cap_martial_assassin = {
+				move_country = overlord
+				set_variable = cap_assasin_var
+			}
+		}
+	}
+
+	option = { # send char 2 (charisma)
+		name = cappadocia_event.32.b
+		custom_tooltip = cap_charisma_assination_tt
+		hidden_effect = {
+			overlord.current_ruler = {
+				set_variable = {
+					name = cap_risk_to_die
+					value = {
+						value = scope:cap_charisma_assassin.charisma
+						subtract = this.charisma
+					}
+				}
+			}
+			scope:cap_charisma_assassin = {
+				move_country = overlord
+				set_variable = cap_assasin_var
+			}
+		}
+	}
+
+	after = { # follow up events modifying the chance
+		trigger_event = {
+			id = cappadocia_event.33
+			days = { 21 49 }
+		}
+	}
+}
+
+cappadocia_event.33 = {
+	type = country_event
+	title = cappadocia_event.33.t
+	desc = cappadocia_event.33.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = overlord.current_ruler
+	left_portrait = scope:cap_martial_assassin
+	left_portrait = scope:cap_charisma_assassin
+
+	option = { # martial option
+		name = cappadocia_event.33.a
+		trigger = {
+			scope:cap_martial_assassin = {
+				has_variable = cap_assasin_var
+			}
+		}
+		add_treasury = -50
+		overlord.current_ruler = {
+			if = {
+				limit = {
+					has_variable = cap_risk_to_die
+				}
+				change_variable = {
+					name = cap_risk_to_die
+					add = 2
+				}
+			}
+		}
+	}
+
+	option = { # charisma option
+		name = cappadocia_event.33.b
+		trigger = {
+			scope:cap_charisma_assassin = {
+				has_variable = cap_assasin_var
+			}
+		}
+		add_political_influence = -15
+		overlord.current_ruler = {
+			if = {
+				limit = {
+					has_variable = cap_risk_to_die
+				}
+				change_variable = {
+					name = cap_risk_to_die
+					add = 2
+				}
+			}
+		}
+	}
+
+	option = { # do nothing
+		name = cappadocia_event.33.c
+	}
+
+	after = { 
+		random_list = {
+			10 = {
+				trigger_event = { #set back
+					id = cappadocia_event.34
+					days = { 14 32 }
+				}
+			}
+			10 = {
+				trigger_event = { # setback that can be mitigated
+					id = cappadocia_event.35
+					days = { 14 32 }
+				}
+			}
+			5 = {} # nothing happening
+		}
 	}
 }

@@ -1,5 +1,6 @@
 ﻿namespace = cappadocia_event
 
+# Loyalty Path
 cappadocia_event.1 = { # eumenes' kids start rebellion
 	type = country_event
 	title = cappadocia_event.1.t
@@ -56,6 +57,7 @@ cappadocia_event.1 = { # eumenes' kids start rebellion
 				change_country_adjective = cappadocia_rebellion_adj
 				save_scope_as = eumenid_rebellion_scope
 				change_country_color = eumenid_blue
+				change_country_flag = EUMENID_FLAG
 			}
 			p:1954 = { # Garsaura
 				set_owned_by = scope:eumenid_rebellion_scope
@@ -116,6 +118,10 @@ cappadocia_event.1 = { # eumenes' kids start rebellion
 				id = cappadocia_event.5
 				days = 7
 			}
+		}
+		add_country_modifier = {
+			name = dealing_with_eumenes
+			duration = 3650 
 		}
 	}
 }
@@ -371,6 +377,7 @@ cappadocia_event.7 = { # Ariarathes tries to seize the throne
 						adjective = "ARI_REB_ADJECTIVE"
 						set_country_culture = persian
 						set_country_religion = zoroaster
+						change_country_color = ariarathid_color
 					}
 					set_country_heritage = cappadocian_heritage
 					save_scope_as = ariarathes_rebellion_scope
@@ -1919,14 +1926,20 @@ cappadocia_event.39 = { # ping overlord vassal wants diplo freedom
 	option = { # if you want freedom, you will need to fight for it
 		name = cappadocia_event.39.a 
 		c:CAP = {
-			set_variable = overlord_war_independence_var
+			set_variable = { # so that I don't have to use a removal effect
+				name = overlord_war_independence_var
+				days = 730 # 2 years
+			}
 		}
 	}
 
 	option = { # we could use an ally / war would be less than ideal rn
 		name = cappadocia_event.39.b 
 		c:CAP = {
-			set_variable = overlord_diplo_independence_var
+			set_variable = { # so that I don't have to use a removal effect
+				name = overlord_diplo_independence_var
+				days = 730 # 2 years
+			}
 		}
 	}
 
@@ -2014,5 +2027,522 @@ cappadocia_event.42 = { # flavor event for hegemon of anatolia
 		add_political_influence = 50
 		add_military_experience = 100
 		add_2_free_province_investments = yes
+	}
+}
+
+# Persian Branch from here on
+
+cappadocia_event.43 = { # Ariarathes' Rebellion; you take over
+	type = country_event
+	title = cappadocia_event.43.t
+	desc = cappadocia_event.43.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = char:50
+
+	immediate = {
+		hidden_effect = {
+			char:50 = {
+				save_scope_as = new_ruler
+				move_country = root
+				remove_character_modifier = foreign_citizen
+			}
+		}
+	}
+
+	option = {
+		name = cappadocia_event.43.a
+		switch_player_country_effect = {
+			NEW_NAME = ARI_REB_NAME
+            NEW_ADJECTIVE = ARI_REB_ADJECTIVE
+            NEW_GOVERNMENT = aristocratic_monarchy
+            NEW_COLOR = ariarathid_color
+            NEW_RELIGION = zoroaster
+            NEW_CULTURE = persian
+            NEW_FLAG = ARI_FLAG
+            NEW_TAG = ARI
+            NEW_HERITAGE = cappadocian_heritage
+            OLD_COUNTRY_COLOR = bharatavarsha_orange_color
+            OLD_COUNTRY_NAME = CAP
+            OLD_COUNTRY_ADJ = CAP_ADJ
+            OLD_COUNTRY_FLAG = CAP
+            OLD_COUNTRY_HERITAGE = cappadocian_heritage
+            OLD_COUNTRY_CULTURE = macedonian
+            OLD_COUNTRY_RELIGION = roman_pantheon
+            OLD_TAG = CAP
+		}
+		add_country_modifier = {
+			name = support_from_armenia
+			duration = 1825 # 5 years; mostly there to finance the army you just got
+		}
+		hidden_effect = { # to adjust the territory from the effect
+			area:cappadocia_melitene_area = {
+				every_area_province = {
+					limit = {
+						owner = scope:old_country
+					}
+					set_owned_by = scope:new_country
+				}
+			}
+			create_unit = {
+				navy = no
+				location = capital_scope
+				while = {
+					count = 6
+					add_subunit = heavy_infantry
+				}
+				while = {
+					count = 4
+					add_subunit = light_cavalry
+				}
+				while = {
+					count = 2
+					add_subunit = supply_train
+				}
+				add_food = 50
+				add_morale = 2
+			}
+			if = {
+				limit = {
+					any_owned_province = {
+						is_in_area = cappadocia_melitene_area
+					}
+				}
+				scope:new_country = {
+					every_owned_province = {
+						limit = {
+							NOT = {
+								is_in_area = cappadocia_melitene_area
+							}
+							set_owned_by = scope:old_country
+						}
+					}
+				}
+				if = {
+					limit = {
+						owns = 1854 # Melitene
+					}
+					set_capital = p:1854
+				}
+			}
+		}
+		declare_war_with_wargoal = {
+			war_goal = imperial_conquest_wargoal
+			target = scope:old_country
+		}
+		every_current_war = {
+			limit = {
+				any_war_attacker = scope:new_country
+			}
+			c:ARM = {
+				add_to_war = PREV.PREV
+				attacker = yes
+				leader = no
+			}
+		}
+	}
+}
+
+cappadocia_event.44 = { # appease armenia or go your own way
+	type = country_event
+	title = cappadocia_event.44.t
+	desc = cappadocia_event.44.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARM.current_ruler
+
+	trigger = {
+		c:ARM = {
+			has_land = yes
+		}
+	}
+
+	option = { # appease Armenia
+		name = cappadocia_event.44.a
+		trigger_event = {
+			id = cappadocia_event.45 # how to pay back
+		}
+	}
+
+	option = { # stride forward alone
+		name = cappadocia_event.44.b
+		custom_tooltip = cap_arm_conflict_tt
+		c:ARM = {
+			trigger_event = {
+				id = cappadocia_event.50
+				days = 7
+			}
+		}
+	}
+}
+
+cappadocia_event.45 = { # appease armenia: how?
+	type = country_event
+	title = cappadocia_event.45.t
+	desc = cappadocia_event.45.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARM.current_ruler
+
+	option = { #
+		name = cappadocia_event.45.a
+		add_treasury = -500
+		c:ARM = {
+			set_variable = { # so that I don't have to use a removal effect
+				name = cap_offer_money_var
+				days = 730
+			}
+		}
+	}
+
+	option = { # 
+		name = cappadocia_event.45.b
+		add_political_influence = -50
+		c:ARM = {
+			set_variable = { # so that I don't have to use a removal effect
+				name = cap_offer_influence_var
+				days = 730
+			}
+		}
+	}
+
+	option = { #
+		name = cappadocia_event.45.c
+		custom_tooltip = cap_armenia_offer_subject_tt
+		c:ARM = {
+			set_variable = { # so that I don't have to use a removal effect
+				name = cap_offer_subject_var
+				days = 730
+			}
+		}
+	}
+
+	after = {
+		c:ARM = {
+			trigger_event = {
+				id = cappadocia_event.46
+				days = 7
+			}
+		}
+	}
+}
+
+cappadocia_event.46 = { # ping armenia
+	type = country_event
+	title = cappadocia_event.45.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = { has_variable = cap_offer_money_var }
+				desc = cappadocia_event.45.desc_1
+			}
+			triggered_desc = {
+				trigger = { has_variable = cap_offer_influence_var }
+				desc = cappadocia_event.45.desc_2
+			}
+			triggered_desc = {
+				trigger = { has_variable = cap_offer_subject_var }
+				desc = cappadocia_event.45.desc_3
+			}
+		}
+	}
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARI.current_ruler
+
+	immediate = {
+		if = {
+			limit = {
+				has_variable = cap_offer_money_var
+			}
+			add_treasury = 500
+		}
+		else_if = {
+			limit = {
+				has_variable = cap_offer_influence_var
+			}
+			add_political_influence = 50
+		}
+	}
+
+	option = { # accept cash
+		name = cappadocia_event.46.a
+		trigger = { has_variable = cap_offer_money_var }
+	}
+
+	option = { # demand more
+		name = cappadocia_event.46.b
+		trigger = { has_variable = cap_offer_money_var }
+		set_variable = {
+			name = demand_more_from_cap
+			days = 730
+		}
+	}
+
+	option = { # accept PI
+		name = cappadocia_event.46.c
+		trigger = { has_variable = cap_offer_influence_var }
+	}
+
+	option = { # demand more
+		name = cappadocia_event.46.d
+		trigger = { has_variable = cap_offer_influence_var }
+		set_variable = {
+			name = demand_more_from_cap
+			days = 730
+		}
+	}
+
+	option = { # accept offer of vassalisation
+		name = cappadocia_event.46.e
+		trigger = { has_variable = cap_offer_subject_var }
+		make_subject = {
+			target = c:ARI
+			type = satrapy
+		}
+	}
+
+	option = { # refuse offer of vassalisation
+		name = cappadocia_event.46.f
+		trigger = { has_variable = cap_offer_subject_var }
+		set_variable = {
+			name = demand_more_from_cap
+			days = 730
+		}
+	}
+
+	after = {
+		c:ARI = {
+			trigger_event = {
+				id = cappadocia_event.47
+				days = 7
+			}
+		}
+	}
+}
+
+cappadocia_event.47 = { # ping back if accepted or not
+	type = country_event
+	title = cappadocia_event.47.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = { has_variable = demand_more_from_cap }
+				desc = cappadocia_event.47.desc_1
+			}
+			triggered_desc = {
+				trigger = { always = yes }
+				desc = cappadocia_event.47.desc_2
+			}
+		}
+	}
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARM.current_ruler
+
+	option = { # send more
+		name = cappadocia_event.47.a
+		trigger = { has_variable = demand_more_from_cap }
+		add_manpower = -10
+		c:ARM = {
+			trigger_event = {
+				id = cappadocia_event.48
+				days = 7
+			}
+		}
+	}
+
+	option = { # do not send more
+		name = cappadocia_event.47.b
+		trigger = { has_variable = demand_more_from_cap }
+		custom_tooltip = cap_arm_conflict_tt
+		reverse_add_opinion = {
+			modifier = broken_promise
+			target = c:ARM
+		}
+		set_variable = {
+			name = cap_did_not_send_more
+			days = 730
+		}
+		c:ARM = {
+			trigger_event = {
+				id = cappadocia_event.48
+				days = 7
+			}
+		}
+	}
+
+	option = { # all done
+		name = cappadocia_event.47.c
+		custom_tooltip = cap_armenia_debt_settled
+		trigger = { 
+			NOT = { 
+				has_variable = demand_more_from_cap 
+			} 
+		}
+	}
+}
+
+cappadocia_event.48 = { #ping abck to c:ARM
+	type = country_event
+	title = cappadocia_event.48.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = { has_variable = cap_did_not_send_more }
+				desc = cappadocia_event.48.desc_1
+			}
+			triggered_desc = {
+				trigger = { always = yes }
+				desc = cappadocia_event.48.desc_2
+			}
+		}
+	}
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARI.current_ruler
+
+	option = { # not got stuff
+		name = cappadocia_event.48.a
+		trigger = { has_variable = cap_did_not_send_more }
+		custom_tooltip = cap_arm_conflict_tt
+		# add_opinion = { # already set in previous event
+		# 	modifier = broken_promise
+		# 	target = c:ARI
+		# }
+	}
+
+	option = { #got stuff
+		name = cappadocia_event.48.b
+		trigger = {
+			NOT = {
+				has_variable = cap_did_not_send_more
+			}
+		}
+		add_manpower = 10
+	}
+
+	after = {
+		c:ARI = {
+			trigger_event = {
+				id = cappadocia_event.49
+				days  = 7
+			}
+		}
+	}
+}
+
+cappadocia_event.49 = { # ping back to ari again
+	type = country_event
+	title = cappadocia_event.49.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = { c:ARM = { has_variable = cap_did_not_send_more } }
+				desc = cappadocia_event.49.desc_1
+			}
+			triggered_desc = {
+				trigger = { always = yes }
+				desc = cappadocia_event.49.desc_2
+			}
+		}
+	}
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARM.current_ruler
+
+	option = {
+		name = cappadocia_event.49.a
+		trigger = {
+			c:ARM = {
+				has_variable = cap_did_not_send_more
+			}
+		}
+		custom_tooltip = cap_arm_conflict_tt
+		c:ARM = {
+			trigger_event = {
+				id = cappadocia_event.50
+				days = 7
+			}
+		}
+	}
+
+	option = {
+		name = cappadocia_event.49.b
+		trigger = {
+			c:ARM = {
+				NOT = {
+					has_variable = cap_did_not_send_more
+				}
+			}
+		}
+		custom_tooltip = cap_armenia_debt_settled
+	}
+}
+
+cappadocia_event.50 = { #POV armenia: decalre war or not?
+	type = country_event
+	title = cappadocia_event.50.t
+	desc = cappadocia_event.50.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARI.current_ruler
+
+	option = { # declare war (demand submission) / ultimatum
+		name = cappadocia_event.50.a
+		custom_tooltip = cap_arm_conflict_tt
+		c:ARI = {
+			trigger_event = {
+				id = cappadocia_event.51
+				days = 7
+			}
+		}
+	}
+
+	option = { # do not send ultimatum
+		name = cappadocia_event.50.b
+	}
+}
+
+cappadocia_event.51 = {
+	type = country_event
+	title = cappadocia_event.51.t
+	desc = cappadocia_event.51.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARM.current_ruler
+
+	option = { # submit
+		name = cappadocia_event.51.a
+		c:ARM = {
+			make_subject = {
+				target = root
+				type = satrapy
+			}
+		}
+		add_country_modifier = {
+			name = enforced_loyalty
+			duration = 9125 # 25 years
+		}
+	}
+
+	option = { # fight
+		name = cappadocia_event.51.b
+		c:ARM = {
+			declare_war_with_wargoal = {
+				war_goal = conquer_wargoal
+				province = root.capital_scope
+				target = root
+			}
+		}
 	}
 }

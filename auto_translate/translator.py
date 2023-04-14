@@ -121,7 +121,7 @@ def increment_finished(finished: multiprocessing.context, finished_lock: multipr
 def main(source: str, target: str):
     all_files: list[tuple] = get_all_files(source, target)
     with cft.ProcessPoolExecutor(
-            max_workers=8
+            max_workers=4
     ) as pool, multiprocessing.Manager() as manager:
         _queue = manager.Queue()
         _progress = manager.Queue()

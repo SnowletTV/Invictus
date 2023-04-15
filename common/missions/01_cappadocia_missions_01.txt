@@ -157,7 +157,7 @@
 		allow = {
 			manpower >= 10
 			treasury >= 500
-			overlord = {
+			hidden:overlord = {
 				has_civil_war = no
 			}
 		}
@@ -650,10 +650,6 @@
 				technology = civic_tech
 				value = 15
 			}
-			set_primary_culture_cleanup_effect = {
-				NEW_PRIMARY_CULTURE = pasargadi
-				MAKE_OLD_CULTURE_INTEGRATED = yes
-			}
 		}
 	}
 
@@ -665,12 +661,18 @@
 		allow = {
 			is_subject_of = c:SEL
 			any_integrated_culture = {
-				this.culture.culture_group = culture_group:persia
-				country_culture_pop_count < 50
+				custom_tooltip = {
+					text = cap_pers_cult_tt
+					this.culture.culture_group = culture_group:persia
+					country_culture_pop_count >= 50
+				}
 			}
 			any_integrated_culture = {
-				this.culture.culture_group = culture_group:hellenic
-				country_culture_pop_count < 50
+				custom_tooltip = {
+					text = cap_hell_cult_tt
+					this.culture.culture_group = culture_group:hellenic
+					country_culture_pop_count >= 50
+				}
 			}
 		}
 
@@ -702,9 +704,44 @@
 
 		requires = { cappadocia_mission_inv_18_task }
 
-		allow = {}
+		allow = {
+			political_influence >= pop_happiness_political_influence_svalue
+			any_owned_province = {
+				any_pops_in_province = {
+					pop_hapiness >= 0.5
+					NOT = { pop_religion = root.religion }
+				}
+			}
+			capital_scope = {
+				dominant_province_religion = root.religion
+				hidden:state = { has_state_modifier = state_improvement_religious }
+			}
+		}
 
-		on_completion = {}
+		on_completion = {
+			add_political_influence = {
+				value = pop_happiness_political_influence_svalue
+				multiply = -1
+			}
+			add_country_modifier = {
+				name = zoro_cap
+				duration = -1
+			}
+			custom_tooltip = pop_happy_convert_tt
+			hidden_effect = {
+				every_owned_province = {
+					every_pops_in_province = {
+						limit = {
+							pop_hapiness >= 0.5
+							NOT = {
+								pop_religion = root.religion
+							}
+						}
+						set_pop_religion = root.religion
+					}
+				}
+			}
+		}
 	}
 
 	cappadocia_mission_inv_19B_task = { # An Armenian Presence
@@ -712,20 +749,87 @@
 
 		requires = { cappadocia_mission_inv_16_task }
 
-		allow = {}
+		allow = {
+			any_integrated_culture = {
+				is_culture = armenian
+				has_pop_type_right = nobles
+				has_country_culture_modifier = honor_guard
+			}
+			any_integrated_culture = {
+				is_culture = root.culture
+				has_country_culture_modifier = citizenship_by_adoption
+			}
+		}
 
-		on_completion = {}
+		on_completion = {
+			add_innovation = 4
+			custom_tooltip = armenian_pops_increase_tt
+			hidden_effect = {
+				while = {
+					count = 2
+					every_owned_province = {
+						limit = {
+							has_city_status = yes
+						}
+						define_pop = {
+							type = nobles
+							culture = armenian
+							religion = zoroaster
+						}
+					}
+					every_owned_province = {
+						limit = {
+							has_city_status = no
+						}
+						define_pop = {
+							type = citizen
+							culture = armenian
+							religion = zoroaster
+						}
+					}
+				}
+			}
+			create_character = {
+				culture = armenian
+				religion = zoroaster
+				female = no
+				hidden_effect = {
+					add_martial = 4
+					add_finesse = 4
+					add_trait = intelligent
+				}
+			}
+		}
 	}
 
 	cappadocia_mission_inv_20_task = { # A True Persian Army
-		icon = task_expansion
+	icon = task_expansion
 
-		requires = { cappadocia_mission_inv_17_task }
+	requires = { cappadocia_mission_inv_17_task }
 
-		allow = {}
-
-		on_completion = {}
+	allow = {
+		has_military_bonus = persian_bactrian_path_7
+		OR = {
+			has_law = work_for_the_best
+			has_law = standing_army_law
+		}
+		# any_army = {
+		# 	has_legion_trigger = yes
+		# 	legion = ROOT.capital_scope.governorship.legion
+		# }
+		capital_scope = {
+			num_of_military_building >= 3
+		}
 	}
+
+	on_completion = {
+		add_military_experience = 80
+		add_country_modifier = {
+			name = persian_army_cmod
+			duration = -1
+		}
+	}
+}
 
 	cappadocia_mission_inv_21_task = { # A Tolerant Realm
 		icon = task_expansion

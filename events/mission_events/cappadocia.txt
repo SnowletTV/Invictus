@@ -2849,3 +2849,281 @@ cappadocia_event.58 = { # Seleukid Ultimatum event (if not already vassal)
 		add_manpower = 20
 	}
 }
+
+cappadocia_event.59 = { # independence from armenia if subject
+	type = country_event
+	title = cappadocia_event.59.t
+	desc = cappadocia_event.59.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARM.current_ruler
+
+	option = { # independence
+		name = cappadocia_event.59.a
+		custom_tooltip = cap_arm_conflict_tt
+	}
+
+	option = { # also demand armenia_maior_area and armenio_minor_area
+		name = cappadocia_event.59.b
+		trigger = {
+			NOT = { has_variable = triggered_by_bypassed_var }
+		}
+		set_variable = {
+			name = wants_armenia_areas_var
+			days = 365 # so that I don't have to remove later on
+		}
+		custom_tooltip = cap_arm_conflict_tt
+		custom_tooltip = cap_arm_conflict_2_tt
+	}
+
+	option = { # actually, I don't want independence; only triggers if armenia doesn't hold armenia_maior_area and armenia_minor_area
+		name = cappadocia_event.59.c
+		trigger = {
+			has_variable = triggered_by_bypassed_var
+		}
+	}
+
+	after = {
+		if = {
+			limit = {
+				NOT = { has_variable = triggered_by_bypassed_var }
+			}
+			trigger_event = {
+				id = cappadocia_event.61
+				days = 30
+			}
+		}
+		else = {
+			remove_variable = triggered_by_bypassed_var
+		}
+	}
+}
+
+cappadocia_event.60 = { # demand armenia areas
+	type = country_event
+	title = cappadocia_event.60.t
+	desc = cappadocia_event.60.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARM.current_ruler
+
+	option = { # demand armenia_maior_area and armenio_minor_area
+		name = cappadocia_event.59.a
+		trigger = {
+			NOT = { has_variable = triggered_by_bypassed_var }
+		}
+		custom_tooltip = cap_arm_conflict_tt
+	}
+
+	option = { # diplo
+		name = cappadocia_event.59.c
+		trigger = {
+			alliance_with = c:ARM
+		}
+		custom_tooltip = option_alliance_tt
+		add_political_influence = -25
+		add_treasury = -100
+	}
+
+	after = {
+		c:ARM = {
+			trigger_event = {
+				id = cappadocia_event.61
+				days = 30
+			}
+		}
+		set_variable = {
+			name = wants_armenia_areas_var
+			days = 365 # so that I don't have to remove later on
+		}
+	}
+}
+
+cappadocia_event.61 = { # ping armenia about the demands
+	type = country_event
+	title = cappadocia_event.61.t
+	desc = cappadocia_event.61.desc
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARI.current_ruler
+
+	option = { # give independence
+		name = cappadocia_event.61.a
+	}
+
+	option = { # cede areas
+		name = cappadocia_event.61.b
+		trigger = {
+			c:ARI = { has_variable = wants_armenia_areas_var }
+		}
+	}
+
+	option = { # cede areas diplomatic
+		name = cappadocia_event.61.c
+		trigger = {
+			c:ARI = { 
+				has_variable = wants_armenia_areas_var 
+				alliance_with = root
+			}
+		}
+		add_political_influence = 25
+		add_treasury = 100
+
+		ai_chance = {
+			modifier = {
+				trigger = {
+					opinion = {
+						target = c:ARI
+						value >= 100
+					}
+				}
+				add = 100
+			}
+		}
+	}
+
+	option = { # war!
+		name = cappadocia_event.61.d
+		custom_tooltip = cap_arm_conflict_tt
+		set_variable = {
+			name = cap_arm_war_it_is
+			days = 365
+		}
+	}
+
+	after = {
+		c:ARI = {
+			trigger_event = {
+				id = cappadocia_event.62
+				days = 30
+			}
+		}
+	}
+}
+
+cappadocia_event.62 = {
+	type = country_event
+	title = cappadocia_event.62.t
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = { # indepedence w/o areas
+					c:ARM = { 
+						NOT = { has_variable = cap_arm_war_it_is } 
+					}
+					NOT = { has_variable = wants_armenia_areas_var }
+				}
+				desc = cappadocia_event.62.desc_1
+			}
+			triggered_desc = {
+				trigger = { # areas
+					c:ARM = { 
+						NOT = { has_variable = cap_arm_war_it_is } 
+					}
+					has_variable = wants_armenia_areas_var
+				}
+				desc = cappadocia_event.62.desc_2
+			}
+			triggered_desc = { # war
+				trigger = {
+					c:ARM = { has_variable = cap_arm_war_it_is }
+				}
+				desc = cappadocia_event.62.desc_3
+			}
+		}
+	}
+	picture = successors
+
+	left_portrait = current_ruler
+	right_portrait = c:ARM.current_ruler
+
+	option = {
+		name = cappadocia_event.62.a
+		trigger = { # indepedence w/o areas
+			c:ARM = { 
+				NOT = { has_variable = cap_arm_war_it_is } 
+			}
+			NOT = { has_variable = wants_armenia_areas_var }
+		}
+		if = {
+			limit = {
+				is_subject_of = c:ARM
+			}
+			c:ARM = {
+				release_subject = root
+			}
+		}
+	}
+
+	option = {
+		name = cappadocia_event.62.a
+		trigger = { # got areas
+			c:ARM = { 
+				NOT = { has_variable = cap_arm_war_it_is } 
+			}
+			has_variable = wants_armenia_areas_var
+		}
+		if = {
+			limit = {
+				is_subject_of = c:ARM
+			}
+			c:ARM = {
+				release_subject = root
+			}
+		}
+		c:ARM = {
+			every_owned_province = {
+				limit = {
+					OR = {
+						is_in_area = armenia_minor_area
+						is_in_area = armenia_maior_area
+					}
+				}
+				set_owned_by = root
+			}
+		}
+	}
+
+	option = {
+		name = cappadocia_event.62.a
+		trigger = { # war
+			c:ARM = { has_variable = cap_arm_war_it_is }
+		}
+		if = {
+			limit = {
+				is_subject_of = c:ARM
+			}
+			c:ARM = {
+				release_subject = root
+			}
+		}
+		else_if = {
+			limit = {
+				alliance_with = c:ARM 
+			}
+			break_alliance = c:ARM
+		}
+		every_current_war = {
+			remove_from_war = ROOT
+		}
+		c:ARM = {
+			random_owned_province = {
+				limit = {
+					OR = {
+						is_in_area = armenia_minor_area
+						is_in_area = armenia_maior_area
+					}
+				}
+				save_scope_as = cap_arm_war_goal
+			}
+		}
+		declare_war_with_wargoal = {
+			war_goal = conquer_wargoal
+			target = c:ARM
+			province = scope:cap_arm_war_goal
+		}
+	}
+}

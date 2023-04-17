@@ -1,0 +1,1051 @@
+﻿egypt_mission_1_sea = { # Thalassocracy
+    header = "mission_image_egypt"
+    icon = "egypt_2"
+
+    repeatable = no
+
+    chance = {
+		factor = 10
+	}
+
+	potential = {
+        has_dlc = "Heirs of Alexander"
+		NOT = { has_variable = egypt_mission_1_sea }
+		is_subject = no
+		tag = EGY
+		is_monarchy = yes
+		owns = 516
+        primary_culture = macedonian
+        exists = c:EGY.current_ruler
+        OR = {
+            AND = {
+                exists = fam:Lagid
+                c:EGY.current_ruler.family = fam:Lagid
+            }
+            current_ruler = { has_trait = argeads }
+            current_ruler = { has_trait = lagids }
+        }
+        OR = {
+            has_completed_mission = egypt_mission_3_empire
+            has_completed_mission = egypt_mission_4_border
+        }
+	}
+
+    abort = {
+        OR = {
+            is_monarchy = no
+            NOR = {
+                OR = {
+                    current_ruler = { has_trait = argeads }
+                    current_ruler = { has_trait = lagids }
+                    c:EGY.current_ruler.family = fam:Lagid 
+                }
+                primary_culture = macedonian  
+            }
+            ai_mission_back_out_trigger = yes
+        }
+    }
+
+	on_start = {
+        start_mission_ai_effect = yes
+		save_scope_as = me_egypt_scope
+	}
+
+	on_abort = {
+		custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+			name = egypt_mission_1_sea
+			days = 7300
+		}
+	}
+
+	on_completion = {
+		complete_mission_effect = yes
+        trigger_event = { id = me_egypt_1_sea.36 }
+	}
+
+    egypt_mission_1_sea_task_1 = { # Alexandrian Shipyards      
+        icon = "task_expansion"
+
+        highlight = {
+			scope:province = {
+				province_id = 516
+			}
+		}
+
+        allow = {
+        	trigger_if = {
+        	   limit = {
+        			NOT = { owns = 516 }
+        		}
+        	   owns = 516
+        	}
+            trigger_if = {
+                limit = { is_ai = no }
+            	has_military_bonus = greek_states_path_5
+            	hidden:p:516 = {
+                    custom_tooltip = {
+                        text = egypt_mission_1_sea_task_1.tt
+                        num_of_port_building >= egypt_mission_1_sea_task_1_foundry_total
+                    }              
+            	}
+            	hidden:p:516.state = {
+                    custom_tooltip = {
+                        text = egypt_mission_1_sea_task_1_trigger_1
+    				    trade_good_surplus = {
+              		        target = wood
+                            value >= egypt_mission_1_sea_task_1_trade_total
+                        }
+                    }
+                }
+            }
+            trigger_else = { treasury > 600 }
+        }
+
+        on_completion = {
+            if = {
+                limit = { is_ai = yes }
+                add_treasury = -300
+                p:516 = {
+                    while = {
+                        limit = { num_of_port_building < egypt_mission_1_sea_task_1_foundry_total }
+                        if = {
+                            limit = { free_building_slots < 1 }
+                            destroy_building_effect = yes
+                        }
+                        add_building_level = port_building
+                    }
+                }
+            }
+            trigger_event = { id = me_egypt_1_sea.16 }
+            show_as_tooltip = {
+                p:516 = {
+                    add_province_modifier = {
+                        name = alexandria_shipyard_modifier
+                        duration = -1
+                    }
+                }
+                custom_tooltip = me_egypt_1_sea.16.a.tt
+            }
+        }
+    }
+
+    egypt_mission_1_sea_task_2 = { #Safe Routes
+        icon = "task_conquest"
+
+        highlight = {
+            scope:province = {
+                owner = root
+                has_province_modifier = pirate_haven_modifier
+            }
+        }
+
+        allow = {
+        	trigger_if = {
+                limit = { is_ai = no }
+                has_law = antipiracy_edict
+                custom_tooltip = {
+                    text = egypt_mission_1_sea_task_2.tt
+                    any_owned_province = {
+                        has_province_modifier = pirate_haven_modifier
+                        count = egypt_mission_1_sea_task_2_pirates_total
+                    }
+            	}
+            }
+            trigger_else = {
+                treasury >= 600
+                political_influence >= 100
+            }
+        }
+
+        on_completion = {
+            if = {
+                limit = { is_ai = yes }
+                add_treasury = -300
+                add_political_influence = -50
+                if = {
+                    limit = {
+                        any_owned_province = { has_province_modifier = pirate_haven_modifier }
+                    }
+                    every_owned_province = {
+                        limit = { has_province_modifier = pirate_haven_modifier }
+                        remove_province_modifier = pirate_haven_modifier
+                    }
+                }
+                if = {
+                    limit = {
+                        NOT = { has_law = antipiracy_edict }
+                    }
+                    change_law = antipiracy_edict
+                }
+            }
+            trigger_event = {id = me_egypt_1_sea.17 }
+            show_as_tooltip = {
+                add_1_free_province_investments = yes
+                custom_tooltip = me_egypt_1_sea.17.a.tt
+            }
+        }
+    }
+
+    egypt_mission_1_sea_task_3 = { #The League of the Islanders
+        icon = "task_conquest"
+
+        highlight = {
+            scope:province = {
+                is_in_area = aegean_islands_area
+            }
+        }
+
+        allow = {
+        	owns_or_subject_owns_area = aegean_islands_area
+        }
+
+        on_completion = {                               
+            trigger_event = { id = me_egypt_1_sea.18 }
+            custom_tooltip = me_egypt_1_sea.18.a.tt
+       	}
+    }
+    
+    egypt_mission_1_sea_task_4 = { #Naval Power
+        icon = "task_expansion"
+
+        requires = { egypt_mission_1_sea_task_1 egypt_mission_1_sea_task_2 }
+
+        allow = {
+            trigger_if = {
+                limit = { is_ai = no }
+                custom_tooltip = {
+                    text = egypt_mission_1_sea_task_4_ship_trigger              
+                    num_of_ships >= egypt_mission_1_sea_task_4_ship_total
+                }
+                custom_tooltip = {  
+                    text = egypt_mission_1_sea_task_4_galley_trigger             
+                    num_of_unit_type = {               
+            	       type = mega_galley
+            	       value >= egypt_mission_1_sea_task_4_galley_total
+                    }
+            	}
+                custom_tooltip = {                  
+                    text = egypt_mission_1_sea_task_4_liburnian_trigger_1
+                    egy_liburnian_tracker_svalue <= egy_total_tracker_svalue
+                }
+            }
+            trigger_else = { num_of_ships > 120 }
+        }
+
+        on_completion = {
+            trigger_event = { id = me_egypt_1_sea.19 }
+            show_as_tooltip = {
+                add_country_modifier = { 
+                    name = "egyptian_fleet"
+                    duration = -1
+            	}
+           	    add_military_experience = 10
+            }
+        }
+    }
+    
+    egypt_mission_1_sea_task_5 = { #Protector of the Aegean Sea
+        icon = "task_political"
+
+        requires = { egypt_mission_1_sea_task_3 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 283
+                    province_id = 284
+                    province_id = 1974
+                    province_id = 7901
+                    province_id = 344
+                    AND = {
+                        OR = {
+                            owner = c:PRY
+                            is_subject_of = c:PRY
+                        }
+                        OR = {
+                            province_id = 356
+                            province_id = 420
+                            is_in_area = rhodope_area
+                            is_in_area = euboea_area
+                            is_in_area = central_greece_area
+                        }
+                    }
+                }
+            }
+        }
+
+        allow = {                
+            owns_or_subject_owns = 283
+            owns_or_subject_owns = 284
+            owns_or_subject_owns = 1974
+            owns_or_subject_owns = 7901
+            owns_or_subject_owns = 344
+            trigger_if = {
+                limit = { is_ai = no }
+                custom_tooltip = {
+                    text = egypt_mission_1_sea_task_5.tt.3
+                    p:344 = { is_port = yes }
+                }
+            }
+            trigger_else = { treasury > 100 }
+            trigger_if = {
+                limit = {
+                    c:PRY = { has_land = yes }
+                }
+                custom_tooltip = {              
+                    text = egypt_mission_1_sea_task_5.tt.1
+                    NOT = {
+                        p:356 = { owned_or_subject_owned = PRY }
+                        p:420 = { owned_or_subject_owned = PRY }
+                    }
+                }
+                custom_tooltip = {
+                    text = egypt_mission_1_sea_task_5.tt.2
+                    NOT = {
+                        area:rhodope_area = { 
+                            any_area_province = {
+                                owned_or_subject_owned = PRY
+                            }
+                        }
+                        area:euboea_area = { 
+                            any_area_province = {
+                                owned_or_subject_owned = PRY
+                            }
+                        }
+                        area:central_greece_area = { 
+                            any_area_province = {
+                                owned_or_subject_owned = PRY
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        on_completion = {
+            trigger_event = { id = me_egypt_1_sea.20 }
+            if = {
+                limit = {
+                    is_ai = yes
+                    p:344 = { is_port = no }
+                }
+                p:344 = {
+                    if = {
+                        limit = { free_building_slots < 1 }
+                        destroy_building_effect = yes
+                        add_building_level = port_building
+                    }
+                }
+            }
+            show_as_tooltip = {
+                p:1974 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = freemen
+                        }
+                        move_pop = p:515
+                    }
+                }
+                p:344 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = freemen
+                        }
+                        move_pop = p:515
+                    }
+                }
+                p:515 = {
+                    add_province_modifier = {
+                        name = "naukratis_immigration"
+                        duration = 7300
+                    }
+                }
+            }
+        }
+    }
+    
+    egypt_mission_1_sea_task_6 = { #Asian Harbors
+         icon = "task_political"
+
+         requires = { egypt_mission_1_sea_task_3 }
+
+         highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 1989
+                    province_id = 1973
+                    is_in_area = cyprus_area
+                }
+            }
+        }
+
+        allow = {                     
+            owns_or_subject_owns = 1989
+            owns_or_subject_owns = 1973
+            owns_or_subject_owns_area = cyprus_area
+        }
+
+         on_completion = {
+            trigger_event = { id = me_egypt_1_sea.21 }
+            show_as_tooltip = {
+                p:1973 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = freemen
+                        }
+                        move_pop = p:529
+                    }
+                }
+                p:334 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = citizen
+                        }
+                        move_pop = p:529
+                    }
+                }
+                p:529 = {
+                    add_province_modifier = {
+                        name = "kanopos_migration"
+                        duration = 7300
+                    }
+                }
+            }
+        }
+    }
+    
+    egypt_mission_1_sea_task_7 = { #A Greek Foothold
+        icon = "task_political"
+    
+        requires = { egypt_mission_1_sea_task_4 egypt_mission_1_sea_task_5 }
+
+        highlight = {
+            scope:province = {
+                province_id = 416
+            }
+        }
+    
+        allow = {
+            owns_or_subject_owns = 416
+            trigger_if = {
+                limit = {
+                    c:ATH = { has_land = yes }
+                }
+                hidden:c:ATH = { is_subject_of = root }
+            }
+        }
+
+        on_completion = {
+            trigger_event = { id = me_egypt_1_sea.22 }
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = "egyptian_philosophy_school"
+                    duration = 7300
+                }
+                p:416 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = nobles
+                        }
+                        move_pop = p:516
+                    }
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = citizen
+                        }
+                        move_pop = p:516
+                    }
+                }
+                p:516 = {
+                    add_province_modifier = {
+                        name = "alexandrinian_philosophy_school"
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+    
+    egypt_mission_1_sea_task_8 = { #Rhodian Court
+        icon = "task_diplomatic"
+    
+        requires = { egypt_mission_1_sea_task_15 }
+
+        duration = 365
+
+        monthly_on_action = egypt_mission_1_sea_task_8_pulse
+
+        highlight = {
+            scope:province = {
+                province_id = 266
+            }
+        }
+    
+        allow = {
+            treasury >= 200
+            trigger_if = {
+                limit = {
+                    NOT = { owns_or_subject_owns = 266 }
+                }
+                owns_or_subject_owns = 266
+            }
+        }
+
+        bypass = {
+            NOT = { owns_or_subject_owns = 266 }
+            has_variable = egypt_mission_1_sea_task_8_bypass_flag
+        }
+
+        on_start = {
+            trigger_event = { id = me_egypt_1_sea.12 }
+            set_variable = {
+                name = egypt_mission_1_sea_task_8_bypass_flag
+                days = 365
+            }
+        }
+
+        on_bypass = {
+            trigger_event = { id = me_egypt_1_sea.33 }
+        }
+    
+        on_completion = {
+            trigger_event = { id = me_egypt_1_sea.13 }
+            show_as_tooltip = {
+                p:266 = {
+                    add_province_modifier = {
+                        name = "rhodian_school_modifier"
+                        duration = 7300
+                    }
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = nobles
+                        }
+                        move_pop = p:516
+                    }
+                }
+                if = {
+                    limit = {
+                        NOT = { owns = p:266 }
+                    }
+                    p:266 = {set_owned_by = root }
+                }
+            }
+        }
+    }
+    
+    egypt_mission_1_sea_task_9 = { #Cyprian Docks
+        icon = "task_economical"
+    
+        requires = { egypt_mission_1_sea_task_6 }
+
+        duration = 365
+
+        monthly_on_action = egypt_mission_1_sea_task_9_pulse
+
+        highlight = {
+            scope:province = {
+                is_in_area = cyprus_area
+            }
+        }
+    
+        allow = {
+             treasury >= 200
+            trigger_if = {
+                limit = {
+                    NOT = { owns_or_subject_owns_area = area:cyprus_area }
+                }
+                owns_or_subject_owns_area = area:cyprus_area
+            }
+        }
+
+        bypass = {
+            has_variable = egypt_mission_1_sea_task_9_bypass_flag
+            NOT = { owns_or_subject_owns_area = area:cyprus_area }
+        }
+
+        on_start = {
+            trigger_event = { id = me_egypt_1_sea.14 }
+            set_variable = {
+                name = egypt_mission_1_sea_task_9_bypass_flag
+                days = 365
+            }
+        }
+
+        on_bypass = {
+            trigger_event = { id = me_egypt_1_sea.34 }
+        }
+    
+        on_completion = {                
+            trigger_event = { id = me_egypt_1_sea.15 }
+            custom_tooltip = me_egypt_1_sea.15.a.tt
+            show_as_tooltip = {
+                p:331 = {
+                    add_province_modifier = {
+                        name = "cyprian_docks_modifier"
+                        duration = 7300
+                    }
+                }
+                custom_tooltip = me_egypt_1_sea.15.a.tt.2
+                p:334 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = freemen
+                        }
+                        move_pop = p:504
+                    }
+                }   
+                p:331 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = freemen
+                        }
+                        move_pop = p:504
+                    }
+                }         
+            }        
+        }
+    }
+    
+    egypt_mission_1_sea_task_10 = { #Asian League
+        icon = "task_diplomatic"
+    
+        requires = { egypt_mission_1_sea_task_9 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = coastal_caria_area
+                    is_in_area = inland_caria_area
+                }
+            }
+        }
+    
+        allow = {
+            owns_or_subject_owns_area = area:coastal_caria_area
+            owns_or_subject_owns_area = area:inland_caria_area
+        }
+    
+        on_completion = {
+            trigger_event = { id = me_egypt_1_sea.10 }
+            show_as_tooltip = {
+                p:1981 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = citizen
+                            pop_culture_group = hellenic
+                        }
+                        move_pop = p:516
+                    }
+                }
+            }
+            custom_tooltip = "me_egypt_1_sea.10.a.tt"
+            custom_tooltip = "me_egypt_1_sea.10.a.tt.2"
+        }
+    }
+    
+    egypt_mission_1_sea_task_11 = { #New Hellenic League
+        icon = "task_political"
+
+        requires = { egypt_mission_1_sea_task_7 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = south_peleponnesos_area
+                    is_in_area = achaea_area
+                    is_in_area = arcadia_area
+                    is_in_area = central_greece_area
+                    is_in_area = euboea_area
+                    is_in_area = boeotia_area
+                    is_in_area = aetolia_area
+                    is_in_area = thessaly_area
+                }
+            }
+        }
+
+        allow = {    
+            owns_or_subject_owns = p:416
+            owns_or_subject_owns = p:427              
+            calc_true_if = {
+                amount >= 4
+                owns_or_subject_owns_area = area:south_peleponnesos_area
+                owns_or_subject_owns_area = area:achaea_area
+                owns_or_subject_owns_area = area:arcadia_area
+                owns_or_subject_owns_area = area:central_greece_area
+                owns_or_subject_owns_area = area:euboea_area
+                owns_or_subject_owns_area = area:boeotia_area
+                owns_or_subject_owns_area = area:aetolia_area
+                owns_or_subject_owns_area = area:thessaly_area
+            }
+        }
+
+        on_completion = {
+            trigger_event = { id = me_egypt_1_sea.11 }
+            show_as_tooltip = {
+                add_aggressive_expansion = -10
+                add_treasury = 300
+            }
+            custom_tooltip = "me_egypt_1_sea.11.a.tt"
+            custom_tooltip = "me_egypt_1_sea.11.a.tt.3"
+        }
+    }
+    
+    egypt_mission_1_sea_task_12 = { #Greek Strongholds
+        icon = "task_conquest"
+
+        requires = { egypt_mission_1_sea_task_7 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 7902
+                    province_id = 442
+                    province_id = 451
+                }
+            }
+        }
+
+        allow = {                      
+            owns = p:7902
+            owns = p:442
+            owns = p:451
+            trigger_if = {
+                limit = { is_ai = no }
+                hidden:p:7902 = {
+                    custom_tooltip = {
+                        text = egypt_mission_1_sea_task_12_trigger_1                     
+                        num_of_fortress_building >= egypt_mission_1_sea_task_12_7902_total
+                    }
+                }
+                hidden:p:442 = {                          
+                    custom_tooltip = {
+                        text = egypt_mission_1_sea_task_12_trigger_2                     
+                        num_of_fortress_building >= egypt_mission_1_sea_task_12_442_total
+                    }
+                }
+                hidden:p:451 = {                           
+                    has_city_status = yes
+                    custom_tooltip = {
+                        text = egypt_mission_1_sea_task_12_trigger_3                     
+                        num_of_fortress_building >= egypt_mission_1_sea_task_12_451_total
+                    }
+                }
+            }
+            trigger_else = {
+                OR = {
+                    p:451 = { has_city_status = yes }
+                    can_pay_price = price_found_city
+                }
+            }
+        }
+
+        on_completion = { 
+            if = {
+                limit = { is_ai = yes }
+                while = {
+                    limit = {
+                        p:7902 = { num_of_fortress_building < egypt_mission_1_sea_task_12_7902_total }
+                    }
+                    p:7902 = {
+                        if = {
+                            limit = { free_building_slots < 1 }
+                            destroy_building_effect = yes
+                        }
+                        add_building_level = fortress_building
+                    }
+                }
+                while = {
+                    limit = {
+                        p:442 = { num_of_fortress_building < egypt_mission_1_sea_task_12_442_total }
+                    }
+                    p:422 = {
+                        if = {
+                            limit = { free_building_slots < 1 }
+                            destroy_building_effect = yes
+                        }
+                        add_building_level = fortress_building
+                    }
+                }
+                while = {
+                    limit = {
+                        p:451 = { num_of_fortress_building < egypt_mission_1_sea_task_12_451_total }
+                    }
+                    p:451 = {
+                        if = {
+                            limit = { free_building_slots < 1 }
+                            destroy_building_effect = yes
+                        }
+                        add_building_level = fortress_building
+                    }
+                }
+                ai_build_city_pay_price_effect = { CITY = p:451 } # AI fallback.
+            }
+            trigger_event = { id = me_egypt_1_sea.23 }
+            show_as_tooltip = {
+                p:442 = {
+                    random_pops_in_province = {
+                        limit = {
+                            pop_type = freemen
+                        }
+                        move_pop = p:516
+                    }
+                    add_province_modifier = {
+                        name = "greek_stronghold_secured"
+                        duration = 7300
+                    }
+                }
+            }
+            custom_tooltip = egypt_mission_1_sea_task_12.tt
+        }
+
+        bypass = { has_completed_mission_task = egypt_mission_1_sea_task_11 }
+    }
+
+    egypt_mission_1_sea_task_13 = { #The Chremonidean War
+        icon = "task_conquest"
+
+        requires = { egypt_mission_1_sea_task_11 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = greece_region
+                    is_in_area = thessaly_area
+                }
+                NOT = {
+                    is_in_area = epirus_area
+                }
+                OR = {
+                    owner = c:MAC
+                    owner = c:SEL
+                    owner = c:PRY
+                    owner = c:TRE
+                }
+            }
+        }
+
+        allow = {
+            custom_tooltip = {                                      
+                text = "egypt_mission_1_sea_task_13.tt.1"
+                region:greece_region = {
+                    any_region_province = {
+                        filter = {
+                            NOT = {
+                                is_in_area = epirus_area
+                            }
+                        }
+                        count = all
+                        NOR = { 
+                            owner = c:MAC
+                            owner = c:SEL
+                            owner = c:PRY
+                            owner = c:TRE
+                        } 
+                    }
+                }
+                area:thessaly_area = {
+                    any_area_province = {
+                        count = all
+                        NOR = {
+                            owner = c:MAC
+                            owner = c:SEL
+                            owner = c:PRY
+                            owner = c:TRE
+                        }
+                    }
+                }
+            }
+        }
+
+        on_completion = {                
+            trigger_event = { id = me_egypt_1_sea.24 }
+            custom_tooltip = me_egypt_1_sea.24.a.tt.2
+            custom_tooltip = me_egypt_1_sea.24.a.tt.1
+            show_as_tooltip = {
+                add_legitimacy = 10
+                current_ruler = {
+                    add_popularity = 10
+                }
+            } 
+        }
+    }
+    
+    egypt_mission_1_sea_task_14 = { #Alexander's Throne
+        icon = "task_conquest"
+
+        requires = { egypt_mission_1_sea_task_13 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 379
+                    province_id = 428
+                }
+            }
+        }
+
+        allow = {
+            owns = p:379
+            owns = p:428
+        }
+
+        on_completion = {
+            trigger_event = {id = me_egypt_1_sea.25 }
+            show_as_tooltip = {
+                add_aggressive_expansion = -20
+                add_legitimacy = 15
+                random_country_culture = {
+                    limit = {
+                        is_culture = macedonian
+                    }
+                    add_country_culture_modifier = {
+                        name = hellenic_alex_throne
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+
+    egypt_mission_1_sea_task_15 = { #The Matter of Rhodes
+        icon = "task_diplomatic"
+
+        requires = { egypt_mission_1_sea_task_5 }
+
+        duration = 30
+
+        highlight = {
+            scope:province = {
+                province_id = 266
+            }
+        }
+
+        allow = {
+            treasury >= 300
+            political_influence >= 100
+            hidden:c:RHO = {
+                opinion = { target = ROOT value >= 50 }
+            }
+            NOT = { war_with = c:RHO }
+        }
+
+        bypass = {
+            OR = {
+                owns_or_subject_owns = 266
+                war_with = c:RHO
+                c:RHO = { is_ai = no }
+            }
+        }
+
+        on_start = {
+            add_treasury = -300
+            add_political_influence = -100
+            trigger_event = { id = me_egypt_1_sea.27 }
+            set_variable = {
+                name = egypt_mission_1_sea_task_15_bypass_flag
+                days = 30
+            }
+        }
+
+        on_bypass = {
+            if = {
+                limit = { 
+                    has_variable = egypt_mission_1_sea_task_15_bypass_flag
+                    NOT = {
+                        war_with = c:RHO
+                    }
+                }
+                trigger_event = { id = me_egypt_1_sea.35 }
+            }
+            else_if = {
+                limit = { 
+                    has_variable = egypt_mission_1_sea_task_15_bypass_flag
+                    war_with = c:RHO
+                }
+                trigger_event = { id = me_egypt_1_sea.37 }
+            }
+        }
+
+        on_completion = {
+            custom_tooltip = egypt_mission_1_sea_task_15.tt
+            if = {
+                limit = {
+                    c:PRY = {
+                        owns_or_subject_owns = 266
+                    }
+                }
+                trigger_event = { id = me_egypt_1_sea.28 }
+            }
+            else_if = {
+                limit = {
+                    any_country = {     
+                        NOT = { tag = RHO }
+                        owns_or_subject_owns = 266
+                    }
+                }
+                trigger_event = { id = me_egypt_1_sea.29 }
+            }
+            else_if = {
+                limit = {
+                    c:RHO = {
+                        opinion = {
+                            target = root
+                            value < 100
+                        }
+                        NOT = { alliance_with = c:EGY }
+                    }
+                }
+                trigger_event = { id = me_egypt_1_sea.30 }
+            }
+            else = {
+                trigger_event = { id = me_egypt_1_sea.31 }
+            }
+        }
+    }
+    
+    egypt_mission_1_sea_task_final = { #Lord of the Mediterranean
+        icon = "task_economical"
+
+        final = yes
+
+        requires = { egypt_mission_1_sea_task_8 egypt_mission_1_sea_task_10 egypt_mission_1_sea_task_12 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns_or_subject_owns_area = area:cyprus_area }
+                }
+                owns_or_subject_owns_area = area:cyprus_area
+            }
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 266 }
+                }
+                owns = 266
+            }
+            trigger_if = {
+                limit = {
+                    NOT = { owns_or_subject_owns = 416 }
+                }
+                owns_or_subject_owns = 416
+            }
+            trigger_if = {
+                limit = {
+                    NOT = { owns_or_subject_owns_area = area:aegean_islands_area }
+                }
+                owns_or_subject_owns_area = area:aegean_islands_area
+            }
+        }
+
+        on_completion = {
+            trigger_event = { id = me_egypt_1_sea.26 }
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = egypt_mediterranean_lord
+                    duration = -1
+                }
+            }
+        }
+    }
+}

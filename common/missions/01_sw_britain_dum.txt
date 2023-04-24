@@ -41,7 +41,7 @@
  
 	on_completion = {
 		complete_mission_effect = yes
-        add_2_free_province_investments = yes
+		capital_scope = {capital_formable_medium_effect = yes}
     }
 
 	01_sw_britain_dum_1_task = { #Dumnonia is Ours
@@ -64,7 +64,7 @@
 			area:dumnonia_area = {
 				add_provincial_claim_effect = yes
 			}
-			trigger_event = 01_sw_britain_dum.3
+			trigger_event = 01_sw_britain_dum.1
 			add_political_influence = -15
 			}
 		}
@@ -84,12 +84,13 @@
         }
 
 		allow = {
-			p:2002 = {
+			hidden:p:2002 = {
 				has_building = slave_mine_building
 			}
 			}
 
 		on_completion = {
+			add_centralization = 5
 			p:2002 = {
 				add_province_modifier = {
 					name = dumnonian_tin_mines_mod
@@ -106,19 +107,28 @@
 
 	01_sw_britain_dum_3_task = { #The Ocean Beckons
 	icon = task_expansion
-	duration = 90
+	duration = 180
 
 	requires = {}
 
+	highlight = {
+		scope:province = {
+			owner = root
+			is_capital = yes
+		}
+	}
+
 	allow = {
 		capital_scope = {
-			OR = {
-			is_importing_trade_good = wood is_importing_trade_good = stone
+			is_importing_trade_good = wood 
+			is_importing_trade_good = stone 
+			is_importing_trade_good = cloth
 			}
-			}
+			treasury >= 75
 		}
 
 	on_completion = {
+		add_treasury = -75
 		random_owned_province = {
 			limit = { is_coastal = yes }
 			save_scope_as = dumnonian_shipyard_province
@@ -126,14 +136,14 @@
 		scope:dumnonian_shipyard_province = {
 			add_building_level = port_building
 		}
-		trigger_event = 01_sw_britain_dum.2
+		trigger_event = 01_sw_britain_dum.3
 	}
 	}
 
 	01_sw_britain_dum_4_task = { #Dumnonia Is Ours
 		icon = task_conquest
 
-		requires = {01_sw_britain_dum_1_task 01_sw_britain_dum_3_task}
+		requires = {01_sw_britain_dum_1_task }
 
 		highlight = {
 			scope:province = {
@@ -150,6 +160,7 @@
 		}
 
 		on_completion = {
+			add_centralization = 5
 			current_ruler = {
 				add_trait = conqueror
 			}
@@ -171,12 +182,13 @@
 
 		allow = {
 			owns = p:2009
-			p:2009 = {
+			hidden:p:2009 = {
 				is_holy_site = yes
 			}
 		}
 
 		on_completion = {
+			add_2_free_province_investments = yes
 			trigger_event = 01_sw_britain_dum.5
 			add_country_modifier = {
 				name = dumnonia_blessings_of_sulis
@@ -189,27 +201,40 @@
 		icon = task_battle
 		duration = 365
 
-		requires = {01_sw_britain_dum_2_task 01_sw_britain_dum_3_task}
+		requires = {01_sw_britain_dum_1_task 01_sw_britain_dum_2_task}
 
 		allow = {
+			at_war = yes
 			has_country_modifier = assemble_raiding_party_button_modifier
-			political_influence >= 10
+			custom_tooltip = {
+                text = 01_sw_britain_dum_6_task_tt
+                any_character = {
+                    count >= 2
+                    is_clan_chief = yes
+                    loyalty >= 65
+                }
+            }
 		}
 
 		on_completion = {
-			
 			trigger_event = 01_sw_britain_dum.6
 			add_manpower = 4
-			add_political_influence = -10
-			add_war_exhaustion = 5
 		}
 	}
 
-	01_sw_britain_dum_7_task = { #Gathering Our Strength
+	01_sw_britain_dum_7_task = { #Setting Down Roots
 		icon = task_happiness
 		duration = 730
 
-		requires = {01_sw_britain_dum_6_task}
+		requires = {01_sw_britain_dum_6_task 01_sw_britain_dum_11_task}
+
+
+		highlight = {
+			scope:province = {
+				exists = scope:dumnonian_shipyard_province
+				THIS = scope:dumnonian_shipyard_province
+			}
+		}
 
 		allow = {
 			has_law = absolute_authority
@@ -217,22 +242,32 @@
                 text = dumnonia_iberian_central_path_2B_tt
                 has_military_bonus = iberian_central_path_2B
                 }
+				treasury >= 75
 			}
 
 		on_completion = {
+			add_treasury = -75
+			add_centralization = 10
 			trigger_event = 01_sw_britain_dum.7
-			p:2003 = {
-				set_city_status = city
+			random_owned_province = {
+				limit = { 
+					is_coastal = yes 
+					NOT = { trade_goods = vegetables }
+					NOT = { trade_goods = fish }
+					NOT = { trade_goods = base_metals }
+					NOT = { trade_goods = salt }
+					NOT = { trade_goods = cattle }
 			}
-			current_ruler = {
-				add_trait = founder
+				save_scope_as = dumnonian_shipyard_province
+			}
+			scope:dumnonian_shipyard_province = {
+				set_city_status = city
 			}
             }	
 		}
 
 	01_sw_britain_dum_8_task = { #A Dumnonian City
 		icon = task_atlas
-
 		final = yes
 		requires = {01_sw_britain_dum_7_task}
 
@@ -244,64 +279,145 @@
 
 		allow = {
 			p:2003 = {
-				num_of_port_building >= 1
+				num_of_port_building >= 2
 				num_of_military_building >= 1
 				num_of_fortress_building >= 1
+				num_of_commerce_building >= 1
+				total_population >= 30
 			}
 		}
 		
 		on_completion = {
-			set_capital = p:2003
+			add_centralization = 10
 			trigger_event = 01_sw_britain_dum.8
-			add_country_modifier = {
-				name = dumnonian_power
-				duration = -1
+			capital_scope = {
+				add_province_modifier = {
+					name = dumnonian_power
+					duration = -1
+			}
 			}
 		}
 	}
 
-	01_sw_britain_dum_9_task = { #Bull Leapers
+	01_sw_britain_dum_9_task = { #The Druidic Presence
 		icon = task_religion
 		duration = 90
 
 		requires = {01_sw_britain_dum_4_task}
 
 		allow = {
-			has_country_modifier = oaths_of_allegiance
+			owns = 2012
+			treasury >= 100
+			political_influence >= 20
+			custom_tooltip = {
+				text = 01_sw_britain_dum_9_task_tt
+				invention = global_citizen_output_inv_1
+			}
 		}
 
 		highlight = {
 			scope:province = {
-				province_id = 358
+				province_id = 2012
 			}
         }
 
 		on_completion = {
 			trigger_event = 01_sw_britain_dum.9
+			add_treasury = -100
 			add_political_influence = -20
-			current_ruler = {
-				add_zeal = 1
-			}
 		}
 	}
 
-	01_sw_britain_dum_10_task = {
+	01_sw_britain_dum_10_task = { #Fisheries of Iscalis
 		icon = task_heracles
 
-		requires = {01_sw_britain_dum_9_task}
+		requires = {01_sw_britain_dum_11_task}
+
+		highlight = {
+			scope:province = {
+				province_id = 2005
+			}
+        }
 
 		allow = {
-			owns_or_subject_owns_area = crete_area
+			p:2005 = {
+        		num_of_basic_settlement_infratructure_building >= 1
+				total_population >= 13
+        	}
+
+		}
+
+		on_completion = {
+			p:2005 = {
+				add_province_modifier = {
+					name = fisheries_of_iscalis_dumnonia
+					duration = -1
+				}
+			}
+			trigger_event = 01_sw_britain_dum.10
+		}
+	}
+	
+	01_sw_britain_dum_11_task = { #Aremorican Trade Network
+		icon = task_economical
+
+		requires = {01_sw_britain_dum_3_task}
+
+		allow = {
+			num_of_ships >= 20
+			hidden:c:OSM = {
+                opinion = {
+					target = root
+					value >= 90
+				}
+            }
+			capital_scope = {
+				num_of_port_building >= 2
+			}
 		}
 
 		highlight = {
 			scope:province = {
-				is_in_area = crete_area
+				exists = c:OSM
+				owner = c:OSM
 			}
         }
 
 		on_completion = {
-			trigger_event = 01_sw_britain_dum.10
+			trigger_event = 01_sw_britain_dum.11
+			add_country_modifier = {
+				name = aremorican_dumnonian_trading_partners
+				duration = -1
+			}
+			capital_scope = {
+        		capital_formable_small_effect = yes
+        	}
+		}
+	}
+
+	01_sw_britain_dum_12_task = { #The Bel Festival
+		icon = task_calm
+		duration = 30
+
+		requires = {01_sw_britain_dum_5_task}
+
+		allow = {
+			stability >= 60
+			treasury >= 100
+			custom_tooltip = {
+                text = 01_sw_britain_dum_12_philosopher
+                any_character = {
+                    has_office = office_wise_person
+                    zeal >= 9
+                }
+            }
+		}
+
+		highlight = {
+        }
+
+		on_completion = {
+			trigger_event = 01_sw_britain_dum.12
 		}
 	}
 }

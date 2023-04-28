@@ -113,7 +113,20 @@ window = {
 	resizable = yes
 	movable = yes
 	
-	
+	state = {
+		name = expand_3d_portrait_view
+		trigger_when = "[GetVariableSystem.Exists('expand_3d_portrait_view')]"
+		size = { 1017 910 }
+		position = { 370 130 }
+	}
+
+	state = {
+		name = minimize_3d_portrait_view
+		trigger_when = "[Not(GetVariableSystem.Exists('expand_3d_portrait_view'))]"
+		size = { 560 500 }
+		position = { 1360 0 }
+	}
+
 	button = {
 		using = editor_button
 		name = "close_button"
@@ -121,12 +134,14 @@ window = {
 		size = { 20 20 }
 		parentanchor = top|right
 		text = "X"
+		tooltip = "Click to close. Right click to expand/minimize."
 		align = center|nobaseline
 		onclick = "[Portrait3dView.Close]"
+		onrightclick = "[GetVariableSystem.Toggle('expand_3d_portrait_view')]"
 		shortcut = "close_window"
 		fontcolor = { 1 1 1 1 }
 	}
-	
+
 	hbox = {
 		margin = { 5 5 }
 		margin_top = 29
@@ -134,7 +149,6 @@ window = {
 		portrait_preview_widget = {
 			layoutpolicy_horizontal = Growing
 			layoutpolicy_vertical = Growing
-			
 			name = "3d_preview"
 			entity_instance = [Portrait3dView.GetPortraitEntity]
 			#entity_instance = "building_castle"
@@ -188,45 +202,43 @@ window = {
 		container = {
 			name = top_container
 			position = { 340 40 }
-			
-			button = {
-				using = editor_button
-				name = "copy_dna_button"
-				position = { 8 0 }
-				size = { 120 40 }
-				text = "Copy DNA"
-				fontsize = 20
-				onclick = "[PortraitEditorWindow.OnCopyDNA]"
-				fontcolor = { 1 1 1 1 }
+			container = {
+				name = "dna_buttons_container"
+				visible = "[Not(GetVariableSystem.Exists('pe_dna_buttons'))]"
+				button = {
+					using = editor_button
+					name = "copy_dna_button"
+					position = { 8 0 }
+					size = { 120 40 }
+					text = "Copy DNA"
+					tooltip = "Click to copy DNA. Rightclick to toggle DNA string visibility."
+					fontsize = 20
+					onclick = "[PortraitEditorWindow.OnCopyDNA]"
+					onrightclick = "[GetVariableSystem.Toggle('pe_show_dna_string')]"
+					fontcolor = { 1 1 1 1 }
+				}
+				button = {
+					using = editor_button
+					name = "paste_dna_button"
+					position = { 128 0 }
+					size = { 120 40 }
+					text = "Paste DNA"
+					fontsize = 20
+					onclick = "[PortraitEditorWindow.OnPasteDNA]"
+					fontcolor = { 1 1 1 1 }
+				}
 			}
-			button = {
-				using = editor_button
-				name = "paste_dna_button"
-				position = { 128 0 }
-				size = { 120 40 }
-				text = "Paste DNA"
-				fontsize = 20
-				onclick = "[PortraitEditorWindow.OnPasteDNA]"
-				fontcolor = { 1 1 1 1 }
-			}
+
 			##############################################
-			@rightbutton_y = 425
+			@rightbutton_y = 385
 			@rightbutton_x = 785
 			button = {
 				visible = "[Not(GetVariableSystem.Exists('pe_additional_options'))]"
 				using = editor_button
-				position = { @[rightbutton_x + 90] @[rightbutton_y + 400] }
+				position = { @[rightbutton_x + 90] @[rightbutton_y + 440] }
 				size = { 110 40 }
 				text = "More Options"
-				onclick = "[GetVariableSystem.Toggle('pe_additional_options')]"
-				fontcolor = { 1 1 1 1 }
-			}
-			button = {
-				visible = "[GetVariableSystem.Exists('pe_additional_options')]"
-				using = editor_button
-				position = { @[rightbutton_x - 110] @[rightbutton_y + 400] }
-				size = { 110 40 }
-				text = "Less Options"
+				fontsize = "14"
 				onclick = "[GetVariableSystem.Toggle('pe_additional_options')]"
 				fontcolor = { 1 1 1 1 }
 			}
@@ -236,10 +248,9 @@ window = {
 				button = {
 					using = editor_button
 					position = { @rightbutton_x @rightbutton_y }
-					text = "Compare"
+					text = "DNA Buttons Visiblity"
 					size = { 200 40 }
-					onclick = "[PortraitEditorWindow.SetContentTab('preview_tab1')]"
-					forcedown = "[PortraitEditorWindow.IsCurrentContentTab('preview_tab1')]"
+					onclick = "[GetVariableSystem.Toggle('pe_dna_buttons')]"
 					fontcolor = { 1 1 1 1 }
 				}
 				button = {
@@ -323,22 +334,35 @@ window = {
 					onclick = "[GetVariableSystem.Toggle('show_males')]"
 					fontcolor = { 1 1 1 1 }
 				}
+				button = {
+					visible = "[GetVariableSystem.Exists('pe_additional_options')]"
+					using = editor_button
+					position = { @rightbutton_x @[rightbutton_y + 440] }
+					size = { 200 40 }
+					text = "Less Options"
+					onclick = "[GetVariableSystem.Toggle('pe_additional_options')]"
+					fontcolor = { 1 1 1 1 }
+				}
 			}
 			##############################################
-			textbox = {
-				position = { 10 30 }
-				size = { 200 40 }
-				using = FontNormal
-				text = "Character DNA:"
-			}
-			
-			textbox = {
-				position = { 10 25 }
-				size = { 950 160 }
-				using = FontNormal
-				text = "[PortraitEditorWindow.GetDNA]"
-				multiline = yes
-				fontsize = 12
+			container = {
+				name = "dna_string"
+				visible = "[GetVariableSystem.Exists('pe_show_dna_string')]"
+				textbox = {
+					position = { 10 30 }
+					size = { 200 40 }
+					using = FontNormal
+					text = "Character DNA:"
+				}
+				
+				textbox = {
+					position = { 10 25 }
+					size = { 950 160 }
+					using = FontNormal
+					text = "[PortraitEditorWindow.GetDNA]"
+					multiline = yes
+					fontsize = 12
+				}
 			}
 		}
 		container = {

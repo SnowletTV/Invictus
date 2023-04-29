@@ -9,7 +9,7 @@ from tqdm import tqdm
 from argparse import ArgumentParser
 from google_translate import GoogleTranslator
 import concurrent.futures as cft
-from utils import set_proxy_queue, chunk_list_of_tuples
+from utils import set_proxy_queue
 
 LANGUAGE_MAPPER = {
     'english': 'en',

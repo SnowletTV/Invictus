@@ -41,7 +41,7 @@ def load_yaml(file_name: str) -> dict:
 
 def save(translated: dict, output_file, target_language):
     with open(output_file, "w", encoding="UTF-8-sig") as f:
-        f.write(f"_{target_language}:\n")
+        f.write(f"l_{target_language}:\n")
         for k, v in translated.items():
             v = v.replace('\n', r' \n')
             f.write(f'  {k}:0 "{v}"\n')

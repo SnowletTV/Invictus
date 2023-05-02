@@ -1,42 +1,17 @@
 import asyncio
+import concurrent.futures as cft
 import multiprocessing
-import os.path as path
 import os
+import os.path as path
 import queue
 import time
-import yaml
-from tqdm import tqdm
 from argparse import ArgumentParser
+
+from tqdm import tqdm
+
+from auto_translate.file_handling import LANGUAGE_MAPPER, load_yaml, get_all_files, validate_all_files
 from google_translate import GoogleTranslator
-import concurrent.futures as cft
 from utils import set_proxy_queue
-
-LANGUAGE_MAPPER = {
-    'english': 'en',
-    'german': 'de',
-    'italian': 'it',
-    'french': 'fr',
-    'spanish': 'es'
-}
-
-
-def clean_yaml(text: str) -> str:
-    for i in range(0, 10):
-        text = text.replace(f":{i}", ":")
-    return text
-
-
-def read_file_into_string(file_name: str) -> str:
-    with open(file_name, encoding='utf_8_sig') as f:
-        text = f.read()
-    return text
-
-
-def load_yaml(file_name: str) -> dict:
-    text = read_file_into_string(file_name)
-    clean_text = clean_yaml(text)
-    data = yaml.safe_load(clean_text)
-    return data
 
 
 def save(translated: dict, output_file, target_language):
@@ -64,20 +39,6 @@ async def translate_document(source_path, source_language, target_language):
     )
     translated = await google_translator.translate_batch(yaml_data)
     return translated
-
-
-def get_all_files(source_language: str, target_language: str) -> list[tuple]:
-    all_source_files = []
-    source_folder: str = path.abspath(path.join(__file__, f'../../localization/{source_language}'))
-    for _path, sub_dir, files in os.walk(source_folder):
-        _files = [path.abspath(path.join(_path, file)) for file in files]
-        all_source_files.extend(_files)
-    # create the equivalent target language path e.g. _english.yml to _german.yml
-    all_files = [(source, source.replace(f'_{source_language}.yml', f'_{target_language}.yml')) for source in
-                 all_source_files]
-    # also adjust the target language folder name, e.g. /english/... to /german/...
-    all_files = [(x[0], x[1].replace(f'\\{source_language}\\', f'\\{target_language}\\')) for x in all_files]
-    return all_files
 
 
 async def main_translate(source: str, target: str, source_path: str, target_path: str,
@@ -119,6 +80,10 @@ def increment_finished(finished: multiprocessing.context, finished_lock: multipr
 
 
 def main(source: str, target: str):
+    # check for syntax errors before translation
+    has_syntax_error = validate_all_files(source, target)
+    if has_syntax_error:
+        raise ValueError(f'Aborting translation, there are YML syntax errors!')
     all_files: list[tuple] = get_all_files(source, target)
     with cft.ProcessPoolExecutor(
             max_workers=4

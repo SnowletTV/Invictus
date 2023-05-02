@@ -15,6 +15,9 @@ from utils import set_proxy_queue
 
 
 def save(translated: dict, output_file, target_language):
+    # Create directory if it does not exist
+    directory = os.path.dirname(output_file)
+    os.makedirs(directory, exist_ok=True)
     with open(output_file, "w", encoding="UTF-8-sig") as f:
         f.write(f"l_{target_language}:\n")
         for k, v in translated.items():

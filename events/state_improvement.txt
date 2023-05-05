@@ -1,0 +1,595 @@
+﻿namespace = state_improvement
+
+##################################################################
+# state_improvement
+##################################################################
+
+state_improvement.1 = { #Military
+	type = state_event
+	hidden = yes
+
+	trigger = { exists = scope:state_improvement_target }
+	
+	immediate = {
+		add_state_modifier = {
+			name = state_improvement_military
+			duration = -1
+			mode = add
+		}
+		owner = {
+			trigger_event = { id = state_improvement.12 }
+		}
+		increment_state_investment_count = yes
+	}
+}
+
+state_improvement.2 = { #Civic
+	type = state_event
+	hidden = yes
+
+	trigger = { exists = scope:state_improvement_target }
+	
+	immediate = {
+		add_state_modifier = {
+			name = state_improvement_civic
+			duration = -1
+			mode = add
+		}
+		owner = {
+			trigger_event = { id = state_improvement.13 }
+		}
+		increment_state_investment_count = yes
+	}
+}
+
+state_improvement.3 = { #Oratory
+	type = state_event
+	hidden = yes
+
+	trigger = { exists = scope:state_improvement_target }
+	
+	immediate = {
+		if = {
+			limit = {
+				owner = {
+					has_variable = capital_trade_mission_ongoing
+				}
+				NOT = { has_variable = trade_routes_added }
+			}
+			set_variable = {
+				name = trade_routes_added
+				value = 1
+			}
+		}
+		else_if = {
+			limit = {
+				owner = {
+					has_variable = capital_trade_mission_ongoing
+				}
+				has_variable = trade_routes_added
+			}
+			change_variable = {
+				name = trade_routes_added
+				add = 1
+			}
+		}
+		else = { } #Nothing!
+		add_state_modifier = {
+			name = state_improvement_oratory
+			duration = -1
+			mode = add
+		}
+		owner = {
+			trigger_event = { id = state_improvement.14 }
+		}
+		increment_state_investment_count = yes
+	}
+}
+
+state_improvement.4 = { #Religious
+	type = state_event
+	hidden = yes
+
+	trigger = { exists = scope:state_improvement_target }
+	
+	immediate = {
+		add_state_modifier = {
+			name = state_improvement_religious
+			duration = -1
+			mode = add
+		}
+		hidden_effect = {
+			if = {
+				limit = {
+					owner = {
+						has_variable = shrine_mission_ongoing
+					}
+					NOT = { has_variable = endowments_made }
+				}
+				set_variable = {
+					name = endowments_made
+					value = 1
+				}
+			}
+			else_if = {
+				limit = {
+					owner = {
+						has_variable = shrine_mission_ongoing
+					}
+					has_variable = endowments_made
+				}
+				change_variable = {
+					name = endowments_made
+					add = 1
+				}
+			}
+			else = { } #Nothing!
+		}
+		owner = {
+			trigger_event = { id = state_improvement.15 }
+		}
+		increment_state_investment_count = yes
+	}
+}
+
+state_improvement.5 = { #City level civilization
+	type = province_event
+	hidden = yes
+	
+	trigger = { exists = owner }
+	
+	immediate = {
+		save_scope_as = local_civilization_target
+		add_province_modifier = {
+			name = local_civilization_pmod_stack
+			duration = -1
+			mode = add
+		}
+		owner = {
+			trigger_event = { id = state_improvement.18 }
+		}
+	}
+}
+
+##################################################################
+# state_improvement changes to account for Citys giving civ to neighbouring territories
+##################################################################
+
+state_improvement.6 = { #Toggles City Status
+	type = province_event
+
+	picture = greek_city_market
+
+	title = "state_improvement.6.t"
+	desc = "state_improvement.6.desc"
+
+	left_portrait = root.governor_or_ruler
+	goto_location = root
+
+	trigger = {
+		exists = owner
+		has_city_status = no
+	}
+
+	immediate = {
+		set_city_status = city
+		if = {
+			limit = {
+				has_province_modifier = judea_modifier_12
+				}
+			remove_province_modifier = judea_modifier_12
+		}
+		if = {
+			limit = {
+				has_province_modifier = samaria_modifier_12
+				}
+			remove_province_modifier = samaria_modifier_12
+		}
+		if = {
+			limit = {
+				OR = {
+					trade_goods = grain
+					trade_goods = fish
+					trade_goods = cattle
+					trade_goods = vegetables
+				}
+			}
+			switch = { #Must not be cleared!
+				trigger = trade_goods
+				grain = { set_variable = had_grain }
+				fish = { set_variable = had_fish }
+				cattle = { set_variable = had_cattle  }
+				vegetables = { set_variable = had_vegetables }
+			}
+			hidden_effect = {
+				replace_food_after_city_upgrade_effect = { VARIABLE_OR_SET_TRADE_GOODS = set_variable } #See comments in scripted effect before tampering with this
+				every_neighbor_province = {
+					limit = {
+						NOR = {
+							is_sea = yes
+							terrain = riverine_terrain
+						}
+					}
+					add_neighbor_city_modifier_effect = yes
+				}
+			}
+			while = {
+				count = 3
+				random_pops_in_province = {
+					limit = {
+						NOT = { pop_type = citizen }
+					}
+					set_pop_type = citizen
+				}
+			}
+		}
+	}
+
+	option = {
+		name = "state_improvement.6.a"
+		replace_food_after_city_upgrade_finish_effect = yes
+	}
+}
+
+state_improvement.7 = { #Toggles Metropolis Status
+	type = province_event
+	hidden = yes
+
+	trigger = {
+
+	}
+
+	immediate = {
+		set_city_status = city_metropolis
+		while = {
+			count = 3
+			random_pops_in_province = {
+				limit = {
+					NOT = { pop_type = nobles }
+				}
+				set_pop_type = nobles
+			}
+		}
+		hidden_effect = {
+			every_neighbor_province = {
+				limit = {
+					NOR = {
+						is_sea = yes
+						terrain = riverine_terrain
+					}
+				}
+				add_neighbor_city_modifier_effect = yes
+			}
+		}
+	}
+}
+
+state_improvement.8 = { #Toggles Metropolis Status
+	type = country_event
+	hidden = yes
+	
+	trigger = {
+		is_ai = yes
+		any_owned_province = {
+			has_city_status = yes
+			total_population >= 80
+			is_state_capital = yes
+			NOT = { has_province_rank = city_metropolis }
+			NOT = {
+				has_province_modifier = founding_metropolis_in_progress
+			}
+		}
+	}
+	
+	immediate = {
+		pay_price = price_found_metropolis
+		random_owned_province = {
+			limit = {
+				has_city_status = yes
+				total_population >= 80
+				is_state_capital = yes
+				NOT = { has_province_rank = city_metropolis }
+				NOT = {
+					has_province_modifier = founding_metropolis_in_progress
+				}
+			}
+			add_province_modifier = {
+				name = founding_metropolis_in_progress
+				duration = 730
+			}
+			trigger_event = {
+				id = state_improvement.7
+				days = 730
+			}
+		}
+	}
+}
+
+state_improvement.9 = { #Toggles City Status
+	type = country_event
+	hidden = yes
+	
+	trigger = {
+		is_ai = yes
+		num_of_cities > 30
+		trigger_if = {
+			limit = {  is_tribal = yes }
+			NOT = { has_law = nomadic_law_tribal }
+		}
+		any_owned_province = {
+			has_city_status = no
+			total_population > 5
+			NOT = { has_province_modifier = founding_city_in_progress }
+		}
+	}
+	
+	immediate = {
+		pay_price = price_found_city
+		random_owned_province = {
+			limit = {
+				has_city_status = no
+				NOT = { has_province_modifier = founding_city_in_progress }
+			}
+			weight = {
+				modifier = { #Base Viability
+					add = {
+						value = total_population
+						subtract = cities_in_province_svalue #Reduce for each existing City in province
+						multiply = 10
+						min = 0
+					}
+				}
+				modifier = { #We like making cities for our own people
+					factor = 2
+					dominant_province_culture = root.culture
+				}
+				modifier = { #We like making cities for our own people
+					factor = 2
+					dominant_province_religion = root.religion
+				}
+				modifier = {
+					factor = 1.5
+					is_state_capital = yes #State capitals are good
+				}
+				modifier = { #We like food.
+					factor = 1.25
+					terrain = farmland
+				}
+				modifier = { #We don't want to lose our food if we can make surplus of it.
+					factor = 0.1
+					has_food_trade_good_trigger = yes
+				}
+				modifier = {
+					factor = 100
+					is_capital = yes #Always try to make your own capital a city if it is not one.
+				}
+			}
+			add_province_modifier = {
+				name = founding_city_in_progress
+				duration = 730
+			}
+			trigger_event = {
+				id = state_improvement.6
+				days = 730
+			}
+		}
+	}
+}
+
+state_improvement.10 = { #Military SPA
+	type = state_event
+	hidden = yes
+
+	trigger = {
+		has_dlc = "Magna Graecia"
+		exists = scope:state_improvement_target
+	}
+
+	immediate = {
+		add_state_modifier = {
+			name = state_improvement_military_SPA
+			duration = -1
+			mode = add
+		}
+		owner = {
+			trigger_event = { id = state_improvement.16 }
+		}
+		increment_state_investment_count = yes
+	}
+}
+
+state_improvement.11 = { #Religious SPA
+	type = state_event
+	hidden = yes
+
+	trigger = {
+		has_dlc = "Magna Graecia"
+		exists = scope:state_improvement_target
+	}
+	
+	immediate = {
+		add_state_modifier = {
+			name = state_improvement_religious_SPA
+			duration = -1
+			mode = add
+		}
+		owner = {
+			trigger_event = { id = state_improvement.17 }
+		}
+		increment_state_investment_count = yes
+	}
+}
+
+state_improvement.12 = { #Military
+	type = minor_country_event
+	title = "state_improvement.12.t"
+	desc = "state_improvement.12.desc"
+	left_portrait = scope:state_improvement_target.governor_or_ruler
+	goto_location = scope:state_improvement_target.capital_scope
+	interface_lock = no
+
+	trigger = { exists = scope:state_improvement_target }
+	
+	immediate = {
+		show_as_tooltip = {
+			scope:state_improvement_target = {
+				add_state_modifier = {
+					name = state_improvement_military
+					duration = -1
+					mode = add
+				}
+			}
+		}
+	}
+
+	option = { name = "state_improvement.12.a" }
+}
+
+state_improvement.13 = { #Civic
+	type = minor_country_event
+	title = "state_improvement.13.t"
+	desc = "state_improvement.13.desc"
+	left_portrait = scope:state_improvement_target.governor_or_ruler
+	goto_location = scope:state_improvement_target.capital_scope
+	interface_lock = no
+
+	trigger = { exists = scope:state_improvement_target }
+	
+	immediate = {
+		show_as_tooltip = {
+			scope:state_improvement_target = {
+				add_state_modifier = {
+					name = state_improvement_civic
+					duration = -1
+					mode = add
+				}
+			}
+		}
+	}
+
+	option = { name = "state_improvement.13.a" }
+}
+
+state_improvement.14 = { #Oratory
+	type = minor_country_event
+	title = "state_improvement.14.t"
+	desc = "state_improvement.14.desc"
+	left_portrait = scope:state_improvement_target.governor_or_ruler
+	goto_location = scope:state_improvement_target.capital_scope
+	interface_lock = no
+
+	trigger = { exists = scope:state_improvement_target }
+	
+	immediate = {
+		show_as_tooltip = {
+			scope:state_improvement_target = {
+				add_state_modifier = {
+					name = state_improvement_oratory
+					duration = -1
+					mode = add
+				}
+			}
+		}
+	}
+
+	option = { name = "state_improvement.14.a" }
+}
+
+state_improvement.15 = { #Religious
+	type = minor_country_event
+	title = "state_improvement.15.t"
+	desc = "state_improvement.15.desc"
+	left_portrait = scope:state_improvement_target.governor_or_ruler
+	goto_location = scope:state_improvement_target.capital_scope
+	interface_lock = no
+
+	trigger = { exists = scope:state_improvement_target }
+	
+	immediate = {
+		show_as_tooltip = {
+			scope:state_improvement_target = {
+				add_state_modifier = {
+					name = state_improvement_religious
+					duration = -1
+					mode = add
+				}
+			}
+		}
+	}
+
+	option = { name = "state_improvement.15.a" }
+}
+
+state_improvement.16 = { #Military SPA
+	type = minor_country_event
+	title = "state_improvement.16.t"
+	desc = "state_improvement.16.desc"
+	left_portrait = scope:state_improvement_target.governor_or_ruler
+	goto_location = scope:state_improvement_target.capital_scope
+	interface_lock = no
+
+	trigger = { exists = scope:state_improvement_target }
+	
+	immediate = {
+		show_as_tooltip = {
+			scope:state_improvement_target = {
+				add_state_modifier = {
+					name = state_improvement_military_SPA
+					duration = -1
+					mode = add
+				}
+			}
+		}
+	}
+
+	option = { name = "state_improvement.16.a" }
+}
+
+state_improvement.17 = { #Religious SPA
+	type = minor_country_event
+	title = "state_improvement.17.t"
+	desc = "state_improvement.17.desc"
+	left_portrait = scope:state_improvement_target.governor_or_ruler
+	goto_location = scope:state_improvement_target.capital_scope
+	interface_lock = no
+
+	trigger = { exists = scope:state_improvement_target }
+	
+	immediate = {
+		show_as_tooltip = {
+			scope:state_improvement_target = {
+				add_state_modifier = {
+					name = state_improvement_religious_SPA
+					duration = -1
+					mode = add
+				}
+			}
+		}
+	}
+
+	option = { name = "state_improvement.17.a" }
+}
+
+state_improvement.18 = { #City level civilization
+	type = minor_country_event
+	title = "state_improvement.18.t"
+	desc = "state_improvement.18.desc"
+	goto_location = scope:local_civilization_target
+	interface_lock = no
+
+	trigger = { exists = scope:local_civilization_target }
+	
+	immediate = {
+		show_as_tooltip = {
+			scope:local_civilization_target = {
+				add_province_modifier = {
+					name = local_civilization_pmod_stack
+					duration = -1
+					mode = add
+				}
+			}
+		}
+	}
+
+	option = { name = "state_improvement.18.a" }
+}

@@ -79,8 +79,8 @@ class GoogleTranslator:
                 result = _result | result
                 progress.update(1)
         progress.close()
-        # get back original key order
-        final = {key: result[key] for key in key_order}
+        # get back original key order and replace double quotas with two single quotas
+        final = {key: result[key].replace('"', "''") for key in key_order}
         return final
 
     async def translate_async(self, key: str, text: str) -> tuple[str, str]:

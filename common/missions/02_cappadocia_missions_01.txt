@@ -1,0 +1,3720 @@
+﻿cappadocia_mission_inv = {
+	icon = cde_diadochi_coronation
+	header = mission_image_athens
+
+	repeatable = no
+
+	chance = {
+		factor = 10
+	}
+
+	ai_chance = { factor = 10 }
+
+	potential = {
+		tag = CAP
+		NOT = {
+			has_variable = cap_mis_abort_var
+		}
+	}
+
+	abort = {
+		ai_mission_back_out_trigger = yes
+	}
+
+	on_start = {
+		start_mission_ai_effect = yes
+	}
+
+	on_completion = {
+		complete_mission_effect = yes
+	}
+
+	on_abort = {
+		custom_tooltip = judea_mission_abortion.tt # it's generic loc
+		set_variable = {
+			name = cap_mis_abort_var
+			days = 7300
+		}
+	}
+
+	cappadocia_mission_inv_1_task = {  #Stabilize Our Position
+		icon = task_political
+
+		highlight = {
+			scope:province = {
+				owner = root
+				OR = {
+					this = {
+						any_pops_in_province = {
+							pop_hapiness < 0.35
+						}
+					}
+				}
+			}
+		}
+
+		allow = {
+			trigger_if = {
+				limit = {
+					is_ai = no
+				}
+				invention = global_cohort_recruit_speed_inv
+				custom_tooltip = {
+					text = cappadocia_fort_svalue_tt
+					cappadocia_fort_svalue >= 5
+				}
+				custom_tooltip = {
+					text = pops_happy_in_province_tt
+					total_pop_happiness_svalue_33p >= total_pop_happiness_max_svalue_33p	
+				}
+			}	
+			trigger_else = { # for ai
+				cappadocia_fort_svalue >= 3 # starting value
+				current_date >= 453.10.1
+			}	
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_political_influence = 100
+				add_treasury = 300
+				add_manpower = 10 #1 Manpower = 500 Manpower in the game
+				add_stability = 5
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.80
+			}
+		}
+	}
+
+	### Branch 1 - Loyal Vassal
+	cappadocia_mission_inv_2A_task = { #Strength with the Antigonids
+
+		icon = task_diplomatic
+
+		requires = { cappadocia_mission_inv_1_task }
+		prevented_by = { cappadocia_mission_inv_26_task cappadocia_mission_inv_2B_task cappadocia_native_path_1 }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		allow = { 
+			trigger_if = {
+				limit = {
+					is_subject = yes
+				}
+				hidden:overlord = { 
+					opinion = { 
+						target = root 
+						value >= 120
+					} 
+				}
+				hidden:current_ruler = { is_friend = root.overlord.current_ruler }
+			}
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = cappadocia_event.81
+			}
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = loyal_cap_mod
+					duration = -1
+				}
+			}
+			
+			set_variable = cap_loyalist_path # will not get removed on abort to prevent stacking of modifiers from the various paths
+		}
+
+		bypass = {
+			is_subject = no
+		}
+	}
+
+	cappadocia_mission_inv_3A_task = { #The Eumenid Menace Rises Again 
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_2A_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		bypass = { # Eumenes' Wife and Children are dead
+			char:432 = { is_alive = no }
+			char:433 = { is_alive = no }
+			char:434 = { is_alive = no }
+			char:435 = { is_alive = no }
+		}
+
+		allow = {
+			war = no
+		}
+
+		on_completion = {
+			custom_tooltip = eumenes_heirs_rise_up_tt
+			trigger_event = {
+				id = cappadocia_event.1
+			}
+			# char:431 is eumenes of cardia (dead)
+			# char:433 is the oldest son
+			# char:432 is wife of eumenes
+			# char:434 is 2nd son, char:435 is daughter
+			# p:1954 is Garsaura
+			# p:1788 is Nora
+		}
+	}
+
+	cappadocia_mission_inv_4A_task = { #Rewards for Loyalty
+		icon = task_expansion
+
+		duration = 180
+
+		requires = { cappadocia_mission_inv_2A_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		bypass = {
+			is_subject = no
+		}
+
+		allow = {
+			manpower >= 10
+			treasury >= 500
+			trigger_if = {
+				limit = {
+					is_subject = yes
+				}
+				hidden:overlord = {
+					has_civil_war = no
+				}
+			}
+		}
+
+		on_start = {
+			custom_tooltip = gift_to_overlord_cap_tt
+			trigger_event = {
+				id = cappadocia_event.2
+			}
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = cappadocia_event.8
+			}
+		}
+	}
+
+	cappadocia_mission_inv_5A_task = { #Pushing Back to Satrapy boundaries
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_3A_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		bypass = {
+			OR = {
+				AND = {
+					exists = overlord
+					p:1790.owner = root.overlord
+				}
+				AND = {
+					exists = overlord
+					p:1767.owner.overlord = root.overlord
+				}
+				owns_area = p:1790.area
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = one_v_one_pontus_tt # kinda; ai's allies can join
+			show_as_tooltip = {
+				declare_war_with_wargoal = {
+	                war_goal = conquer_wargoal
+	                province = 1790
+	                target = p:1790.owner
+	            }
+				add_country_modifier = {
+					name = satrapy_borders_restored
+					duration = -1
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.82
+			}
+		}
+	}
+
+	cappadocia_mission_inv_6A_task = { #The Persian Remnant
+		icon = task_diplomatic
+
+		requires = { cappadocia_mission_inv_3A_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		allow = {
+			war = no
+		}
+
+		on_completion = {
+			custom_tooltip = ariarathes_returns_tt
+			trigger_event = {
+				id = cappadocia_event.7
+			}
+		}
+	}
+
+	cappadocia_mission_inv_7A_task = { #Reclaiming Armenian Theft
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_6A_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		bypass = {
+			OR = {
+				AND = {
+					exists = overlord
+					p:1767.owner = root.overlord
+				}
+				AND = {
+					exists = overlord
+					p:1767.owner.overlord = root.overlord
+				}
+				owns_area = p:1767.area
+				is_subject = no
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = one_v_one_armenia_tt # kinda; ai's allies can join
+			show_as_tooltip = {
+				declare_war_with_wargoal = {
+                war_goal = conquer_wargoal
+                province = 1767
+                target = p:1767.owner
+           		}
+			}
+			trigger_event = {
+				id = cappadocia_event.83
+			}
+		}
+	}
+
+	cappadocia_mission_inv_8A_task = { #The Richest Satrapy
+		icon = task_economical
+
+		requires = { cappadocia_mission_inv_6A_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				owner = root
+				is_capital = yes
+			}
+		}
+
+		allow = {
+			has_monthly_income >= 25
+			capital_scope.state = { incoming_trade_routes >= 12 }
+			capital_scope = {
+				civilization_value >= 50
+				any_pops_in_province = {
+					count >= 10
+					pop_type = nobles
+				}
+			}
+			any_owned_province = {
+				count >= 8
+				has_city_status = yes
+				civilization_value >= 35
+				any_pops_in_province = {
+					count >= 5
+					pop_type = nobles
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = richest_satrapy
+					duration = -1
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.84
+			}
+		}
+	}
+
+	cappadocia_mission_inv_9A_task = { #Content in One’s Station
+		icon = task_religion
+
+		duration = 365
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		requires = { cappadocia_mission_inv_8A_task }
+		prevented_by = { cappadocia_mission_inv_10A_task cappadocia_mission_inv_11A_task }
+		final = yes
+
+		bypass = {
+			is_subject = no
+		}
+
+		on_start = {
+			trigger_event = {
+				id = cappadocia_event.12
+			}
+		}
+
+		allow = {
+			political_influence >= 50
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = cappadocia_event.11
+			}
+			custom_tooltip = remaining_subject_events_tt
+		}
+	}
+
+	cappadocia_mission_inv_10A_task = { #Rival to the Antigonids
+		icon = task_conquest
+
+		duration = 365
+
+		requires = { cappadocia_mission_inv_8A_task }
+		prevented_by = { cappadocia_mission_inv_9A_task cappadocia_mission_inv_11A_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		bypass = {
+			is_subject = no
+		}
+
+		on_start = {
+			custom_tooltip = cap_ant_rival_tt
+			trigger_event = { #governor
+				id = cappadocia_event.24
+			}
+			trigger_event = { #try to assassinate overlord ruler
+				id = cappadocia_event.31
+				days =  { 3 7 }
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = cap_ant_rival_war_tt
+			trigger_event = {
+				id = cappadocia_event.23
+			}
+		}
+	}
+
+	cappadocia_mission_inv_11A_task = { #An Independent Hellenistic Kingdom
+		icon = task_battle
+
+		duration = 365
+
+		requires = { cappadocia_mission_inv_8A_task }
+		prevented_by = { cappadocia_mission_inv_9A_task cappadocia_mission_inv_10A_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		on_start = {
+			custom_tooltip = cap_indep_deal_tt
+			trigger_event = {
+				id = cappadocia_event.37
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = cap_indep_tt
+			trigger_event = {
+				id = cappadocia_event.36
+			}
+		}
+	}
+
+	cappadocia_mission_inv_12A_task = { #Antigonid Successor; Rename to "Amyntid Kingdom"
+		icon = task_political
+
+		requires = { cappadocia_mission_inv_10A_task }
+		final = yes
+
+		bypass = {
+			is_subject = no
+		}
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 790 # Antigoneia
+					province_id = 194 # Ankyra
+					province_id = 379 # Pella
+					province_id = 1951 #Tyana
+					province_id = 292 # Sardeis
+					province_id = 7998 # Gazioura
+				}
+			}
+		}
+
+		allow = {
+			owns = 790 # Antigoneia
+			owns = 194 # Ankyra
+			owns = 379 # Pella
+			owns = 1951 #Tyana
+			owns = 292 # Sardeis
+			owns = 7998 # Gazioura
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				change_country_name = amyntid_kingdom_name
+				hidden_effect = {
+					change_country_adjective = amyntid_adj
+					change_country_color = amyntid_color
+				}
+				custom_tooltip = access_to_hellenistic_empire_tree_tt
+				add_political_influence = 100
+				add_manpower = 10
+				add_country_modifier = {
+					name = new_succesor_kingdom
+					duration = -1
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.41
+			}
+		}
+	}
+
+	cappadocia_mission_inv_13A_task = { #Hegemon of Anatolia - Rename to "Anatolia" (that name maybe the cappadocian path?)
+		icon = task_apollo
+
+		requires = { cappadocia_mission_inv_11A_task }
+		final = yes
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_persian_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = cilicia_region
+					is_in_region = cappadocia_pontica_region
+					is_in_region = cappadocia_region
+					is_in_region = galatia_region
+					is_in_region = asia_region
+					is_in_region = bithynia_region
+				}
+				# NOT = {
+				# 	is_in_area = cyprus_area
+				# }
+			}
+		}
+
+		allow = {
+			region:cilicia_region = {
+				any_region_province = {
+					# NOT = {
+					# 	is_in_area = cyprus_area
+					# }
+					owner = root
+					count = all
+				}
+			}
+			region:cappadocia_pontica_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:cappadocia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:galatia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:asia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:bithynia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = cappadocia_event.42
+			}
+			show_as_tooltip = {
+				change_country_name = greater_cappadocia_name
+				add_country_modifier = {
+					name = hegemon_of_anatolia
+					duration = -1
+				}
+				add_political_influence = 50
+				add_military_experience = 100
+				add_2_free_province_investments = yes
+			}
+		}
+	}
+
+	# Legacy of Persia
+	cappadocia_mission_inv_2B_task = { # The Ariarathid Dynasty
+		icon = task_conquest
+
+		requires = { cappadocia_mission_inv_1_task }
+		prevented_by = { cappadocia_mission_inv_2A_task cappadocia_mission_inv_26_task cappadocia_native_path_1 }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			war = no # to prevent the defensive war bug in the switch effect
+			trigger_if = {
+				limit = { is_ai = yes }
+				NOT = { has_global_variable = player_plays_cap_rebellion_global_var }
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = switch_to_ari_tt
+			trigger_event = {
+				id = cappadocia_event.43
+			}
+			set_variable = cap_persian_path
+
+			set_global_variable = player_plays_cap_rebellion_global_var
+		}
+	}
+
+	cappadocia_mission_inv_15_task = { # A Cappadocian Kingdom
+		icon = task_diplomatic
+		duration = 60
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		requires = { cappadocia_mission_inv_2B_task }
+		#prevented_by = { cappadocia_mission_inv_16_task } # this would prevent the mission, the bypass doesn't. 
+		# There sadly is no requires_or for the following task
+		bypass = {
+			has_variable = mission_task_15_bypass_var
+		}
+
+		allow = {
+			war = no
+		}
+
+		on_start = {
+			set_variable = mission_task_16_bypass_var
+			custom_tooltip = cap_paying_armenia_tt
+			trigger_event = {
+				id = cappadocia_event.44
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = eumenes_heirs_rise_up_tt
+			trigger_event = {
+				id = cappadocia_event.1
+			}
+		}
+	}
+
+	cappadocia_mission_inv_16_task = { #An Armenian Partner
+		icon = task_political
+		duration = 60
+
+		requires = { cappadocia_mission_inv_2B_task }
+		#prevented_by = { cappadocia_mission_inv_15_task } # this would prevent the mission, the bypass doesn't. 
+		bypass = {
+			has_variable = mission_task_16_bypass_var
+		}
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			war = no
+		}
+
+		on_start = {
+			set_variable = mission_task_15_bypass_var
+			custom_tooltip = cap_armenia_rapprochement_tt
+			trigger_event = {
+				id = cappadocia_event.52
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = eumenes_heirs_rise_up_tt
+			trigger_event = {
+				id = cappadocia_event.1
+			}
+		}
+	}
+
+	cappadocia_mission_inv_17_task = { # The Seleukid Ultimatum
+		icon = task_conquest
+
+		requires = { cappadocia_mission_inv_15_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		bypass = {
+			c:SEL = {
+				has_land = no
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				this = root.capital_scope
+			}
+		}
+
+		allow = {
+			OR = {
+				is_subject_of = c:SEL
+				is_subject = no
+			}
+			trigger_if = {
+				limit = {
+					has_variable = mission_task_15_bypass_var # this us set by the task that will also allow you to unlock it
+				}
+				has_military_bonus = armenian_path_5
+			}
+			trigger_else = {
+				has_military_bonus = persian_achaemenid_path_end_bonus
+			}
+			capital_scope = {
+				num_of_fortress_building >= 3
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = seleukid_ultimatum_tt
+			if = {
+				limit = {
+					root = {
+						is_subject_of = c:SEL
+					}
+				}
+				trigger_event = {
+					id = cappadocia_event.57
+				}
+			}
+			else = {
+				trigger_event = {
+					id = cappadocia_event.58
+				}
+			}
+		}
+	}
+
+	cappadocia_mission_inv_18_task = { # Persian Cappadocia
+		icon = task_calm
+		requires = { cappadocia_mission_inv_16_task cappadocia_mission_inv_15_task }
+
+		highlight = {
+			scope:province = {
+				this = root.capital_scope
+			}
+		}
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			calc_true_if = {
+				amount >= 2
+				military_tech >= 5
+				civic_tech >= 5
+				oratory_tech >= 5
+				religious_tech >= 5
+			}
+			capital_scope = {
+				num_of_nobles >= 15
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = persianized_cap
+					duration = -1
+				}
+				add_research = {
+					technology = civic_tech
+					value = 15
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.85
+			}
+		}
+	}
+
+	cappadocia_mission_inv_19_task = { # A Greco-Persian World
+		icon = task_political
+
+		requires = { cappadocia_mission_inv_17_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			is_subject_of = c:SEL
+			any_integrated_culture = {
+				custom_tooltip = {
+					text = cap_pers_cult_tt
+					this.culture.culture_group = culture_group:persia
+					country_culture_pop_count >= 100
+				}
+			}
+			any_integrated_culture = {
+				custom_tooltip = {
+					text = cap_hell_cult_tt
+					this.culture.culture_group = culture_group:hellenic
+					country_culture_pop_count >= 100
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = greco_persian_world
+					duration = -1
+				}
+				add_research = {
+					technology = military_tech
+					value = 15
+				}
+				random_owned_province = {
+					limit = {
+						OR = {
+							terrain = plains
+							terrain = farmland
+						}
+					}
+					set_trade_goods = elephants
+				}
+			}
+			
+			custom_tooltip = unlock_zeus_dacieus_tt
+			set_variable = unlock_zeus_dacieus_var
+			trigger_event = {
+				id = cappadocia_event.86
+			}
+		}
+	}
+
+	cappadocia_mission_inv_19A_task = { # Zoroastrian Cappadocia
+		icon = task_expansion
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		requires = { cappadocia_mission_inv_18_task }
+
+		highlight = {
+			scope:province = {
+				owner = root
+				this = capital_scope
+			}
+		}
+
+		allow = {
+			political_influence >= pop_happiness_political_influence_svalue
+			any_owned_province = {
+				any_pops_in_province = {
+					pop_hapiness >= 0.75
+					NOT = { pop_religion = root.religion }
+				}
+			}
+			capital_scope = {
+				dominant_province_religion = root.religion
+				hidden:state = { has_state_modifier = state_improvement_religious }
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_political_influence = {
+					value = pop_happiness_political_influence_svalue
+					multiply = -1
+				}
+				add_country_modifier = {
+					name = zoro_cap
+					duration = 18250 # 50 years
+				}
+			}
+			custom_tooltip = pop_happy_convert_tt
+			hidden_effect = {
+				every_owned_province = {
+					every_pops_in_province = {
+						limit = {
+							pop_hapiness >= 0.75
+							NOT = {
+								pop_religion = root.religion
+							}
+						}
+						set_pop_religion = root.religion
+					}
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.87
+			}
+		}
+	}
+
+	cappadocia_mission_inv_19B_task = { # An Armenian Presence
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_16_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			any_integrated_culture = {
+				is_culture = armenian
+				has_pop_type_right = nobles
+				has_country_culture_modifier = honor_guard
+			}
+			custom_tooltip = {
+				text = primary_culture_eased_restrictions_on_citizenship_tt
+				any_integrated_culture = {
+					is_culture = root.culture
+					has_country_culture_modifier = citizenship_by_adoption
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = armenian_pops_increase_tt
+			show_as_tooltip = {
+				add_innovation = 4
+				create_character = {
+					culture = armenian
+					religion = zoroaster
+					female = no
+					hidden_effect = {
+						add_martial = 4
+						add_finesse = 4
+						add_trait = intelligent
+					}
+				}
+			}
+			hidden_effect = {
+				while = {
+					count = 2
+					every_owned_province = {
+						limit = {
+							has_city_status = yes
+						}
+						define_pop = {
+							type = nobles
+							culture = armenian
+							religion = zoroaster
+						}
+					}
+					every_owned_province = {
+						limit = {
+							has_city_status = no
+						}
+						define_pop = {
+							type = citizen
+							culture = armenian
+							religion = zoroaster
+						}
+					}
+				}
+			}
+
+			trigger_event = {
+				id = cappadocia_event.88
+			}
+		}
+	}
+
+	cappadocia_mission_inv_20_task = { # A True Persian Army
+		icon = task_conquest
+
+		requires = { cappadocia_mission_inv_17_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				this = root.capital_scope
+			}
+		}
+
+		allow = {
+			has_military_bonus = persian_bactrian_path_7
+			OR = {
+				has_law = work_for_the_best
+				has_law = standing_army_law
+			}
+			# any_army = {
+			# 	has_legion_trigger = yes
+			# 	legion = ROOT.capital_scope.governorship.legion
+			# }
+			capital_scope = {
+				num_of_military_building >= 3
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_military_experience = 80
+				add_country_modifier = {
+					name = persian_army_cmod
+					duration = -1
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.89
+			}
+		}
+	}
+
+	cappadocia_mission_inv_20B_task = { # A True Persian Army
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_20_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = assyria_region
+					is_in_region = armenia_region
+				}
+			}
+		}
+
+		allow = {
+			OR = {
+				region:assyria_region = {
+					any_region_province = {
+						owner = root
+						count >= 5
+					}
+				}
+				region:armenia_region = {
+					any_region_province = {
+						owner = root
+						count >= 5
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_manpower = 20
+			}
+			custom_tooltip = armenia_assyria_claims_tt
+			hidden_effect = {
+				region:assyria_region = {
+					every_region_province = {
+						limit = {
+							NOT = { owner = root }
+						}
+						add_claim = root
+					}
+				}
+				region:armenia_region = {
+					every_region_province = {
+						limit = {
+							NOT = { owner = root }
+						}
+						add_claim = root
+					}
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.90
+			}
+		}
+	}
+
+	cappadocia_mission_inv_21_task = { # A Tolerant Realm
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_19A_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			invention = polycentric_administration_inv
+			any_integrated_culture = {
+				custom_tooltip = {
+					text = cap_pers_cult_2_tt
+					this.culture.culture_group = culture_group:persia
+				}
+			}
+			any_owned_province = {
+				count = all
+				state_loyalty >= 90
+			}
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = cappadocia_event.91
+			}
+			show_as_tooltip = {
+				add_political_influence = 50
+				add_country_modifier = {
+					name = tolerant_cooperation
+					duration = -1
+				}
+			}
+			
+			custom_tooltip = add_claims_persia_tt
+			hidden_effect = {
+				region:mesopotamia_region = {
+					every_region_province = {
+						add_claim = root
+					}
+				}
+				region:ariana_region = {
+					every_region_province = {
+						add_claim = root
+					}
+				}
+				region:media_region = {
+					every_region_province = {
+						add_claim = root
+					}
+				}
+				region:parthia_region = {
+					every_region_province = {
+						add_claim = root
+					}
+				}
+				region:persis_region = {
+					every_region_province = {
+						add_claim = root
+					}
+				}
+				area:harmozeia_area = {
+					every_area_province = {
+						add_claim = root
+					}
+				}
+				area:adiabene_area = {
+					every_area_province = {
+						add_claim = root
+					}
+				}
+			}
+		}
+	}
+
+	cappadocia_mission_inv_22_task = { # Outliving the Armenians
+		icon = task_expansion
+
+		duration = 90
+
+		requires = { cappadocia_mission_inv_19B_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = armenia_minor_area
+					is_in_area = armenia_maior_area
+				}
+			}
+		}
+
+		bypass = {
+			NOT = {
+				area:armenia_minor_area = {
+					any_area_province = {
+						owner = c:ARM
+					}
+				}
+				area:armenia_maior_area = {
+					any_area_province = {
+						owner = c:ARM
+					}
+				}
+			}
+		}
+
+		on_bypass = {
+			if = {
+				limit = {
+					is_subject_of = c:ARM
+				}
+				set_variable = triggered_by_bypassed_var
+				trigger_event = {
+					id = cappadocia_event.59
+				}
+			}
+		}
+
+		on_start = {
+			if = {
+				limit = {
+					is_subject_of = c:ARM
+				}
+				custom_tooltip = ari_cap_arm_sub_tt
+				trigger_event = {
+					id = cappadocia_event.59
+				}
+			}
+			else = {
+				custom_tooltip = ari_cap_arm_alliance_tt
+				trigger_event = {
+					id = cappadocia_event.60 # add a diplo option if you are allied
+				}
+			}
+		}
+	}
+
+	cappadocia_mission_inv_23_task = { # A Pontic Expedition
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_19B_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		duration = 365
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = paphlagonia_inferior_area
+					is_in_area = paphlagonia_superior_area
+					is_in_region = cappadocia_pontica_region
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = pontus_claims_tt
+			hidden_effect = {
+				trigger_event = {
+					id = cappadocia_event.92
+				}
+				region:cappadocia_pontica_region = {
+					every_region_province = {
+						limit = {
+							NOT = { owner = root }
+						}
+						add_claim = root
+					}
+				}
+				area:paphlagonia_inferior_area = {
+					every_area_province = {
+						limit = {
+							NOT = { owner = root }
+						}
+						add_claim = root
+					}
+				}
+				area:paphlagonia_superior_area = {
+					every_area_province = {
+						limit = {
+							NOT = { owner = root }
+						}
+						add_claim = root
+					}
+				}
+			}
+		}
+	}
+
+	cappadocia_mission_inv_23B_task = { # A Pontic Expedition - Completion rewards (req owning)
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_23_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 1812
+					province_id = 1819
+					province_id = 1790
+					province_id = 1734
+					province_id = 1807
+				}
+			}
+		}
+
+		allow = {
+			owns = 1812
+			owns = 1819
+			owns = 1790
+			owns = 1734
+			owns = 1807
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				every_owned_province = {
+					limit = {
+						OR = {
+							is_in_region = cappadocia_pontica_region
+							is_in_area = paphlagonia_inferior_area
+						}
+						has_city_status = yes
+						is_coastal = yes
+						free_building_slots >= 1
+					}
+					add_building_level = port_building
+				}
+				add_6_free_province_investments = yes
+			}
+			trigger_event = {
+				id = cappadocia_event.93
+			}
+		}
+	}
+
+	cappadocia_mission_inv_24_task = { # The New Achaemenids
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_23B_task cappadocia_mission_inv_21_task cappadocia_mission_inv_20B_task }
+		final = yes
+
+		potential = {
+			NOT = {
+				has_variable = cap_eumenid_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			custom_tooltip = {
+				text = cap_persia_tt
+				tag = PER
+			}
+		}
+
+		on_completion = { # the effects are run here because the event has 4 options with different effects while these here should be for all 4 options
+			add_political_influence = 100
+			add_military_experience = 80
+			add_country_modifier = {
+				name = new_achaemenids
+				duration = -1
+			}
+			trigger_event = {
+				id = cappadocia_event.63
+			}
+			custom_tooltip = persia_more_claims_tt
+			hidden_effect = {
+				region:syria_region = { formable_region_province_effect = yes }
+				region:palestine_region = { formable_region_province_effect = yes }
+				region:lower_egypt_region = { formable_region_province_effect = yes }
+				region:upper_egypt_region = { formable_region_province_effect = yes }
+				region:cyrenaica_region = { formable_region_province_effect = yes }
+				region:albania_region = { formable_region_province_effect = yes }
+				region:thrace_region = { formable_region_province_effect = yes }
+				region:macedon_region = { formable_region_province_effect = yes }
+			}
+		}
+	}
+	# cappadocia_mission_inv_25_task = { # A Reliable Partner - this is already somewhat dealth with in "outliving the armenians"
+	# 	icon = task_expansion
+
+	# 	requires = { cappadocia_mission_inv_23_task }
+
+	# 	allow = {}
+
+	# 	on_completion = {}
+	# }
+
+	### Eumenes' Path
+	cappadocia_mission_inv_26_task = { # Heir to the Secretary of Alexander
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_1_task }
+		prevented_by = { cappadocia_mission_inv_2A_task cappadocia_mission_inv_2B_task cappadocia_native_path_1 }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			war = no # to prevent the defensive war bug in the switch effect
+			trigger_if = {
+				limit = { is_ai = yes }
+				NOT = { has_global_variable = player_plays_cap_rebellion_global_var }
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = take_over_as_eumenids_tt
+			trigger_event = {
+				id = cappadocia_event.64
+			}
+			set_variable = cap_eumenid_path
+
+			set_global_variable = player_plays_cap_rebellion_global_var
+		}
+	}
+
+	cappadocia_mission_inv_27_task = { # The Ariarathid Threat
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_26_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			war = no
+		}
+
+		on_completion = {
+			custom_tooltip = ariarathes_returns_tt
+			trigger_event = {
+				id = cappadocia_event.7
+			}
+		}
+	}
+
+	cappadocia_mission_inv_28_task = { # Accepting the Persians
+		icon = task_diplomatic
+
+		requires = { cappadocia_mission_inv_26_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			custom_tooltip = {
+				text = persia_nobles_cap_tt
+				any_integrated_culture = {
+					is_culture = pasargadi
+					has_pop_type_right = nobles
+					has_country_culture_modifier = honor_guard
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = access_persian_traditions_tt
+			custom_tooltip = persian_pops_increase_tt
+			hidden_effect = {
+				trigger_event = {
+					id = cappadocia_event.94
+				}
+				set_variable = persian_cap_persia_mil_trads_var
+				while = {
+					count = 2
+					every_owned_province = {
+						limit = {
+							has_city_status = yes
+						}
+						define_pop = {
+							type = nobles
+							culture = pasargadi
+							religion = zoroaster
+						}
+					}
+					every_owned_province = {
+						limit = {
+							has_city_status = no
+						}
+						define_pop = {
+							type = citizen
+							culture = pasargadi
+							religion = zoroaster
+						}
+					}
+				}
+			}
+			show_as_tooltip =  {
+				create_character = {
+					culture = pasargadi
+					religion = zoroaster
+					female = no
+					hidden_effect = {
+						add_martial = 4
+						add_finesse = 4
+						add_trait = intelligent
+					}
+				}
+			}
+		}
+	}
+
+	cappadocia_mission_inv_29_task = { # Revenge for Eumenes of Cardia
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_27_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			hidden:char:37 = {
+				is_alive = no
+			}
+			hidden:char:38 = {
+				is_alive = no
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				current_ruler = {
+					add_popularity = 10
+				}
+				add_political_influence = 25
+			}
+			trigger_event = {
+				id = cappadocia_event.95
+			}
+		}
+	}
+
+	cappadocia_mission_inv_30_task = { # Securing the Anatolian Landmass
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_29_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				NOT = {
+					owner = root
+				}
+				OR = {
+					is_in_region = cilicia_region
+					is_in_region = cappadocia_pontica_region
+					is_in_region = cappadocia_region
+					is_in_region = galatia_region
+					is_in_region = asia_region
+					is_in_region = bithynia_region
+				}
+				# NOT = {
+				# 	is_in_area = cyprus_area
+				# }
+			}
+		}
+
+		allow = {
+			region:cilicia_region = {
+				any_region_province = {
+					# NOT = {
+					# 	is_in_area = cyprus_area
+					# }
+					owner = root
+					count = all
+				}
+			}
+			region:cappadocia_pontica_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:cappadocia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:galatia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:asia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:bithynia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				change_country_name = EUMENID_EMPIRE_NAME
+				change_government = imperium
+				add_4_free_province_investments = yes
+				add_country_modifier = {
+					name = eumenid_empire
+					duration = -1
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.96
+			}
+		}
+	}
+
+	cappadocia_mission_inv_31_task = { # Stamping Out the Antigonid Realm
+		icon = task_battle
+
+		requires = { cappadocia_mission_inv_29_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			rank >= major_power
+			c:PRY = {
+				OR = {
+					has_land = no
+					is_subject_of = root
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				current_ruler = {
+					add_popularity = 25
+				}
+				add_political_influence = 50
+				add_military_experience = 80
+				add_manpower = 20
+			}
+			
+			custom_tooltip = cilicia_pedias_claims_tt
+			hidden_effect = {
+				area:cilicia_pedias_area = {
+					every_area_province = {
+						limit = {
+							NOT = { owner = root }
+						}
+						add_claim = root
+					}
+				}
+
+			}
+			trigger_event = {
+				id = cappadocia_event.97
+			}
+		}
+	}
+
+	cappadocia_mission_inv_32_task = { # Competitors in Asia
+		icon = task_conquest
+
+		requires = { cappadocia_mission_inv_30_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		bypass = {
+			c:SEL = {
+				has_land = no
+			}
+		}
+		
+		allow = {
+			OR = {
+				is_subject = no
+				is_subject_of = c:SEL
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = seleukid_ultimatum_tt
+			if = {
+				limit = {
+					root = {
+						is_subject_of = c:SEL
+					}
+				}
+				trigger_event = {
+					id = cappadocia_event.57
+				}
+			}
+			else = {
+				trigger_event = {
+					id = cappadocia_event.58
+				}
+			}
+		}
+	}
+
+	cappadocia_mission_inv_33_task = { # The Spoils of Cilicia Pedias
+		icon = task_economical
+
+		requires = { cappadocia_mission_inv_31_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = cilicia_pedias_area
+				}
+			}
+		}
+
+		allow = {
+			manpower >= 10
+			area:cilicia_pedias_area = {
+				any_area_province = {
+					count = all
+					owner = root
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = cilicia_treasure_tt
+			trigger_event = {
+				id = cappadocia_event.65
+			}
+		}
+	}
+
+	cappadocia_mission_inv_34_task = { # Alexander’s Empire
+		icon = task_atlas
+
+		requires = { cappadocia_mission_inv_32_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+		final = yes
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 790 # Antigoneia
+					province_id = 278 # Pergamon
+					province_id = 379 # Pella
+				}
+			}
+		}
+
+		allow = {
+			owns = 790 # Antigoneia
+			owns = 278 # Pergamon
+			owns = 379 # Pella
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				custom_tooltip = access_to_hellenistic_empire_tree_tt
+				set_variable = allow_hellenistic_empire_tree_var
+				add_country_modifier = {
+					name = new_succesor_kingdom
+					duration = -1
+				}
+				add_political_influence = 100
+				add_manpower = 10
+			}
+			trigger_event = {
+				id = cappadocia_event.66
+			}
+		}
+	}
+
+	cappadocia_mission_inv_35_task = { # Alexander’s Vision
+		icon = task_heracles
+		requires = { cappadocia_mission_inv_32_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			current_ruler = {
+				popularity >= 90
+			}
+			political_influence >= 200
+			stability >= 65
+		}
+
+		on_completion = {
+			custom_tooltip = alexander_vision_claims_tt
+			hidden_effect = {
+				alexanders_vision_claim_effect = yes
+			}
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = realizing_alexanders_vision
+					duration = -1
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.98
+			}
+		}
+	}
+
+	cappadocia_mission_inv_34B_task = { # Greek
+		icon = task_artemis
+
+		requires = { cappadocia_mission_inv_26_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {}
+
+		allow = {
+			political_influence >= 25
+			any_country_culture = {
+				is_culture = thracian
+				country_culture_pop_count >= 25
+			}
+		}
+
+		on_completion = {
+			hidden_effect = { # apparantly you need at least 1 pop of the culture in your country
+				capital_scope = {
+					define_pop = {
+						culture = thracian
+						religion = roman_pantheon
+						type = nobles
+					}
+				}
+			}
+			show_as_tooltip = {
+				add_political_influence = -25
+				set_primary_culture_cleanup_effect = {
+					NEW_PRIMARY_CULTURE = thracian
+					MAKE_OLD_CULTURE_INTEGRATED = yes
+				}
+				capital_scope = {
+					define_pop = {
+						type = nobles
+						religion = roman_pantheon
+						culture = thracian
+					}
+					define_pop = {
+						type = citizen
+						religion = roman_pantheon
+						culture = thracian
+					}
+					define_pop = {
+						type = citizen
+						religion = roman_pantheon
+						culture = thracian
+					}
+					define_pop = {
+						type = freemen
+						religion = roman_pantheon
+						culture = thracian
+					}
+					define_pop = {
+						type = freemen
+						religion = roman_pantheon
+						culture = thracian
+					}
+				}
+			}
+			custom_tooltip = thracian_cap_opinion_tt
+			hidden_effect = {
+				trigger_event = {
+					id = cappadocia_event.99
+				}
+				every_country = {
+					limit = {
+						country_culture_group = hellenic
+						NOT = {
+							primary_culture = macedonian
+						}
+					}
+					add_opinion = {
+						modifier = cap_greek_pos_opmod
+						target = root
+					}
+				}
+				every_country = {
+					limit = {
+						primary_culture = macedonian
+					}
+					add_opinion = {
+						modifier = cap_greek_neg_opmod
+						target = root
+					}
+				}
+			}
+		}
+	}
+
+	cappadocia_mission_inv_34C_task = { # Protectors of the Argeads
+		icon = task_calm
+
+		requires = { cappadocia_mission_inv_34B_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			hidden:char:42 = { # Ptolemy
+				is_alive = no
+			}
+			hidden:char:37 = { # Antigonos
+				is_alive = no
+			}
+			hidden:char:24 = { # Seleukos
+				is_alive = no
+			}
+			hidden:char:32 = { # Kassander
+				is_alive = no
+			}
+			hidden:char:41 = { # Lysimachos
+				is_alive = no
+			}
+			OR = {
+				custom_tooltip = {
+					text = married_to_argead_tt
+					current_ruler = {
+						is_married = yes
+						trigger_if = {
+							limit = {
+								is_married = yes
+							}
+							spouse = {
+								has_trait = argeads
+							}
+						}
+					}
+				}
+				AND = {
+					custom_tooltip = {
+						text = current_ruler_married_no_tt
+						current_ruler = {
+							is_married = no
+						}
+					}
+					custom_tooltip = {
+						text = argead_in_court_tt
+						any_character = {
+							trigger_if = {
+								root.current_ruler = {
+									is_female = no
+								}
+								is_female = yes
+							}
+							trigger_else_if = {
+								root.current_ruler = {
+									is_female = yes
+								}
+								is_female = no
+							}
+							has_trait = argeads
+							is_married = no
+						}
+					}
+				}
+			}
+		}
+
+		bypass = {
+			current_ruler = {
+				has_trait = argeads
+			}
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = cappadocia_event.100
+			}
+			show_as_tooltip = {
+				if = {
+					limit = {
+						current_ruler = {
+							is_married = no
+						}
+					}
+					random_character = {
+						limit = {
+							trigger_if = {
+								limit = {
+									root.current_ruler = {
+										is_female = no
+									}
+								}
+								is_female = yes
+							}
+							trigger_else_if = {
+								limit = {
+									root.current_ruler = {
+										is_female = yes
+									}
+								}
+								is_female = no
+							}
+							has_trait = argeads
+							is_married = no
+						}
+						marry_character = root.current_ruler
+					}
+					add_political_influence = 25
+				}
+				else = {
+					add_political_influence = 50
+				}
+			}
+		}
+	}
+
+	cappadocia_mission_inv_34D_task = { # Royalist
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_34C_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_native_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			current_ruler = {
+				has_trait = argeads
+			}
+		}
+
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = last_royalist
+					duration = -1
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.101
+			}
+		}
+	}
+
+    ### Branch 4 - Developing Cappadocia
+	cappadocia_mission_inv_1d_task = { #The Trading Hub of Mazaka
+		icon = task_economical
+
+		highlight = {
+			scope:province = {
+				owner = root
+				is_capital = yes
+			}
+		}
+
+		allow = {
+			capital_scope = { 
+				num_of_commerce_building >= 3
+				num_of_academy_building >= 3
+				num_of_nobles >= 6
+				province_income > 0.5
+			}
+		}
+
+		on_completion = { 
+			show_as_tooltip = {
+				add_4_free_province_investments = yes
+			}
+			trigger_event = {
+				id = cappadocia_event.102
+			}
+		}
+	}
+	cappadocia_mission_inv_2d_task = {  #Cappadocian Cavalry
+
+		icon = task_battle
+		requires = { cappadocia_mission_inv_1d_task }
+
+		allow = {
+			custom_tooltip = {
+				text = cap_horse_savlue_tt
+				cap_horse_svalue >= 5
+			}
+			any_owned_province = {
+				count >= 10
+				has_building = basic_settlement_infratructure_building
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = cap_horse_tt
+			trigger_event = {
+				id = cappadocia_event.67
+			}
+		}
+	}   
+	cappadocia_mission_inv_3d_task = { #The Palace of Gazioura p:7998
+		icon = task_happiness
+
+		requires = { cappadocia_mission_inv_1d_task }
+
+		highlight = {
+			scope:province = {
+				province_id = 7998
+			}
+		}
+
+		allow = {
+			treasury >= 150
+			manpower >= 4
+			owns = 7998
+			hidden:p:7998 = {
+				has_province_rank = city
+				total_population >= 80
+			}
+			p:7998.state = {
+				trade_routes >= 6
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_treasury = -150
+				add_manpower = -4
+				add_research = {
+					technology = oratory_tech
+					value = 25
+				}
+				p:7998 = {
+					set_city_status = city_metropolis
+					add_province_modifier = {
+						name = ariarathes_palace
+						duration = -1
+					}
+				}
+			}
+
+			trigger_event = {
+				id = cappadocia_event.103
+			}
+		}
+	}
+	cappadocia_mission_inv_4d_task = { #Hellenization of Cappadocia
+
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_2d_task }
+
+		allow = {
+			political_influence >= pop_culture_happiness_political_influence_svalue
+			custom_tooltip = {
+				text = prestigious_culture_tt
+				any_integrated_culture = {
+					is_culture = root.culture
+					country_culture_pop_count >= 100
+				}
+			}
+		}
+
+		on_completion = {
+			hidden_effect = {
+				every_owned_province = {
+					every_pops_in_province = {
+						limit = {
+							pop_hapiness >= 0.75
+							NOT = {
+								pop_culture = root.culture
+							}
+						}
+						set_pop_culture = root.culture
+					}
+				}
+			}
+			custom_tooltip = pop_happy_culture_convert_tt
+			show_as_tooltip = {
+				add_political_influence = {
+					value = pop_culture_happiness_political_influence_svalue
+					multiply = -1
+				}
+				add_research = {
+					technology = oratory_tech
+					value = 25
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.104
+			}
+		}
+	}
+	cappadocia_mission_inv_5d_task = { #Expand the Underground Cities
+		icon = task_calm
+
+		requires = { cappadocia_mission_inv_2d_task cappadocia_mission_inv_3d_task }
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 1800
+					province_id = 1818
+					province_id = 7981
+				}
+			}
+		}
+
+		allow = {
+			treasury >= 300
+			hidden:p:1800 = {
+				has_city_status = yes
+				total_population >= 25
+			}
+			hidden:p:1818 = {
+				has_city_status = yes
+				total_population >= 25
+			}
+			hidden:p:7981 = {
+				has_city_status = yes
+				total_population >= 25
+			}
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = cappadocia_event.105
+			}
+			show_as_tooltip = {
+				add_treasury = -300
+				p:1800 = {
+					add_province_modifier = {
+						name = expanded_underground_city
+						duration = -1
+					}
+				}
+				p:1818 = {
+					add_province_modifier = {
+						name = expanded_underground_city
+						duration = -1
+					}
+				}
+				p:7981 = {
+					add_province_modifier = {
+						name = expanded_underground_city
+						duration = -1
+					}
+				}
+			}
+		}
+	}
+	cappadocia_mission_inv_6d_task = { #Administration in Tyana
+		icon = task_political
+
+		requires = { cappadocia_mission_inv_3d_task }
+
+		highlight = {
+			scope:province = {
+				province_id = 1951 # Tyana
+			}
+		}
+
+		allow = {
+			owns = 1951
+			hidden:p:1951 = {
+				has_province_rank = city_metropolis
+				num_of_academy_building >= 3
+				num_of_library_building >= 3
+				num_of_court_building >= 3
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				p:1951 = {
+					add_province_modifier = {
+						name = tyana_admin_centre
+						duration = -1
+					}
+				}
+				add_research = {
+					technology = civic_tech
+					value = 25
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.106
+			}
+		}
+	}
+	cappadocia_mission_inv_7d_task = { #Cappadocian Training
+
+		icon = task_conquest
+
+		requires = { cappadocia_mission_inv_4d_task }
+
+		allow = {
+			military_experience >= 100
+			manpower >= 10
+			trigger_if = {
+                limit = {
+					has_dlc = "Heirs of Alexander"
+                    capital_scope.governorship = { has_legion_trigger = yes }
+                    any_unit = { legion = ROOT.capital_scope.governorship.legion }
+                }
+                custom_tooltip = {
+                    text = cap_legion_distinction_tt
+                    any_legion = {
+						distinction_count >= 4 # primigenia and generic count
+                    }
+                }
+            }
+			trigger_else_if = {
+				limit = {
+					NOT = { has_dlc = "Heirs of Alexander" }
+					capital_scope.governorship = { has_legion_trigger = yes }
+                    any_unit = { legion = ROOT.capital_scope.governorship.legion }
+				}
+				custom_tooltip = {
+                    text = cap_legion_count_tt
+                    any_legion = {
+						any_legion_unit = {
+                            unit_size >= 40
+                        }
+                    }
+                }
+			}
+            trigger_else = {
+                trigger_if = {
+					limit = {
+						has_dlc = "Heirs of Alexander"
+					}
+					custom_tooltip = {
+						text = cap_legion_distinction_tt
+						num_of_ships >= 1000000 #Random impossible trigger so no error log pain
+					}
+				}
+				trigger_else = {
+					limit = {
+						NOT = { has_dlc = "Heirs of Alexander" }
+					}
+					custom_tooltip = {
+						text = cap_legion_count_tt
+						num_of_ships >= 1000000 #Random impossible trigger so no error log pain
+					}
+				}
+            }
+		}
+
+		on_completion = {
+			show_as_tooltip	= {
+				add_manpower = -10
+				add_country_modifier = {
+					name = cappadocian_terrain_expertise
+					duration = -1
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.107
+			}
+		}
+	}
+	cappadocia_mission_inv_8d_task = { # A Cappadocian Coast
+		icon = task_expansion
+
+		requires = { cappadocia_mission_inv_6d_task }
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = machelonia_area
+					is_in_area = paphlagonia_inferior_area
+				}
+			}
+		}
+
+		allow = {
+			area:machelonia_area = {
+				any_area_province = {
+					count = all
+					owner = root
+				}
+			}
+			area:paphlagonia_inferior_area = {
+				any_area_province = {
+					count = all
+					owner = root
+				}
+			}
+			hidden:p:1812 = {
+				has_building = port_building
+			}
+			hidden:p:1807 = {
+				has_building = port_building
+			}
+			hidden:p:1734 = {
+				has_building = port_building
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = cappadocian_coast
+					duration = -1
+				}
+				if = {
+					limit = {
+						any_owned_province = { is_port = yes }
+					}
+					random_owned_province = {
+						limit = {
+							is_port = yes
+						}
+						owner = {
+							create_unit = {
+								navy = yes
+								location = prev.prev
+								add_subunit = octere
+								add_subunit = octere
+								add_subunit = hexere
+								add_subunit = hexere
+								add_subunit = trireme
+								add_subunit = trireme
+								add_subunit = trireme
+								add_subunit = trireme
+							}
+						}
+					}
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.108
+			}
+		}
+	}
+	cappadocia_mission_inv_9d_task = { # Cilician Enterprise
+		icon = task_economical
+
+		requires = { cappadocia_mission_inv_6d_task }
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = cilicia_region
+				}
+			}
+		}
+
+		allow = {
+			region:cilicia_region = {
+				any_region_province = {
+					count = all
+					owner = root
+				}
+			}
+			custom_tooltip = {
+				text = cilica_traiders_tt
+				cilicia_ports_svalue >= 30
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = cilician_traiders
+					duration = 9125
+				}
+				custom_tooltip = cap_slave_raid_enabled_tt
+				set_variable = unlocked_slave_raiding
+				trigger_event = {
+					id = cappadocia_event.109
+				}
+			}
+			
+		}
+	}
+
+	cappadocia_mission_inv_10d_task = { # city of honey
+		icon = task_artemis
+
+		requires = { cappadocia_mission_inv_5d_task }
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 1854
+					province_id = 1859
+					province_id = 1886
+				}
+			}
+		}
+
+		allow = {
+			owns = 1854 # Melitene
+			owns = 1886
+			p:1886 = {
+				num_goods_produced >= 3
+			}
+			owns = 1859
+			p:1859 = {
+				num_goods_produced >= 3
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				p:1854 = {
+					add_province_modifier = {
+						name = honey_melitia_hub
+						duration = -1
+					}
+				}
+				p:1859 = {
+					add_province_modifier = {
+						name = honey_melitia
+						duration = -1
+					}
+				}
+				p:1886 = {
+					add_province_modifier = {
+						name = honey_melitia
+						duration = -1
+					}
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.110
+			}
+		}
+	}
+
+	### Native paths begin here
+	cappadocia_native_path_1 = {
+		icon = task_political
+
+		duration = 180
+
+		prevented_by = {
+			cappadocia_mission_inv_2A_task cappadocia_mission_inv_2B_task cappadocia_mission_inv_26_task
+		}
+		requires = { cappadocia_mission_inv_1_task }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		on_start = {
+			trigger_event = {
+				id = cappadocia_event.70
+				days = { 7 30 } # to seem random and not triggered from mission task
+			}
+			set_variable = cap_native_path
+		}
+
+		on_completion = {
+			custom_tooltip = native_path_tt
+			trigger_event = {
+				id = cappadocia_event.68
+			}
+		}
+	}
+
+	cappadocia_native_path_2 = { #macedonian remnants
+		icon = task_battle
+
+		requires = { cappadocia_native_path_1 }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		bypass = { # Eumenes' Wife and Children are dead
+			char:432 = { is_alive = no }
+			char:433 = { is_alive = no }
+			char:434 = { is_alive = no }
+			char:435 = { is_alive = no }
+		}
+
+		allow = {
+			war = no
+		}
+
+		on_completion = {
+			custom_tooltip = eumenes_heirs_rise_up_tt
+			trigger_event = {
+				id = cappadocia_event.1
+			}
+		}
+	}
+
+	cappadocia_native_path_3 = { #persian claimant
+		icon = task_conquest
+
+		requires = { cappadocia_native_path_1 }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			war = no
+		}
+
+		on_completion = {
+			custom_tooltip = ariarathes_returns_tt
+			trigger_event = {
+				id = cappadocia_event.7
+			}
+		}
+	}
+
+	cappadocia_native_path_4 = { # free destiny
+		icon = task_political
+
+		requires = { cappadocia_native_path_2 cappadocia_native_path_3 }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			is_subject = no
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = native_independence
+					duration = 3650 # 10 years
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.111
+			}
+		}
+	}
+
+	cappadocia_native_path_5 = {
+		icon = task_political
+
+		requires = { cappadocia_native_path_4 }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			stability >= 60
+			manpower >= 10
+			war = no
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_treasury = 500
+				add_political_influence = 100
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.112
+			}
+		}
+	}
+
+	cappadocia_native_path_6 = {
+		icon = task_political
+
+		requires = { cappadocia_native_path_5 }
+
+		potential = {
+			primary_culture = cappadocian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 205
+					province_id = 1913
+					province_id = 1817
+				}
+			}
+		}
+
+		allow = {
+			has_completed_mission_task = cappadocia_mission_inv_5d_task
+			treasury >= 300
+			hidden:p:205 = {
+				has_city_status = yes
+				total_population >= 25
+			}
+			hidden:p:1913 = {
+				has_city_status = yes
+				total_population >= 25
+			}
+			hidden:p:1817 = {
+				has_city_status = yes
+				total_population >= 25
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_treasury = -300
+				p:205 = {
+					add_province_modifier = {
+						name = expanded_underground_city
+						duration = -1
+					}
+				}
+				p:1913 = {
+					add_province_modifier = {
+						name = expanded_underground_city
+						duration = -1
+					}
+				}
+				p:1817 = {
+					add_province_modifier = {
+						name = expanded_underground_city
+						duration = -1
+					}
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.113
+			}
+		}
+	}
+
+	cappadocia_native_path_7 = {
+		icon = task_political
+
+		requires = { cappadocia_native_path_6 }
+
+		potential = {
+			primary_culture = cappadocian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 7981
+				}
+			}
+		}
+
+		allow = {
+			hidden:p:7981 = {
+				has_province_rank = city_metropolis
+				has_building = commerce_building
+				has_building = town_hall_building
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_treasury = 500
+				add_2_free_province_investments = yes
+				p:7981 = {
+					add_province_modifier = {
+						name = underground_city_hub
+						duration = -1
+					}
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.114
+			}
+		}
+	}
+
+	cappadocia_native_path_8 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_5 }
+
+		duration = 365
+
+		potential = {
+			primary_culture = cappadocian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = paphlagonia_inferior_area
+					is_in_area = paphlagonia_superior_area
+					is_in_region = cappadocia_pontica_region
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = pontus_claims_tt
+			hidden_effect = {
+				trigger_event = {
+					id = cappadocia_event.115
+				}
+				region:cappadocia_pontica_region = {
+					every_region_province = {
+						limit = {
+							NOT = { owner = root }
+						}
+						add_claim = root
+					}
+				}
+				area:paphlagonia_inferior_area = {
+					every_area_province = {
+						limit = {
+							NOT = { owner = root }
+						}
+						add_claim = root
+					}
+				}
+				area:paphlagonia_superior_area = {
+					every_area_province = {
+						limit = {
+							NOT = { owner = root }
+						}
+						add_claim = root
+					}
+				}
+			}
+		}
+	}
+
+	cappadocia_native_path_9 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_8 }
+
+		potential = {
+			primary_culture = cappadocian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 1812
+					province_id = 1819
+					province_id = 1790
+					province_id = 1734
+					province_id = 1807
+				}
+			}
+		}
+
+		allow = {
+			owns = 1812
+			owns = 1819
+			owns = 1790
+			owns = 1734
+			owns = 1807
+		}
+
+		on_completion = {
+			show_as_tooltip	= {
+				add_country_modifier = {
+					name = united_cappadocias
+					duration = 9125
+				}
+				add_4_free_province_investments = yes
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.116
+			}
+		}
+	}
+
+	cappadocia_native_path_10 = {
+		icon = task_political
+
+		requires = { cappadocia_native_path_6 }
+
+		potential = {
+			primary_culture = cappadocian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = cappadocia_garsauritis_area
+					is_in_area = cappadocia_saravene_area
+				}
+			}
+		}
+
+		allow = {
+			hidden:p:7981.state = {
+                calc_true_if = {
+                    amount >= 2
+                    state_improvement_civic_trigger = yes
+                    state_improvement_oratory_trigger = yes
+                    state_improvement_religious_trigger = yes 
+                    state_improvement_military_trigger = yes
+                }
+            }
+			hidden:p:1951.state = {
+                calc_true_if = {
+                    amount >= 2
+                    state_improvement_civic_trigger = yes
+                    state_improvement_oratory_trigger = yes
+                    state_improvement_religious_trigger = yes 
+                    state_improvement_military_trigger = yes
+                }
+            }
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_political_influence = 75
+				add_4_free_province_investments = yes
+			}
+
+			trigger_event = {
+				id = cappadocia_event.117
+			}
+		}
+	}
+
+	cappadocia_native_path_11 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_9 }
+
+		potential = {
+			primary_culture = cappadocian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		final = yes
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = cilicia_region
+					is_in_region = cappadocia_pontica_region
+					is_in_region = cappadocia_region
+					is_in_region = galatia_region
+					is_in_region = asia_region
+					is_in_region = bithynia_region
+				}
+				NOT = {
+					is_in_area = cyprus_area
+				}
+			}
+		}
+
+		allow = {
+			region:cilicia_region = {
+				any_region_province = {
+					# NOT = {
+					# 	is_in_area = cyprus_area
+					# }
+					owner = root
+					count = all
+				}
+			}
+			region:cappadocia_pontica_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:cappadocia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:galatia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:asia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+			region:bithynia_region = {
+				any_region_province = {
+					owner = root
+					count = all
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = cappadocia_event.71
+			}
+			add_country_modifier = {
+				name = united_anatolian_empire
+				duration = -1
+			}
+		}
+	}
+
+	cappadocia_native_path_12 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_5 }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			custom_tooltip = {
+				text = native_cap_horse_savlue_tt
+				cap_horse_svalue >= 5
+			}
+			trigger_if = {
+                limit = {
+                    capital_scope.governorship = { has_legion_trigger = yes }
+                    any_unit = { legion = ROOT.capital_scope.governorship.legion }
+                }
+                custom_tooltip = {
+                    text = cap_legion_count_tt
+                    any_legion = {
+						any_legion_unit = {
+                            unit_size >= 40
+                        }
+                    }
+                }
+            }
+			trigger_else = {
+                custom_tooltip = {
+                    text = cap_legion_count_tt
+                    num_of_ships >= 1000000 #Random impossible trigger so no error log pain
+                }
+            }
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = secured_dreams_of_independece
+					duration = -1
+				}
+			}
+
+			trigger_event = {
+				id = cappadocia_event.118
+			}
+		}
+	}
+
+	cappadocia_native_path_13 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_5 }
+
+		potential = {
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			trigger_if = {
+				limit = {
+					country_culture_group = scythian_east
+				}
+				custom_tooltip = {
+					text = allied_country_culture_tt
+					any_allied_country = {
+						country_culture_group = scythian_east
+					}
+				}
+			}
+			trigger_else = {
+				custom_tooltip = {
+					text = allied_country_culture_tt
+					any_allied_country = {
+						country_culture_group = anatolian
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_political_influence = 40
+				current_ruler = {
+					add_popularity = 10
+				}
+			}
+			
+			trigger_event = {
+				id = cappadocia_event.119
+			}
+		}
+	}
+
+	cappadocia_native_path_14 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_5 }
+
+		duration = 365
+
+		potential = {
+			primary_culture = cimmerian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			custom_tooltip = {
+				text = 40_percent_of_total_pop_50_percent_happiness_tt
+				total_pop_happiness_svalue >= total_pop_happiness_max_svalue
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_political_influence = 75
+				add_1_free_province_investments = yes
+				custom_tooltip = cimmerian_pops_increase_tt
+				create_character = {
+					culture = armenian
+					religion = zoroaster
+					female = no
+					hidden_effect = {
+						add_martial = 4
+						add_finesse = 4
+						add_trait = intelligent
+					}
+				}
+			}
+			
+			hidden_effect = {
+				trigger_event = {
+					id = cappadocia_event.120
+				}
+				every_owned_province = {
+					limit = {
+						has_city_status = yes
+					}
+					define_pop = {
+						type = nobles
+						culture = cimmerian
+						religion = anatolian_religion
+					}
+				}
+				every_owned_province = {
+					limit = {
+						has_city_status = no
+					}
+					define_pop = {
+						type = citizen
+						culture = cimmerian
+						religion = anatolian_religion
+					}
+				}
+			}
+		}
+	}
+
+	cappadocia_native_path_15 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_14 }
+
+		potential = {
+			primary_culture = cimmerian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			any_integrated_culture = {
+				has_pop_type_right = nobles
+				custom_tooltip = {
+					text = cap_cimm_ana_cult_tt
+					this.culture.culture_group = culture_group:anatolian
+					country_culture_pop_count >= 300
+				}
+			}
+			any_integrated_culture = {
+				custom_tooltip = {
+					text = primary_culture_100_pops_tt
+					is_culture = root.culture
+					country_culture_pop_count >= 100
+				}
+				has_country_culture_modifier = citizenship_by_adoption
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = scythian_anatolian_mix
+					duration = -1
+				}
+			}
+			
+			custom_tooltip = access_armenian_traditions_tt
+			trigger_event = {
+				id = cappadocia_event.121
+			}
+			set_variable = cimmerian_cap_armenia_mil_trads_var
+		}
+	}
+
+	cappadocia_native_path_16 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_5 }
+
+		potential = {
+			primary_culture = cimmerian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			rank >= major_power
+			country_population >= 2500
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_military_experience = 100
+			}
+
+			custom_tooltip = claims_anatolia_and_more_tt
+			hidden_effect = {
+				trigger_event = {
+					id = cappadocia_event.122
+				}
+				region:cappadocia_pontica_region = { formable_region_province_effect = yes }
+				region:galatia_region = { formable_region_province_effect = yes }
+				region:bithynia_region = { formable_region_province_effect = yes }
+				region:cilicia_region = { formable_region_province_effect = yes }
+				region:albania_region = { formable_region_province_effect = yes }
+				region:thrace_region = { formable_region_province_effect = yes }
+				region:syria_region = { formable_region_province_effect = yes }
+				region:asia_region = { formable_region_province_effect = yes }
+				region:assyria_region = { formable_region_province_effect = yes }
+				region:armenia_region = { formable_region_province_effect = yes }
+			}
+		}
+	}
+
+	cappadocia_native_path_17 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_16 }
+
+		potential = {
+			primary_culture = cimmerian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 292
+					province_id = 1936
+					province_id = 1986
+				}
+			}
+		}
+
+		allow = {
+			owns = 292 # Sardeis
+			owns = 1936 # Kelainai
+			owns = 1986 # Kretopolis
+			any_country_culture = {
+				AND = {
+					is_culture = lydian
+					has_pop_type_right = slaves
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = avenging_cimmerians
+					duration = -1
+				}
+			}
+
+			trigger_event = {
+				id = cappadocia_event.123
+			}
+		}
+	}
+
+	cappadocia_native_path_18 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_16 }
+
+		potential = {
+			primary_culture = cimmerian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 790
+					province_id = 836
+					province_id = 743
+					province_id = 843
+				}
+			}
+		}
+
+		allow = {
+			owns = 790 # Antigoneia
+			owns = 836 # Samosata
+			owns = 743 # Tyros
+			owns = 843 # Chlomaron
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = pushing_east
+					duration = 3650 # 10 years
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.124
+			}
+		}
+	}
+
+	cappadocia_native_path_19 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_18 cappadocia_native_path_17 }
+		final = yes
+
+		potential = {
+			primary_culture = cimmerian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		allow = {
+			num_of_cities >= 500
+			any_integrated_culture = {
+				is_culture = root.culture
+				country_culture_pop_count >= 500
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_4_free_province_investments = yes
+				add_military_experience = 80
+				change_country_name = cimmerian_empire_name
+				custom_tooltip = "create_high_martial_rising_star"
+				custom_tooltip = steppe_claims_tt
+			}
+			hidden_effect = {
+				create_character = {
+					add_martial = 8
+					add_trait = disciplined
+				}
+				region:sakia_region = { formable_region_province_effect = yes }
+				region:sarmatia_asiatica_region = { formable_region_province_effect = yes }
+				region:taurica_region = { formable_region_province_effect = yes }
+				region:scythia_region = { formable_region_province_effect = yes }
+				trigger_event = {
+					id = cappadocia_event.72
+				}
+			}
+		}
+	}
+
+	cappadocia_native_path_20 = {
+		icon = task_expansion
+
+		requires = { cappadocia_native_path_19 }
+		final = yes
+
+		potential = {
+			primary_culture = cimmerian
+			NOT = {
+				has_variable = cap_persian_path
+				has_variable = cap_eumenid_path
+				has_variable = cap_loyalist_path
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = sakia_region
+					is_in_region = sarmatia_asiatica_region
+					is_in_region = taurica_region
+					is_in_region = scythia_region
+				}
+			}
+		}
+
+		allow = {
+			region:sakia_region = {
+				any_region_province = {
+					count = all
+					owner = root
+				}
+			}
+			region:sarmatia_asiatica_region = {
+				any_region_province = {
+					count = all
+					owner = root
+				}
+			}
+			region:taurica_region = {
+				any_region_province = {
+					count = all
+					owner = root
+				}
+			}
+			region:scythia_region = {
+				any_region_province = {
+					count = all
+					owner = root
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = reconauered_steppes
+					duration = -1
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.125
+			}
+		}
+	}
+}

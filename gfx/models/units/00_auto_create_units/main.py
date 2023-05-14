@@ -85,7 +85,7 @@ lanka_units = UnitModel(
 	entity_two_mesh="mauryan_infantry_01_mesh",
 	entity_two_weapon="iberian_sword_01_entity",
 	entity_two_spear="persian_spear_01_entity",
-	entity_two_shield="lanka_shield_01_entity",
+	entity_two_shield="paurava_levy_shield_entity",
 	entity_two_drill_post="mauryan_drill_post_entity",
 	entity_two_head="mauryan_helmet_01_entity",
 
@@ -134,6 +134,24 @@ paurava_units = UnitModel(
 	entity_two_head="mauryan_helmet_01_entity",
 )
 
+maurya_units = UnitModel(
+	filename="../maurya/maurya_infantry_01",
+	entity_one_name="maurya_sword_infantry_levy",
+	entity_one_mesh="mauryan_infantry_01_mesh",
+	entity_one_weapon="mauryan_sword_01_entity",
+	entity_one_spear="persian_spear_01_entity",
+	entity_one_shield="maurya_shield_levy_entity",
+	entity_one_drill_post="arabian_drill_post_entity",
+
+	entity_two_name="maurya_sword_infantry_legion",
+	entity_two_mesh="mauryan_infantry_01_mesh",
+	entity_two_weapon="iberian_sword_01_entity",
+	entity_two_spear="persian_spear_01_entity",
+	entity_two_shield="maurya_shield_legion_entity",
+	entity_two_drill_post="mauryan_drill_post_entity",
+	entity_two_head="mauryan_helmet_01_entity",
+)
+
 if __name__ == '__main__':
 	# pandya_units.write_file()
 	# pandya_units.add_unit_types("pandya_sword_infantry_levy", "pandya_sword_infantry_legion", "PND")
@@ -159,3 +177,6 @@ if __name__ == '__main__':
 
 	paurava_units.write_file()
 	paurava_units.add_unit_types("paurava_sword_infantry_levy", "paurava_sword_infantry_legion", "PRA")
+
+	maurya_units.write_file()
+	maurya_units.add_unit_types("maurya_sword_infantry_levy", "maurya_sword_infantry_legion", "MRY")

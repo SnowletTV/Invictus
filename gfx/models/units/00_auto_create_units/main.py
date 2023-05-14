@@ -85,7 +85,7 @@ lanka_units = UnitModel(
 	entity_two_mesh="mauryan_infantry_01_mesh",
 	entity_two_weapon="iberian_sword_01_entity",
 	entity_two_spear="persian_spear_01_entity",
-	entity_two_shield="paurava_levy_shield_entity",
+	entity_two_shield="numidian_shield_01_entity",
 	entity_two_drill_post="mauryan_drill_post_entity",
 	entity_two_head="mauryan_helmet_01_entity",
 
@@ -168,15 +168,15 @@ if __name__ == '__main__':
 	# tamil_units.add_unit_types("tamil_sword_infantry_levy", "tamil_sword_infantry_legion", "cholan")
 	# tamil_units.add_unit_types("tamil_sword_infantry_levy", "tamil_sword_infantry_legion", "pandyan")
 
-	# lanka_units.write_file()
-	# lanka_units.add_unit_types("lanka_sword_infantry_levy", "lanka_sword_infantry_legion", "ANU")
-	# lanka_units.add_unit_types("lanka_sword_infantry_levy", "lankan_generic_infantry_legion", "lankan")
+	lanka_units.write_file()
+	lanka_units.add_unit_types("lanka_sword_infantry_levy", "lanka_sword_infantry_legion", "ANU")
+	lanka_units.add_unit_types("lanka_sword_infantry_levy", "lankan_generic_infantry_legion", "lankan")
 
 	# kalinga_units.write_file()
 	# kalinga_units.add_unit_types("kalinga_sword_infantry_levy", "kalinga_sword_infantry_legion", "KAL")
 
-	paurava_units.write_file()
-	paurava_units.add_unit_types("paurava_sword_infantry_levy", "paurava_sword_infantry_legion", "PRA")
+	# paurava_units.write_file()
+	# paurava_units.add_unit_types("paurava_sword_infantry_levy", "paurava_sword_infantry_legion", "PRA")
 
-	maurya_units.write_file()
-	maurya_units.add_unit_types("maurya_sword_infantry_levy", "maurya_sword_infantry_legion", "MRY")
+	# maurya_units.write_file()
+	# maurya_units.add_unit_types("maurya_sword_infantry_levy", "maurya_sword_infantry_legion", "MRY")

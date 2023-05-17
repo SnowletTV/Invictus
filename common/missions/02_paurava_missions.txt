@@ -1,0 +1,1412 @@
+﻿paurava_missions = {
+	header = "indian_mission_header"
+	icon = india_3 #Placeholder
+	repeatable = no
+	chance = { factor = 50000 }
+
+	potential = {
+		NOT = { has_variable = paurava_missions_cooldown }
+		tag = PRA
+	}
+	on_start = {
+		save_scope_as = mission_country
+	}
+	abort = {
+		ai_mission_back_out_trigger = yes
+	}
+	on_abort = {
+		custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = paurava_missions_cooldown
+            days = 7300
+	 	}
+	}
+	on_completion = {
+		complete_mission_effect = yes
+	}
+
+	paurava_missions_task_0 = { # Children of Porus
+		icon = "task_conquest"
+		allow = {}
+		duration = 25
+		on_completion = {
+			trigger_event = {
+				id = me_paurava.20
+			}
+			show_as_tooltip = {
+				current_ruler = {
+					add_finesse = 2
+					add_popularity = popularity_large
+				}
+				add_legitimacy = legitimacy_large
+				add_political_influence = 30
+				add_country_modifier = {
+					name = approval_of_the_people
+					duration = 1095
+				}
+			}
+		}
+	}
+
+ # Sialkot Development Branch #
+	paurava_missions_task_1 = { # Capital of the Madras
+		icon = "task_economical"
+		requires = {
+			paurava_missions_task_0
+		}
+
+		highlight = {
+			scope:province = {
+				this = p:4340
+			}
+		}
+
+		allow = {
+			hidden:p:4340 = {
+				has_city_status = yes
+				has_building = aqueduct_building
+				has_building = commerce_building
+				num_of_used_building_slots >= 3
+				trigger_if = {
+					limit = { has_construction = yes }
+					custom_tooltip = {
+						text = province_has_no_construction_tooltip
+						has_construction  = no
+					}
+				}	
+			}
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_2_free_province_investments = yes
+				p:4340 = {
+					add_permanent_province_modifier = {
+						name = trade_hub_sakala
+					}
+				}
+			}
+			trigger_event = {
+				id = me_paurava.40
+			}
+		}
+	}
+	paurava_missions_task_2 = { # Sakalan Silk
+		icon = "task_economical"
+		requires = { paurava_missions_task_1 }
+		highlight = {
+			scope:province = {	
+				owner = root
+				OR = {
+					trade_goods = silk
+					trade_goods = leather
+					trade_goods = cloth
+				}
+			}
+		}
+		allow = {
+			capital_scope = {
+				calc_true_if = {
+					amount >= 2
+					is_importing_trade_good = leather
+					is_importing_trade_good = cloth
+					hidden:state = {
+						trade_good_imports = {
+							target = silk
+							value >= 2
+						}
+					}
+				}
+			}
+		}
+		on_completion = {
+			show_as_tooltip = {
+				if = {
+					limit = {
+						NOT = { p:4340 = { trade_goods = silk } }
+					}
+					p:4340 = {
+						set_trade_goods = silk
+					}
+				}
+				else = {
+					p:4340 = {
+						add_province_modifier = {
+							name = paurava_missions_02_mod
+							duration = 1825
+						}
+					}
+				}
+			}
+			trigger_event = {
+				id = me_paurava.1 #Province trade good change
+			}
+		}
+	}
+	paurava_missions_task_3 = { # Sack of Taxila
+		icon = "task_conquest"
+		requires = {
+			paurava_missions_task_2
+		}
+		prevented_by = {
+			paurava_missions_task_5
+		}
+		bypass = {
+			has_completed_mission_task = paurava_missions_task_5
+		}
+		highlight = {
+            scope:province = {
+            	is_in_area = taxila_area
+            }
+        }
+		allow = {
+			owns = 7314
+			p:7314 = {
+				total_population <= 45
+				governor_policy = harsh_treatment
+			}
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_treasury = 500
+				add_political_influence = 20
+				random_owned_province = {
+					limit = {
+						is_in_area = gandhara_area
+					}
+					add_state_loyalty = subtract_state_province_loyalty_huge
+				}
+				current_ruler = {
+					add_popularity = -20
+				}
+				p:7314 = {
+					while = {
+						count = 5
+						random_pops_in_province = {
+							kill_pop = yes
+						}
+					}
+					destroy_building_effect = yes
+				}
+				add_country_modifier = {
+					name = destroyer_of_taxila
+					duration = 1825
+				}
+			}
+			trigger_event = {
+				id = me_paurava.41
+			}
+		}
+	}
+	paurava_missions_task_4 = { # Academy of Sakala - Turn this mission into an eventchain instead of using a duration, on_start and on_completion
+		icon = "task_economical"
+		requires = {
+			paurava_missions_task_3
+		}
+		bypass = {
+			has_completed_mission_task = paurava_missions_task_5
+		}
+		duration = 730
+		highlight = {
+            scope:province = {
+            	this = root.capital_scope
+            }
+        }
+		allow = {
+			capital_scope = {
+				great_work_locator_is_free = yes
+			}
+			custom_tooltip = {
+				text = paurava_missions_task_4_tt
+				has_completed_mission_task = paurava_missions_task_5
+			}
+			treasury >= 1000
+		}
+		on_start = {
+			capital_scope = {
+				begin_great_work_construction = {
+					great_work = "sakala_academy"
+					locator = great_work
+					is_ancient = yes
+				}
+			}
+			add_treasury = -1000
+		}
+		
+		on_completion = {
+			show_as_tooltip = {
+				capital_scope = {
+					finish_great_work_construction = {
+						great_work = "sakala_academy"
+						locator = great_work
+					}
+				}
+				current_ruler = {
+					add_popularity = popularity_medium
+				}
+				add_political_influence = 35
+				add_stability = 3
+			}
+			trigger_event = {
+				id = me_paurava.42
+			}
+		}
+	}
+	paurava_missions_task_5 = { # A Second Capital
+		icon = "task_diplomatic"
+		requires = {
+			paurava_missions_task_2
+		}
+		prevented_by = {
+			paurava_missions_task_3
+		}
+		bypass = {
+			has_completed_mission_task = paurava_missions_task_3
+		}
+		highlight = {
+			scope:province = {
+				this = p:7314
+			}
+		}
+		allow = {
+			p:7314 = {
+				num_of_academy_building >= 2
+				num_of_library_building >= 2
+				total_population > 30
+			}
+		}
+		on_completion = {
+			show_as_tooltip = {
+				current_ruler = {
+					add_finesse = 2
+				}
+				add_country_modifier = {
+					name = second_capital
+					duration = -1
+				}
+				p:7314 = {
+	                while = {
+	                    count = 6
+	                    random_pops_in_province = {
+	                        limit = {
+	                            NOT = { pop_culture = root.culture }
+	                        }
+	                        set_pop_culture = root.culture
+	                    }
+	                }
+	            }
+			}
+			trigger_event = {
+				id = me_paurava.43
+			}
+        }
+	}
+	paurava_missions_task_6 = { # Center of Faith
+		icon = "task_religion"
+		duration = 30
+		requires = {
+			paurava_missions_task_4
+			paurava_missions_task_5
+		}
+		allow = {
+			current_ruler = {
+				popularity >= 85
+			}
+			legitimacy >= 85
+			stability >= 50
+			p:4340 = {
+				total_population >= 40
+			}
+		}
+		on_start = {
+			trigger_event = {
+				id = me_paurava.2 # Spread 1/4 Religions
+			}
+		}
+		on_completion = {
+			current_ruler = {
+				add_zeal = 3
+			}
+		}
+	}
+	paurava_missions_task_22 = { # Spread Vedic
+		icon = "task_religion"
+		requires = {
+			paurava_missions_task_6
+		}
+		prevented_by = {
+			paurava_missions_task_23
+			paurava_missions_task_24
+			paurava_missions_task_25
+		}
+		bypass = {
+			OR = {
+				has_completed_mission_task = paurava_missions_task_23
+				has_completed_mission_task = paurava_missions_task_24
+				has_completed_mission_task = paurava_missions_task_25
+			}
+		}
+		allow = {
+			custom_tooltip = {
+				has_variable = center_of_vedic
+				text = "paurava_religion_spread_tt"
+			}
+			treasury >= 125
+			political_influence >= 100
+		}
+		on_start = {
+			add_treasury = -125
+			add_political_influence = -50
+		}
+		duration = 30
+		on_completion = {
+			show_as_tooltip = {
+				add_stability = 5
+				add_country_modifier = {
+					name = center_of_faith
+					duration = 7300
+				}
+			}
+			trigger_event = {
+				id = me_paurava.10
+			}
+		}
+	}
+	paurava_missions_task_23 = { # Spread Buddhism
+		icon = "task_religion"
+		duration = 30
+		requires = {
+			paurava_missions_task_6
+		}
+		prevented_by = {
+			paurava_missions_task_22
+			paurava_missions_task_24
+			paurava_missions_task_25
+		}
+		bypass = {
+			OR = {
+				has_completed_mission_task = paurava_missions_task_22
+				has_completed_mission_task = paurava_missions_task_24
+				has_completed_mission_task = paurava_missions_task_25
+			}
+		}
+		allow = {
+			custom_tooltip = {
+				has_variable = center_of_buddhism
+				text = "paurava_religion_spread_tt"
+			}
+			treasury >= 125
+			political_influence >= 100
+		}
+		on_start = {
+			add_treasury = -125
+			add_political_influence = -50
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = center_of_faith
+					duration = 3600
+				}
+			}
+			trigger_event = {
+				id = me_paurava.10
+			}
+		}
+	}
+	paurava_missions_task_24 = { # Spread Jain
+		icon = "task_religion"
+		requires = {
+			paurava_missions_task_6
+		}
+		prevented_by = {
+			paurava_missions_task_23
+			paurava_missions_task_22
+			paurava_missions_task_25
+		}
+		bypass = {
+			OR = {
+				has_completed_mission_task = paurava_missions_task_23
+				has_completed_mission_task = paurava_missions_task_22
+				has_completed_mission_task = paurava_missions_task_25
+			}
+		}
+		allow = {
+			custom_tooltip = {
+				has_variable = center_of_jain
+				text = "paurava_religion_spread_tt"
+			}
+			treasury >= 125
+			political_influence >= 100
+		}
+		on_start = {
+			add_treasury = -125
+			add_political_influence = -50
+		}
+		duration = 30
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = center_of_faith
+					duration = 3600
+				}
+			}
+			trigger_event = {
+				id = me_paurava.10
+			}
+		}
+	}
+	paurava_missions_task_25 = { # Spread Ajivika
+		icon = "task_religion"
+		requires = {
+			paurava_missions_task_6
+		}
+		prevented_by = {
+			paurava_missions_task_23
+			paurava_missions_task_22
+			paurava_missions_task_24
+		}
+		bypass = {
+			OR = {
+				has_completed_mission_task = paurava_missions_task_23
+				has_completed_mission_task = paurava_missions_task_22
+				has_completed_mission_task = paurava_missions_task_24
+			}
+		}
+		allow = {
+			custom_tooltip = {
+				has_variable = center_of_ajivika
+				text = "paurava_religion_spread_tt"
+			}
+			treasury >= 125
+			political_influence >= 50
+		}
+		on_start = {
+			add_treasury = -125
+			add_political_influence = -50
+		}
+		duration = 30
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = center_of_faith
+					duration = 3600
+				}
+			}
+			trigger_event = {
+				id = me_paurava.10
+			}
+		}
+	}
+	paurava_missions_task_26 = { # Religious Capital of the Indus
+		requires = {
+			paurava_missions_task_22
+			paurava_missions_task_23
+			paurava_missions_task_24
+			paurava_missions_task_25
+		}
+		allow = {
+			#Write tooltip still for the 40%
+			custom_tooltip = {
+				text = "paurava_40_percen_tt"
+				paurava_missions_task_26_current >= paurava_missions_task_26_needed
+			}
+		}
+		on_completion = {
+			trigger_event ={
+				id = me_paurava.46
+			}
+		}
+	}
+	paurava_missions_task_7 = { # Mauryan Marriage
+		icon = "task_diplomatic"
+		requires = {
+			paurava_missions_task_0
+		}
+		allow = {
+			# TODO WRITE A BETTER TOOLTIP PLEASE
+			custom_tooltip = {
+				any_country = {
+					tag = MRY
+					opinion = {
+						target = root 
+						value >= 100				
+					}
+				}
+				text = "paurava_maurya_100.tt"
+			}
+			hidden:c:MRY.current_ruler = {
+				is_friend = root.current_ruler
+			}
+		}
+		on_completion = {
+			show_as_tooltip = {
+				c:MRY = {
+					random_character = {
+						limit = {
+							NOT = { this = c:MRY.current_ruler.spouse }
+							has_trait = maurya
+							is_female = yes
+							age <= 28
+							age > 15
+						}
+						if = {
+							limit = { is_married = yes }
+							divorce_character = spouse
+						}
+						save_scope_as = marriage_partner
+					}
+				}
+				current_ruler = {
+					marry_character = scope:marriage_partner
+				}
+				add_stability = 5
+				add_treasury = 100
+			}
+			trigger_event = {
+				id = me_paurava.24
+			}
+		}
+	}
+	paurava_missions_task_8 = { # Land of Five Rivers
+		icon = "task_diplomatic"
+		requires = {
+			paurava_missions_task_7
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = panchanada_area
+				}
+			}
+		}
+		allow = {
+			# TODO WRITE A BETTER TOOLTIP PLEASE
+			custom_tooltip = {
+				any_country = {
+					tag = MRY
+					opinion = {
+						target = root
+						value >= 120			
+					}
+				}
+				political_influence >= 30
+				treasury >= 100
+				text = "paurava_maurya_120.tt"
+			}
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_political_influence = -30
+				add_treasury = -100
+				root = {
+					area:panchanada_area = {
+						every_area_province = {
+							add_claim = root
+						}
+					}
+				}
+				if = {
+					limit = {
+						p:4331 = {
+							owner = {
+								TAG = MRY
+							}
+						}
+					}
+					p:4331 = {
+						set_owned_by = root
+					}
+				}
+				if = {
+					limit = {
+						p:4380 = {
+							owner = {
+								TAG = MRY
+							}
+						}
+					}
+					p:4380 = {
+						set_owned_by = root
+					}
+				}
+				if = {
+					limit = {
+						p:4384 = {
+							owner = {
+								TAG = MRY
+							}
+						}
+					}
+					p:4384 = {
+						set_owned_by = root
+					}
+				}
+				if = {
+					limit = {
+						p:4395 = {
+							owner = {
+								TAG = MRY
+							}
+						}
+					}
+					p:4395 = {
+						set_owned_by = root
+					}
+				}
+				if = {
+					limit = {
+						p:4388 = {
+							owner = {
+								TAG = MRY
+							}
+						}
+					}
+					p:4388 = {
+						set_owned_by = root
+					}
+				}
+				if = {
+					limit = {
+						p:4393 = {
+							owner = {
+								TAG = MRY
+							}
+						}
+					}
+					p:4393 = {
+						set_owned_by = root
+					}
+				}
+				if = {
+					limit = {
+						p:4393 = {
+							owner = {
+								TAG = YDD
+							}
+						}
+						c:YDD = {
+							is_subject_of = MRY
+						}
+					}
+					p:4393 = {
+						set_owned_by = root
+					}
+				}
+			}
+			trigger_event = {
+				id = me_paurava.3 # Annex Panchanada
+			}
+		}
+	}
+	paurava_missions_task_9 = { # Matter of the Madrakas
+		icon = "task_conquest"
+		duration = 90
+		requires = { paurava_missions_task_7 }
+		allow = {
+			political_influence >= 15
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = madra_area
+				}
+			}
+		}
+		on_start = {
+			trigger_event = {
+				id = me_paurava.4 # Claims on Madra
+			}
+		}
+		on_completion = {
+			show_as_tooltip = {
+				declare_war_with_wargoal = {
+					war_goal = conquer_wargoal
+					province = 4347
+					target = c:KLS
+				}
+				if = {
+					limit = { alliance_with = c:MRY }
+					break_alliance = c:MRY
+					add_truce = {
+						target = c:MRY
+						duration = 1825 # 5 years
+					}
+				}
+			}
+			trigger_event = {
+				id = me_paurava.23
+			}
+		}
+	}
+	paurava_missions_task_10 = { # Kings of Gandhara
+		icon = "task_political"
+		duration = 30
+		requires = { paurava_missions_task_7 }
+		allow = {
+			manpower >= 10
+			political_influence >= 30
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = gandhara_region
+				}
+			}
+		}
+		on_start = {
+			trigger_event = {
+				id = me_paurava.21
+			}
+		}
+		on_completion = {
+			trigger_event = {
+				id = me_paurava.22
+			}
+		}
+	}
+	paurava_missions_task_11 = { # King Porus' Kingdom
+		icon = "task_happiness"
+		requires = {
+			paurava_missions_task_8
+			paurava_missions_task_9
+			paurava_missions_task_10
+		}
+		allow = {
+			owns_region = gandhara_region
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = blessing_of_porus # maybe add him as a deity ?
+					duration = -1
+				}
+				add_legitimacy = legitimacy_huge
+			}
+			set_variable = blessing_of_porus_deity
+			trigger_event = {
+				id = me_paurava.44
+			}
+		}
+	}
+	paurava_missions_task_12 = { # Menace from Macedon
+		icon = "task_battle"
+		requires = {
+			paurava_missions_task_11
+		}
+		allow = {
+			OR = {
+				exists = c:SEL
+				exists = c:BAC
+				exists = c:ARS
+			}
+		}
+		bypass = {
+			AND = {
+				NOT = {
+					exists = c:SEL
+				}
+				NOT = {
+					exists = c:BAC
+				}
+				NOt = {
+					exists = c:ARS
+				}
+			}
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = sattagydia_area
+					is_in_area = arachosia_area
+				}
+			}
+		}
+		on_completion = {
+			# TODO WRITE A BETTER TOOLTIP PLEASE
+			show_as_tooltip = {
+				add_manpower = 10
+			}
+			custom_tooltip = frigg_up_arachosia
+			trigger_event = {
+				id = me_paurava.45
+			}
+		}
+	}
+
+	paurava_missions_task_15 = { # Greek Presence in India
+		icon = "task_happiness"
+		allow = {
+			# TODO WRITE A BETTER TOOLTIP PLEASE
+	        any_owned_province = {
+				custom_tooltip = {
+					any_pops_in_province = {
+                		pop_culture_group = hellenic
+              		}
+					text = "paurava_hellenic_pop_tt"
+				}
+            	
+            }
+			custom_tooltip = {
+				text = "paurava_indo_greeks_tt"
+				any_country = {
+					has_variable = is_indo_greek_invader
+				}
+			}
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = north_sindhu_area
+					is_in_area = south_sindhu_area
+					is_in_area = sauvira_area
+					is_in_area = patalene_area
+				}
+			}
+		}
+		bypass = {
+			AND = {
+				owns_or_subject_owns_area = patalene_area
+				owns_or_subject_owns_area = sauvira_area
+				owns_or_subject_owns_area = south_sindhu_area
+				owns_or_subject_owns_area = north_sindhu_area
+				owns_or_subject_owns_region = gandhara_region
+			}
+		}
+
+		on_bypass = {
+			trigger_event = {
+				id = me_paurava.5 # Explanatory Event
+			}
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = indo_greek_unrest
+					duration = -1
+				}
+				custom_tooltip = paurava_indo_greek_claims_tt
+			}
+			trigger_event = {
+				id = me_paurava.5 # Explanatory Event
+			}
+		}
+	}
+	paurava_missions_task_16 = { # Home for the Hellenes
+		icon = "task_diplomatic"
+		requires = {
+			paurava_missions_task_15
+		}
+		prevented_by = {
+			paurava_missions_task_17
+			paurava_missions_task_18
+		}
+		bypass = {
+			OR = {
+				has_completed_mission_task = paurava_missions_task_17
+				has_completed_mission_task = paurava_missions_task_18
+			}
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 6821
+					province_id = 4371
+					province_id = 7314
+					province_id = 4353
+				}
+			}
+		}
+		allow = {
+			# TODO WRITE A BETTER TOOLTIP PLEASE
+			owns_or_subject_owns = 6821
+			owns_or_subject_owns = 4371
+			owns_or_subject_owns = 7314
+			owns_or_subject_owns = 4353
+
+			custom_tooltip = {
+				any_owned_province = {
+					count = 20
+					any_pops_in_province = {
+						pop_culture_group = hellenic
+					}
+				}
+				text = "20_hellenic_pops_tt"
+			}
+			stability >= 40
+			political_influence >= 80
+			treasury >= 400
+			custom_tooltip = {
+				any_integrated_culture = {
+					this.culture.culture_group = culture_group:hellenic
+				}
+				text = "paurava_hellenic_integrated_tt"
+			}
+        }
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = indo_hellenic_home
+					duration = 3000
+				}
+				add_political_influence = -80
+				add_treasury = -400
+				add_stability = -10
+			}
+			trigger_event = {
+				id = me_paurava.47
+			}
+			set_variable = greek_crisis_solved
+		}
+	}
+	paurava_missions_task_17 = { # Get Out Greeks !
+		icon = "task_conquest"
+		requires = {
+			paurava_missions_task_15
+		}
+		prevented_by = {
+			paurava_missions_task_16
+			paurava_missions_task_18
+		}
+		bypass = {
+			OR = {
+				has_completed_mission_task = paurava_missions_task_16
+				has_completed_mission_task = paurava_missions_task_18
+			}
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 6821
+					province_id = 4371
+					province_id = 7314
+					province_id = 4353
+				}
+			}
+		}
+		allow = {
+			# TODO WRITE A BETTER TOOLTIP PLEASE
+			owns_or_subject_owns = 6821
+			owns_or_subject_owns = 4371
+			owns_or_subject_owns = 7314
+			owns_or_subject_owns = 4353
+			custom_tooltip = {
+				any_country_culture = {
+					this.culture.culture_group = culture_group:hellenic
+					has_pop_type_right = slaves
+				}
+				text = "paurava_enslave_hellenes_tt"
+			}
+			stability >= 40
+			political_influence >= 25
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = puruan_supremacy
+					duration = 3650
+				}
+				add_political_influence = -25
+			}
+			trigger_event = {
+				id = me_paurava.49
+			}
+			set_variable = greek_crisis_solved
+		}
+	}
+	paurava_missions_task_18 = { # Embrace Hellenic Thought / Pentapotamia
+		icon = "task_political"
+		requires = {
+			paurava_missions_task_15
+		}
+		bypass = {
+			OR = {
+				has_completed_mission_task = paurava_missions_task_16
+				has_completed_mission_task = paurava_missions_task_17
+			}
+		}
+		prevented_by = {
+			paurava_missions_task_16
+			paurava_missions_task_17
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					this = p:6821
+					this = p:4371
+					this = p:7314
+					this = p:4353
+				}
+			}
+		}
+		allow = {
+			# TODO WRITE A BETTER TOOLTIP PLEASE
+			owns_or_subject_owns = 6821
+			owns_or_subject_owns = 4371
+			owns_or_subject_owns = 7314
+			owns_or_subject_owns = 4353
+			p:4371 = {
+				has_city_status = yes
+				total_population >= 40
+			}
+			current_ruler = {
+				popularity >= 90
+			}
+			legitimacy >= 85
+			stability >= 55
+		}
+		on_completion = {
+			trigger_event = {
+				id = me_paurava.50
+			}
+			show_as_tooltip = {
+				current_ruler = {
+					add_popularity = popularity_large
+				}
+				add_stability = -10
+				add_legitimacy = -40
+				change_country_name = "PENTAPOTAMIA"
+				current_ruler = {
+					set_culture = greco_indian
+				}
+			}
+			set_variable = greek_crisis_solved
+		}
+	}
+	paurava_missions_task_27 = { # The Greek Gods
+		icon = "task_heracles"
+		requires = {
+			paurava_missions_task_18
+		}
+		allow = {
+			political_influence >= 25
+			stability >= 50
+		}
+		on_completion = {
+			# TODO WRITE TOOLTIP EXPLAINING WHAT EVENT DOES
+			trigger_event = {
+				id = me_paurava.48
+			}
+			custom_tooltip = paurava_greek_gods
+		}
+	}
+	paurava_missions_task_19 = { # Greek Matter Solved
+		icon = "task_happiness"
+		requires = {
+			paurava_missions_task_18
+			paurava_missions_task_17
+			paurava_missions_task_16
+		}
+		allow = {
+			# TODO WRITE TOOLTIP FOR THIS, NOTHING SHOWS WITH has_variable
+			has_variable = greek_crisis_solved
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = hellenic_advancement
+					duration = 1000
+				}
+				remove_country_modifier = indo_greek_unrest
+				add_stability = 5
+			}
+			trigger_event = {
+				id = me_paurava.65
+			}
+		}
+	}
+	paurava_missions_task_20 = { # Hellenic Horizon
+		icon = "task_expansion"
+		requires = {
+			paurava_missions_task_19
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = { # Will be removed when wide tree done, or if mission aborts/finishes
+					name = reverse_okeanos
+					duration = 3650
+				}
+			}
+			trigger_event = {
+				id = me_paurava.6
+			}
+		}
+	}
+	paurava_missions_task_99 = { # Path through Persia
+		icon = "task_conquest"
+		requires = {
+			paurava_missions_task_20
+		}
+		allow = {
+			political_influence >= 35
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = persis_region
+					is_in_region = ariana_region
+				}
+			}
+		}
+		on_completion = {
+			trigger_event = {
+				id = me_paurava.99
+			}
+			# TODO WRITE A BETTER TOOLTIP PLEASE
+			show_as_tooltip = {
+				add_political_influence = -35
+				custom_tooltip = paurava_eat_persia
+			}
+		}
+	}
+	paurava_missions_task_98 = { # Master of Mesopotamia
+		icon = "task_conquest"
+		requires = {
+			paurava_missions_task_20
+		}
+		allow = {
+			owns_or_subject_owns_region = persis_region
+			treasury > 100
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = assyria_region
+					is_in_region = mesopotamia_region
+				}
+			}
+		}
+		on_completion = {
+			trigger_event = {
+				id = me_paurava.98
+			}
+			show_as_tooltip = {
+				add_treasury = -100
+				custom_tooltip = paurava_eat_mesopotamia
+			}
+		}
+	}
+	paurava_missions_task_97 = { # Annex Anatolia
+		icon = "task_conquest"
+		requires = {
+			paurava_missions_task_20
+		}
+		allow = {
+			owns_or_subject_owns_region = region:mesopotamia_region
+			owns_or_subject_owns_region = region:assyria_region
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = asia_region
+					is_in_region = bithynia_region
+					is_in_region = cilicia_region
+					is_in_region = cappadocia_region
+					is_in_region = cappadocia_pontica_region
+					is_in_region = galatia_region
+				}
+			}
+		}
+		on_completion = {
+			custom_tooltip = paurava_eat_anatolia
+			trigger_event = {
+				id = me_paurava.97
+			}
+		}
+	}
+	paurava_missions_task_96 = { # Made it to Macedon
+		icon = "task_political"
+		requires = {
+			paurava_missions_task_99
+			paurava_missions_task_98
+			paurava_missions_task_97
+		}
+		allow = {
+			owns_or_subject_owns_region = asia_region
+			owns_or_subject_owns_region = bithynia_region
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = thrace_region
+					is_in_region = macedonia_region
+				}
+			}
+		}
+		on_completion = {
+			custom_tooltip = paurava_eat_macedon
+			trigger_event = {
+				id = me_paurava.96
+			}
+		}
+	}
+	paurava_missions_task_77 = {
+		icon = "task_heracles"
+		requires = {
+			paurava_missions_task_96
+		}
+		allow = {
+			owns_or_subject_owns_region = macedonia_region
+			owns_or_subject_owns = 347
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = okeanos_reached
+					duration = -1
+				}
+			}
+			trigger_event = {
+				id = me_paurava.77
+			}
+		}
+	}
+	paurava_missions_task_21 = { # Subdue the South
+		icon = "task_conquest"
+		requires = {
+			paurava_missions_task_19
+		}
+		allow = {
+			political_influence >= 35
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = avanti_region
+					is_in_region = maru_region
+				}
+			}
+		}
+		on_completion = {
+			# TODO WRITE A BETTER TOOLTIP PLEASE
+			custom_tooltip = paurava_eat_avanti
+			show_as_tooltip = {
+				add_political_influence = -35
+			}
+			trigger_event = {
+				id = me_paurava.7
+			}
+		}
+	}
+	paurava_missions_task_30 = { # The River Ganges
+		icon = "task_battle"
+		requires = {
+			paurava_missions_task_19
+		}
+		allow = {
+			political_influence >= 35
+		}
+		on_completion = {
+			custom_tooltip = paurava_eat_ganges
+			show_as_tooltip = {
+				add_political_influence = -35
+			}
+			trigger_event = {
+				id = me_paurava.90
+			}
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = madhyadesa_region
+				}
+			}
+		}
+	}
+	paurava_missions_task_31 = { # Proceed to Pracya
+		icon = "task_political"
+		requires = {
+			paurava_missions_task_30
+		}
+		allow = {
+			political_influence >= 35
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = pracya_region
+				}
+			}
+		}
+		on_completion = {
+			custom_tooltip = paurava_eat_pracya
+			show_as_tooltip = {
+				add_political_influence = -35
+			}
+			trigger_event = {
+				id = me_paurava.89
+			}
+		}
+	}
+	paurava_missions_task_32 = { # Deck the Deccan
+		icon = "task_calm"
+		requires = {
+			paurava_missions_task_31
+			paurava_missions_task_21
+		}
+		allow = {
+			political_influence >= 35
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = aparanta_region
+					is_in_region = vindhyaprstha_region
+				}
+			}
+		}
+		on_completion = {
+			custom_tooltip = paurava_eat_deccan
+			show_as_tooltip = {
+				add_political_influence = -35
+			}
+			trigger_event = {
+				id = me_paurava.88
+			}
+		}
+	}
+	paurava_missions_task_69 = { # King Among the Princes
+		icon = "task_diplomatic"
+		requires = {
+			paurava_missions_task_32
+		}
+		allow = {
+			political_influence >= 35
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = karnata_region
+					is_in_region = dravida_region
+				}
+			}
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_political_influence = -35
+			}
+			custom_tooltip = paurava_eat_dravidia
+			trigger_event = {
+				id = me_paurava.69
+			}
+		}
+	}
+	paurava_missions_task_33 = { # Final Task
+		icon = "task_happiness"
+		final = yes
+		requires = {
+			paurava_missions_task_69
+			paurava_missions_task_26
+		}
+		on_completion = {
+			show_as_tooltip = {
+				add_manpower = 20
+				monarchy_republic_into_imperium_formable_effect = yes
+				add_2_free_province_investments = yes
+				custom_tooltip = paurava_final_task_choices_tt
+			}
+			trigger_event = {
+				id = me_paurava.100
+			}
+		}
+	}
+}

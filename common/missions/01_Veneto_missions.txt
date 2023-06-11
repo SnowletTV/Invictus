@@ -45,33 +45,30 @@
         icon = task_political
 
 		allow = { 
-		    scope:area = {
-		        ferraria_area = {
-		            every_province = {
-	                    owned_or_subject_owned = root
-		            }
-		        }
-		    }
-		}
-		
-        custom_tooltip = {
-			owns_or_subject_owns = area.ferraria_area
+    		area:ferraria_area = {
+    			any_area_province = {
+	    			count = all
+	    			owned_or_subject_owned = root
+    			}
+    		}
 		}
 
 		highlight = { 
-			scope:area = {
-				ferraria_area = {
-				    every_province = { yes } 
-				}
-		    } 
+			scope:province = {
+			    AND = {
+					is_in_area = ferraria_area
+					has_owner = yes
+					NOT = { owner = root }	    
+			    }
+			}
 		}
-		bypass = {
-	    }
+
         on_completion = {  
             custom_tooltip = secure_venetia_take_adria_tooltip
             trigger_event = { id = secure_venetia_mission_event.1 }
 		}
 	}
+
 	secure_venetia_mission_task_2 = { # Take the Mountain Pass
         icon = task_expansion
 		requires = { secure_venetia_mission_task_1 }
@@ -84,10 +81,16 @@
 		
 		highlight = { 			
 			scope:province = {
-				province_id = 4024
-				province_id = 4025
-				province_id = 4026
-		    } 
+			    AND = {
+					OR = {
+					    province_id = 4024
+					    province_id = 4025
+					    province_id = 4026
+					}	
+					has_owner = yes
+					NOT = { owner = root }	    
+			    }
+			}
 	    }
 
         on_completion = { 
@@ -122,7 +125,11 @@
         	}
 		}
 		
-		highlight = {  }
+		highlight = {  
+            scope:province = {
+                    province_id = 3595
+            }
+		}
 
         on_completion = { 
             custom_tooltip = secure_venetia_fortify_este_tooltip
@@ -135,8 +142,6 @@
 	secure_venetia_mission_task_4 = { # Fortify Carnia
         icon = task_expansion
 		requires = { secure_venetia_mission_task_2 }
-
-		potential = { }
 
 		allow = { 
         	trigger_if = {
@@ -155,7 +160,11 @@
         	}
 		}
 		
-		highlight = { }
+		highlight = { 
+            scope:province = {
+                    province_id = 4025
+            }
+		}
 
         on_completion = { 
             custom_tooltip = secure_venetia_fortify_carnia_tooltip
@@ -183,11 +192,23 @@
 		
 		highlight = { 			
 			scope:province = {
-				province_id = 4019
-				province_id = 4018
-				province_id = 4022
-				province_id = 4020
-		    } 
+			    OR = {
+			        AND = {
+					    OR = {
+					        province_id = 4019
+					        province_id = 4018
+					        province_id = 4022
+					        province_id = 4020
+					    }	
+					    has_owner = yes
+					    NOT = { owner = root }
+					}
+					AND = {
+					    has_owner = yes
+					    owner = c:HIS
+					}  	    
+			    }
+			}
 	    }
 
         on_completion = {	
@@ -201,12 +222,15 @@
 	secure_venetia_mission_task_6 = { # Ally the Cenomani
 	icon = task_expansion
 
-	potential = { }
-
-	allow = { OR = {alliance_with = c:CNM  } }
+	allow = { alliance_with = c:CNM }
 	
-	highlight = { 
-	    scope:country = { c:CNM }
+	highlight = {
+	    scope:province = {
+			AND = {
+				has_owner = yes
+				owner = c:CNM
+			}  	    
+		} 
 	}
 
 	on_completion = {
@@ -217,25 +241,26 @@
         } 
 	}# plus opinion with Cenomania, if cenomania is allied with the ligoni, sends event to the Cenomani asking them to break their alliance with the Ligoni.
 
-    bypass = { 
-        NOT = { exists = c:CNM }
+	bypass = {
+	    OR = {
+        	NOT = { exists = c:CNM }
+        	c:CNM = {
+        		has_land = no
+        	}
+        }
 	}
 
-    }	
+}	
 
 	secure_venetia_mission_task_7 = { # Gallic Colonies
         icon = task_expansion
 		requires = { secure_venetia_mission_task_6 }
-
-		potential = { }
         
 		duration = 180
 
 		allow = { # > 170 opinion with Cenomania
             treasury >= 150
 		}
-		
-		highlight = {  }
 
         on_completion = { 
             custom_tooltip = secure_venetia_gallic_colonies_tooltip
@@ -243,54 +268,59 @@
             trigger_event = { id = secure_venetia_mission_event.7 }
         }
 
-		bypass = { 
-			NOT = { exists = c:CNM }
-		}
+	bypass = {
+	    OR = {
+        	NOT = { exists = c:CNM }
+        	c:CNM = {
+        		has_land = no
+        	}
+        }
+	}
     }
 
 	secure_venetia_mission_task_8 = { # Adopt Gallic Warfare
 	icon = task_expansion
 	requires = { secure_venetia_mission_task_7 }
 
-	potential = { }
-
-	allow = { #Integrate lepontic culture  
-		
+	allow = { #Integrate lepontic culture 
+        any_country_culture = {
+			is_integrated = yes
+			this.culture  = culture:lepontic
+		}
 	}
-	
-	highlight = {  }
 
 	on_completion = { 
 	    custom_tooltip = secure_venetia_adopt_gallic_warfare_tooltip				
         trigger_event = { id = secure_venetia_mission_event.8 }
-	}
+	} 
 
-	bypass = { 
-		NOT = { exists = c:CNM }
-	}
-  
-    } 
+}
 
 	secure_venetia_mission_task_9 = { # Ally the Romans
 	icon = task_expansion
 	requires = { secure_venetia_mission_task_6 }
 	prevented_by = { secure_venetia_mission_task_11 }
 
-	potential = { }
-
 	allow = { alliance_with = c:ROM }
 	
-	highlight = { }
+	highlight = {
+	    scope:province = {
+			AND = {
+				has_owner = yes
+				owner = c:ROM
+			}  	    
+		}  
+	}
+
 
 	bypass = {
 	    has_completed_mission_task = secure_venetia_mission_task_11
 	}
 
-    ai_chance = { 8 }
+    #ai_chance = { 8 }
 
 	on_completion = { 
 	    custom_tooltip = secure_venetia_ally_the_romans_tooltip	
-	    add_stability = 15			
         trigger_event = { id = secure_venetia_mission_event.9 }
 	}
     }
@@ -300,11 +330,10 @@
 	requires = { secure_venetia_mission_task_9 }
 	prevented_by = { secure_venetia_mission_task_12 secure_venetia_mission_task_13 }
 
-	potential = { }
-
-	allow = { any_neigbouring_country = { tag = ROM } diplomatic_stance = appeasement_stance }
-	
-	highlight = {  }
+	allow = { 
+	    diplomatic_stance = appeasement_stance 
+	    any_neighbour_country = { tag = ROM	}          
+	}
 
 	bypass = {
 		OR = {
@@ -313,7 +342,7 @@
 		}
 	}
     
-    ai_chance = { 8 }
+    ai_chance = { factor = 80 }
 
 	on_completion = { 
 	    custom_tooltip = secure_venetia_swear_fealty_to_rome_tooltip				
@@ -326,21 +355,25 @@
 	requires = { secure_venetia_mission_task_6 }
 	prevented_by = { secure_venetia_mission_task_9 }
 
-	potential = { }
-
 	allow = { alliance_with = c:ETR }
 	
-	highlight = { }
+	highlight = {
+	    scope:province = {
+			AND = {
+				has_owner = yes
+				owner = c:ETR
+			}  	    
+		}   
+	}
 
 	bypass = {
 	    has_completed_mission_task = secure_venetia_mission_task_9
 	}
 
-    ai_chance = { 2 }
+    ai_chance = { factor = 20 }
 
 	on_completion = { 
-	    custom_tooltip = secure_venetia_ally_the_etruscans_tooltip	
-	    add_stability = 20			
+	    custom_tooltip = secure_venetia_ally_the_etruscans_tooltip				
         trigger_event = { id = secure_venetia_mission_event.11 }
 	}
     }
@@ -350,9 +383,10 @@
 	requires = { secure_venetia_mission_task_11 }
 	prevented_by = { secure_venetia_mission_task_10 secure_venetia_mission_task_13 }
 
-	potential = { }
-
-	allow = { any_neigbouring_country = { tag = ETR } diplomatic_stance = appeasement_stance }
+	allow = { 
+	    diplomatic_stance = appeasement_stance 
+	    any_neighbour_country = { tag = ETR	} 	           
+	}
 
 	bypass = {
 		OR = {
@@ -399,34 +433,34 @@
 	potential = { }
 
 	allow = { 
-		OR = {
-			is_subject = no
-			is_subject_of = c:ROM
-			is_subject_of = c:ETR
-		}
-		OR = { 
-		    any_neigbouring_country = { 
-		        tag = ETR 
-		        opinion = {
-		            target = ROOT
-		            value >= 100
+	    OR = {
+		    OR = {
+			    is_subject_of = ROM
+			    is_subject_of = ETR
+		    }
+		    AND = { 
+		        is_subject = no
+		        OR = {
+    		        c:ETR = { 
+		            opinion = {
+		                target = ROOT
+		                value >= 100
+		                }
+		            }
+		            c:ROM = { 
+		                opinion = {
+		                    target = ROOT
+		                    value >= 100
+		                }   
+		            }
+		            AND = {
+		                c:ROM = { has_land = no }
+		                c:ETR = { has_land = no }
+		            }
 		        }
 		    }
-		    any_neigbouring_country = { 
-		        tag = ROM 
-		        opinion = {
-		            target = ROOT
-		            value >= 100
-		        }
-		    }
-		    AND = {
-		        NOT = { exists = c:ROM }
-		        NOT = { exists = c:ETR }
-		    }
-		}
+	    }
 	}
-	
-	highlight = {  }
 
 	on_completion = { 
     	custom_tooltip = secure_venetia_favorable_diplomacy_tooltip				
@@ -442,17 +476,33 @@
 	potential = { }
 
 	allow = { 
-	    num_of_cities >= 3
-	    owns = {
-	        AND = {
-	            scope:area = venetia_area
-	            scope:area = ferraria_area
-	        }
-	    }
+	    area:ferraria_area = {
+    		any_area_province = {
+	    		count = all
+	    		owned_or_subject_owned = root
+    		}
+    	}
+    	area:venetia_area = {
+    		any_area_province = {
+	    		count = all
+	    		owned_or_subject_owned = root
+    		}
+    	}
 	    war = no
 	}
 	
-	highlight = {  }
+	highlight = {  
+			scope:province = {
+			    AND = {
+			        OR = {
+						is_in_area = ferraria_area
+						is_in_area = venetia_area		        
+				    }
+					has_owner = yes
+					NOT = { owner = root }	    
+			    }
+			}
+	}
 
 	on_completion = { 
     	custom_tooltip = secure_venetia_venetian_security_tooltip				

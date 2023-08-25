@@ -106,6 +106,33 @@ me_rhaetia.5 = {
 	    	}
 		}
 		add_military_experience = 10
+		p:3662 = { 
+			if = {
+	    	    limit = { 
+	    	    	has_owner = yes
+	    	    	NOT = { owner = root } 
+	    	    }
+	    	    add_claim = root 
+	    	}
+		}
+		p:3584 = { 
+			if = {
+	    	    limit = { 
+	    	    	has_owner = yes
+	    	    	NOT = { owner = root } 
+	    	    }
+	    	    add_claim = root 
+	    	}
+		}
+		p:3581 = { 
+			if = {
+	    	    limit = { 
+	    	    	has_owner = yes
+	    	    	NOT = { owner = root } 
+	    	    }
+	    	    add_claim = root 
+	    	}
+		}
 	}
 
 }
@@ -387,7 +414,10 @@ me_rhaetia.19 = { #Impenetrable Mountains
 	        limit = {
 	            AND = {
 		            is_in_region = rhaetia_region
-		            terrain = mountain
+		            OR = {
+		                terrain = mountain
+		                terrain = hills
+		            }
 		            num_of_fortress_building >= 1
 		        }
 	        }
@@ -439,7 +469,7 @@ me_rhaetia.22 = { #The Euagni hills
             add_provincial_claim_effect = yes
         }
         add_military_experience = 20
-        trigger_event = { me_rhaetia.29  } # decide to release a Eugania vassal
+        trigger_event = { id = me_rhaetia.29 } # decide to release a Eugania vassal
     }
 }
 
@@ -470,7 +500,7 @@ me_rhaetia.23 = { #colonize venetia
 	        }
 	        add_province_modifier = {
 	            name = me_raetic_colonization_of_venetia_pmod
-	            duration = 730 #20 years
+	            duration = 7300 #20 years
 	        }
 	    }
 	}
@@ -496,7 +526,7 @@ me_rhaetia.24 = { #Carnians of Latobicia
                     value >= 1
                 }
             }
-            #trigger_event = { id =   days = { 5 15 } }
+            trigger_event = { id = me_rhaetia.31  days = { 5 15 } }
         }
         area:noricum_mediterranum_area = {
             add_provincial_claim_effect = yes
@@ -523,11 +553,15 @@ me_rhaetia.26 = { #Offer of vassalization from Rhaetians
 
     option = {
         name = me_rhaetia.26.a #acceptance of vassalization
+        ROOT = {
+            save_scope_as = helveti_tribe_to_vassalize
+        }
         scope:rhaetian_country_to_vassalize_helveti = {
             make_subject = {
                 type = feudatory
                 target = ROOT
             }
+            trigger_event = { id = me_rhaetia.33 }
         }
         ai_chance = {
             factor = 85
@@ -565,16 +599,19 @@ me_rhaetia.28 = { #Alpine Federation declared
 	desc = me_rhaetia.28.desc
 	picture = celtic_diplomacy
 
-	immediate = {
-	    show_as_tooltip = me_rhaetia.28_tt
-	}
-
 	option = {
         name = me_rhaetia.28.a #The Confederation of the Alps stands supreme!
-        change_country_name = ALPINE_FEDERATION
+        change_country_name = "ALPINE_FEDERATION"
         hidden_effect = {
-            change_country_adjective = ALPINE_FEDERATION_ADJ
-            change_country_color = alpine_federation_brown
+            change_country_adjective = "ALPINE_FEDERATION_ADJ"
+            change_country_color = alpine_federation_blue
+            #change_country_flag = 
+        }
+        if = {
+            limit = {
+                is_tribal = yes
+            }
+            change_government = tribal_federation
         }
     }
 }
@@ -588,45 +625,99 @@ me_rhaetia.29 = { #Eugania vassal
 
     option = {
         name = me_rhaetia.29.a
-        p:3595 = {
-            create_country = {
-                name = {
-                    name = EUGANIA
-                    adjective = EUGANIA_ADJ
+        hidden_effect = {
+            p:3595 = {
+                create_state_pop = tribesmen
+                create_state_pop = tribesmen
+                create_country = {
+                    name = {
+                        name = EUGANIA
+                        adjective = EUGANIA_ADJ
+                    }
+                    change_country_color = frost_blue
+                    save_scope_as = eugania_country_tag
                 }
-                change_country_color = boeotian_brown
-                set_country_heritage = river_plain_heritage
-                change_government = tribal_chiefdom
-                save_scope_as = eugania_country
+            }
+            p:3581 = {
+                create_state_pop = tribesmen
+                create_state_pop = tribesmen
+                create_country = {
+                    name = {
+                        name = CAMUNIA
+                        adjective = CAMUNIA_ADJ
+                    }
+                    change_country_color = ck2_green
+                    save_scope_as = camunia_country_tag
+                }
+            }
+            scope:eugania_country_tag = {
                 add_treasury = 10
                 if = {
                    limit = {
                         NOT = {
                             primary_culture = rhaetian
                         }
-                    }
+                    } 
                     set_primary_culture_cleanup_effect = {
                         NEW_PRIMARY_CULTURE = rhaetian
                         MAKE_OLD_CULTURE_INTEGRATED = yes
                     }
                 }
+                change_government = tribal_kingdom
             }
-        }
-        every_owned_province = {
-            limit = {
-                OR = {
-                    is_in_area = ferraria_area
-                    province_id = 3584
+            scope:camunia_country_tag = {
+                add_treasury = 10
+                if = {
+                   limit = {
+                        NOT = {
+                            primary_culture = rhaetian
+                        }
+                    } 
+                    set_primary_culture_cleanup_effect = {
+                        NEW_PRIMARY_CULTURE = rhaetian
+                        MAKE_OLD_CULTURE_INTEGRATED = yes
+                    }
+                }
+                change_government = tribal_kingdom
+            }
+            ROOT = {
+                make_subject = {
+                    type = feudatory
+                    target = scope:eugania_country_tag
+                }
+                make_subject = {
+                    type = feudatory
+                    target = scope:camunia_country_tag
                 }
             }
-            set_owned_by = scope:eugania_country
+            every_owned_province = {
+                if = {
+                    limit = {
+                        OR = {
+                            is_in_area = ferraria_area
+                            province_id = 3584
+                        }
+                    }
+                    set_owned_by = scope:eugania_country_tag
+                }
+            }
+            every_owned_province = {
+                if = {
+                    limit = {
+                        is_in_area = east_insubria_area
+                        NOT = { province_id = 3661 }
+                        NOT = { province_id = 3662 }
+                        NOT = { province_id = 3584 }
+                    }
+                    set_owned_by = scope:camunia_country_tag
+                }
+            }
         }
     }
     
     option = {
         name = me_rhaetia.29.b
     }
-
 }
 
 me_rhaetia.30 = { #vassalization of the carnii
@@ -648,11 +739,15 @@ me_rhaetia.31 = { #Offer of vassalization from Rhaetians
 
     option = {
         name = me_rhaetia.31.a #acceptance of vassalization
+        ROOT = {
+            save_scope_as = carnian_tribe_to_vassalize
+        }
         scope:rhaetian_country_to_vassalize_carnians = {
             make_subject = {
                 type = feudatory
                 target = ROOT
             }
+            trigger_event = { id = me_rhaetia.34 }
         }
         ai_chance = {
             factor = 85
@@ -678,5 +773,49 @@ me_rhaetia.32 = { #Carnian tribe rejects offer
 
     option = {
         name = me_rhaetia.32.a #Oh well
+    }
+}
+
+me_rhaetia.33 = { #Helvetian tribe accepts offer
+	type = country_event 
+	title = me_rhaetia.33.t
+	desc = me_rhaetia.33.desc
+	picture = celtic_diplomacy
+
+    immediate = {
+        show_as_tooltip = {
+            ROOT = {
+                make_subject = {
+                    type = feudatory
+                    target = scope:helveti_tribe_to_vassalize
+                }
+            }
+        }
+    }
+
+    option = {
+        name = me_rhaetia.33.a #Splendid!
+    }
+}
+
+me_rhaetia.34 = { #Carnian tribe accepts offer
+	type = country_event 
+	title = me_rhaetia.34.t
+	desc = me_rhaetia.34.desc
+	picture = celtic_diplomacy
+
+    immediate = {
+        show_as_tooltip = {
+            ROOT = {
+                make_subject = {
+                    type = feudatory
+                    target = scope:carnian_tribe_to_vassalize
+                }
+            }
+        }
+    }
+
+    option = {
+        name = me_rhaetia.33.a #Splendid!
     }
 }

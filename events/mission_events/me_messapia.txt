@@ -330,8 +330,6 @@ me_messapia.25 = {
 
 me_messapia.100 = { # triggers for Lucania, hidden
     type = country_event
-    title = me_messapia_100_title
-    desc = me_messapia_100_desc
     hidden = yes
 
     trigger = {
@@ -429,8 +427,8 @@ me_messapia.102 = {
 
 me_messapia.103 = { # Ping Sparta
     type = country_event
-    title = me_messapia_102_title
-    desc = me_messapia_102_desc
+    title = me_messapia_103_title
+    desc = me_messapia_103_desc
     left_portrait = c:TAR.current_ruler
     left_portrait = c:SPA.current_ruler
     left_portrait = char:176 # Kleonymos
@@ -524,15 +522,200 @@ me_messapia.104 = { # sparta joined
             limit = {
                 tag = SAM
             }
-            set_variable = war_303_gave_up_SAM
-            ### SCRIPTED PEACE DEAL SAMNIUM EVENT
+            set_global_variable = war_303_samnium_out
+            trigger_event = {
+                id = me_messapia.106
+                days = 8
+            }
         }
-        else_if = {
+        else_if = { # War Leader - if give up, war ends
             limit = {
                 tag = LCA
             }
-            set_variable = war_303_gave_up_LCA
-            ### SCRIPTED PEACE DEAL LUCANIA EVENT
+            set_global_variable = war_303_end
+            trigger_event = {
+                id = me_messapia.107
+                days = 8
+            }
         }
+    }
+}
+
+me_messapia.105 = { # Samnium Surrenders, Lucania does not
+    type = country_event
+    title = me_messapia_105_title
+    desc = me_messapia_105_desc
+    left_portrait = c:MSP.current_ruler
+    left_portrait = c:TAR.current_ruler
+    left_portrait = c:APU.current_ruler
+
+    right_portrait = c:LCA.current_ruler
+    right_portrait = c:SAM.current_ruler
+
+    picture = greeks_marching
+
+    trigger = {
+        NOT = {
+            has_global_variable = war_303_end
+        }
+    }
+
+    immediate = {
+        show_as_tooltip = {
+            # HAS HAPPENED PEACE DEAL
+        }
+    }
+
+    option = { # great, samnium is out
+        name = "me_messapia_105.a"
+        trigger = {
+            NOT = { tag = LCA }
+        }
+    }
+
+    option = { # ally abandoned us
+        name = "me_messapia_105.b"
+        trigger = {
+            tag = LCA
+        }
+        reverse_add_opinion = {
+            modifier = refused_help_spa_tar # loced neutrally
+            target = c:SAM
+        }
+        trigger_event = {
+            id = me_messapia_109 # give up now that samnium left?
+            days = 8
+        }
+    }
+}
+
+me_messapia.106 = { # Samnium peace deal, without lucania
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        NOT = {
+            has_global_variable = war_303_end
+        }
+    }
+
+    immediate = {
+        #SAMNIUM SCRIPTED PEACE DEAL
+        c:SAM = {
+            remove_from_list = war_303_list
+        }
+        every_in_list = {
+            list = war_303_list
+            trigger_event = {
+                id = me_messapia.105 # notif about samnium peace out
+            }
+        }
+        remove_global_variable = war_303_samnium_out 
+    }
+}
+
+me_messapia.107 = { # End of War if Lucania surrenders
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        has_global_variable = war_303_end
+    }
+
+    immediate = {
+        #LUCANIA SCRIPTED PEACE DEAL - Will end war
+        c:LCA = {
+            remove_from_list = war_303_list
+        }
+        if = {
+            limit = {
+                has_global_variable = war_303_samnium_out
+            }
+            c:SAM = {
+                remove_from_list = war_303_list
+            }
+            remove_global_variable = war_303_samnium_out # no longer needed after that
+        }
+        every_in_list = {
+            list = war_303_list
+            trigger_event = {
+                id = me_messapia.108 # notif about samnium peace out
+            }
+        }
+        remove_global_variable = war_303_end
+    }
+}
+
+me_messapia.108 = { # End of War Ping to others
+    type = country_event
+    title = me_messapia_108_title
+    desc = me_messapia_108_desc
+    left_portrait = c:MSP.current_ruler
+    left_portrait = c:TAR.current_ruler
+    left_portrait = c:APU.current_ruler
+
+    right_portrait = c:LCA.current_ruler
+    right_portrait = c:SAM.current_ruler
+
+    picture = greeks_marching
+
+    trigger = {
+        has_global_variable = war_303_end
+    }
+
+    immediate = {
+        show_as_tooltip = {
+            # HAS HAPPENED PEACE DEAL
+        }
+    }
+
+    option = { # war won, great!
+        name = "me_messapia_108.a"
+        trigger = {
+            NOT = { tag = SAM }
+        }
+    }
+
+    option = { # ally surrendered even with our help, darn
+        name = "me_messapia_108.b"
+        trigger = {
+            tag = SAM
+        }
+    }
+}
+
+me_messapia.109 = { # for Lucania, if Samnium gave up: surrender as well, or continue fighting?
+    type = country_event
+    title = me_messapia_109_title
+    desc = me_messapia_109_desc
+    left_portrait = c:MSP.current_ruler
+    left_portrait = c:TAR.current_ruler
+    left_portrait = c:APU.current_ruler
+
+    right_portrait = c:LCA.current_ruler
+    right_portrait = c:SAM.current_ruler
+
+    picture = greeks_marching
+
+    trigger = {
+        has_global_variable = war_303_samnium_out
+    }
+
+    immediate = {
+        custom_tooltip = war_303_samnoum_out_tt
+    }
+
+    option = { # surreneder as well
+        name = "me_messapia_109.a"
+        set_global_variable = war_303_end
+        trigger_event = {
+            id = me_messapia.107
+            days = 8
+        }
+    }
+
+    option = { # continue fighting alone
+        name = "me_messapia_109.b"
+        # MORE EVENTS TO SIMULATE WAR. OUTCOME SKEWED IN TARENTUM ET AL'S FAVOUR
     }
 }

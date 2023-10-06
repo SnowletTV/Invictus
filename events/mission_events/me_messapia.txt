@@ -451,7 +451,7 @@ me_messapia.103 = { # Ping Sparta
         }
         
         ai_chance = {
-            add = 100
+            base = 100
         }
     }
 
@@ -463,6 +463,10 @@ me_messapia.103 = { # Ping Sparta
                 target = ROOT
             }
             ### SPARTA REFUSES TO JOIN - MORE EVENTS TO SIMULATE WAR. OUTCOME SKEWED IN LUCANIA/SAMNIUM FAVOUR
+            trigger_event = {
+                id = me_messapia.110 # Lucanian threat - Do we fight, do we surrender? We have not enough help ...
+                days = 14
+            }
         }
     }
 }
@@ -532,6 +536,7 @@ me_messapia.104 = { # sparta joined
             limit = {
                 tag = LCA
             }
+            custom_tooltip = we_will_surrender_tt
             set_global_variable = war_303_end
             trigger_event = {
                 id = me_messapia.107
@@ -548,7 +553,7 @@ me_messapia.104 = { # sparta joined
             }
             modifier = {
                 add = 25
-                c:MSP = { # id there's a player on Messapia, it should be more likely that the player wins.
+                c:MSP = { # if there's a player on Messapia, it should be more likely that the player wins.
                     is_ai = no
                 }
             }
@@ -599,7 +604,7 @@ me_messapia.105 = { # Samnium Surrenders, Lucania does not
             target = c:SAM
         }
         trigger_event = {
-            id = me_messapia_109 # give up now that samnium left?
+            id = me_messapia.109 # give up now that samnium left?
             days = 8
         }
     }
@@ -664,7 +669,7 @@ me_messapia.107 = { # End of War if Lucania surrenders
     }
 }
 
-me_messapia.108 = { # End of War Ping to others
+me_messapia.108 = { # End of War Ping to others - tarentum/coalition win
     type = country_event
     title = me_messapia_108_title
     desc = me_messapia_108_desc
@@ -727,6 +732,7 @@ me_messapia.109 = { # for Lucania, if Samnium gave up: surrender as well, or con
     option = { # surreneder as well
         name = "me_messapia_109.a"
         set_global_variable = war_303_end
+        custom_tooltip = we_will_surrender_tt
         trigger_event = {
             id = me_messapia.107
             days = 8
@@ -735,6 +741,594 @@ me_messapia.109 = { # for Lucania, if Samnium gave up: surrender as well, or con
 
     option = { # continue fighting alone
         name = "me_messapia_109.b"
+        custom_tooltip = we_will_continue_fighting_tt
         # MORE EVENTS TO SIMULATE WAR. OUTCOME SKEWED IN TARENTUM ET AL'S FAVOUR
+        hidden_effect = {
+            random_list = {
+                3 = { # -T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Lucania wins a big battle
+                            id = me_messapia.112
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                10 = { # +T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Tarentum/Coalition wins a big battle
+                            id = me_messapia.113
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                1 = { # -T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Tarentine Soldiers desert
+                            id = me_messapia.114
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                5 = { # +T
+                    trigger = {
+                        c:SAM = {
+                            is_in_list = war_303_list
+                        }
+                    }
+                    if = {
+                        limit = {
+                            c:SAM = {
+                                is_ai = no
+                            }
+                        }
+                        trigger_event = { # Samnium leaves the war
+                            id = me_messapia.115 # choice
+                            days = { 21 35 }
+                        }
+                    }
+                    else = {
+                        set_global_variable = war_303_samnium_out
+                        trigger_event = {
+                            id = me_messapia.106
+                            days = 8
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+me_messapia.110 = { # Lucanian Threat, if Sparta doesn't join. Pov tarentum (war leader)
+    type = country_event
+    title = me_messapia_110_title
+    desc = me_messapia_110_desc
+    left_portrait = c:MSP.current_ruler
+    left_portrait = c:TAR.current_ruler
+    left_portrait = c:APU.current_ruler
+
+    right_portrait = c:LCA.current_ruler
+    right_portrait = c:SAM.current_ruler
+
+    picture = greeks_marching
+
+    option = { # surreneder
+        name = "me_messapia_110.a"
+        custom_tooltip = we_will_surrender_tt
+        set_global_variable = war_303_end
+        war_303_coalition_surrender_effect = yes
+        every_in_list = {
+            list = war_303_list
+            limit = {
+                NOT = {
+                    tag = TAR # triggered from TAR
+                }
+            }
+            trigger_event = {
+                id = me_messapia.111 # surrender info
+            }
+        }
+
+        ai_chance = { # less likely if the player's involved
+            modifier = {
+                add = -25
+                OR = {
+                    c:MSP = {
+                        is_ai = no
+                    }
+                    c:APU = {
+                        is_ai = no
+                    }
+                }
+            }
+        }
+    }
+
+    option = { # continue fighting 
+        name = "me_messapia_110.b"
+        add_war_exhaustion = 5
+        custom_tooltip = we_will_continue_fighting_tt
+        # MORE EVENTS TO SIMULATE WAR. OUTCOME SKEWED IN LUCANIA ET AL'S FAVOUR
+        hidden_effect = {
+            random_list = {
+                10 = { # -T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Lucania wins a big battle
+                            id = me_messapia.112
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                3 = { # +T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Tarentum/Coalition wins a big battle
+                            id = me_messapia.113
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                5 = { # -T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Tarentine Soldiers desert
+                            id = me_messapia.114
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                1 = { # +T
+                    trigger = {
+                        c:SAM = {
+                            is_in_list = war_303_list
+                        }
+                    }
+                    if = {
+                        limit = {
+                            c:SAM = {
+                                is_ai = no
+                            }
+                        }
+                        c:SAM = {
+                            trigger_event = { # Samnium leaves the war
+                                id = me_messapia.115 # choice
+                                days = { 21 35 }
+                            }
+                        }
+                    }
+                    else = {
+                        set_global_variable = war_303_samnium_out
+                        trigger_event = {
+                            id = me_messapia.106
+                            days = 8
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+me_messapia.111 = { # if Tarentum surrenders, info to all
+    type = country_event
+    title = me_messapia_111_title
+    desc = me_messapia_111_desc
+    left_portrait = c:MSP.current_ruler
+    left_portrait = c:TAR.current_ruler
+    left_portrait = c:APU.current_ruler
+
+    right_portrait = c:LCA.current_ruler
+    right_portrait = c:SAM.current_ruler
+
+    picture = greeks_marching
+
+    immediate = {
+        show_as_tooltip = {
+            war_303_coalition_surrender_effect = yes
+        }
+    }
+
+    option = { # losers
+        name = "me_messapia_111.a"
+        trigger = {
+            OR = {
+                tag = APU
+                tag = MSP
+            }
+        }
+    }
+
+    option = { # winners
+        name = "me_messapia_111.b"
+        trigger = {
+            OR = {
+                tag = SAM
+                tag = LCA
+            }
+        }
+    }
+}
+
+me_messapia.112 = { # Lucania wins a big battle
+    type = country_event
+    title = me_messapia_112_title
+    desc = me_messapia_112_desc
+    left_portrait = c:MSP.current_ruler
+    left_portrait = c:TAR.current_ruler
+    left_portrait = c:APU.current_ruler
+
+    right_portrait = c:LCA.current_ruler
+    right_portrait = c:SAM.current_ruler
+
+    picture = greeks_marching
+
+    option = { # losers -shit
+        name = "me_messapia_112.a"
+        trigger = {
+            OR = {
+                tag = APU
+                tag = MSP
+            }
+        }
+        add_war_exhaustion = 5
+    }
+
+    option = { # winners -yay
+        name = "me_messapia_112.b"
+        trigger = {
+            OR = {
+                tag = SAM
+                tag = LCA
+            }
+        }
+        add_political_influence = 10
+    }
+
+    option = { # tarentum -surrender
+        name = "me_messapia_112.c"
+        trigger = {
+            tag = TAR
+        }
+        custom_tooltip = we_will_surrender_tt
+        set_global_variable = war_303_end
+        war_303_coalition_surrender_effect = yes
+        every_in_list = {
+            list = war_303_list
+            limit = {
+                NOT = {
+                    tag = TAR # triggered from TAR
+                }
+            }
+            trigger_event = {
+                id = me_messapia.111 # surrender info
+            }
+        }
+    }
+
+    option = { # tarentum -continue fighting
+        name = "me_messapia_112.d"
+        trigger = {
+            tag = TAR
+        }
+        add_war_exhaustion = 10
+        custom_tooltip = we_will_continue_fighting_tt
+        # MORE EVENTS TO SIMULATE WAR. OUTCOME SKEWED IN LUCANIA ET AL'S FAVOUR
+        hidden_effect = {
+            random_list = {
+                10 = { # -T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Lucania wins a big battle
+                            id = me_messapia.112
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                3 = { # +T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Tarentum/Coalition wins a big battle
+                            id = me_messapia.113
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                5 = { # -T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Tarentine Soldiers desert
+                            id = me_messapia.114
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                1 = { # +T
+                    trigger = {
+                        c:SAM = {
+                            is_in_list = war_303_list
+                        }
+                    }
+                    if = {
+                        limit = {
+                            c:SAM = {
+                                is_ai = no
+                            }
+                        }
+                        c:SAM = {
+                            trigger_event = { # Samnium leaves the war
+                                id = me_messapia.115 # choice
+                                days = { 21 35 }
+                            }
+                        }
+                    }
+                    else = {
+                        set_global_variable = war_303_samnium_out
+                        trigger_event = {
+                            id = me_messapia.106
+                            days = 8
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+me_messapia.113 = { # Tarentum et al win a big battle
+    type = country_event
+    title = me_messapia_113_title
+    desc = me_messapia_113_desc
+    left_portrait = c:MSP.current_ruler
+    left_portrait = c:TAR.current_ruler
+    left_portrait = c:APU.current_ruler
+
+    right_portrait = c:LCA.current_ruler
+    right_portrait = c:SAM.current_ruler
+
+    picture = greeks_marching
+
+    option = { # winners
+        name = "me_messapia_113.a"
+        trigger = {
+            OR = {
+                tag = APU
+                tag = MSP
+                tag = TAR
+            }
+        }
+        add_political_influence = 10
+    }
+
+    option = { # loser
+        name = "me_messapia_113.b"
+        trigger = {
+            tag = SAM
+        }
+        add_war_exhaustion = 5
+        trigger_event = { # Samnium leaves the war
+            id = me_messapia.115 # choice
+            days = 2
+        }
+    }
+
+    option = { # lucania -surrender
+        name = "me_messapia_113.c"
+        trigger = {
+            tag = LCA
+        }
+        custom_tooltip = we_will_surrender_tt
+        set_global_variable = war_303_end
+        trigger_event = {
+            id = me_messapia.107
+            days = 8
+        }
+    }
+
+    option = { # lucania -continue fighting
+        name = "me_messapia_113.d"
+        trigger = {
+            tag = LCA
+        }
+        add_war_exhaustion = 10
+        custom_tooltip = we_will_continue_fighting_tt
+        # MORE EVENTS TO SIMULATE WAR. OUTCOME SKEWED IN TARENTUM ET AL'S FAVOUR
+        hidden_effect = {
+            random_list = {
+                3 = { # -T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Lucania wins a big battle
+                            id = me_messapia.112
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                10 = { # +T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Tarentum/Coalition wins a big battle
+                            id = me_messapia.113
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                1 = { # -T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Tarentine Soldiers desert
+                            id = me_messapia.114
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                5 = { # +T
+                    trigger = {
+                        c:SAM = {
+                            is_in_list = war_303_list
+                        }
+                    }
+                    if = {
+                        limit = {
+                            c:SAM = {
+                                is_ai = no
+                            }
+                        }
+                        trigger_event = { # Samnium leaves the war
+                            id = me_messapia.115 # choice
+                            days = { 21 35 }
+                        }
+                    }
+                    else = {
+                        set_global_variable = war_303_samnium_out
+                        trigger_event = {
+                            id = me_messapia.106
+                            days = 8
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+me_messapia.114 = { # Tarentine Soldiers Desert
+    type = country_event
+    title = me_messapia_114_title
+    desc = me_messapia_114_desc
+    left_portrait = c:MSP.current_ruler
+    left_portrait = c:TAR.current_ruler
+    left_portrait = c:APU.current_ruler
+
+    right_portrait = c:LCA.current_ruler
+    right_portrait = c:SAM.current_ruler
+
+    picture = greeks_marching
+
+    immediate = {
+        add_manpower = -2
+    }
+
+    option = { # continue fighting
+        name = "me_messapia_114.a"
+        add_war_exhaustion = 5
+        custom_tooltip = we_will_continue_fighting_tt
+        # MORE EVENTS TO SIMULATE WAR. OUTCOME SKEWED IN LUCANIA ET AL'S FAVOUR
+        hidden_effect = {
+            random_list = {
+                10 = { # -T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Lucania wins a big battle
+                            id = me_messapia.112
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                3 = { # +T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Tarentum/Coalition wins a big battle
+                            id = me_messapia.113
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                5 = { # -T
+                    every_in_list = {
+                        list = war_303_list
+                        trigger_event = { # Tarentine Soldiers desert
+                            id = me_messapia.114
+                            days = { 21 35 }
+                        }
+                    }
+                }
+                1 = { # +T
+                    trigger = {
+                        c:SAM = {
+                            is_in_list = war_303_list
+                        }
+                    }
+                    if = {
+                        limit = {
+                            c:SAM = {
+                                is_ai = no
+                            }
+                        }
+                        c:SAM = {
+                            trigger_event = { # Samnium leaves the war
+                                id = me_messapia.115 # choice
+                                days = { 21 35 }
+                            }
+                        }
+                    }
+                    else = {
+                        set_global_variable = war_303_samnium_out
+                        trigger_event = {
+                            id = me_messapia.106
+                            days = 8
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    option = { # give up
+        name = "me_messapia_114.b"
+        name = "me_messapia_110.a"
+        custom_tooltip = we_will_surrender_tt
+        set_global_variable = war_303_end
+        war_303_coalition_surrender_effect = yes
+        every_in_list = {
+            list = war_303_list
+            limit = {
+                NOT = {
+                    tag = TAR # triggered from TAR
+                }
+            }
+            trigger_event = {
+                id = me_messapia.111 # surrender info
+            }
+        }
+    }
+}
+
+me_messapia.115 = { # samnium can leave the war 
+    type = country_event
+    title = me_messapia_115_title
+    desc = me_messapia_115_desc
+    left_portrait = c:TAR.current_ruler
+    left_portrait = c:MSP.current_ruler
+    left_portrait = c:APU.current_ruler
+
+    right_portrait = c:LCA.current_ruler
+    right_portrait = c:SAM.current_ruler
+
+    picture = greeks_marching
+
+    option = { 
+        name = "me_messapia_115.a"
+        custom_tooltip = we_will_continue_fighting_tt
+    }
+
+    option = { # give up
+        name = "me_messapia_115.b"
+        set_global_variable = war_303_samnium_out
+        trigger_event = {
+            id = me_messapia.106
+            days = 8
+        }
+        ai_chance = { # if lucania is a player to not fuck the player over
+            modifier = {
+                add = -100
+                c:LCA = {
+                    is_ai = no
+                }
+            }
+        }
     }
 }

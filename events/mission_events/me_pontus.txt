@@ -1,4 +1,33 @@
 ﻿namespace = me_pontus_kingdom
+namespace = pontus_startup
+
+
+pontus_startup.1 = {
+    type = country_event
+    title = pontus_startup.1.t
+    desc = pontus_startup.1.desc
+    picture = council_country
+    
+    right_portrait = c:PRY.current_ruler
+    left_portrait = current_ruler
+
+    trigger = {
+        tag = KIO
+    }
+
+    option = {      
+        name = pontus_startup.1.a # We'll find a way out of this...somehow
+        add_country_modifier = {
+            name = kings_of_kios_mod
+            duration = 730
+        }
+        trigger_event = {
+            id = me_pontus_kingdom.1
+            days = { 15 30 }
+        }
+    }
+}
+
 
 me_pontus_kingdom.1 = {
     type = country_event
@@ -20,10 +49,10 @@ me_pontus_kingdom.1 = {
 
     option = {
         name = "me_pontus_kingdom_1.a"
-        custom_tooltip = me_pontus_kingdom_1_tooltip
-        add_country_modifier = {
-        	name = kings_of_kios_mod
-        	duration = 730
+        custom_tooltip = pontus_kingdom_missions_task_2_tt
+        trigger_event = {
+            id = me_pontus_kingdom.2
+            days = { 5 25 }
         }
     }
 }
@@ -39,6 +68,7 @@ me_pontus_kingdom.2 = {
     left_portrait = char:52
 
     immediate = {
+        save_scope_as = mission_country
     	p:200.owner = { save_scope_as = kimiata_owner }
     	every_owned_province = {
     		add_to_list = prov_list
@@ -66,6 +96,9 @@ me_pontus_kingdom.2 = {
     			list = pop_list
     			move_pop = p:200
     		}
+            every_navy = {
+                destroy_unit = yes
+            }
     		if = {
     			limit = {
     				char:37 = { is_alive = yes }
@@ -130,18 +163,35 @@ me_pontus_kingdom.2 = {
 			province = scope:war_province
 			target = scope:kimiata_owner
 		}
+        #declare_war_with_wargoal = {
+        #    war_goal = imperial_conquest_wargoal
+        #    target = scope:kimiata_owner
+        #}
 		create_unit = {
 			location = p:200
+            prev = {
+                set_variable = {
+                    name = spawned_unit
+                    value = prev
+                    days = 1000
+                }
+            }
 			hidden_effect = {
 				add_subunit = heavy_infantry
+                add_subunit = heavy_infantry
 				add_subunit = light_infantry
 				add_subunit = light_infantry
 				add_subunit = light_infantry
-				add_subunit = light_infantry
+                add_subunit = light_infantry
+                add_subunit = light_infantry
 				add_subunit = light_cavalry
+                add_subunit = light_cavalry
 				add_subunit = light_cavalry
+                add_subunit = supply_train
+                add_subunit = supply_train
 			}
 		}
+        trigger_event = me_pontus_kingdom.2222
     }
     option = {
     	# Nah, they cool
@@ -184,6 +234,26 @@ me_pontus_kingdom.222 = {
             province = p:200
             target = scope:mission_country
         }
+        c:KIO = {
+            create_unit = {
+                location = p:200
+                hidden_effect = {
+                    add_subunit = heavy_infantry
+                    add_subunit = heavy_infantry
+                    add_subunit = light_infantry
+                    add_subunit = light_infantry
+                    add_subunit = light_infantry
+                    add_subunit = light_infantry
+                    add_subunit = light_infantry
+                    add_subunit = light_cavalry
+                    add_subunit = light_cavalry
+                    add_subunit = light_cavalry
+                    add_subunit = supply_train
+                    add_subunit = supply_train
+                }
+            }
+            trigger_event = me_pontus_kingdom.2222
+        }
         ai_chance = {
             base = 5
             modifier = {
@@ -216,6 +286,80 @@ me_pontus_kingdom.222 = {
     }
 }
 
+# Recursive event to check for conditions for scripted peace (KIO controls 198)
+me_pontus_kingdom.2222 = {
+    type = country_event
+    hidden = yes
+    trigger = {
+        tag = KIO
+        war_with = c:PAP
+    }
+    immediate = {
+        if = {
+            limit = {
+                p:198 = { controller = c:KIO }
+            }
+            trigger_event = me_pontus_kingdom.2223
+        }
+        else = {
+            trigger_event = {
+                id = me_pontus_kingdom.2222
+                days = 5 # check for occupation every 5 days of the war
+            }
+        }
+    }
+}
+
+# Scripted peace deal if KIO controls 198 in the war
+me_pontus_kingdom.2223 = {
+    type = country_event
+    title = me_pontus_kingdom_2223_title
+    desc = me_pontus_kingdom_2223_desc
+    picture = great_library
+
+    option = {
+        name = "me_pontus_kingdom_2223.a"
+        custom_tooltip = me_pontus_kingdom_2223_tooltip
+        every_current_war = {
+            limit = {
+                is_war_leader = ROOT
+                is_war_leader = c:PAP
+            }
+            force_white_peace = THIS
+        }
+        hidden_effect = {
+            area:paphlagonia_inferior_area = {
+                every_area_province = {
+                    limit = { owner = c:PAP }
+                    set_conquered_by = c:KIO
+                }
+            }
+            area:paphlagonia_superior_area = {
+                every_area_province = {
+                    limit = { owner = c:PAP }
+                    set_conquered_by = c:KIO
+                }   
+            }
+            if = {
+                limit = { has_variable = spawned_unit }
+                var:spawned_unit = {
+                    destroy_unit = yes
+                }
+            }
+            change_country_tag = MIT
+            change_country_color = ck2_purple
+            change_country_flag = MIT_FLAG
+            change_country_adjective = MITH_ADJ
+        }
+        change_country_name = MITH_NAME
+    }
+    option = {
+        name = "me_pontus_kingdom_2223.b"
+        # Nah, fuck all that we need to kill these fools
+        add_manpower = 1
+    }
+}
+
 
 me_pontus_kingdom.3 = {
     type = country_event
@@ -227,10 +371,6 @@ me_pontus_kingdom.3 = {
     option = {
         name = "me_pontus_kingdom_3.a"
         custom_tooltip = me_pontus_kingdom_3_tooltip
-        add_country_modifier = {
-            name = fight_for_a_new_kingdom_mod
-            duration = 730
-        }
     }
 }
 me_pontus_kingdom.4 = {
@@ -248,6 +388,10 @@ me_pontus_kingdom.4 = {
             add_martial = 1
         }
         add_treasury = 50
+        add_country_modifier = {
+            name = fight_for_a_new_kingdom_mod
+            duration = 730
+        }
     }
 }
 me_pontus_kingdom.5 = {

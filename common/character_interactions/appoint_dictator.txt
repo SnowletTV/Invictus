@@ -1,0 +1,146 @@
+﻿appoint_dictator = {
+
+	on_other_nation = no
+	on_own_nation = yes
+	needs_senate_approval = yes
+	
+	sound = "event:/SFX/UI/Character/Unique/sfx_ui_character_appoint_dictator"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			employer = scope:actor
+			is_alive = yes
+			is_ruler = yes
+			is_mercenary = no
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+		}
+		hidden:scope:actor = {
+			is_republic = yes
+			NOT = {
+				has_variable = dictatorship_enabled
+			}
+		}
+	}
+	
+	allowed_trigger = {
+		hidden:scope:actor = {
+			can_pay_price = appoint_dictator
+			has_senate_approval > 0.75
+			OR = {
+				war = yes
+				has_civil_war = yes
+			}
+			NOT = {
+				has_variable = dictatorship_enabled
+			}
+		}
+	}
+	
+	effect = {
+		scope:actor = {
+			pay_price = appoint_dictator
+			#custom_tooltip = electoral_extension_modifier_tooltip
+			set_ignore_senate_approval = yes
+			add_country_modifier = {
+				name = dictatorial_extension
+				duration = -1 # removed by on_ruler_change on action or ip_republic.24 event
+			}
+			hidden_effect = {
+				set_variable = {
+					name = "dictatorship_enabled"
+				}
+				set_variable = {
+					name = ach_dictator_appointed
+					value = scope:target
+				}
+			}
+		}
+		custom_tooltip = "appoint_dictator_effect_tooltip"
+	}
+	
+}	
+
+unappoint_dictator = {
+
+	on_other_nation = no
+	on_own_nation = yes
+	
+	sound = "event:/SFX/UI/Character/Unique/sfx_ui_character_hold_triumph"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			employer = scope:actor
+			is_alive = yes
+			is_ruler = yes
+			has_variable = dictator_holding_power
+		}
+		hidden:scope:actor = {
+			is_republic = yes
+			has_variable = dictatorship_enabled
+		}
+	}
+	
+	allowed_trigger = {
+		hidden:scope:actor = {
+			has_variable = dictatorship_enabled
+		}
+		OR = {
+			AND = {
+				scope:target = {
+					popularity < 20
+				}
+				scope:actor = { 
+					stability >= 90
+				}
+			}
+			scope:actor = {
+				NOT = {
+					has_country_modifier = electoral_extension_mod
+				}
+			}
+			scope:target = {
+				custom_tooltip = {
+					text = "not_dictator_any_more"
+					NOT = {
+						has_variable = dictator_holding_power
+					}
+				}
+			}
+		}
+	}
+	
+	effect = {
+		scope:actor = {
+			set_ignore_senate_approval = no
+			hidden_effect = {
+				remove_variable = dictatorship_enabled
+			}
+			if = {
+				limit = {
+					has_country_modifier = electoral_extension_mod
+				}
+				remove_country_modifier = electoral_extension_mod
+			}
+			if = {
+				limit = {
+					has_country_modifier = dictatorial_extension
+				}
+				remove_country_modifier = dictatorial_extension
+			}
+			hidden_effect = {
+				set_variable = {
+					name = ach_dictator_stands_down
+					value = scope:target
+				}
+			}
+			add_stability = -25
+			add_tyranny = -5
+		}
+		scope:target = {
+			remove_variable = dictator_holding_power
+		}
+		custom_tooltip = "unappoint_dictator_effect_tooltip"
+	}
+	
+}

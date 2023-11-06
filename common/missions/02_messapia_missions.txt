@@ -29,12 +29,48 @@
             custom_tooltip = {
                 #stephan you can put what you need here
                 text = event_war_over_tt
+                OR = {
+                    has_global_variable = lucania_lost_war
+                    has_global_variable = tarentum_lost_war
+                }
             }
         }
         on_completion = {
             trigger_event = me_messapia.1
-            show_as_tooltip = {
-
+            show_as_tooltip = { 
+                if = {
+                    limit = {
+                        has_global_variable = lucania_lost_war # you win
+                    }
+                    add_stability = 5
+                    current_ruler = { # took the right decisions
+                        add_martial = 1
+                        add_charisma = 1
+                        add_popularity = 25
+                        add_character_experience = 8
+                        add_gold = 500
+                    }
+                    current_heir = { # heir learns new stuff
+                        add_martial = 1
+                        add_charisma = 1
+                        add_popularity = 25
+                        add_character_experience = 3
+                    }
+                }
+                if = {
+                    limit = {
+                        has_global_variable = tarentum_lost_war # you lose
+                    }
+                    # to recoup some of the losses
+                    add_country_modifier = {
+                        name = recovering_from_war_303
+                        duration = 3650 # 10 years
+                    }
+                    current_ruler = {
+                        add_popularity = -10
+                        add_trait = cautious
+                    }
+                }
             }
         }
     }
@@ -51,12 +87,27 @@
     }
     messapia_missions_task_3 = { # Acquisition of Apulia
         icon = "task_political"
-        requires = { messapia_missions_task_1 }
-        allow = {}
+        requires = { messapia_missions_task_1 messapia_missions_task_23 }
+        allow = {
+            owns_or_subject_owns_area = cannae_area
+        }
         on_completion = {
             trigger_event = me_messapia.3
             show_as_tooltip = {
-
+                custom_tooltip = assimilate_pops_messapia_tt
+                hidden_effect = {
+                    while = {
+                        count = 15
+                        random_owned_province = {
+                            random_pops_in_prpvince = {
+                                limit = {
+                                    NOT = { pop_culture = ROOT.culture }
+                                }
+                                set_pop_culture = ROOT.culture
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -260,21 +311,72 @@
     }
     messapia_missions_task_22 = {
         icon = "task_political"
-        allow = {}
+        allow = {
+            owns_or_subject_owns_area = tarentum_area
+        }
+        requires = { messapia_missions_task_1 messapia_missions_task_23 }
         on_completion = {
             trigger_event = me_messapia.22
-            show_as_tooltip = {
-
+            show_as_tooltip = { # should be adjusted
+                add_aggressive_expansion = -5
+                add_treasury = 250
             }
         }
     }
-    messapia_missions_task_23 = {
+    messapia_missions_task_23 = { # annex diplomatically the other messapian nation (apulia/messapia)
         icon = "task_political"
-        allow = {}
+        allow = {
+            trigger_if = { 
+                limit = {
+                    tag = MSP
+                }
+                hidden:c:APU = {
+                    opinion = {
+                        target = root
+                        value >= 125
+                    }
+                }  
+            }
+            trigger_else_if = { 
+                limit = {
+                    tag = APU
+                }
+                hidden:c:MSP = {
+                    opinion = {
+                        target = root
+                        value >= 125
+                    }
+                }  
+            }
+        }
+        bypass = {
+            is_subject = yes # first one to do the task will be overlord
+        }
         on_completion = {
             trigger_event = me_messapia.23
             show_as_tooltip = {
-
+                if = {
+                    limit = {
+                        tag = MSP
+                    }
+                    make_subject = {
+                        target = c:APU
+                        type = feudatory
+                    }
+                }
+                else_if = {
+                    limit = {
+                        tag = APU
+                    }
+                    make_subject = {
+                        target = c:MSP
+                        type = feudatory
+                    }
+                }
+                capital_scope = { 
+                    create_state_pop = freemen
+                    create_state_pop = freemen  
+                }
             }
         }
     }

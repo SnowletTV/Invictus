@@ -1,0 +1,598 @@
+﻿arseia_missions_01 = {
+    header = "mission_image_general"
+    icon = "general_1"
+
+    repeatable = no
+    chance = 1000
+
+    potential = {
+        NOT = { has_variable = arseia_cooldown_var }
+        tag = SGS
+    }
+
+    abort = {
+            ai_mission_back_out_trigger = yes
+}
+    on_start = {
+        start_mission_ai_effect = yes
+    }
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = arseia_cooldown_var
+            days = 7300
+        }
+    }
+    on_completion = {
+    		complete_mission_effect = yes
+}
+
+    arseia_01_task_1 = {#Convene the Chiefs
+		icon = task_expansion
+		duration = 60
+         highlight = {
+            area:edetania_area
+        }
+		allow = {
+			political_influence >= 15
+        }
+        on_start = {
+        	add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.1
+            area:edetania_area = {
+                add_provincial_claim_effect = yes
+            }
+        }
+    }
+    arseia_01_task_2 = { #Claim the Heartland
+        #triggers an event that gives claims on  Contestani -Rumor has it that the Contestani were funding the edantanians during our war, secretly hoping to take a slice of our territory
+        icon = "task_political"
+		requires = { arseia_01_task_1 }
+        highlight = {
+            area:edetania_area
+        }
+        allow = {
+        	owns_or_subject_owns = edetania_area
+        }
+        on_completion = {
+            trigger_event = me_arseia.2 # Contestani
+        }
+    }
+    arseia_01_task_3 = {#[ROOT.GetCountry.GetRuler.GetName]'s Dream
+        icon = "task_political"
+		requires = { arseia_01_task_2 }
+        highlight = {#need to fix
+            p:1029
+        }
+         allow = {
+            p:1029 = {
+                has_province_rank = city
+                num_of_aqueduct_building >= 1
+				num_of_forum_building >= 1
+            }
+        }
+        on_completion = {
+            trigger_event = me_arseia.3
+        }
+    }
+    arseia_01_task_4 = {#Edetanian Breadbasket
+        icon = "task_happiness"
+		requires = { arseia_01_task_3 }
+        highlight = {
+            area:edetania_area
+        }
+        allow = {
+            any_owned_province = {
+        		count >= 3
+                is_in_area = edetania_area
+                }
+        		num_of_basic_settlement_infratructure_building = 1
+        	}
+        on_completion = {
+            trigger_event = me_arseia.4
+            show_as_tooltip = {
+        add_1_free_province_investments = yes
+        p:1234.state = {
+            add_state_modifier = {
+                name = breadbasket_of_arseia_modifier
+                duration = -1
+            }
+        }
+            }
+        }
+    }
+    arseia_01_task_5 = {#Edetancomienda System
+        icon = "task_political"
+		requires = { arseia_01_task_4 }
+         allow = {
+            # Have five slave estates
+                any_owned_province = {
+                    count >= 5
+                    OR = {
+                        num_of_latifundia_building = 1
+                    }
+                }
+            }
+        on_completion = {
+            trigger_event = me_arseia.5
+            show_as_tooltip = {
+        	#give slave modifier-slave effeciency
+#local_goods_from_slaves = -1
+            }
+        }
+    }    
+    arseia_01_task_6 = {
+        icon = "task_economical"
+ 		requires = { arseia_01_task_3 }    
+        highlight = {
+            p:1234
+        }   
+		allow = {
+			p:1234 = {
+				has_city_status = yes
+				has_building = barracks_building
+                has_building = fortress_building                  
+			}        }
+        on_completion = {
+            trigger_event = me_arseia.6
+            show_as_tooltip = {
+:               add_military_experience = 10
+            }
+        }
+    }
+    arseia_01_task_7 = {
+        icon = "task_political"
+ 		requires = { arseia_01_task_3 }   
+        highlight = {
+            p:1235
+        }       
+		allow = {
+			p:1235 = {
+				has_city_status = yes
+				has_building = port_building
+                has_building = commerce_building
+				total_population >= 25
+			}        }
+        on_completion = {
+            trigger_event = me_arseia.7
+: 			add_1_free_province_investments = yes
+        }
+    }
+    arseia_01_task_8 = {
+        icon = "task_economical"
+ 		requires = { arseia_01_task_6 arseia_01_task_7 }       
+ 		        allow = {
+ 					has_law = coin_minting_law
+ 					political_influence > 20
+ 		        }
+        on_completion = {
+            show_as_tooltip = {
+            add_political_influence = -40
+            add_centralization = 10
+            add_country_modifier = {
+                name = "arseian_coinage_modifier"
+                duration = -1
+            }
+            trigger_event = me_arseia.8
+        }
+    }
+}
+    arseia_01_task_9 = {#will give an event about minting bronze coinage and will get some centralization/stability
+        icon = "task_expansion"
+        requires = { arseia_01_task_6 arseia_01_task_8 }       
+        allow = {
+            capital_scope = {
+                calc_true_if = {
+                    amount >= 2
+                    is_importing_trade_good = base_metals
+                }
+            }
+        }
+         highlight = {
+            capital_scope
+        }
+        on_completion = {
+            trigger_event = me_arseia.9
+            show_as_tooltip = {
+            add_innovation = 2
+            add_country_modifier = {
+                name = rapid_centralization
+                duration = -1
+                }
+            }
+        }
+    }
+    arseia_01_task_10 = {#Conquer Mastia for their precious metals, mention in the description that if the rumors of silver are true, it might be worth establishing a colony down there
+        icon = "task_battle"
+		requires = { arseia_01_task_9 }
+        highlight = {#highlight country
+            scope:province = {
+                province_id = 1036
+            }
+        }    
+        allow = {#mastia does not exist or we own
+            owns = 1036
+        }
+        on_completion = {#have an event trigger where Massailian merchants inform us of their intent to scour our new lands to find silver rich place to establish a colony. this gives the sgs_vein_of_silver mod
+:           add_2_free_province_investments = yes
+            trigger_event = me_arseia.10
+        }
+    }
+    arseia_01_task_11 = {#timed mission
+        icon = "task_economical"
+		requires = { arseia_01_task_10 }        
+        duration = 60
+        highlight = {
+            p:1036
+        }             
+        allow = {#new allow should be that Mastia has the "sgs_vein_of_silver" mod- 
+            p:1036 = {
+                total_population >= 15
+                has_building = slave_mine_building
+            }
+        }
+        on_start = {#start Settler event chain
+
+        }        
+        on_completion = {#add a slave mine. custom tooltip for having to option to establish a colony there
+            trigger_event = me_arseia.11
+            show_as_tooltip = {
+             add_centralization = 5
+            p:1036 = {  
+                add_province_modifier = {
+                    name = "massalian_colony"
+                    duration = -1
+                }   
+                create_state_pop = slaves
+                create_state_pop = slaves
+            }
+        }
+    }
+}
+#    arseia_01_task_12 = { #unused
+
+    arseia_01_task_13 = { #ambassadors - timed mission 
+        icon = "task_diplomatic"
+		requires = { arseia_01_task_7 arseia_01_task_28}#need to add events for both sides
+#add highlight
+        allow = {
+            hidden:c:BLD = {
+                opinion = {
+                    target = root
+                    value >= 120
+                }
+            }
+            OR = {
+             custom_tooltip = {
+                text = palma_friend_tt
+                p:243.owner = {
+                    current_ruler = {
+                        is_friend = root.current_ruler
+                    }
+                }
+            }
+        }
+    }    
+        bypass = {
+            NOT = {
+                exists = c:BLD
+            }
+        }
+        on_completion = {#need to add claims
+            trigger_event = me_arseia.13
+            show_as_tooltip = {
+#                current_ruler = {
+#                    add_trait = victorious
+                }
+            }    
+        }
+    }
+    arseia_01_task_14 = {#conquer palma
+        icon = "task_battle"
+        requires = { arseia_01_task_13 }        
+        allow = {
+            NOT = {
+                exists = c:BLD
+            }
+        }
+        on_completion = {#give silver vein to palma, noble happiness bonus for 5 years 
+            trigger_event = me_arseia.14
+            show_as_tooltip = {
+                current_ruler = {
+                    add_trait = victorious
+                }
+            }    
+        }
+}
+    arseia_01_task_15 = {#rebuild Palma as an emodiment of our identiy with a fusion of  iberic, punic, and Hellenic architecture
+        icon = "task_battle"
+        duration = 60
+		requires = { arseia_01_task_14 }        
+		allow = {
+            treasury >= 100
+			political_influence >= 50
+        }
+        on_start = {
+        	add_political_influence = -50
+            add_treasury = -100
+        }
+        on_completion = {#syncretic_city_modifier
+            trigger_event = me_arseia.15
+            show_as_tooltip = {
+                current_ruler = {
+                    add_popularity = popularity_large
+                }
+            p:1036 = {#add two massailian citizen, and one edantine noble   
+                add_province_modifier = {
+                    name = "syncretic_city_modifier"
+                    duration = -1
+                }   
+                define_pop = {
+                    type = citizen
+                    culture = "massalian"
+                    religion = "roman_pantheon"
+                }
+                define_pop = {
+                    type = citizen
+                    culture = "massalian"
+                    religion = "roman_pantheon"
+                }
+            }
+        }
+    }
+}
+    arseia_01_task_16 = {#minting silver
+        icon = "task_economical"
+        duration = 60
+		requires = { arseia_01_task_10 arseia_01_task_15 }        
+		allow = {
+			political_influence >= 15
+        }
+        on_start = {
+        	add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.16
+			area:edetania_area = {
+                add_provincial_claim_effect = yes
+			}
+        }
+    }
+    arseia_01_task_17 = {#sanctuary of arcus
+        icon = "task_calm"
+        duration = 60
+		allow = {
+			political_influence >= 15
+        }
+        on_start = {
+        	add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.17
+			area:edetania_area = {
+                add_provincial_claim_effect = yes
+			}
+        }
+    }
+    arseia_01_task_18 = {#holy site of acherionus
+        icon = "task_religion"
+		requires = { arseia_01_task_17 }
+         allow = {
+            custom_tooltip = {
+                text = arseia_01_task_18.tt #-make my own version
+                deity:omen_acherionus = {
+                    has_holy_site = yes
+                    holy_site = {
+                        owner = root
+                        has_building = temple_building
+                    }
+#                p:1029 = {
+ #               has_province_rank = city
+  #              num_of_aqueduct_building >= 1
+   #             num_of_forum_building >= 1
+    #        }
+        }
+        on_start = {
+        	add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.18
+            show_as_tooltip = {
+                deity:omen_acherionus = {
+                    holy_site.state = {
+                        add_state_modifier = {
+                            name = acherionus_blessing_modifier
+                            duration = -1
+                        }
+                    }
+                }
+            }
+        }
+    }
+    arseia_01_task_19 = {#Own  Salika, the holy site of Derctius (1254)
+        icon = "task_political"
+		requires = { arseia_01_task_18 }        
+		allow = {
+			political_influence >= 15
+        }
+        on_start = {
+        	add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.19
+			area:edetania_area = {
+                add_provincial_claim_effect = yes
+			}
+        }
+    }
+    arseia_01_task_20 = {#Arseia has Encourage Syncretism Law and has Melqart and at least one Hellenic God in its Pantheon
+        icon = "task_religion"
+		requires = { arseia_01_task_18 }
+		allow = {
+			political_influence >= 15
+        }
+        on_start = {
+        	add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.20
+			area:edetania_area = {
+                add_provincial_claim_effect = yes
+			}
+        }
+    }
+    arseia_01_task_21 = {#"Temple Diplomacy"
+        icon = "task_political"
+		requires = { arseia_01_task_20 arseia_01_task_19 }        
+		allow = {
+			political_influence >= 15
+        }
+        on_start = {
+        	add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.21
+			area:edetania_area = {
+                add_provincial_claim_effect = yes
+			}
+        }
+    }
+    arseia_01_task_22 = {#At least one Massalian nation has +80 opinion of arseia - some hellenic massalian pops will appear in our nation
+        icon = "task_religion"
+		requires = { arseia_01_task_21 arseia_01_task_16 }        
+		allow = {
+			political_influence >= 15
+        }
+        on_start = {
+        	add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.22
+			area:edetania_area = {
+                add_provincial_claim_effect = yes
+			}
+        }
+    }
+
+#    arseia_01_task_23 = {#unused
+    
+    arseia_01_task_24 = {#final
+        icon = "task_atlas"
+        requires = { arseia_01_task_23 } 
+        final = yes
+        allow = {
+            political_influence >= 15
+        }
+        on_start = {
+            add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.24
+            area:edetania_area = {
+                add_provincial_claim_effect = yes
+            }
+        }
+    }
+    arseia_01_task_25 = {#Arseia has 65+ centralization and stability
+        #alis_ubbo_missions_iberia_province_investments_0
+        icon = "task_economical"
+                allow = {
+                        p:1029  = { is_capital = yes }
+                        capital_scope = {
+                            has_city_status = yes
+                            num_of_port_building < 3
+                        }
+                        treasury >= 200
+                }
+
+                on_start = {
+                    add_treasury = -200
+                }
+
+                on_completion = {
+                    trigger_event = { id = me_arseia.25}
+                    custom_tooltip =  arseia_01_task_25.tt
+                    show_as_tooltip = {
+                    hidden_effect = {
+                        p:1029 = {
+                            while = {
+                                limit = {
+                                    num_of_port_building < 3
+                                }
+                                if = {
+                                    limit = { free_building_slots < 2 }
+                                    destroy_building_effect = yes
+                                }
+                                add_building_level = port_building
+                                add_building_level = port_building
+                            }
+                        }
+                        capital_scope = {
+                            define_pop = {
+                                type = citizen
+                                culture = massalian
+                                religion = roman_pantheon
+                                }
+                            define_pop = {
+                                type = citizen
+                                culture = massalian
+                                religion = roman_pantheon
+                                }
+                            }
+                        }
+                    }
+                }
+        }
+    arseia_01_task_26 = {#we have 3 territories with 2+ Port building - give the preparing a fleet modifier
+        icon = "task_economical"
+        allow = {
+            political_influence >= 15
+        }
+        on_start = {
+            add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.26
+        }
+    }
+    arseia_01_task_27 = {#have at least 40 ships
+        icon = "task_economical"
+        requires = { arseia_01_task_25 arseia_01_task_26 } 
+        allow = {
+            political_influence >= 15
+        }
+        on_start = {
+            add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.27
+        }
+    }
+    arseia_01_task_28 = {#timed mission - requires a decent chunk of gold. offer to buy out fleets of struggling businessmen so that we can better protect out citizens trade interests from the threat of piracy
+        icon = "task_economical"
+        requires = { arseia_01_task_27 }         
+        allow = {
+            political_influence >= 15
+        }
+        on_start = {
+            add_political_influence = -15
+        }
+        on_completion = {#trigger the 1st pirate event tree
+            trigger_event = me_arseia.28
+        }
+    }
+    arseia_01_task_29 = {#task that takes time, gold and requires that you import stone stone but gives one (or maybe more) of the cities along a river a quay
+        icon = "task_economical"
+        requires = { arseia_01_task_27 }         
+        allow = {
+            political_influence >= 15
+        }
+        on_start = {
+            add_political_influence = -15
+        }
+        on_completion = {
+            trigger_event = me_arseia.29
+        }
+    }

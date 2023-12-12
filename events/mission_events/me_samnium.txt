@@ -913,6 +913,10 @@ samnium_event.25 = { # start of events for lots of contact with hellenics
 
     option = { # what a shame
         name = "samnium_event.25.a"
+        add_country_modifier = {
+            name = sam_foreign_trade_influences
+            duration = 3650 # 10 years
+        }
     }
 }
 
@@ -922,10 +926,44 @@ samnium_event.26 = { # start of events for how to react
     desc = samnium_event.26.desc
     picture = city_construction
 
-    left_portrait = current_ruler
+    right_portrait = current_ruler
+    left_portrait = scope:sam_pro_hof_scope
+    left_portrait = scope:sam_con_hof_scope
 
-    option = { # what a shame
+    immediate = {
+        set_variable = {
+            name = samnium_rel_conflict_var
+            value = 0 # positive = pro hellenic, negative = italic
+        }
+        random_character = {
+            limit = {
+                is_head_of_family = yes
+                is_ruler = no
+            }
+            save_scope_as = sam_pro_hof_scope
+        }
+        random_character = {
+            limit = {
+                is_head_of_family = yes
+                is_ruler = no
+                NOT = {
+                    this = scope:sam_pro_hof_scope
+                }
+            }
+            save_scope_as = sam_con_hof_scope
+        }
+    }
+
+    option = {
         name = "samnium_event.26.a"
+        custom_tooltip = sam_start_of_rel_conflict_tt
+    }
+
+    after = {
+        trigger_event = {
+            id = samnium_event.85
+            days = { 30 60 }
+        }
     }
 }
 
@@ -939,7 +977,25 @@ samnium_event.27 = { # cultural resistance
 
     option = { # what a shame
         name = "samnium_event.27.a"
-        add_political_influence = -50
+        if = {
+            limit = {
+                has_variable = samnium_rel_conflict_var
+                var:samnium_rel_conflict_var <= -2 #at least -2
+            }
+            add_political_influence = -25
+            add_stability = 5
+        }
+        else_if = {
+            limit = {
+                has_variable = samnium_rel_conflict_var
+                var:samnium_rel_conflict_var > 0 # greater than 0
+            }
+            add_political_influence = -75
+            add_stability = -5
+        }
+        else = {
+            add_political_influence = -50
+        }
         add_country_modifier = {
             name = sam_cultural_resistance_path
             duration = 18250 # 50 years
@@ -957,7 +1013,15 @@ samnium_event.28 = { # syncretism
 
     option = { # what a shame
         name = "samnium_event.28.a"
-        add_stability = 10
+        if = {
+            limit = {
+                has_variable = samnium_rel_conflict_var
+                var:samnium_rel_conflict_var > -2 # between 1 and -1
+                var:samnium_rel_conflict_var < 2
+            }
+            add_stability = 10
+            add_political_influence = 25
+        }
         add_country_modifier = {
             name = sam_harmony_path
             duration = 18250 # 50 years
@@ -975,8 +1039,33 @@ samnium_event.29 = { # conversion
 
     option = { # what a shame
         name = "samnium_event.29.a"
+        if = {
+            limit = {
+                has_variable = samnium_rel_conflict_var
+                var:samnium_rel_conflict_var < 1 #less than 1
+            }
+            add_political_influence = -75
+            add_stability = -5
+        }
+        else_if = {
+            limit = {
+                has_variable = samnium_rel_conflict_var
+                var:samnium_rel_conflict_var > 2 # greater than 2
+            }
+            add_political_influence = 75
+            add_stability = 5
+        }
+        else = {
+            add_political_influence = -50
+        }
         soft_change_religion_effect = {
             RELIGION = roman_pantheon
+        }
+        if = {
+            limit = {
+                has_country_modifier = sam_traditionalists_demands
+            }
+            remove_country_modifier = sam_traditionalists_demands
         }
         add_country_modifier = {
             name = sam_philhellenism_path
@@ -1385,21 +1474,22 @@ samnium_event.46 = { #
 
     option = { # what a shame
         name = "samnium_event.46.a"
+        add_innovation = 1
         add_research = {
             technology = military_tech
-            value = 20
+            value = 25
         }
         add_research = {
             technology = civic_tech
-            value = 20
+            value = 25
         }
         add_research = {
             technology = oratory_tech
-            value = 20
+            value = 25
         }
         add_research = {
             technology = religious_tech
-            value = 20
+            value = 25
         }
     }
 }
@@ -1723,7 +1813,22 @@ samnium_event.58 = { # visit pella
         name = "samnium_event.58.b"
         trigger_event = { #
             id = samnium_event.75
-            days = { 3 5 }
+            days = { 8 12 }
+        }
+    }
+
+    option = { # no
+        name = "samnium_event.58.c"
+        trigger = {
+            current_ruler = {
+                has_trait = lunatic
+            }
+        }
+        highlight = yes
+        custom_tooltip = lunatic_tooltip
+        trigger_event = {
+            id = samnium_event.75 
+            days = { 8 12 }
         }
     }
 }
@@ -2155,6 +2260,21 @@ samnium_event.64 = { # peleponnese mountains - farmers of arcadia
             days = { 8 12 }
         }
     }
+
+    option = { # no
+        name = "samnium_event.64.c"
+        trigger = {
+            current_ruler = {
+                has_trait = lunatic
+            }
+        }
+        highlight = yes
+        custom_tooltip = lunatic_tooltip
+        trigger_event = {
+            id = samnium_event.72 # sparta
+            days = { 8 12 }
+        }
+    }
 }
 
 samnium_event.65 = { # thebes - enter thebes - market
@@ -2169,7 +2289,8 @@ samnium_event.65 = { # thebes - enter thebes - market
         name = "samnium_event.65.a"
         add_treasury = {
             value = has_monthly_income
-            multiply = -2
+            multiply = -4
+            max = -50
         }
         create_country_treasure = {
             icon = "treasure_chest"
@@ -2185,7 +2306,8 @@ samnium_event.65 = { # thebes - enter thebes - market
         name = "samnium_event.65.b"
         add_treasury = {
             value = has_monthly_income
-            multiply = -2
+            multiply = -4
+            max = -50
         }
         create_country_treasure = {
             icon = "treasure_chest"
@@ -2221,7 +2343,8 @@ samnium_event.66 = { # arcadia mountains - farmers approach you - sell you somet
         name = "samnium_event.66.a"
         add_treasury = {
             value = has_monthly_income
-            multiply = -2
+            multiply = -4
+            max = -50
         }
         create_country_treasure = {
             icon = "treasure_chest"
@@ -2258,6 +2381,7 @@ samnium_event.66 = { # arcadia mountains - farmers approach you - sell you somet
 
     option = { # no
         name = "samnium_event.66.c"
+        add_political_influence = 10
     }
 
     after = {
@@ -2281,6 +2405,7 @@ samnium_event.67 = { # arrive in athens
         add_treasury = {
             value = has_monthly_income
             multiply = -6
+            max = -100
         }
         add_research = {
             technology = military_tech
@@ -2450,6 +2575,7 @@ samnium_event.72 = { # arrival in sparta
         add_treasury = {
             value = has_monthly_income
             multiply = -6
+            max = -50
         }
     }
 
@@ -2515,6 +2641,11 @@ samnium_event.74 = { # mountain people
 
     option = { 
         name = "samnium_event.74.a"
+        add_treasury = {
+            value = has_monthly_income
+            multiply = -6
+            max = -50
+        }
         add_country_modifier = {
             name = sam_travel_cattle
             duration = 9125 # 25 years
@@ -2563,6 +2694,7 @@ samnium_event.74 = { # mountain people
 
     option = { # we do not need anything
         name = "samnium_event.74.d"
+        add_political_influence = 15
     }
 
     after = {
@@ -2592,6 +2724,7 @@ samnium_event.75 = { # arriving in Pella
 
     option = { # get inspired by the conquests and armies
         name = "samnium_event.75.b"
+        add_military_experience = 20
         add_country_modifier = {
             name = sam_pella_conquests
             duration = 9125
@@ -2634,6 +2767,663 @@ samnium_event.76 = { # leaving pella
         }
     }
 }
+
+samnium_event.77 = { # ver sacrum resistance
+    type = country_event
+    title = samnium_event.77.t
+    desc = samnium_event.77.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+
+    option = { 
+        name = "samnium_event.77.a"
+		custom_tooltip = sam_res_ver_sacrum_bonus_tt
+    }
+}
+
+samnium_event.78 = { # ver sacrum syncretic
+    type = country_event
+    title = samnium_event.78.t
+    desc = samnium_event.78.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+
+    option = { 
+        name = "samnium_event.78.a"
+        add_political_influence = -25
+		custom_tooltip = sam_sync_ver_sacrum_bonus_tt
+    }
+}
+
+# task 1 events
+samnium_event.79 = { # task 1 events
+    type = country_event
+    title = samnium_event.79.t
+    desc = samnium_event.79.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+
+    immediate = {
+        random_province = {
+            limit = {
+                province_dominant_culture_group = hellenic
+            }
+            save_scope_as = greek_origin_1
+        }
+        random_province = {
+            limit = {
+                province_dominant_culture_group = hellenic
+                NOT = {
+                    this = scope:greek_origin_1
+                }
+            }
+            save_scope_as = greek_origin_2
+        }
+        random_owned_province = {
+            limit = {
+                has_building = port_building
+            }
+            save_scope_as = trade_influx_place
+        }
+    }
+
+    option = { 
+        name = "samnium_event.79.a"
+        add_treasury = {
+            value = sam_export_svalue
+            multiply = 24 # 2 years worth of commerce income, which at this stage isn't that much
+        }
+        scope:greek_origin_1 = {
+            random_pops_in_province = {
+                limit = {
+                    pop_culture_group = hellenic
+                }
+                move_pop = scope:trade_influx_place
+            }
+        }
+        scope:greek_origin_2 = {
+            random_pops_in_province = {
+                limit = {
+                    pop_culture_group = hellenic
+                }
+                move_pop = scope:trade_influx_place
+            }
+        }
+        capital_scope = {
+            create_state_pop = nobles
+        }
+    }
+}
+
+samnium_event.80 = { # new knowledge
+    type = country_event
+    title = samnium_event.80.t
+    desc = samnium_event.80.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+
+    option = { 
+        name = "samnium_event.80.a"
+        add_innovation = 1
+    }
+
+    option = { 
+        name = "samnium_event.80.b"
+        add_treasury = {
+            value = has_monthly_income
+            multiply = -8
+            max = -50
+        }
+        add_innovation = 2
+    }
+}
+
+samnium_event.81 = { # 
+    type = country_event
+    title = samnium_event.81.t
+    desc = samnium_event.81.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+
+    option = { 
+        name = "samnium_event.81.a"
+        add_treasury = {
+            value = has_monthly_income
+            multiply = 2
+            min = 50
+        }
+        capital_scope = {
+            state = {
+                add_state_modifier = {
+                    name = state_improvement_oratory
+                    duration = -1
+                    mode = add
+                }
+            }
+        }
+    }
+}
+
+samnium_event.82 = { # some nobles convert
+    type = country_event
+    title = samnium_event.82.t
+    desc = samnium_event.82.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+
+    option = { 
+        name = "samnium_event.82.a"
+        add_political_influence = -15
+        random_owned_province = {
+            random_pops_in_province = {
+                limit = {
+                    pop_type = nobles
+                }
+                alternative_limit = {
+                    pop_type = citizen
+                }
+                set_pop_religion = roman_pantheon
+            }
+        }
+    }
+
+    option = { 
+        name = "samnium_event.82.b"
+        while = {
+            count = 3
+            random_owned_province = {
+                random_pops_in_province = {
+                    limit = {
+                        pop_type = nobles
+                    }
+                    alternative_limit = {
+                        pop_type = citizen
+                    }
+                    set_pop_religion = roman_pantheon
+                }
+            }
+        }
+    }
+}
+
+samnium_event.83 = { # 
+    type = country_event
+    title = samnium_event.83.t
+    desc = samnium_event.83.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+
+    option = { 
+        name = "samnium_event.83.a"
+        random_owned_province = {
+            limit = {
+                has_city_status = yes
+                free_building_slots >= 1
+            }
+            add_building_level = academy_building
+        }
+        capital_scope = {
+            if = {
+                limit = {
+                    has_city_status = yes
+                    free_building_slots >= 1
+                }
+                add_building_level = academy_building
+            }
+            else = {
+                define_pop = {
+                    type = nobles
+                    religion = roman_pantheon
+                    culture = italiotian
+                }
+            }
+        }
+    }
+}
+
+samnium_event.84 = { # 
+    type = country_event
+    title = samnium_event.84.t
+    desc = samnium_event.84.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+    right_portrait = scope:sam_family_head_scope
+
+    immediate = {
+        random_character = {
+            limit = {
+                is_head_of_family = yes
+            }
+            save_scope_as = sam_family_head_scope
+        }
+    }
+
+    option = { 
+        name = "samnium_event.84.a"
+        current_ruler = {
+            add_gold = 250
+            add_finesse = 1
+            add_trait = assertive
+        }
+        scope:sam_family_head_scope = {
+            add_gold = 500
+            add_finesse = 1
+            add_trait = corrupt
+        }
+    }
+}
+
+# task 2 events
+samnium_event.85 = { # family head converts: force religion back or leave him?
+    type = country_event
+    title = samnium_event.85.t
+    desc = samnium_event.85.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+    right_portrait = scope:sam_pro_hof_scope
+    right_portrait = scope:sam_con_hof_scope
+
+    immediate = {
+        scope:sam_pro_hof_scope = {
+            set_character_religion = roman_pantheon
+        }
+        capital_scope = {
+            random_pops_in_province = {
+                limit = {
+                    pop_type = nobles
+                }
+                alternative_limit = {
+                    pop_type = citizen
+                }
+                set_pop_religion = italic_pantheon
+            }
+            random_pops_in_province = {
+                limit = {
+                    pop_type = nobles
+                }
+                alternative_limit = {
+                    pop_type = citizen
+                }
+                set_pop_religion = italic_pantheon
+            }
+        }
+    }
+
+    option = { # allow hellenism
+        name = "samnium_event.85.a"
+        scope:sam_con_hof_scope = {
+            add_loyalty = sam_allowed_neg_hellenism
+        }
+        scope:sam_pro_hof_scope = {
+            add_loyalty = sam_allowed_pos_hellenism
+        }
+        custom_tooltip = sam_rel_conflict_tt
+        change_variable = {
+            name = samnium_rel_conflict_var
+            add = 1 # positive = pro hellenic, negative = italic
+        }
+    }
+
+    option = { # we must remain italic
+        name = "samnium_event.85.b"
+        add_political_influence = -25
+        scope:sam_con_hof_scope = {
+            add_loyalty = sam_allowed_pos_traditionalism
+        }
+        scope:sam_pro_hof_scope = {
+            add_loyalty = sam_allowed_neg_traditionalism
+            set_character_religion = italic_pantheon
+        }
+        custom_tooltip = sam_rel_conflict_tt
+        change_variable = {
+            name = samnium_rel_conflict_var
+            add = -1 # positive = pro hellenic, negative = italic
+        }
+    }
+
+    after = {
+        trigger_event = {
+            id = samnium_event.86
+            days = { 30 60 }
+        }
+    }
+}
+
+samnium_event.86 = { # pops convert culture
+    type = country_event
+    title = samnium_event.86.t
+    desc = samnium_event.86.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+    right_portrait = scope:sam_pro_hof_scope
+    right_portrait = scope:sam_con_hof_scope
+
+    immediate = {
+        random_country_culture = {
+            limit = {
+                is_greek_culture_group_trigger = yes
+            }
+            save_scope_as = greek_culture_scope
+        }
+        ordered_owned_province = {
+            order_by = total_population
+            max = 5
+            random_pops_in_province = {
+                limit = {
+                    pop_type = nobles
+                    NOT = { pop_culture = scope:greek_culture_scope }
+                }
+                alternative_limit = {
+                    pop_type = citizen
+                    NOT = { pop_culture = scope:greek_culture_scope }
+                }
+                set_pop_culture = scope:greek_culture_scope
+            }
+            random_pops_in_province = {
+                limit = {
+                    pop_type = nobles
+                    NOT = { pop_culture = scope:greek_culture_scope }
+                }
+                alternative_limit = {
+                    pop_type = citizen
+                    NOT = { pop_culture = scope:greek_culture_scope }
+                }
+                set_pop_culture = scope:greek_culture_scope
+            }
+        }
+    }
+
+    option = { # allow hellenism
+        name = "samnium_event.86.a"
+        scope:sam_con_hof_scope = {
+            add_loyalty = sam_allowed_neg_hellenism
+        }
+        scope:sam_pro_hof_scope = {
+            add_loyalty = sam_allowed_pos_hellenism
+        }
+        custom_tooltip = sam_rel_conflict_tt
+        change_variable = {
+            name = samnium_rel_conflict_var
+            add = 1 # positive = pro hellenic, negative = italic
+        }
+    }
+
+    option = { # we must remain italic
+        name = "samnium_event.86.b"
+        add_political_influence = -25
+        scope:sam_con_hof_scope = {
+            add_loyalty = sam_allowed_pos_traditionalism
+        }
+        scope:sam_pro_hof_scope = {
+            add_loyalty = sam_allowed_neg_traditionalism
+        }
+        custom_tooltip = sam_rel_conflict_tt
+        change_variable = {
+            name = samnium_rel_conflict_var
+            add = -1 # positive = pro hellenic, negative = italic
+        }
+        custom_tooltip = sam_pop_convert_back_tt
+        hidden_effect = {
+            ordered_owned_province = {
+                order_by = total_population
+                max = 5
+                random_pops_in_province = {
+                    limit = {
+                        pop_type = nobles
+                        pop_culture = scope:greek_culture_scope
+                    }
+                    alternative_limit = {
+                        pop_type = citizen
+                        pop_culture = scope:greek_culture_scope
+                    }
+                    set_pop_culture = root.culture
+                }
+                random_pops_in_province = {
+                    limit = {
+                        pop_type = nobles
+                        pop_culture = scope:greek_culture_scope
+                    }
+                    alternative_limit = {
+                        pop_type = citizen
+                        pop_culture = scope:greek_culture_scope
+                    }
+                    set_pop_culture = root.culture
+                }
+            }
+        }
+    }
+
+    after = {
+        trigger_event = {
+            id = samnium_event.87
+            days = { 30 60 }
+        }
+    }
+}
+
+samnium_event.87 = { # 
+    type = country_event
+    title = samnium_event.87.t
+    desc = samnium_event.87.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+    right_portrait = scope:sam_pro_hof_scope
+    right_portrait = scope:sam_con_hof_scope
+
+    immediate = {
+        random_owned_province = {
+            limit = {
+                any_pops_in_province = {
+                    pop_religion = roman_pantheon
+                    pop_culture_group = hellenic
+                    pop_type = nobles
+                }
+            }
+            alternative_limit = {
+                any_pops_in_province = {
+                    pop_religion = roman_pantheon
+                    pop_type = nobles
+                }
+            }
+            random_pops_in_province = {
+                limit = {
+                    any_pops_in_province = {
+                        pop_religion = roman_pantheon
+                        pop_culture_group = hellenic
+                        pop_type = nobles
+                    }
+                }
+                alternative_limit = {
+                    any_pops_in_province = {
+                        pop_religion = roman_pantheon
+                        pop_type = nobles
+                    }
+                }
+                kill_pop = yes
+            }
+        }
+    }
+
+    option = { # allow hellenism
+        name = "samnium_event.87.a"
+        scope:sam_con_hof_scope = {
+            add_loyalty = sam_allowed_neg_hellenism
+        }
+        scope:sam_pro_hof_scope = {
+            add_loyalty = sam_allowed_pos_hellenism
+        }
+        custom_tooltip = sam_rel_conflict_tt
+        change_variable = {
+            name = samnium_rel_conflict_var
+            add = 1 # positive = pro hellenic, negative = italic
+        }
+    }
+
+    option = { # we must remain italic
+        name = "samnium_event.87.b"
+        scope:sam_con_hof_scope = {
+            add_loyalty = sam_allowed_pos_traditionalism
+        }
+        scope:sam_pro_hof_scope = {
+            add_loyalty = sam_allowed_neg_traditionalism
+        }
+        custom_tooltip = sam_rel_conflict_tt
+        change_variable = {
+            name = samnium_rel_conflict_var
+            add = -1 # positive = pro hellenic, negative = italic
+        }
+    }
+
+    after = {
+        trigger_event = {
+            id = samnium_event.88
+            days = { 30 60 }
+        }
+    }
+}
+
+samnium_event.88 = { # 
+    type = country_event
+    title = samnium_event.88.t
+    desc = samnium_event.88.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+    right_portrait = scope:sam_pro_hof_scope
+    right_portrait = scope:sam_con_hof_scope
+
+    option = { # allow hellenism
+        name = "samnium_event.88.a"
+        scope:sam_con_hof_scope = {
+            add_loyalty = sam_allowed_neg_hellenism
+        }
+        scope:sam_pro_hof_scope = {
+            add_loyalty = sam_allowed_pos_hellenism
+        }
+        custom_tooltip = sam_rel_conflict_tt
+        change_variable = {
+            name = samnium_rel_conflict_var
+            add = 1 # positive = pro hellenic, negative = italic
+        }
+        add_research = {
+            technology = military_tech
+            value = 25
+        }
+        add_research = {
+            technology = civic_tech
+            value = 25
+        }
+        add_research = {
+            technology = oratory_tech
+            value = 25
+        }
+        add_research = {
+            technology = religious_tech
+            value = 25
+        }
+        ordered_owned_province = {
+            limit = {
+                OR = {
+                    has_city_status = yes
+                    has_building = port_building
+                }
+            }
+            order_by = total_population
+            max = 5
+            random_pops_in_province = {
+                limit = {
+                    NOT = {
+                        pop_religion = roman_pantheon
+                    }
+                }
+                set_pop_religion = roman_pantheon
+            }
+        }
+    }
+
+    option = { # we must remain italic
+        name = "samnium_event.88.b"
+        scope:sam_con_hof_scope = {
+            add_loyalty = sam_allowed_pos_traditionalism
+        }
+        scope:sam_pro_hof_scope = {
+            add_loyalty = sam_allowed_neg_traditionalism
+        }
+        custom_tooltip = sam_rel_conflict_tt
+        change_variable = {
+            name = samnium_rel_conflict_var
+            add = -1 # positive = pro hellenic, negative = italic
+        }
+    }
+
+    after = {
+        trigger_event = {
+            id = samnium_event.89
+            days = { 30 60 }
+        }
+    }
+}
+
+samnium_event.89 = { # 
+    type = country_event
+    title = samnium_event.89.t
+    desc = samnium_event.89.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+    right_portrait = scope:sam_pro_hof_scope
+    right_portrait = scope:sam_con_hof_scope
+
+    option = { # allow hellenism
+        name = "samnium_event.89.a"
+        scope:sam_con_hof_scope = {
+            add_loyalty = sam_allowed_neg_hellenism
+        }
+        scope:sam_pro_hof_scope = {
+            add_loyalty = sam_allowed_pos_hellenism
+        }
+        custom_tooltip = sam_rel_conflict_tt
+        change_variable = {
+            name = samnium_rel_conflict_var
+            add = 1 # positive = pro hellenic, negative = italic
+        }
+    }
+
+    option = { # we must remain italic
+        name = "samnium_event.89.b"
+        add_political_influence = -50
+        add_country_modifier = {
+            name = sam_traditionalists_demands
+            duration = 9125 # 25 years
+        }
+        custom_tooltip = sam_trad_demand_loss_tt
+        scope:sam_con_hof_scope = {
+            add_loyalty = sam_allowed_pos_traditionalism
+            add_popularity = 15
+        }
+        scope:sam_pro_hof_scope = {
+            add_loyalty = sam_allowed_neg_traditionalism
+            add_popularity = -15
+        }
+        custom_tooltip = sam_rel_conflict_tt
+        change_variable = {
+            name = samnium_rel_conflict_var
+            add = -1 # positive = pro hellenic, negative = italic
+        }
+    }
+}
+
 
 
 ### Other stuff
@@ -2760,6 +3550,66 @@ samnium_event.1000 = { # burial event
     after = {
         every_in_list = {
             list = sam_grieving_family_list
+        }
+    }
+}
+
+samnium_event.1001 = { # ver sacrum event
+    type = country_event
+    title = samnium_event.1001.t
+    desc = samnium_event.1001.desc
+    picture = city_construction
+
+    left_portrait = current_ruler
+
+    goto_location = scope:ver_sacrum_target
+
+    immediate = {
+        random_province = {
+            limit = {
+                NOT = { owner = root }
+                any_neighbor_province = {
+                    owner = root
+                }
+            }
+            save_scope_as = ver_sacrum_target
+        }
+    }
+
+    option = {
+        name = samnium_event.1001.a
+        add_stability = 8
+        ordered_owned_province = {
+            limit = {
+                any_pops_in_province = {
+                    pop_culture = samnite
+                    pop_religion = italic_pantheon
+                }
+            }
+            order_by = total_population
+            max = 5
+            random_pops_in_province = {
+                limit = {
+                    pop_culture = samnite
+                    pop_religion = italic_pantheon
+                }
+                move_pop = scope:ver_sacrum_target
+            }
+        }
+        if = {
+            limit = {
+                has_variable = sam_res_ver_sacrum_bonus
+            }
+            add_military_experience = 5
+        }
+        if = {
+            limit = {
+                has_variable = sam_sync_ver_sacrum_bonus
+            }
+            add_political_influence = 15
+        }
+        scope:ver_sacrum_target = {
+            add_claim = root
         }
     }
 }

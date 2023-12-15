@@ -25,6 +25,15 @@
 
     on_start = {
     	start_mission_ai_effect = yes
+		if = {
+			limit = {
+				NOR = {
+					has_variable = sam_trauma_war_path
+					has_variable = sam_normal_war_path
+				}
+			}
+			set_variable = sam_normal_war_path
+		}
     }
 
     on_abort = {
@@ -37,7 +46,7 @@
 
     on_completion = {
     	complete_mission_effect = yes
-		add_2_free_province_investments = yes
+		add_3_free_province_investments = yes
     }
 
 	samnium_2_task_1 = { # the outside world/hellenic contacts
@@ -46,6 +55,36 @@
 		on_start = {
 			trigger_event = { id = samnium_event.25 }
 			custom_tooltip = samnium_hellenism_contact_increase_tt
+
+			trigger_event = {
+				id = samnium_event.79
+				days = { 30 60 }
+			}
+
+			trigger_event = {
+				id = samnium_event.80
+				days = { 90 120 }
+			}
+
+			trigger_event = {
+				id = samnium_event.81
+				days = { 150 180 }
+			}
+
+			trigger_event = {
+				id = samnium_event.82
+				days = { 210 240 }
+			}
+
+			trigger_event = {
+				id = samnium_event.83
+				days = { 270 300 }
+			}
+
+			trigger_event = {
+				id = samnium_event.84
+				days = { 330 360 }
+			}
 		}
 	}
 
@@ -69,19 +108,55 @@
 	samnium_2_task_3 = { # stay true to your values, limit trade to a minimum. little hellenic influences
 		icon = "task_conquest"
 		allow = {
-			political_influence >= 50
+			trigger_if = {
+				limit = {
+					has_variable = samnium_rel_conflict_var
+					var:samnium_rel_conflict_var <= -2 #at least -2
+				}
+				political_influence >= 25
+			}
+			trigger_else_if = {
+				limit = {
+					has_variable = samnium_rel_conflict_var
+					var:samnium_rel_conflict_var > 0 # greater than 0
+				}
+				political_influence >= 75
+			}
+			trigger_else = {
+				political_influence >= 50
+			}
 		}
 		requires = { samnium_2_task_2 }
 		prevented_by = { samnium_2_task_4 samnium_2_task_5 }
 		on_completion = {
+			set_variable = sam_trad_path
 			trigger_event = { id = samnium_event.27 }
 			show_as_tooltip = {
-				add_political_influence = -50
+				if = {
+					limit = {
+						has_variable = samnium_rel_conflict_var
+						var:samnium_rel_conflict_var <= -2 #at least -2
+					}
+					add_political_influence = -25
+					add_stability = 5
+				}
+				else_if = {
+					limit = {
+						has_variable = samnium_rel_conflict_var
+						var:samnium_rel_conflict_var > 0 # greater than 0
+					}
+					add_political_influence = -75
+					add_stability = -5
+				}
+				else = {
+					add_political_influence = -50
+				}
 				add_country_modifier = {
 					name = sam_cultural_resistance_path
 					duration = 18250 # 50 years
 				}
 			}
+			custom_tooltip = sam_rel_conflict_cost_reward_tt
 		}
 	}
 
@@ -91,13 +166,23 @@
 		prevented_by = { samnium_2_task_3 samnium_2_task_5 }
 		requires = { samnium_2_task_2 }
 		on_completion = {
+			set_variable = sam_sync_path
 			trigger_event = { id = samnium_event.28 }
 			show_as_tooltip = {
-				add_stability = 10
+				if = {
+					limit = {
+						has_variable = samnium_rel_conflict_var
+						var:samnium_rel_conflict_var > -2 # between 1 and -1
+						var:samnium_rel_conflict_var < 2
+					}
+					add_stability = 10
+					add_political_influence = 25
+				}
 				add_country_modifier = {
 					name = sam_harmony_path
 					duration = 18250 # 50 years
 				}
+				custom_tooltip = sam_rel_conflict_cost_reward_tt
 			}
 		}
 	}
@@ -105,13 +190,49 @@
 	samnium_2_task_5 = { # philhellenism, convert and abandon native values
 		icon = "task_conquest"
 		allow = {
-			political_influence >= 50
+			trigger_if = {
+				limit = {
+					has_variable = samnium_rel_conflict_var
+					var:samnium_rel_conflict_var < 1 #less than 1
+				}
+				political_influence >= 75
+			}
+			trigger_else_if = {
+				limit = {
+					has_variable = samnium_rel_conflict_var
+					var:samnium_rel_conflict_var > 2 # greater than 2
+				}
+				political_influence >= 25
+			}
+			trigger_else = {
+				political_influence >= 50
+			}
 		}
 		requires = { samnium_2_task_2 }
 		prevented_by = { samnium_2_task_3 samnium_2_task_4 }
 		on_completion = {
+			set_variable = sam_phil_path
 			trigger_event = { id = samnium_event.29 }
 			show_as_tooltip = {
+				if = {
+					limit = {
+						has_variable = samnium_rel_conflict_var
+						var:samnium_rel_conflict_var < 1 #less than 1
+					}
+					add_political_influence = -75
+					add_stability = -5
+				}
+				else_if = {
+					limit = {
+						has_variable = samnium_rel_conflict_var
+						var:samnium_rel_conflict_var > 2 # greater than 2
+					}
+					add_political_influence = 75
+					add_stability = 5
+				}
+				else = {
+					add_political_influence = -50
+				}
 				soft_change_religion_effect = {
 					RELIGION = roman_pantheon
 				}
@@ -119,7 +240,14 @@
 					name = sam_philhellenism_path
 					duration = -1 # this one is permanent!
 				}
+				if = {
+					limit = {
+						has_country_modifier = sam_traditionalists_demands
+					}
+					remove_country_modifier = sam_traditionalists_demands
+				}
 			}
+			custom_tooltip = sam_rel_conflict_cost_reward_tt
 		}
 	}
 	
@@ -127,6 +255,12 @@
 		icon = "task_conquest"
 		allow = {
 			religious_unity >= 90
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_phil_path
+			}
 		}
 		requires = { samnium_2_task_3 }
 		on_completion = {
@@ -152,6 +286,12 @@
 						incoming_trade_routes >= 2
 					}
 				}
+			}
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_phil_path
 			}
 		}
 		requires = { samnium_2_task_4 }
@@ -180,6 +320,12 @@
 		allow = {
 			treasury >= 250
 			invention = change_governor_policy_inv
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_trad_path
+			}
 		}
 		duration = 180
 		requires = { samnium_2_task_9 samnium_2_task_16 }
@@ -213,6 +359,12 @@
 		allow = {
 			religious_unity >= 80
 		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_trad_path
+			}
+		}
 		requires = { samnium_2_task_5 }
 		on_completion = {
 			trigger_event = { id = samnium_event.33 }
@@ -242,6 +394,12 @@
 				}
 			}
 		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_phil_path
+			}
+		}
 		requires = { samnium_2_task_3 }
 		on_completion = {
 			trigger_event = { id = samnium_event.34 }
@@ -269,7 +427,7 @@
 		allow = {
 			custom_tooltip = {
 				text = pagi_svalue_tt
-				samnite_production_svalue >= 15
+				samnite_pagus_svalue >= 15
 			}
 		}
 		highlight = {
@@ -278,6 +436,12 @@
 				OR = {
 					has_city_status = no
 				}
+			}
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_phil_path
 			}
 		}
 		requires = { samnium_2_task_6 samnium_2_task_10 }
@@ -308,6 +472,12 @@
 				}
 			}
 		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_phil_path
+			}
+		}
 		requires = { samnium_2_task_10 }
 		on_completion = {
 			trigger_event = { id = samnium_event.36 }
@@ -322,11 +492,17 @@
 
 	samnium_2_task_13 = { # resistance --> rural increased production
 		icon = "task_conquest"
-		final = yes # PLACEHOLDER
+		final = yes
 		allow = {
 			custom_tooltip = {
 				text = samnite_production_svalue_tt
 				samnite_production_svalue >= 50
+			}
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_phil_path
 			}
 		}
 		requires = { samnium_2_task_12 samnium_2_task_11 }
@@ -337,6 +513,7 @@
 					name = sam_increased_production
 					duration = -1
 				}
+				custom_tooltip = increased_priduction_tt
 			}
 		}
 	}
@@ -347,6 +524,12 @@
 			custom_tooltip = {
 				text = sam_destroy_idols_tt
 				sam_destroy_idols_svalue = 0
+			}
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_phil_path
 			}
 		}
 		highlight = {
@@ -400,6 +583,12 @@
 				sam_destroy_idols_svalue = 0
 			}
 		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_trad_path
+			}
+		}
 		prevented_by = { samnium_2_task_18 }
 		highlight = {
 			scope:province = {
@@ -442,7 +631,13 @@
 		icon = "task_conquest"
 		duration = 180
 		requires = { samnium_2_task_5 }
-		on_completion = {
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_trad_path
+			}
+		}
+		on_start = {
 			trigger_event = { id = samnium_event.40 }
 			show_as_tooltip = {
 				custom_tooltip = sam_visit_greeks_tt
@@ -461,6 +656,12 @@
 				}
 			}
 		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_trad_path
+			}
+		}
 		requires = { samnium_2_task_16 }
 		on_completion = {
 			trigger_event = { id = samnium_event.41 }
@@ -475,6 +676,12 @@
 		duration = 30
 		allow = {
 			political_influence >= 10
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_trad_path
+			}
 		}
 		requires = { samnium_2_task_9 }
 		prevented_by = { samnium_2_task_15 }
@@ -503,6 +710,12 @@
 				}
 			}
 		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_trad_path
+			}
+		}
 		highlight = {
 			scope:province = {
 				owner = root
@@ -523,16 +736,22 @@
 
 	samnium_2_task_20 = { # centre of civilized italia - philhellenism
 		icon = "task_conquest"
-		final = yes # PLACEHOLDER
+		final = yes 
 		allow = {
 			hidden:capital_scope = {
 				has_province_rank = city_metropolis
-				civilization_value >= 75
+				civilization_value >= 50
 			}
 		}
 		highlight = {
 			scope:province = {
 				this = root.capital_scope
+			}
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_trad_path
 			}
 		}
 		requires = { samnium_2_task_19 }
@@ -567,6 +786,12 @@
 				is_holy_site = yes
 			}
 		}
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_phil_path
+			}
+		}
 		requires = { samnium_2_task_7 }
 		on_completion = {
 			trigger_event = { id = samnium_event.45 }
@@ -599,25 +824,32 @@
 				}
 			}
 		}
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_phil_path
+			}
+		}
 		requires = { samnium_2_task_7 }
 		on_completion = {
 			trigger_event = { id = samnium_event.46 }
 			show_as_tooltip = {
+				add_innovation = 1
 				add_research = {
 					technology = military_tech
-					value = 20
+					value = 25
 				}
 				add_research = {
 					technology = civic_tech
-					value = 20
+					value = 25
 				}
 				add_research = {
 					technology = oratory_tech
-					value = 20
+					value = 25
 				}
 				add_research = {
 					technology = religious_tech
-					value = 20
+					value = 25
 				}
 			}
 		}
@@ -627,6 +859,12 @@
 		icon = "task_conquest"
 		duration = 365
 		requires = { samnium_2_task_21 }
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_phil_path
+			}
+		}
 		on_completion = {
 			trigger_event = { id = samnium_event.47 }
 			show_as_tooltip = {
@@ -643,6 +881,12 @@
 		icon = "task_conquest"
 		duration = 365
 		requires = { samnium_2_task_10 }
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_phil_path
+			}
+		}
 		on_completion = {
 			trigger_event = { id = samnium_event.48 }
 			show_as_tooltip = {
@@ -655,6 +899,12 @@
 		icon = "task_conquest"
 		duration = 365
 		requires = { samnium_2_task_5 }
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_sync_path
+			}
+		}
 		on_completion = {
 			trigger_event = { id = samnium_event.49 }
 			show_as_tooltip = {
@@ -672,6 +922,12 @@
 					is_integrated = yes
 					is_greek_culture_group_trigger = yes
 				}
+			}
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_phil_path
 			}
 		}
 		requires = { samnium_2_task_7 }
@@ -696,12 +952,827 @@
 				}
 			}
 		}
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_sync_path
+			}
+		}
 		requires = { samnium_2_task_17 }
 		on_completion = {
 			trigger_event = { id = samnium_event.51 }
 			show_as_tooltip = {
 				custom_tooltip = sam_flattery_tt
 				custom_tooltip = sam_immigrating_greeks_tt
+			}
+		}
+	}
+
+	samnium_2_task_28 = { # syncretism farming
+		icon = "task_conquest"
+		allow = {
+			custom_tooltip = {
+				text = pagi_svalue_tt
+				samnite_pagus_svalue >= 15
+			}
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_phil_path
+			}
+		}
+		requires = { samnium_2_task_4 }
+		on_completion = {
+			trigger_event = { id = samnium_event.52 }
+			show_as_tooltip = {
+				custom_tooltip = sam_rural_community_growth
+			}
+		}
+	}
+
+	samnium_2_task_29 = { # exports
+		icon = "task_conquest"
+		allow = {
+			custom_tooltip = {
+				text = sam_exports_tt
+				sam_export_svalue >= 5
+			}
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_phil_path
+			}
+		}
+		requires = { samnium_2_task_28 }
+		on_completion = {
+			trigger_event = { id = samnium_event.53 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = sam_rising_exports
+					duration = -1
+				}
+			}
+		}
+	}
+
+	samnium_2_task_30 = { # the rich peasants
+		icon = "task_conquest"
+		final = yes
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_phil_path
+			}
+		}
+		allow = {
+			capital_scope = {
+				province_tax_income >= 1.5
+				num_of_nobles >= 5
+				state = {
+					incoming_trade_routes >= 5
+				}
+			}
+		}
+		highlight = {
+			scope:province = {
+				owner = root
+				is_capital = yes
+			}
+		}
+		requires = { samnium_2_task_29 samnium_2_task_22 samnium_2_task_26 }
+		on_completion = {
+			trigger_event = { id = samnium_event.54 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = sam_richest_peasant
+					duration = -1
+				}
+			}
+		}
+	}
+
+	samnium_2_task_31 = { # resistance appease families
+		icon = "task_conquest"
+		allow = {
+			political_influence >= 50
+            custom_tooltip = {
+                text = saba_admin_tt
+                any_character = {
+                    count >= 2
+                    is_head_of_family = yes
+                    from_ruler_family = no
+                    loyalty >= 66
+                }
+            }
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_phil_path
+			}
+		}
+		requires = { samnium_2_task_3 }
+		on_completion = {
+			trigger_event = { id = samnium_event.55 }
+			show_as_tooltip = {
+				add_political_influence >= -50
+				add_country_modifier = {
+					name = sam_pacified_families
+					duration = 5475
+				}
+			}
+		}
+	}
+
+	samnium_2_task_32 = { # ver sacrum upgrade for resistance path
+		icon = "task_conquest"
+		allow = {
+			custom_tooltip = {
+				text = ver_sacrum_count_tt
+				var:ver_sacrum_num_var >= 3
+			}
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_sync_path
+				has_variable = sam_phil_path
+			}
+		}
+		requires = { samnium_2_task_31 }
+		on_completion = {
+			set_variable = sam_res_ver_sacrum_bonus
+			trigger_event = { id = samnium_event.77 }
+			show_as_tooltip = {
+				custom_tooltip = sam_res_ver_sacrum_bonus_tt
+			}
+		}
+	}
+
+	samnium_2_task_33 = { # ver sacrum upgrade for syncretic
+		icon = "task_conquest"
+		allow = {
+			political_influence >= 25
+			custom_tooltip = {
+				text = ver_sacrum_count_tt
+				var:ver_sacrum_num_var >= 3
+			}
+		}
+		potential = {
+			NOR = {
+				has_variable = sam_trad_path
+				has_variable = sam_phil_path
+			}
+		}
+		requires = { samnium_2_task_4 }
+		on_completion = {
+			set_variable = sam_sync_ver_sacrum_bonus
+			trigger_event = { id = samnium_event.78 }
+			show_as_tooltip = {
+				add_political_influence = -25
+				custom_tooltip = sam_sync_ver_sacrum_bonus_tt
+			}
+		}
+	}
+
+	### Start of the military branch. I will start with task_40 so that more tasks can be added if desired for the above
+	### The way I'll do it is that there are some shared tasks (such as conquest of italy region excl. islands
+	### but also exclusive tasks such as conquest of the islands or innstead try a more diplomatic approach...
+	
+	samnium_2_task_40 = { # start trauma branch
+		icon = "task_conquest"
+		duration = 60
+		potential = {
+			has_variable = sam_trauma_war_path
+		}
+		on_completion = {
+			trigger_event = { id = samnium_event.90 }
+			show_as_tooltip = {
+				mission_claim_region_effect = { REGION = magna_graecia_region }
+				mission_claim_region_effect = { REGION = central_italy_region }
+				mission_claim_region_effect = { REGION = cisalpine_gaul_region }
+			}
+		}
+	}
+
+	samnium_2_task_41 = { # start "regular" conquest path
+		icon = "task_conquest"
+		duration = 60
+		potential = {
+			has_variable = sam_normal_war_path
+		}
+		on_completion = {
+			trigger_event = { id = samnium_event.91 }
+			show_as_tooltip = {
+				custom_tooltip = sam_italy_magna_graecia_claims_tt
+				mission_claim_area_effect = { AREA = pisae_area }
+			}
+		}
+	}
+
+	samnium_2_task_42 = { # conquest of italy region excl islands
+		icon = "task_conquest"
+		allow = {
+			owns_or_subject_owns_area = roma_area
+			owns_or_subject_owns_area = south_etruria_area
+			owns_or_subject_owns_area = north_etruria_area
+			owns_or_subject_owns_area = ariminum_area
+			owns_or_subject_owns_area = aternum_area
+			owns_or_subject_owns_area = asculum_area
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = roma_area
+					is_in_area = south_etruria_area
+					is_in_area = north_etruria_area
+					is_in_area = ariminum_area
+					is_in_area = aternum_area
+					is_in_area = asculum_area
+				}
+			}
+		}
+		requires = { samnium_2_task_40 samnium_2_task_41 }
+		on_completion = {
+			trigger_event = { id = samnium_event.92 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = sam_integrate_italia
+					duration = 1825 # 5 years
+				}
+			}
+		}
+	}
+
+	samnium_2_task_43 = { # conquest of Magna Graecia excl. Sicily
+		icon = "task_conquest"
+		allow = {
+			owns_or_subject_owns_area = neapolis_area
+			owns_or_subject_owns_area = cannae_area
+			owns_or_subject_owns_area = tarentum_area
+			owns_or_subject_owns_area = heraclea_area
+			owns_or_subject_owns_area = croton_area
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = neapolis_area
+					is_in_area = cannae_area
+					is_in_area = tarentum_area
+					is_in_area = heraclea_area
+					is_in_area = croton_area
+				}
+			}
+		}
+		requires = { samnium_2_task_40 samnium_2_task_41 }
+		on_completion = {
+			trigger_event = { id = samnium_event.93 }
+			show_as_tooltip = {
+				add_innovation = 2
+				capital_scope = {
+					create_state_pop = nobles
+					create_state_pop = nobles
+				}
+			}
+		}
+	}
+
+	samnium_2_task_44 = { # conquest of sicily
+		icon = "task_conquest"
+		requires = { samnium_2_task_43 }
+		potential = {
+			has_variable = sam_trauma_war_path
+		}
+		allow = {
+            owns_or_subject_owns_area = syracuse_area
+            owns_or_subject_owns_area = east_sicily_area
+            owns_or_subject_owns_area = west_sicily_area
+        }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = syracuse_area
+                    is_in_area = east_sicily_area
+                    is_in_area = west_sicily_area
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = samnium_event.94
+            show_as_tooltip = {
+                custom_tooltip = sicily_grain_tt
+                p:84 = { # all of sicily gets it
+                    add_permanent_province_modifier = {
+                        name = sicilian_grain_messapia
+                        duration = -1
+                    }
+                }
+            }
+        }
+	}
+
+	samnium_2_task_45 = { # conquest of sardinia and corsica
+		icon = "task_conquest"
+		potential = {
+			has_variable = sam_trauma_war_path
+		}
+		allow = {
+			owns_or_subject_owns_area = corsica_area
+			owns_or_subject_owns_area = sardinia_meridionalis
+			owns_or_subject_owns_area = sardinia_septentrionalis
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = corsica_area
+					is_in_area = sardinia_meridionalis
+					is_in_area = sardinia_septentrionalis
+				}
+			}
+		}
+		requires = { samnium_2_task_42 }
+		on_completion = {
+			trigger_event = { id = samnium_event.95 }
+			show_as_tooltip = {
+				add_military_experience = 20
+				create_unit = {
+					location = p:2688
+					navy = yes
+					sub_unit = mega_galley
+					add_subunit = octere
+					add_subunit = octere
+					add_subunit = octere
+					add_subunit = octere
+					save_scope_as = new_navy
+				}
+				custom_tooltip = mega_galley_tooltip
+			}
+		}
+	}
+
+	samnium_2_task_46 = { # gallia cisalpina - conuest path
+		icon = "task_conquest"
+		potential = {
+			has_variable = sam_trauma_war_path
+		}
+		allow = {
+			owns_or_subject_owns_area = east_insubria_area
+			owns_or_subject_owns_area = ferraria_area
+			owns_or_subject_owns_area = aemilla_area
+			owns_or_subject_owns_area = venetia_area
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = aemilla_area
+					is_in_area = ferraria_area
+					is_in_area = east_insubria_area
+					is_in_area = venetia_area
+				}
+			}
+		}
+		requires = { samnium_2_task_42 }
+		on_completion = {
+			trigger_event = { id = samnium_event.96 }
+			show_as_tooltip = {
+				custom_tooltip = sam_fertile_po_plain_tt
+				random_province = {
+					limit = {
+						is_in_area = venetia_area
+					}
+					add_permanent_province_modifier = {
+						name = sam_fertile_po_valley
+						duration = -1
+					}
+				}
+			}
+		}
+	}
+
+	samnium_2_task_47 = { # securing the appennine, mutually exclusive with 46 - relaxed path
+		icon = "task_conquest"
+		potential = {
+			has_variable = sam_normal_war_path
+		}
+		allow = {
+			owns_or_subject_owns_area = pisae_area
+			custom_tooltip = {
+				text = sam_fortify_apennines
+				area:pisae_area = {
+					any_area_province = {
+						has_building = fortress_building
+					}
+				}
+				area:ariminum_area = {
+					any_area_province = {
+						has_building = fortress_building
+					}
+				}
+			}
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = pisae_area
+					is_in_area = ariminum_area
+				}
+			}
+		}
+		requires = { samnium_2_task_42 }
+		on_completion = {
+			trigger_event = { id = samnium_event.97 }
+			show_as_tooltip = {
+				custom_tooltip = sma_appenine_forts_tt
+				random_province = {
+					limit = {
+						has_building = fortress_building
+						OR = {
+							is_in_area = pisae_area
+							is_in_area = ariminum_area
+						}
+					}
+					add_permanent_province_modifier = {
+						name = sam_fortified_border_fort
+						duration = -1
+					}
+				}
+			}
+		}
+	}
+
+	samnium_2_task_48 = { # genuatia et al
+		icon = "task_conquest"
+		potential = {
+			has_variable = sam_trauma_war_path
+		}
+		allow = {
+			owns_or_subject_owns_area = liguria_area
+			owns_or_subject_owns_area = transpadana_area
+			owns_or_subject_owns_area = west_insubria_area
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = liguria_area
+					is_in_area = transpadana_area
+					is_in_area = west_insubria_area
+				}
+			}
+		}
+		requires = { samnium_2_task_42 }
+		on_completion = {
+			trigger_event = { id = samnium_event.98 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = sam_ligurian_mercs
+					duration = 9125 # 25 years
+				}
+			}
+		}
+	}
+
+	samnium_2_task_49 = { # alpine passes
+		icon = "task_conquest"
+		potential = {
+			has_variable = sam_trauma_war_path
+		}
+		allow = {
+			p:3611 = {
+				owner = root
+				has_building = fortress_building
+			}
+			p:3618 = {
+				owner = root
+				has_building = fortress_building
+			}
+			p:3661 = {
+				owner = root
+				has_building = fortress_building
+			}
+			p:3530 = {
+				owner = root
+				has_building = fortress_building
+			}
+			p:3534 = {
+				owner = root
+				has_building = fortress_building
+			}
+			p:3544 = {
+				owner = root
+				has_building = fortress_building
+			}
+			p:3607 = {
+				owner = root
+				has_building = fortress_building
+			}
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 3611
+					province_id = 3618
+					province_id = 3661
+					province_id = 3530
+					province_id = 3534
+					province_id = 3544
+					province_id = 3607
+				}
+			}
+		}
+		requires = { samnium_2_task_48 samnium_2_task_46 }
+		on_completion = {
+			trigger_event = { id = samnium_event.99 }
+			show_as_tooltip = {
+				custom_tooltip = sam_alpine_forts_tt
+				p:3611 = {
+					add_permanent_province_modifier = {
+						name = sam_fortified_border_fort
+						duration = -1
+					}
+				}
+			}
+		}
+	}
+
+	samnium_2_task_50 = { # histria and a bit of coast
+		icon = "task_conquest"
+		potential = {
+			has_variable = sam_trauma_war_path
+		}
+		allow = {
+			owns_or_subject_owns_area = histria_area
+		}
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = histria_area
+				}
+			}
+		}
+		requires = { samnium_2_task_48 }
+		on_completion = {
+			trigger_event = { id = samnium_event.100 }
+			show_as_tooltip = {
+				p:4020 = {
+					if = {
+						limit = {
+							has_city_status = no
+						}
+						set_city_status = city
+					}
+					else = {
+						add_building_level = port_building
+						add_building_level = port_building
+					}
+					if = {
+						limit = {
+							is_state_capital = no
+						}
+						state = { set_state_capital = PREV }
+					}
+					set_trade_goods = glass
+					create_state_pop = citizen
+					create_state_pop = citizen
+				}
+			}
+		}
+	}
+
+	samnium_2_task_51 = { # triple disc armour
+		icon = "task_conquest"
+		allow = {
+			treasury >= 300
+			military_tech >= 5
+		}
+		on_completion = {
+			trigger_event = { id = samnium_event.101 }
+			show_as_tooltip = {
+				add_treasury = -300
+				add_country_modifier = {
+					name = triple_disc_cuirass
+					duration = -1
+				}
+			}
+		}
+	}
+
+	samnium_2_task_52 = { # samnite warfare style
+		icon = "task_conquest"
+		potential = {
+			has_variable = sam_normal_war_path
+		}
+		allow = {
+			has_war_exhaustion >= 15
+		}
+		requires = { samnium_2_task_51 samnium_2_task_41 }
+		on_completion = {
+			trigger_event = { id = samnium_event.102 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = samnite_warfare
+					duration = -1
+				}
+			}
+		}
+	}
+
+	samnium_2_task_53 = { # roman conquest war style (trauma path)
+		icon = "task_conquest"
+		allow = {
+			has_senate_approval >= 0.65
+		}
+		potential = {
+			has_variable = sam_trauma_war_path
+		}
+		requires = { samnium_2_task_51 samnium_2_task_40 }
+		on_completion = {
+			trigger_event = { id = samnium_event.103 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = sam_roman_conquest_copy
+					duration = -1
+				}
+			}
+		}
+	}
+
+	samnium_2_task_54 = { # 
+		icon = "task_conquest"
+		allow = {
+			trigger_if = {
+				limit = {
+					p:3515 = {
+						owner = {
+							any_owned_province = {
+								count = all
+								is_in_area = corsica_area
+							}
+						}
+					}
+				}
+				p:3525.owner = {
+					opinion = {
+						value >= 125
+						target = root
+					}
+				}
+			}
+			trigger_else = {
+				political_influence >= 50
+			}
+		}
+		potential = {
+			has_variable = sam_normal_war_path
+		}
+		requires = { samnium_2_task_42 }
+		on_completion = {
+			trigger_event = { id = samnium_event.104 }
+			show_as_tooltip = {
+				if = {
+					limit = {
+						p:3515 = {
+							owner = {
+								any_owned_province = {
+									count = all
+									is_in_area = corsica_area
+								}
+								save_temporary_scope_as = corsica_country_sam_scope
+							}
+						}
+					}
+					make_subject = {
+						target = scope:corsica_country_sam_scope
+						type = subject_colony
+					}
+				}
+				else = {
+					add_political_influence = -50
+					p:3515 = {
+						owner = {
+							add_opinion = {
+								modifier = corsica_stolen
+								target = root
+							}
+						}
+						create_country = {
+							name = {
+								name = CORSICA_NAME
+								adjective = corsican_adjective
+							}
+							hidden_effect = {
+								change_country_color = corsica_color
+								if = {
+									limit = {
+										NOT = {
+											primary_culture = corsian
+										}
+									}
+									set_primary_culture_cleanup_effect = {
+										NEW_PRIMARY_CULTURE = corsian
+										MAKE_OLD_CULTURE_INTEGRATED = yes
+									}
+								}	
+								set_country_religion = roman_pantheon
+								change_government = oligarchic_republic
+								set_country_heritage = tibulatia_heritage
+								save_scope_as = corsica_country_sam_scope
+							}
+						}
+					}
+				}
+				custom_tooltip = sam_cosrica_tt
+			}
+		}
+	}
+
+	samnium_2_task_55 = { # this is the vanilla "approach greeks" task from the roman italia mission tree
+		requires = { samnium_2_task_41 }
+		allow = {
+			custom_tooltip = {
+				text = rm_befriend_cooldown_tooltip
+				NOT = { has_variable = rm_befriend_cooldown }
+			}
+		}
+		duration = 365 # 1 year
+		monthly_on_action = roman_1_italia_persuade_greeks_monthly_pulse
+		on_start = {
+			save_scope_as = rm_offer_scope # for the events
+			set_variable = {
+				name = ongoing_mission_pulse_flag
+				days = 365
+			}
+		}
+		on_completion = {
+			custom_tooltip = roman_1_italia_persuade_greeks_tooltip
+			set_variable = {
+				name = rm_befriend_cooldown
+				days = 180
+			}
+		}
+		icon = task_diplomatic
+	}
+
+	samnium_2_task_56 = { 
+		requires = { samnium_2_task_43 }
+		icon = task_diplomatic
+		allow = {
+			trigger_if = {
+				limit = {
+					p:80.owner = root
+				}
+				political_influence >= 25
+			}
+			trigger_else = {
+				hidden:p:80.owner = {
+					opinion = {
+						value >= 100
+						target = root
+					}
+				}
+			}
+		}
+		on_completion = {
+			show_as_tooltip = {
+				trigger_event = { id = samnium_event.105 }
+				if = {
+					limit = {
+						p:80.owner = root
+					}
+					add_political_influence = -25
+					p:80 = {
+						create_country = {
+							save_scope_as = messina_scope_sam
+						}
+					}
+					make_subject = {
+						target = scope_messina_scope_sam
+						type = subject_colony
+					}
+				}
+				else = {
+					p:80.owner = {
+						add_alliance = root
+						hidden_effect = {
+							add_military_experience = 50
+							add_political_influence = 50
+						}
+					}
+					add_military_experience = 50
+					add_political_influence = 50
+				}
+			}
+		}
+	}
+
+	samnium_2_task_57 = { 
+		icon = task_diplomatic
+		requires = { samnium_2_task_47 }
+		duration = 120
+		on_completion = {
+			show_as_tooltip = {
+				trigger_event = { id = samnium_event.106 }
+				custom_tooltip = sam_celtic_relations_tt
 			}
 		}
 	}

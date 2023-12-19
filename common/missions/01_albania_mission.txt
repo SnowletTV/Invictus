@@ -10,7 +10,10 @@
         NOT = { has_variable = mission_cooldown_var }
     }
 
-    abort = {}
+    abort = {
+		ai_mission_back_out_trigger = yes
+	}
+
     on_start = {
         start_mission_ai_effect = yes
         set_variable = albania_properity_counting #Used for Generic Svalues
@@ -22,7 +25,9 @@
             days = 7300
         }
     }
-    on_completion = {}
+    on_completion = {
+		complete_mission_effect = yes
+	}
     
     01_albania_task_1 = { # The Sons of Arhan 
         icon = "task_heracles"
@@ -34,9 +39,17 @@
             hidden:deity:omen_arhan = {
                 has_holy_site = yes
             }
-            job_holder:office_high_priest = {
-                loyalty >= 75
-                zeal >= 8
+            trigger_if = {
+                limit = {
+                    exists = job_holder:office_high_priest
+                }
+                job_holder:office_high_priest = {
+                    loyalty >= 75
+                    zeal >= 8
+                }
+            }
+            trigger_else = {
+                NOT = { office_is_empty = office_high_priest }
             }
         }
 
@@ -46,15 +59,18 @@
 
         on_completion = {
             add_centralization = 15
-            area:artshak_area = {
-				add_provincial_claim_effect = yes
-			}
-            area:arran_area = {
-				add_provincial_claim_effect = yes
-			}
-            area:kahetia_area = {
-				add_provincial_claim_effect = yes
-			}
+            custom_tooltip = 01_albania_task_1_tt
+            hidden_effect = {
+                area:artshak_area = {
+                    add_provincial_claim_effect = yes
+                }
+                area:arran_area = {
+                    add_provincial_claim_effect = yes
+                }
+                area:kahetia_area = {
+                    add_provincial_claim_effect = yes
+                }
+            }
             trigger_event = {
                 id = me_albania.1
             }
@@ -98,9 +114,7 @@
                 }
             }
             OR = {
-                AND = {
-                    owns_or_subject_owns_area = area:artshak_area
-                }
+                owns_or_subject_owns_area = area:artshak_area
                 AND = {
                     hidden:p:1667.state.governor_or_ruler = {
                         is_friend = root.current_ruler
@@ -144,9 +158,10 @@
         prevented_by = {01_albania_task_13}
         
         allow = { 
-            capital_scope = { 
+            hidden:capital_scope = { 
                 has_city_status = yes
-                num_of_library_building >= 3 
+                num_of_library_building >= 3
+                has_no_ongoing_construction = yes
             }
             has_law = increased_council_powers      
         }
@@ -159,10 +174,10 @@
                 name = pleased_albanian_linguists_mod
                 duration = -1
             }
-            every_holding_owners = {
-                add_prominence = 50
-                add_popularity = 5
-            }
+            #every_holding_owners = {
+            #    add_prominence = 50
+            #    add_popularity = 5
+            #}
             hidden_effect = {
                 while = { 
                     count = 2
@@ -245,11 +260,9 @@
 		}
 
         allow = {
-            any_owned_province = { # CUSTOM LOC???????????????
-                count >= 4
-                is_in_region = albania_region
-                has_minor_river = yes
-                num_of_fortress_building >= 1
+            custom_tooltip = {
+                text = 01_albania_task_5_tt
+                01_albania_task_5_forts_current >= 4
             }
         }
         on_completion = {
@@ -437,10 +450,9 @@
         allow = {
             legitimacy >= 90
             stability >= 65
-            any_owned_province = { # CUSTOM LOC???????????????
-                count >= 4
-                is_in_region = albania_region
-                has_province_rank = city_metropolis
+            custom_tooltip = {
+                text = 01_albania_task_9_tt
+                01_albania_task_9_metropolis_current >= 4
             }
             invention =  global_cohort_recruit_speed_inv
             invention = assimilate_pop_cost_modifier_inv_1
@@ -487,7 +499,7 @@
         allow = { 
             political_influence >= 25
             treasury >= 25
-            c:LGA = {
+            hidden:c:LGA = {
                 opinion = {
                     target = root
                     value >= 170
@@ -496,6 +508,10 @@
             current_ruler = {
                 is_friend = c:LGA.current_ruler
             }
+        }
+
+        bypass = {
+            NOT = { exists = c:LGA }
         }
 
         on_completion = {
@@ -726,9 +742,14 @@
                 add_trait = wise
                 add_loyal_veterans = 10
             }
-            current_heir = {
-                add_trait = ambitious
-                add_loyal_veterans = 5
+            if = {
+                limit = {
+                    exists = current_heir
+                }
+                current_heir = {
+                    add_trait = ambitious
+                    add_loyal_veterans = 5
+                }
             }
             add_manpower = -10
             add_treasury = -100
@@ -787,9 +808,12 @@
         allow = {
             centralization >= 50
             political_influence >= 80
-            any_country_culture = {
-                is_culture = pasargadi
-                is_integrated = yes
+            custom_tooltip = {
+                text = 01_albania_task_14_tt
+                any_country_culture = {
+                    is_culture = pasargadi
+                    is_integrated = yes
+                }
             }
         }
 
@@ -808,6 +832,7 @@
             trigger_event = {
                 id = me_albania.24
             }
+            set_variable = free_religion_conversion # for the next task so the conversion doens't cost 200 PI
         }
     }
 
@@ -833,11 +858,9 @@
                     deity_religion = zoroaster
                 }
             }
-            any_province = {
-                count >= 3
-                owner = root
-                has_city_status = yes
-                has_building = temple_building
+            custom_tooltip = {
+                text = 01_albania_task_15_tt
+                01_albania_task_15_temples_current >= 3
             }
         }
 
@@ -849,7 +872,9 @@
                         deity_religion = mithra_religion
                     }
                 }
-                change_religion_effect = { # MAYBE MAKE A CUSTOM RELIGION EFFECT ????????
+                add_political_influence = -50 # 1/4 the normal cost of conversion
+                add_stability = -10
+                change_religion_effect = {
                     RELIGION = mithra_religion
                 }
             }
@@ -860,11 +885,15 @@
                         deity_religion = zoroaster
                     }
                 }
+                add_political_influence = -50
+                add_stability = -10
                 change_religion_effect = {
                     RELIGION = zoroaster
                 }
             }
             else = {
+                add_political_influence = -50
+                add_stability = -10
                 change_religion_effect = {
                     RELIGION = caucasian_religion
                 }
@@ -952,6 +981,7 @@
                 has_building = fortress_building
                 has_building = temple_building
                 has_building = theathre_building
+                has_no_ongoing_construction = yes
             }
             p:1610 = {
                 owner = root
@@ -961,6 +991,7 @@
                 has_building = fortress_building
                 has_building = temple_building
                 has_building = theathre_building
+                has_no_ongoing_construction = yes
             }
             p:1677 = {
                 owner = root
@@ -970,6 +1001,7 @@
                 has_building = fortress_building
                 has_building = temple_building
                 has_building = theathre_building
+                has_no_ongoing_construction = yes
             }
         }
 
@@ -1022,38 +1054,47 @@
                 any_owned_province = { 
                     is_in_area = media_atropatene_area
                     num_of_fortress_building >= 1
+                    has_construction = no
                 }
                 any_owned_province = { 
                     is_in_area = media_area
                     num_of_fortress_building >= 1
+                    has_construction = no
                 }
                 any_owned_province = { 
                     is_in_area = parskahayk_area
                     num_of_fortress_building >= 1
+                    has_construction = no
                 }
                 any_owned_province = { 
                     is_in_area = paytankert_area
                     num_of_fortress_building >= 1
+                    has_construction = no
                 }
                 any_owned_province = { 
                     is_in_area = kadousioi_area
                     num_of_fortress_building >= 1
+                    has_construction = no
                 }
                 any_owned_province = {
                     is_in_area = amardioi_area
                     num_of_fortress_building >= 1
+                    has_construction = no
                 }
                 any_owned_province = {
                     is_in_area = media_choromithrene
                     num_of_fortress_building >= 1
+                    has_construction = no
                 }
                 any_owned_province = {
                     is_in_area = kossioi_area
                     num_of_fortress_building >= 1
+                    has_construction = no
                 }
                 any_owned_province = { 
                     is_in_area = ecbatana_area
                     num_of_fortress_building >= 1
+                    has_construction = no
                 }
             }
             
@@ -1123,21 +1164,24 @@
                 has_province_rank = city_metropolis
                 has_building = court_building
                 has_building = theathre_building
-                has_holy_site = yes
+                is_holy_site = yes
+                has_no_ongoing_construction = yes
             }
             owns_or_subject_owns_region = colchis_region
             p:1720 = {
                 has_province_rank = city_metropolis
                 has_building = court_building
                 has_building = theathre_building
-                has_holy_site = yes
+                is_holy_site = yes
+                has_no_ongoing_construction = yes
             }
             owns_or_subject_owns_region = media_region
             p:1595 = {
                 has_province_rank = city_metropolis
                 has_building = court_building
                 has_building = theathre_building
-                has_holy_site = yes
+                is_holy_site = yes
+                has_no_ongoing_construction = yes
             }
             political_influence >= 50 
             invention = subject_opinions_inv_1
@@ -1187,9 +1231,9 @@
             change_country_flag = GREATEST_ALBANIA_FLAG
             change_country_color = ferrari_orange
 		    current_ruler = {
-			    add_trait = great_builder
-			    add_trait = founder
-			    add_trait = intelligent
+			    force_add_trait = great_builder
+			    force_add_trait = founder
+			    force_add_trait = intelligent
             }
             add_political_influence = -75
             add_stability = -15
@@ -1248,10 +1292,12 @@
         allow = {
             hidden:p:1642 = {
                 has_building = basic_settlement_infratructure_building
+                has_no_ongoing_construction = yes
             }
             hidden:p:1633 = {
                 has_city_status = yes
                 num_of_commerce_building >= 2
+                has_no_ongoing_construction = yes
             }
         }
 
@@ -1314,8 +1360,9 @@
         requires = {01_albania_task_21}
 
         allow = { 
-            p:1636 = {
+            hidden:p:1636 = {
                 has_building = fortress_building
+                has_no_ongoing_construction = yes
             }
             manpower > 6 
             political_influence > 35
@@ -1379,15 +1426,19 @@
             manpower > 3
             hidden:p:1644 = {
                 has_building = latifundia_building
+                has_no_ongoing_construction = yes
             }
             hidden:p:1651 = {
                 has_building = latifundia_building
+                has_no_ongoing_construction = yes
             }
             hidden:p:1652 = {
                 has_building = latifundia_building
+                has_no_ongoing_construction = yes
             }
             hidden:p:1672 = {
                 has_building = latifundia_building
+                has_no_ongoing_construction = yes
             }
         }
 
@@ -1502,6 +1553,7 @@
             treasury >= 150
             hidden:p:7603 = {
                 has_building = fortress_building
+                has_no_ongoing_construction = yes
             }
         }
 
@@ -1573,15 +1625,19 @@
             treasury > 50
             hidden:p:1635 = {
                 has_building = basic_settlement_infratructure_building
+                has_no_ongoing_construction = yes
             }
             hidden:p:1637 = {
                 has_building = basic_settlement_infratructure_building
+                has_no_ongoing_construction = yes
             }
             hidden:p:1645 = {
                 has_building = basic_settlement_infratructure_building
+                has_no_ongoing_construction = yes
             }
             hidden:p:1661 = {
                 has_building = basic_settlement_infratructure_building
+                has_no_ongoing_construction = yes
             }
             hidden:capital_scope.state = {
                 trade_good_surplus = {
@@ -1818,6 +1874,7 @@
                 has_building = court_building
                 has_building = forum_building
                 has_building = library_building
+                has_no_ongoing_construction = yes
             }
             invention = global_unrest_inv_2
             invention = oratory_tech_investment_inv_1
@@ -1833,8 +1890,19 @@
 
         on_completion = { 
             p:1634 = {
-                add_building_level = academy_building
-                add_building_level = theathre_building
+                if = {
+                    limit = {
+                        free_building_slots = 1
+                    }
+                    add_building_level = academy_building
+                }
+                else_if = {
+                    limit = {
+                        free_building_slots > 1
+                    }
+                    add_building_level = theathre_building
+                    add_building_level = academy_building
+                }
                 define_pop = {
                     type = nobles
                     religion = root.religion

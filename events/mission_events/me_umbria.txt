@@ -141,6 +141,7 @@ me_umbria.9 = {
     hidden = yes
     
     immediate = {
+        save_scope_as = umb_country_that_wants_narnia
         add_country_modifier = {
             name = glorious_battle
             duration = 3650
@@ -160,7 +161,7 @@ me_umbria.9 = {
                 limit = {
                     has_land = yes
                 }
-                trigger_event = { id = me_umbria.34 days = 3 }
+                trigger_event = { id = me_umbria.34 days = 1 }
             }
         }
     }
@@ -171,6 +172,20 @@ me_umbria.10 = {
     hidden = yes
 
     immediate = {
+        random_current_war = {
+            limit = {
+                AND = {
+                    any_war_participant = {
+                        tag = ROM
+                    }
+                    any_war_participant = {
+                        this = ROOT
+                    }
+                }
+                exists = yes
+            }
+            save_scope_as = war_between_umb_and_rome
+        }
         trigger_event = {
             id = me_umbria.37
         }
@@ -416,7 +431,15 @@ me_umbria.19 = {
         add_military_experience = 20
         if = {
             limit = {
-                has_variable = umb_established_feudatory_in_cisalpine_gaul
+                AND = {
+                    has_variable = umb_established_feudatory_in_cisalpine_gaul
+                    scope:umb_gallic_country_to_interact_with = {
+                        AND = {
+                            has_land = yes
+                            is_subject_of = ROOT
+                        }
+                    }
+                }
             }
             trigger_event = { id = me_umbria.53 }
         }
@@ -564,22 +587,26 @@ me_umbria.24 = {
     type = country_event
     hidden = yes
     
+    immediate = {
         every_owned_province = {
-            limit = {
-                OR = {
-                   is_in_area = ariminum_area
-                   is_in_area = asculum_area
-                    province_id = 103
-                    province_id = 102
-                    province_id = 23
+            if = {
+                limit = {
+                    OR = {
+                       is_in_area = ariminum_area
+                       is_in_area = asculum_area
+                        province_id = 103
+                        province_id = 102
+                        province_id = 23
+                    }
+                    has_city_status = no
                 }
-                has_city_status = no
-            }
-            add_province_modifier = {
-                name = me_umbrian_ruralism_pmod
-                duration = -1
+                add_province_modifier = {
+                    name = me_umbrian_ruralism_pmod
+                    duration = -1
+                }
             }
         }
+    }
 }
 
 me_umbria.25 = { 
@@ -600,6 +627,9 @@ me_umbria.26 = {
     immediate = {
         add_military_experience = 20
         area:tarentum_area = {
+            add_provincial_claim_effect = yes
+        }
+        area:cannae_area = {
             add_provincial_claim_effect = yes
         }
     }
@@ -629,7 +659,7 @@ me_umbria.28 = {
     option = {
         name = me_umbria.28.a
         custom_tooltip = "me_umbria.28.a_tt"
-        potential = {
+        trigger = {
             c:ETR = {
                 opinion = {
                     target = root
@@ -637,15 +667,13 @@ me_umbria.28 = {
                 }
             }
         }
-        root.country = {
-            set_variable = umb_seeking_friendly_relations_with_etr
-        }
+        set_variable = umb_seeking_friendly_relations_with_etr
     }
 
     option = {
         name = me_umbria.28.b
         custom_tooltip = "me_umbria.28.b_tt"
-        potential = {
+        trigger = {
             c:ETR = {
                 opinion = {
                     target = root
@@ -653,9 +681,7 @@ me_umbria.28 = {
                 }
             }
         }
-        root.country = {
-            set_variable = umb_seeking_to_destroy_etr
-        }
+        set_variable = umb_seeking_to_destroy_etr
         p:131 = {
             add_claim = root
         }
@@ -683,16 +709,13 @@ me_umbria.29 = {
 
     immediate = {
         create_country_treasure = {
-            key = "iguvine_tablets"
-            icon = "treasure_chest"
+            key = "treasure_it_iguvine_tablets"
+            icon = "treasure_it_iguvine_tablets"
             modifier = {
-                local_country_civilization_value = 5
-                local_citizen_output = 0.05 
-                local_freemen_output = 0.05 
+                local_happiness_for_same_religion_modifier = 0.02
+                local_country_civilization_value = 0.01
+                local_citizen_output = 0.01
             }
-        }
-        capital_scope.area = {
-            add_state_food = 100
         }
     }  
 }
@@ -701,7 +724,10 @@ me_umbria.30 = { #the umbrians have called us to war (ETR)
     type = country_event
     title = me_umbria.30.t
     desc = me_umbria.30.desc
-    picture = celtic_village
+    picture = city_siege
+
+    left_portrait = current_ruler
+    right_portrait = scope:umb_country_at_war_with_rome.current_ruler
 
     option = { #we go to war with rome
         name = me_umbria.30.a
@@ -753,6 +779,7 @@ me_umbria.30 = { #the umbrians have called us to war (ETR)
                     modifier = etruria_abandoned_the_umbrians_opinion
                     target = c:ETR
                 }
+                trigger_event = { id = me_umbria.64 }
             }
         }
         add_country_modifier = {
@@ -769,12 +796,12 @@ me_umbria.31 = { #Option to sack Etruria
     type = country_event
     title = me_umbria.31.t
     desc = me_umbria.31.desc
-    picture = celtic_village
+    picture = burning_alexandria
+
+    left_portrait = current_ruler
 
     immediate = {
-        hidden_effect = {
-            save_scope_as = umb_country_has_subjegated_the_etruscans
-        }
+        save_scope_as = umb_country_has_subjegated_the_etruscans
     }
 
     option = { #Spare the etruscans, gain integration progress and cultural happiness
@@ -788,6 +815,7 @@ me_umbria.31 = { #Option to sack Etruria
                 name = me_mercy_to_the_etruscans_umb_culturemod
                 duration = 36500 #100 years
             }
+            set_country_culture_right = citizen
             add_integration_progress = 0.5
         }
     }
@@ -797,25 +825,55 @@ me_umbria.31 = { #Option to sack Etruria
         custom_tooltip = "me_umbria.31.b_tt"
         hidden_effect = {
             every_owned_province = {
-                limit = {
-                    OR = {
-                        is_in_area = north_etruria_area
-                        is_in_area = south_etruria_area
-                        is_in_area = pisae_area
+                if = {
+                    limit = {
+                        OR = {
+                            is_in_area = north_etruria_area
+                            is_in_area = south_etruria_area
+                            is_in_area = pisae_area
+                        }
+                        dominant_province_culture = etruscan
                     }
-                    dominant_province_culture = etruscan
-                }
-                ordered_pops_in_province = {
-                    limit = { 
-                        NOT = { pop_culture = root.culture }
+                    random_pops_in_province = {
+                        limit = { 
+                            AND = {
+                               NOT = { pop_culture = root.culture }
+                               exists = yes
+                            }
+                        }
+                        kill_pop = yes
                     }
-                    order_by = pop_hapiness
-                    max = 4
-                    kill_pop
-                }
-                create_state_pop = freemen
-                scope:umb_country_has_subjegated_the_etruscans = {
-                    add_treasury = 30
+                    random_pops_in_province = {
+                        limit = { 
+                            AND = {
+                               NOT = { pop_culture = root.culture }
+                               exists = yes
+                            }
+                        }
+                        kill_pop = yes
+                    }
+                    random_pops_in_province = {
+                        limit = { 
+                            AND = {
+                               NOT = { pop_culture = root.culture }
+                               exists = yes
+                            }
+                        }
+                        kill_pop = yes
+                    }
+                    random_pops_in_province = {
+                        limit = { 
+                            AND = {
+                               NOT = { pop_culture = root.culture }
+                               exists = yes
+                            }
+                        }
+                        kill_pop = yes
+                    }
+                    create_state_pop = freemen
+                    scope:umb_country_has_subjegated_the_etruscans = {
+                        add_treasury = 30
+                    }
                 }
             }
         }
@@ -826,7 +884,9 @@ me_umbria.32 = { #the Etruscans have joined the fight!
     type = country_event
     title = me_umbria.32.t
     desc = me_umbria.32.desc
-    picture = celtic_village
+    picture = diadochi_legion_carrying_standard_honor
+    left_portrait = current_ruler
+    right_portrait = c:ETR.current_ruler
 
     option = { #yey!
         name = me_umbria.32.a
@@ -839,13 +899,9 @@ me_umbria.33 = { #We send an ultimatum to the sabines
     type = country_event
     title = me_umbria.33.t
     desc = me_umbria.33.desc
-    picture = celtic_village
-    
-    immediate = {
-        hidden_effect = {
-            save_scope_as = umb_country_that_wants_narnia
-        }
-    }
+    picture = senator_conversing
+
+    left_portrait = current_ruler
 
     option = { 
         name = me_umbria.33.a
@@ -858,7 +914,10 @@ me_umbria.34 = { #We recieve an ultimatum from Umbria for Nequinum
     type = country_event
     title = me_umbria.34.t
     desc = me_umbria.34.desc
-    picture = celtic_village
+    picture = trial_govtype
+
+    left_portrait = current_ruler
+    right_portrait = scope:umb_country_that_wants_narnia.current_ruler
 
     option = { 
         name = me_umbria.34.a #let us give up Nequinum
@@ -866,10 +925,13 @@ me_umbria.34 = { #We recieve an ultimatum from Umbria for Nequinum
         hidden_effect = {
             p:23 = {
                 set_owned_by = scope:umb_country_that_wants_narnia
+                every_pops_in_province = {
+                    set_pop_culture = umbrian
+                }
             }
         }
         scope:umb_country_that_wants_narnia = {
-            trigger_event = { id = me_umbria.36 days = 1 }
+            trigger_event = { id = me_umbria.35 days = 1 }
         }
         ai_chance = {
             factor = 0.75
@@ -893,7 +955,10 @@ me_umbria.35 = { #The sabines give us Nequinum
     type = country_event
     title = me_umbria.35.t
     desc = me_umbria.35.desc
-    picture = celtic_village
+    picture = romans_marching
+
+    left_portrait = current_ruler
+    right_portrait = c:SAB.current_ruler
 
     option = { 
         name = me_umbria.35.a # excellent!
@@ -906,7 +971,9 @@ me_umbria.36 = { #The sabines refuse to give us give us Nequinum
     type = country_event
     title = me_umbria.36.t
     desc = me_umbria.36.desc
-    picture = celtic_village
+    picture = romans_marching
+    left_portrait = current_ruler
+    right_portrait = c:SAB.current_ruler
 
     option = { 
         name = me_umbria.36.a #It's war then..
@@ -924,12 +991,11 @@ me_umbria.37 = { #We give an offer of allegiance to the tribes of Italia
     type = country_event
     title = me_umbria.37.t
     desc = me_umbria.37.desc
-    picture = celtic_village
+    picture = army_desert
+    left_portrait = current_ruler
     
     immediate = {
-        hidden_effect = {
-            save_scope_as = umb_country_to_vassalize_the_italic_tribes
-        }
+        save_scope_as = umb_country_to_vassalize_the_italic_tribes
     }
 
     option = { 
@@ -939,6 +1005,7 @@ me_umbria.37 = { #We give an offer of allegiance to the tribes of Italia
             every_country = {
                 limit = {
                     AND = {
+                        NOT = { this = ROOT }
                         is_subject = yes
                         capital_scope = {
                             OR = {
@@ -953,8 +1020,8 @@ me_umbria.37 = { #We give an offer of allegiance to the tribes of Italia
                         has_subject_loyalty < 100
                     }
                 }
+                trigger_event = { id = me_umbria.38 }
             }
-            trigger_event = { id = me_umbria.38 }
         }
     }
 
@@ -964,14 +1031,22 @@ me_umbria.38 = { #Italic tribe recieves offer to join umbria against the romans
     type = country_event
     title = me_umbria.38.t
     desc = me_umbria.38.desc
-    picture = celtic_village
+    picture = revolt
+    left_portrait = current_ruler
+    right_portrait = scope:umb_country_to_vassalize_the_italic_tribes.current_ruler
 
     option = {
         name = me_umbria.38.a #We shall cast off our shackles, and join your fight!
         custom_tooltip = "me_umbria.38.a_tt"
         hidden_effect = {
-            c:rome = {
+            c:ROM = {
                 release_subject = root
+            }
+            random_active_war = {
+                limit = {
+                    exists = yes
+                }
+                remove_from_war = ROOT
             }
             scope:umb_country_to_vassalize_the_italic_tribes = {
                 make_subject = {
@@ -979,67 +1054,7 @@ me_umbria.38 = { #Italic tribe recieves offer to join umbria against the romans
                     type = feudatory
                 }
             }
-            random_current_war = {
-                limit = {
-                    OR = {
-                        AND = {
-                            any_war_defender = {
-                                this = scope:umb_country_to_vassalize_the_italic_tribes
-                            }
-                            any_war_attacker = {
-                                tag = ROM
-                            }
-                        }
-                        AND = {
-                            any_war_attacker = {
-                                this = scope:umb_country_to_vassalize_the_italic_tribes
-                            }
-                            any_war_defender = {
-                                tag = ROM
-                            }
-                        }
-                    }
-                }
-                save_scope_as = roman_umbrian_war_for_subject_to_join
-            }
-            if = {
-                limit = {
-                    scope:roman_umbrian_war_for_subject_to_join = {
-                        AND = {
-                            any_war_defender = {
-                                this = scope:umb_country_to_vassalize_the_italic_tribes
-                            }
-                            any_war_attacker = {
-                                tag = ROM
-                            }
-                        }
-                    }
-                }
-                add_to_war = {
-                    target = scope:roman_umbrian_war_for_subject_to_join
-                    attacker = no
-                    leader = no
-                }
-            }
-            else_if = {
-                limit = {
-                    scope:roman_umbrian_war_for_subject_to_join = {
-                        AND = {
-                            any_war_attacker = {
-                                this = scope:umb_country_to_vassalize_the_italic_tribes
-                            }
-                            any_war_defender = {
-                                tag = ROM
-                            }
-                        }
-                    }
-                }
-                add_to_war = {
-                    target = scope:roman_umbrian_war_for_subject_to_join
-                    attacker = yes
-                    leader = no
-                }
-            }
+            trigger_event = { id = me_umbria.65 days = 2 }
         }
         ai_chance = {
             factor = 1
@@ -1059,7 +1074,8 @@ me_umbria.39 = { #Send an offer of protection to Picentia
     type = country_event
     title = me_umbria.39.t
     desc = me_umbria.39.desc
-    picture = celtic_village
+    picture = celtic_diplomacy
+    left_portrait = current_ruler
 
     immediate = {
         hidden_effect = {
@@ -1083,7 +1099,9 @@ me_umbria.40 = { #Send an offer of protection to Picentia
     type = country_event
     title = me_umbria.40.t
     desc = me_umbria.40.desc
-    picture = celtic_village
+    picture = trial_govtype
+    left_portrait = current_ruler
+    right_portrait = scope:umb_country_to_vassalize_picentia.current_ruler
 
     option = { #Welcome to our grand federation!
         name = me_umbria.40.a
@@ -1134,7 +1152,10 @@ me_umbria.41 = { #the Picenti join us
     type = country_event
     title = me_umbria.41.t
     desc = me_umbria.41.desc
-    picture = celtic_village
+    picture = celtic_religious_festival
+
+    left_portrait = current_ruler
+    right_portrait = c:PIE.current_ruler
 
     option = { #Yey!
         name = me_umbria.41.a
@@ -1146,7 +1167,9 @@ me_umbria.42 = { #the Picenti refuse our offer
     type = country_event
     title = me_umbria.42.t
     desc = me_umbria.42.desc
-    picture = celtic_village
+    picture = senator_conversing
+    left_portrait = current_ruler
+    right_portrait = c:PIE.current_ruler
 
     option = { #What a pity.
         name = me_umbria.42.a
@@ -1158,7 +1181,10 @@ me_umbria.43 = { #Posturing in Cisalpine Gaul (peaceful)
     type = country_event
     title = me_umbria.43.t
     desc = me_umbria.43.desc
-    picture = celtic_village
+    picture = road_construction
+
+    left_portrait = current_ruler
+
 
     option = { #We must show mercy towards the Gauls
         name = me_umbria.43.a
@@ -1170,7 +1196,7 @@ me_umbria.44 = { #Posturing in Cisalpine Gaul (warmonger)
     type = country_event
     title = me_umbria.44.t
     desc = me_umbria.44.desc
-    picture = celtic_village
+    picture = romans_marching
 
     option = { #We will push the guals out of those lands
         name = me_umbria.44.a
@@ -1182,7 +1208,10 @@ me_umbria.45 = { #Offer for Gallic neigbour to become a feudatory
     type = country_event
     title = me_umbria.45.t
     desc = me_umbria.45.desc #umb_gallic_country_to_interact_with
-    picture = celtic_village #umb_country_to_expand_into_cisalpine_gaul
+    picture = celtic_diplomacy #umb_country_to_expand_into_cisalpine_gaul
+
+    left_portrait = current_ruler
+    right_portrait = scope:umb_gallic_country_to_interact_with.current_ruler
 
     option = {
         name = me_umbria.45.a
@@ -1199,7 +1228,10 @@ me_umbria.46 = { #Offer from umbria for us to become a feudatory
     type = country_event
     title = me_umbria.46.t
     desc = me_umbria.46.desc #umb_gallic_country_to_interact_with
-    picture = celtic_village #umb_country_to_expand_into_cisalpine_gaul
+    picture = celtic_diplomacy #umb_country_to_expand_into_cisalpine_gaul
+
+    left_portrait = current_ruler
+    right_portrait = scope:umb_country_to_expand_into_cisalpine_gaul.current_ruler
 
     option = {
         name = me_umbria.46.a #we must accept umbrian dominion
@@ -1233,6 +1265,7 @@ me_umbria.46 = { #Offer from umbria for us to become a feudatory
         name = me_umbria.46.b #We should whole-heartedly adopt the Umbrian ways!
         custom_tooltip = "me_umbria.46.b_tt"
         custom_tooltip = "me_umbria.46.b_tt2"
+        change_country_name = UMBRIA_GALLICA_SUBJECT
         hidden_effect = {
             if = {
                 limit = {
@@ -1247,12 +1280,12 @@ me_umbria.46 = { #Offer from umbria for us to become a feudatory
                     release_subject = ROOT
                 }    
             }
-            change_country_name = UMBRIA_GALLICA_SUBJECT
             change_country_adjective = UMBRIA_GALLICA_SUBJECT_ADJ
             set_primary_culture_cleanup_effect = {
                 NEW_PRIMARY_CULTURE = umbrian
                 MAKE_OLD_CULTURE_INTEGRATED = yes
             }
+            set_country_religion = italic_pantheon
             scope:umb_country_to_expand_into_cisalpine_gaul = {
                 set_variable = umb_established_feudatory_in_cisalpine_gaul
                 make_subject = {
@@ -1280,11 +1313,9 @@ me_umbria.47 = { #the Celts align with our might
     type = country_event
     title = me_umbria.47.t
     desc = me_umbria.47.desc
-    picture = celtic_village
-
-    immediate = {
-        custom_tooltip = "me_umbria.47.tt"#celtic country has become our feudatory
-    }
+    picture = celtic_diplomacy
+    left_portrait = current_ruler
+    right_portrait = scope:umb_gallic_country_to_interact_with.current_ruler
 
     option = { #Yey!
         name = me_umbria.47.a
@@ -1301,7 +1332,9 @@ me_umbria.48 = { #the Celts refused our might
     type = country_event
     title = me_umbria.48.t
     desc = me_umbria.48.desc
-    picture = celtic_village
+    picture = celtic_chiefs
+    left_portrait = current_ruler
+    right_portrait = scope:umb_gallic_country_to_interact_with.current_ruler
 
     option = { #We must abandon them for now
         name = me_umbria.48.a
@@ -1346,7 +1379,9 @@ me_umbria.49 = { #Preassure Gallic neigbour for annexation
     type = country_event
     title = me_umbria.49.t
     desc = me_umbria.49.desc #umb_gallic_country_to_interact_with
-    picture = celtic_village #umb_country_to_expand_into_cisalpine_gaul
+    picture = celtic_chiefs #umb_country_to_expand_into_cisalpine_gaul
+    left_portrait = current_ruler
+    right_portrait = scope:umb_gallic_country_to_interact_with.current_ruler
 
     option = {
         name = me_umbria.49.a
@@ -1363,7 +1398,9 @@ me_umbria.50 = { #Umbria demands annexation
     type = country_event
     title = me_umbria.50.t
     desc = me_umbria.50.desc #umb_gallic_country_to_interact_with
-    picture = celtic_village #umb_country_to_expand_into_cisalpine_gaul
+    picture = romans_marching #umb_country_to_expand_into_cisalpine_gaul
+    left_portrait = current_ruler
+    right_portrait = scope:umb_country_to_expand_into_cisalpine_gaul.current_ruler
 
     option = {
         name = me_umbria.50.a #Let us hope they show mercy
@@ -1393,7 +1430,9 @@ me_umbria.51 = { #Gallic neigbour accepts annexation
     type = country_event
     title = me_umbria.51.t
     desc = me_umbria.51.desc #umb_gallic_country_to_interact_with
-    picture = celtic_village #umb_country_to_expand_into_cisalpine_gaul
+    picture = celtic_diplomacy #umb_country_to_expand_into_cisalpine_gaul
+    left_portrait = current_ruler
+    right_portrait = scope:umb_gallic_country_to_interact_with.current_ruler
 
     option = {
         name = me_umbria.51.a
@@ -1432,6 +1471,8 @@ me_umbria.52 = { #Gallic neigbour refuses annexation
     title = me_umbria.52.t
     desc = me_umbria.52.desc #umb_gallic_country_to_interact_with
     picture = celtic_village #umb_country_to_expand_into_cisalpine_gaul
+    left_portrait = current_ruler
+    right_portrait = scope:umb_gallic_country_to_interact_with.current_ruler
 
     option = {
         name = me_umbria.52.a #Then we shall meet their swords with ours
@@ -1463,7 +1504,9 @@ me_umbria.53 = { #What to do with the lands in the Padan
     type = country_event
     title = me_umbria.53.t
     desc = me_umbria.53.desc 
-    picture = celtic_village 
+    picture = ascetic 
+    left_portrait = current_ruler
+    right_portrait = scope:umb_gallic_country_to_interact_with.current_ruler
 
     option = {
         name = me_umbria.53.a
@@ -1488,14 +1531,14 @@ me_umbria.54 = { #A Grand Italic Federation
     type = country_event
     title = me_umbria.54.t
     desc = me_umbria.54.desc 
-    picture = celtic_village 
+    picture = great_work_celebration 
 
     option = {
         name = me_umbria.54.a #We, the Umbrians, will lead the Italic tribes to glory
-        custom_tooltip = "me_umbria.54.a_tt"
         change_country_name = UMBRIAN_FEDERATION
+        change_country_adjective = UMBRIAN_FEDERATION_ADJ
+        custom_tooltip = "tier_3_formable_tooltip"
         hidden_effect = {
-            change_country_color = umbria_orange
             change_country_tag = UBF
             change_country_flag = UBF_FLAG
         }
@@ -1512,7 +1555,8 @@ me_umbria.55 = { #Time to request the cooperation on the Italiote Greeks
     type = country_event
     title = me_umbria.55.t
     desc = me_umbria.55.desc 
-    picture = celtic_village 
+    picture = greek_city 
+    left_portrait = current_ruler
 
     option = {
         name = me_umbria.55.a
@@ -1554,7 +1598,9 @@ me_umbria.56 = { #The Umbrian Federation request we join
     type = country_event
     title = me_umbria.56.t
     desc = me_umbria.56.desc 
-    picture = celtic_village 
+    picture = trial_govtype 
+    left_portrait = current_ruler
+    right_portrait = scope:umb_country_to_vassalize_magna_greeks.current_ruler
 
     option = {
         name = me_umbria.56.a #Let us seek Umbrian protection at the very least
@@ -1573,7 +1619,7 @@ me_umbria.56 = { #The Umbrian Federation request we join
                     release_subject = ROOT
                 }    
             }
-            scope:umb_country_to_vassalize_magna_greeks
+            scope:umb_country_to_vassalize_magna_greeks = {
                 make_subject = {
                     target = ROOT
                     type = tributary
@@ -1603,7 +1649,7 @@ me_umbria.56 = { #The Umbrian Federation request we join
                     release_subject = ROOT
                 }    
             }
-            scope:umb_country_to_vassalize_magna_greeks
+            scope:umb_country_to_vassalize_magna_greeks = {
                 make_subject = {
                     target = ROOT
                     type = feudatory
@@ -1617,10 +1663,10 @@ me_umbria.56 = { #The Umbrian Federation request we join
     }
 
     option = {
-        name = me_umbria.56.b #We'd rather not get too involved with the Umbrians
-        custom_tooltip = "me_umbria.56.b_tt"
+        name = me_umbria.56.c #We'd rather not get too involved with the Umbrians
+        custom_tooltip = "me_umbria.56.c_tt"
         hidden_effect = {
-            scope:umb_country_to_vassalize_magna_greeks
+            scope:umb_country_to_vassalize_magna_greeks = {
                 trigger_event = { id = me_umbria.59 }
             }
         }
@@ -1635,7 +1681,8 @@ me_umbria.57 = { #Greek city agrees to seek protection
     type = country_event
     title = me_umbria.57.t
     desc = me_umbria.57.desc 
-    picture = celtic_village 
+    picture = greek_political_discussion 
+    left_portrait = current_ruler
 
     option = {
         name = me_umbria.57.a #Our word is a shield
@@ -1648,7 +1695,8 @@ me_umbria.58 = { #Greek city joins the federation
     type = country_event
     title = me_umbria.58.t
     desc = me_umbria.58.desc 
-    picture = celtic_village 
+    picture = greek_city 
+    left_portrait = current_ruler
 
     option = {
         name = me_umbria.58.a #Excellent!
@@ -1661,11 +1709,11 @@ me_umbria.59 = { #Greek city shuns our offer
     type = country_event
     title = me_umbria.59.t
     desc = me_umbria.59.desc 
-    picture = celtic_village 
+    picture = greek_political_discussion 
+    left_portrait = current_ruler
 
     option = {
         name = me_umbria.59.a #A pity
-        custom_tooltip = "me_umbria.59.a_tt"
     }
 
 }
@@ -1674,7 +1722,8 @@ me_umbria.60 = { #Offer to protect Bruttium
     type = country_event
     title = me_umbria.60.t
     desc = me_umbria.60.desc 
-    picture = celtic_village 
+    picture = senator_conversing
+    left_portrait = current_ruler 
 
     option = {
         name = me_umbria.60.a
@@ -1691,7 +1740,9 @@ me_umbria.61 = { #Offer from umbria for us to become a feudatory
     type = country_event
     title = me_umbria.61.t
     desc = me_umbria.61.desc 
-    picture = celtic_village #umb_country_to_vassalize_bruttia
+    picture = trial_govtype #umb_country_to_vassalize_bruttia
+    left_portrait = current_ruler
+    right_portrait = scope:umb_country_to_vassalize_bruttia.current_ruler
 
     option = {
         name = me_umbria.61.a #They do seem preferable to the Greeks
@@ -1711,8 +1762,8 @@ me_umbria.61 = { #Offer from umbria for us to become a feudatory
     }
 
     option = {
-        name = me_umbria.61.c #We bow to no others!
-        custom_tooltip = "me_umbria.61.c_tt"
+        name = me_umbria.61.b #We bow to no others!
+        custom_tooltip = "me_umbria.61.b_tt"
         hidden_effect = {
             scope:umb_country_to_vassalize_bruttia = {
                 trigger_event = { id = me_umbria.63 }
@@ -1729,7 +1780,9 @@ me_umbria.62 = { #the Bruttians join the federation!
     type = country_event
     title = me_umbria.62.t
     desc = me_umbria.62.desc
-    picture = celtic_village
+    picture = diadochi_legion_carrying_standard
+    left_portrait = current_ruler
+    right_portrait = c:BRT.current_ruler
 
     immediate = {
         custom_tooltip = "me_umbria.62.tt"#Bruttium has become our feudatory
@@ -1745,10 +1798,64 @@ me_umbria.63 = { #Bruttium Refuses
     type = country_event
     title = me_umbria.63.t
     desc = me_umbria.63.desc
-    picture = celtic_village
+    picture = trial_govtype
+    left_portrait = current_ruler
+    right_portrait = c:BRT.current_ruler
 
     option = { #We must conquer these rebellious peoples
         name = me_umbria.63.a
         custom_tooltip = "me_umbria.63.a_tt"
     }
+}
+
+me_umbria.64 = { #the Etruscans abandon us!
+    type = country_event
+    title = me_umbria.64.t
+    desc = me_umbria.64.desc
+    picture = city_siege
+    left_portrait = current_ruler
+    right_portrait = c:ETR.current_ruler
+
+    option = { #Cowards
+        name = me_umbria.64.a
+        custom_tooltip = "me_umbria.64.a_tt"
+    }
+
+}
+
+me_umbria.65 = { #event for feudatories to join war against rome
+    type = country_event
+    hidden = yes
+
+    immediate = {
+        if = {
+            limit = {
+                scope:war_between_umb_and_rome = {
+                    any_war_defender = {
+                        this = scope:roman_umbrian_war_for_subject_to_join
+                    }
+                }
+            }
+            add_to_war = {
+                target = scope:war_between_umb_and_rome
+                attacker = no
+                leader = no
+            }
+        }
+        else_if = {
+            limit = {
+                 scope:war_between_umb_and_rome = {
+                    any_war_attacker = {
+                        this = scope:roman_umbrian_war_for_subject_to_join
+                     }
+                }
+            }
+            add_to_war = {
+                target = scope:war_between_umb_and_rome
+                attacker = yes
+                leader = no
+            }
+        }
+    }
+
 }

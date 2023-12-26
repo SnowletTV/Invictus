@@ -1,4 +1,6 @@
 ﻿###Effect Sections - Navigate with ctrl + F
+###Section 0.01: Foreign holdings removal before inheritance
+###Section 0: Mummification 
 ###Section 1: Vanilla events and variable removals.
 ###Section 2: Vanilla inheritance rules applied to republics/tribes - do not need to touch for now
 ###Section 3: Inheritance rules changed for Monarchies
@@ -9,6 +11,36 @@
 
 on_character_death = {
 	effect = {
+    	###Section 0.01 Foreign holdings removal before inheritance
+		if = {
+			limit = {
+				num_holdings_owned > 0
+			}
+			employer = {
+				save_scope_as = my_country
+			}
+			while = {
+				limit = {
+				any_holdings = {
+					NOT = { owner = scope:my_country }
+				}
+				}
+				random_holdings = {
+				limit = {
+					NOT = { owner = scope:my_country }
+				}
+				save_scope_as = removing_the_holding
+				}
+				remove_holding = scope:removing_the_holding
+			}
+		}
+		###Section 0.02: Use event instead of effect so that recalculation of succession happens after a day or two 
+		employer = {
+			trigger_event = {
+				id = calculate_succession_events.1
+				days = 1
+			}
+		}
 		###Section 0: Mummification	
 		if = {
 			limit = {
@@ -123,6 +155,50 @@ on_character_death = {
 			}
 			c:MRY = {
 				trigger_event = { id = flavor_maurya.6 }
+			}
+		}
+		### Section 0.3 Samnite Burial Event - Inspired by CK2 Sky Burial
+		if = {
+			limit = {
+				employer = {
+					OR = {
+						has_variable = sam_traditional_burial_var
+						has_variable = sam_philhellenic_burial_var
+						has_variable = sam_syncretic_burial_var
+					}
+					trigger_if = {
+						limit = {
+							ROOT = {
+								is_ruler = no
+							}
+						}
+						NOT = {
+							has_variable = sam_burial_cooldown
+						}
+					}
+				}
+				OR = {
+					is_ruler = yes
+					trigger_if = {
+						limit = {
+							is_republic = yes
+						}
+						is_head_of_family = yes
+					}
+				}
+			}
+			save_scope_as = samnite_burial_char
+			family = {
+				every_family_member = {
+					add_to_list = sam_grieving_family_list
+				}
+			}
+			employer = {
+				set_variable = {
+					name = sam_burial_cooldown
+					days = 3650
+				}
+				trigger_event = samnium_event.1000
 			}
 		}
 			
@@ -2133,9 +2209,6 @@ on_character_death = {
 					}
 				}
 			}
-		}
-		employer = {
-			calculate_succession_effect = yes
 		}
 
 		###Section 6: Various Fixes

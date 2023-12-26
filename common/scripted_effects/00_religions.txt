@@ -1,0 +1,146 @@
+﻿## Religion effects
+
+change_religion_effect = {
+	custom_tooltip = religion_conversion_tooltip
+	custom_tooltip = religion_conversion_family_tooltip
+	if = {
+		limit = { 
+			is_republic = yes
+			has_party_type = traditionalist_party
+		}
+		add_party_approval = {
+			party_type = traditionalist_party
+			value = -10
+		}
+	}
+	if = {
+		limit = { 
+			is_republic = yes
+			has_party_type = boni_party
+		}
+		add_party_approval = {
+			party_type = boni_party
+			value = -10
+		}
+	}
+	if = {
+		limit = {
+			# Set this variable in events so costs can be handled outside of this effect
+			NOT = { has_variable = free_religion_conversion }
+		}
+		add_political_influence = -200
+		add_stability = -30
+	}
+	add_country_modifier = {
+		name = "recent_convert_modifier"
+		duration = 3650
+	}
+	set_country_religion = $RELIGION$
+	current_ruler = {
+		if = {
+			limit = {
+				NOT = { has_religion = $RELIGION$ }
+			}
+			set_character_religion = $RELIGION$
+		}
+	}
+	hidden_effect = {
+		every_character = {
+			limit = { NOT = { has_same_religion_as = employer.current_ruler } }
+			add_loyalty = national_conversion_l
+		}
+		current_ruler.family = {
+			every_family_member = {
+				limit = {
+					employer = ROOT
+					loyalty >= 60
+					NOT = { has_religion = $RELIGION$ }
+				}
+				set_character_religion = $RELIGION$
+			}
+		}
+	}
+	ordered_character = {
+		limit = {
+			loyalty >= 60
+			NOT = { has_religion = $RELIGION$ }
+			is_ruler = no
+			from_ruler_family = no
+		}
+		max = 6
+		order_by = prominence
+		check_range_bounds = no
+		set_character_religion = $RELIGION$
+	}
+	if = {
+		limit = {
+			has_senate_approval < 60
+			is_republic = yes
+			NOT = { has_variable = dictatorship_enabled }
+		}
+		add_tyranny = {
+			# Calculates the percentage of disapproval
+			value = 0.6 # -- SENATE_REQUIRED_APPROVAL_WITHOUT_PENALTIES
+			subtract = has_senate_approval
+			divide = 0.3 # -- SENATE_REQUIRED_APPROVAL
+			
+			# This is the real value that you want for 100% of the effect
+			multiply = 20
+		}
+	}
+}
+
+desecrate_effect = { # Shared part of the effect, for unit or location
+	scope:shrine_location = {
+		remove_province_deity = yes
+		add_city_fire_effect = yes
+		add_province_modifier = {
+			name = "upset_local_priests"
+			duration = 365
+		}
+	}
+	if = {
+		limit = {
+			exists = scope:provincial_deity
+			exists = scope:shrine_location
+		}
+		custom_tooltip = holy_site_deity_bonus_lost_tt
+	}
+	if = { # In case button checked on non-holysite
+		limit = { exists = scope:provincial_deity }
+		if = {
+			limit = {
+				any_country = {
+					has_land = yes
+					scope:provincial_deity = { deity_religion = PREV.religion }
+					NOR = { 
+						THIS = scope:shrine_location.owner
+						AND = {
+							exists = ROOT.unit_owner
+							THIS = ROOT.unit_owner
+						}
+					}
+				}
+			}
+			every_country = { # Ping event for same religion countries
+				limit = {
+					scope:provincial_deity = { deity_religion = PREV.religion }
+					NOR = { 
+						THIS = scope:shrine_location.owner
+						AND = {
+							exists = ROOT.unit_owner
+							THIS = ROOT.unit_owner
+						}
+					}
+				}
+				trigger_event = { id = desecration.3 } #Holy Site of our Faith Sacked
+			}
+			custom_tooltip = desecration_opinion
+		}
+		else = { custom_tooltip = desecration_opinion_general }
+	}
+	if = {
+		limit = { is_iron_man = yes }
+		ach_holy_fire_effect = yes
+	}
+}

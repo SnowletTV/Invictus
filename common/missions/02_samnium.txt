@@ -1,0 +1,573 @@
+﻿samnium_mission = { # Mission for Samnium
+	icon = rome_1
+	header = mission_image_rome
+	
+	repeatable = no
+
+    chance = {
+		factor = 10
+	}
+	
+	ai_chance = { factor = 10 }
+
+	potential = { 
+		tag = SAM
+		NOT = {
+			has_variable = samnium_mission_cooldown
+		}
+	}
+	
+	abort = {
+        ai_mission_back_out_trigger = yes
+    }
+
+    on_start = {
+    	start_mission_ai_effect = yes
+		if = {
+			limit = {
+				NOT = {
+					has_variable = sam_war_impact_var
+				}
+			}
+			set_variable = {
+				name = sam_war_impact_var
+				value = 0
+			}
+		}
+    }
+
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = samnium_mission_cooldown
+            days = 7300
+        }
+    }
+
+    on_completion = {
+    	complete_mission_effect = yes
+		add_2_free_province_investments = yes
+		add_country_modifier = {
+			name = samnite_supremacy
+			duration = -1
+		}
+		if = {
+			limit = {
+				has_variable = sam_war_impact_var
+				var:sam_war_impact_var >= 0
+			}
+			set_variable = sam_normal_war_path
+			remove_variable = sam_war_impact_var
+		}
+		else_if = {
+			limit = {
+				has_variable = sam_war_impact_var
+				var:sam_war_impact_var < 0
+			}
+			set_variable = sam_trauma_war_path
+			remove_variable = sam_war_impact_var
+		}
+    }
+
+	samnium_task_1 = {
+		icon = "task_heracles"
+        highlight = {
+            scope:province = {
+                OR = {
+                    owner = c:SPA
+                    owner = c:APU
+                    owner = c:MSP
+                    owner = c:LCA
+                    owner = c:TAR
+                }
+            }
+        }
+        allow = {
+            custom_tooltip = {
+				text = samnium_doesn_fight_303_tt
+				OR = {
+					has_global_variable = lucania_lost_war
+					has_global_variable = tarentum_lost_war
+					has_variable = samnium_doesnt_fight_var
+				}
+			}
+        }
+
+		on_completion = {
+			trigger_event = { id = samnium_event.1 }
+			trigger_event = {
+				id = samnium_event.114
+				days = { 60 80 }
+			}
+			show_as_tooltip = {
+				if = {
+					limit = {
+						has_global_variable = lucania_lost_war
+					}
+					add_country_modifier = {
+						name = samnium_war_lost_recovery
+						duration = 1825 # 5 years
+					}
+				}
+				else_if = {
+					limit = {
+						has_global_variable = tarentum_lost_war
+					}
+					add_political_influence = 25
+					add_treasury = 250
+					current_ruler = {
+						add_martial = 1
+						add_popularity = 5
+					}
+				}
+				else_if = {
+					limit = {
+						has_variable = samnium_doesnt_fight_var
+					}
+					add_political_influence = 50
+					current_ruler = {
+						add_charisma = 1
+						add_popularity = 5
+					}
+				}
+				else = { # fallback, although not really necessary. you never knoe though what those players will cook up
+					add_political_influence = 50
+				}
+			}
+		}
+	}
+
+	samnium_task_2 = { # get allies
+		icon = "task_diplomatic"
+        allow = {
+            custom_tooltip = {
+				text = samnium_2_allies_tt
+				calc_true_if = {
+					amount >= 2
+					any_country = {
+						alliance_with = root
+					}
+				}
+			}
+        }
+
+		bypass = {
+			OR = {
+				war_with = c:ROM
+				c:ROM = {
+					has_land = no
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = samnium_event.2 }
+			show_as_tooltip = {
+				add_political_influence = 50
+				add_treasury = 150
+				capital_scope = {
+					define_pop = {
+						culture = etruscan
+						religion = italic_pantheon
+						type = freemen
+					}
+					define_pop = {
+						culture = umbrian
+						religion = italic_pantheon
+						type = freemen
+					}
+				}
+			}
+		}
+	}
+
+	samnium_task_3 = { # prepare for war
+		icon = "task_expansion"
+        allow = {
+            custom_tooltip = {
+				text = training_camp_savlue_tt
+				training_camp_svalue >= 3
+			}
+        }
+		
+		bypass = {
+			OR = {
+				war_with = c:ROM
+				c:ROM = {
+					has_land = no
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = samnium_event.3 }
+			show_as_tooltip = {
+				add_manpower = 5
+				add_country_modifier = {
+					name = temporary_levy_size_samnium
+					duration = 1825 # 5 years
+				}
+			}
+		}
+	}
+
+	samnium_task_4 = { # sabotage - bigger event chain. maybe borrow vanilla spy events?
+		icon = "task_political"
+		duration = 30
+        allow = {
+            political_influence >= 10
+        }
+
+		bypass = {
+			OR = {
+				war_with = c:ROM
+				c:ROM = {
+					has_land = no
+				}
+			}
+		}
+
+		on_start = {
+			add_political_influence = -10
+		}
+
+		on_completion = {
+			trigger_event = { id = samnium_event.4 }
+			custom_tooltip = sam_rom_spy_tt
+		}
+	}
+
+	samnium_task_5 = { # third samnite war
+		icon = "task_conquest"
+        allow = {
+            war_with = c:ROM
+        }
+
+		bypass = {
+			c:ROM = {
+				has_land = no
+			}
+		}
+
+		requires = { samnium_task_2 samnium_task_3 samnium_task_4 }
+
+		on_completion = {
+			trigger_event = { id = samnium_event.5 }
+			trigger_event = {
+				id = samnium_event.113
+				days = { 30 35 }
+			}
+			trigger_event = {
+				id = samnium_event.115
+				days = { 80 120 }
+			}
+			trigger_event = {
+				id = samnium_event.116
+				days = { 200 240 }
+			}
+			trigger_event = {
+				id = samnium_event.117
+				days = { 300 360 }
+			}
+			show_as_tooltip = {
+				add_military_experience = 25
+			}
+		}
+	}
+
+	samnium_task_6 = { # peace after war
+		icon = "task_diplomatic"
+        allow = {
+            war = no
+			has_civil_war = no
+        }
+
+		requires = { samnium_task_1 samnium_task_5 }
+
+		bypass = {
+			OR = {
+				war_with = c:ROM
+				c:ROM = {
+					has_land = no
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = samnium_event.6 }
+			show_as_tooltip = {
+				add_stability = 10
+				add_country_modifier = {
+					name = war_aftermath_samnium
+					duration = 3650
+				}
+			}
+		}
+	}
+
+	samnium_task_7 = { # Spoils of War
+		icon = "task_economical"
+        allow = {
+            owns = 1
+			hidden:p:1 = {
+				has_city_status = no
+			}
+        }
+
+		final = yes
+
+		highlight = {
+			scope:province = {
+				province_id = 1
+			}
+		}
+		requires = { samnium_task_6 }
+
+		prevented_by = {
+			samnium_task_8
+		}
+
+		on_completion = {
+			trigger_event = { id = samnium_event.7 }
+			show_as_tooltip = {
+				add_treasury = 500
+				add_political_influence = 50
+				add_innovation = 2
+				current_ruler = {
+					add_martial = 1
+					force_add_trait = conqueror
+				}
+			}
+			p:1 = {
+    			if = {
+	    			limit = {
+	    				is_state_capital = yes
+	    				root = {
+	    					any_owned_province = {
+	    						is_in_area = roma_area
+	    						NOT = { province_id = 1 }
+	    					}
+	    				}
+	    			}
+	    			root = {
+	    				ordered_owned_province = {
+	    					order_by = total_population
+	    					limit = {
+	    						is_in_area = roma_area
+	    						NOT = { province_id = 1 }
+	    					}
+	    					max = 1
+	    					save_scope_as = new_state_capital_latium
+	    				}
+	    			}
+	    			state = {
+	    				set_state_capital = scope:new_state_capital_latium
+	    			}
+	    		}
+    		}
+		}
+	}
+
+	samnium_task_8 = { # Vassalizing Rome
+		icon = "task_heracles"
+        allow = {
+            owns = 1
+			hidden:p:1 = {
+				has_city_status = yes
+			}
+			c:ROM = {
+				has_land = no
+			}
+        }
+
+		final = yes
+
+		highlight = {
+			scope:province = {
+				province_id = 1
+			}
+		}
+
+		prevented_by = {
+			samnium_task_7
+		}
+
+		requires = { samnium_task_6 }
+
+		on_completion = {
+			trigger_event = { id = samnium_event.8 }
+			show_as_tooltip = {
+				add_political_influence = 50
+				custom_tooltip = rome_vassal_tt
+				hidden_effect = {
+					p:1 = {
+						create_country = { # PLACEHOLDER
+							name = {
+								name = ROM
+								adjective = ROM_ADJ
+							}
+							set_country_heritage = roman_heritage
+							change_country_color = roman_red
+							change_country_flag = ROM
+							change_government = aristocratic_republic
+							save_scope_as = rome_vassal_scope
+						}
+					}
+					make_subject = {
+						target = scope:rome_vassal_scope
+						type = feudatory
+					}
+				}
+				scope:rome_vassal_scope = {
+					add_country_modifier = {
+						name = carthage_mission_broken_roman_spirit_modifier
+						duration = -1
+					}
+				}
+				current_ruler = {
+					add_finesse = 1
+					add_trait = wise
+				}
+			}
+		}
+	}
+
+	samnium_task_9 = { # lessons from war
+		icon = "task_battle"
+        allow = {
+            military_experience >= 50
+			has_war_exhaustion >= 5
+        }
+
+		requires = { samnium_task_6 }
+
+		on_completion = {
+			trigger_event = { id = samnium_event.9 }
+			show_as_tooltip = {
+				add_military_experience = -50
+				add_country_modifier = {
+					name = lessons_from_war_samnium
+					duration = -1
+				}
+			}
+		}
+	}
+
+	samnium_task_10 = { # 
+		icon = "task_political"
+
+		duration = 180
+
+		allow = {
+			c:ROM = {
+				has_land = no
+			}
+		}
+
+		requires = { samnium_task_6 }
+
+		highlight = {
+			scope:province = {
+				OR = {
+					owner = c:FRE
+					owner = c:PEL
+					owner = c:MRS
+					owner = c:NUC
+				}
+			}
+		}
+
+		bypass = {
+			c:NUC = {
+				has_land = no
+			}
+			c:FRE = {
+				has_land = no
+			}
+			c:PEL = {
+				has_land = no
+			}
+			c:MRS = {
+				has_land = no
+			}
+		}
+
+		on_start = {
+			custom_tooltip = dealing_with_socii_tt
+			trigger_event = { id = samnium_event.10 }
+		}
+	}
+
+	samnium_task_11 = { # try to steal a vassal of rome
+		icon = "task_calm"
+		duration = 30
+        allow = {
+            treasury >= 100
+			OR = {
+				c:NUC = {
+					has_subject_loyalty < 40
+				}
+				c:FRE = {
+					has_subject_loyalty < 40
+				}
+				c:PEL = {
+					has_subject_loyalty < 40
+				}
+				c:MRS = {
+					has_subject_loyalty < 40
+				}
+			}
+        }
+
+		requires = { samnium_task_4 }
+
+		bypass = {
+			OR = {
+				war_with = c:ROM
+				c:ROM = {
+					has_land = no
+				}
+				AND = {
+					c:PEL = {
+						has_land = no
+					}
+					c:MRS = {
+						has_land = no
+					}
+					c:FRE = {
+						has_land = no
+					}
+					c:NUC = {
+						has_land = no
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = samnium_event.21 }
+			custom_tooltip = samnium_try_suborn_vassal_tt
+		}
+	}
+
+	samnium_task_12 = { # release neapolis
+		icon = "task_calm"
+		duration = 30
+        allow = {
+            owns = 7
+        }
+
+		highlight = {
+			scope:province = {
+				province_id = 7
+			}
+		}
+
+		requires = { samnium_task_6 }
+
+		on_completion = {
+			trigger_event = { id = samnium_event.118 }
+			custom_tooltip = sam_release_neapolis_tt
+		}
+	}
+}

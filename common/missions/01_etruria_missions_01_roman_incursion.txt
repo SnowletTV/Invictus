@@ -1,0 +1,824 @@
+﻿etruria_roman_incursion = {
+	header = "mission_image_rome"
+	icon = "rome_2"
+
+	repeatable = no
+
+	chance = {
+		factor = 50000
+	}
+
+	potential = {
+		tag = ETR
+		NOT = { has_variable = etrurian_mission_one_cooldown }
+	}
+
+	abort = {
+		ai_mission_back_out_trigger = yes
+	}
+
+	on_start = {
+		start_mission_ai_effect = yes
+		save_scope_as = etruria_scope
+		trigger_event = {
+			id = me_etruria.1
+		}
+	}
+
+	on_abort = {
+		custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+		    name = etrurian_mission_one_cooldown
+		    days = 7300
+		}
+		hidden_effect = {
+			if = {
+				limit = {
+					has_country_modifier = etruria_roman_incursion_modifier
+				}
+				remove_country_modifier = etruria_roman_incursion_modifier
+			}
+		}
+	}
+
+	on_completion = {
+		hidden_effect = {
+			if = {
+				limit = {
+					has_country_modifier = etruria_roman_incursion_modifier
+				}
+				remove_country_modifier = etruria_roman_incursion_modifier
+			}
+		}
+		complete_mission_effect = yes
+	}
+
+	etruria_roman_incursion_task_1 = { # Pesky Neighbours
+		icon = "task_political"
+		duration = 365
+		
+		allow = {
+			political_influence >= 30
+		}
+
+		on_start = {
+			trigger_event = {
+				id = me_etruria.2
+				days = 100
+			}
+			trigger_event = {
+				id = me_etruria.3
+				days = 200
+			}
+			trigger_event = {
+				id = me_etruria.4
+				days = 300
+			}
+		}
+
+		on_completion = {
+			add_political_influence = -30
+			custom_tooltip = etruria_roman_incursion_task_1_c_tt
+		}
+	}
+
+	etruria_roman_incursion_task_2 = { # Roma Delenda Est
+		icon = "task_conquest"
+		duration = 120
+		requires = { etruria_roman_incursion_task_1 }
+		prevented_by = { etruria_roman_incursion_task_11 }
+
+		allow = {
+			political_influence >= 10
+		}
+
+		bypass = { has_completed_mission_task = etruria_roman_incursion_task_11 }
+
+		on_start = {
+			trigger_event = {
+				id = me_etruria.6
+				days = 60
+			}
+		}
+
+		on_completion = {
+			add_political_influence = -10
+			custom_tooltip = etruria_roman_incursion_task_2_c_tt
+			hidden_effect = {
+				area:roma_area = {
+					every_area_province = {
+						add_claim = root
+					}
+				}
+			}
+		}
+	}
+
+	etruria_roman_incursion_task_3 = { # Reform the Military
+		icon = "task_battle"
+		requires = { etruria_roman_incursion_task_2 }
+		prevented_by = { etruria_roman_incursion_task_11 }
+
+		allow = {
+			manpower >= 7
+			custom_tooltip = {
+	        	text = etruria_roman_incursion_task_3_effect_tt
+                any_character = {
+                    has_office = office_tribune_of_the_soldiers
+                    loyalty >= etruria_roman_incursion_task_3_target_svalue
+                    martial >= etruria_roman_incursion_task_3_martial_target_svalue
+                }
+            }
+		}
+
+		on_completion = {
+			add_treasury = -100
+			add_manpower = -7
+			add_stability = 10
+			hidden_effect = {
+				random_character = {
+					limit = {
+						has_office = office_tribune_of_the_soldiers
+					}
+                    save_scope_as = soldier_tribune_scope
+                }
+			}
+			scope:soldier_tribune_scope = {
+				add_gold = 100
+				add_prominence = 100
+				add_loyalty = etruria_reform_the_military_loyalty
+			}
+			add_country_modifier = {
+				name = etruria_siegecraft_experiments_modifier
+				duration = -1
+			}
+		}
+	}
+
+	etruria_roman_incursion_task_4 = { # Secret Invasions
+		icon = "task_political"
+		duration = 100
+		requires = { etruria_roman_incursion_task_3 }
+
+		allow = {
+			political_influence >= 30
+			stability >= 65
+			current_ruler = { popularity >= 70 }
+		}
+
+		on_start = {
+			trigger_event = {
+				id = me_etruria.8
+				days = 30
+			}
+			add_treasury = -200
+			add_political_influence = -30
+			add_manpower = -6
+			current_ruler = { add_gold = -150 }
+
+		}
+
+		on_completion = {
+			custom_tooltip = etruria_roman_incursion_task_4.c.tt
+		}
+	}
+
+	etruria_roman_incursion_task_5 = { # Return of the Senones
+		icon = "task_political"
+		duration = 120
+		requires = { etruria_roman_incursion_task_2 etruria_roman_incursion_task_11 }
+
+		allow = {
+			current_ruler = {
+                is_friend = c:SNI.current_ruler
+            }
+			hidden:c:SNI = {
+                opinion = {
+                    target = root
+                    value >= 75
+                }
+            }
+			hidden:c:UMB = {
+                opinion = {
+                    target = root
+                    value >= 35
+                }
+            }
+		}
+
+		on_completion = {
+			custom_tooltip = etruria_roman_incursion_task_5.c.tt
+			add_alliance = c:SNI
+			add_manpower = 10
+			add_treasury = -20
+			c:UMB = { add_treasury = 20 }
+			add_military_access = c:UMB
+		}
+	}
+
+	etruria_roman_incursion_task_6 = { # Celtic Ways
+		icon = "task_diplomatic"
+		duration = 35
+		requires = { etruria_roman_incursion_task_5 }
+
+		allow = {
+			political_influence >= 5
+			custom_tooltip = {
+				text = etruria_roman_incursion_task_6.a.tt
+				has_variable = senones_accepted
+			}
+		}
+
+		on_start = {
+			hidden_effect = {
+				p:131 = {
+					define_pop = {
+						type = tribesmen
+						culture = culture:sennonian
+						religion = religion:druidism
+					}
+					define_pop = {
+						type = tribesmen
+						culture = culture:sennonian
+						religion = religion:druidism
+					}
+					define_pop = {
+						type = tribesmen
+						culture = culture:sennonian
+						religion = religion:druidism
+					}
+					define_pop = {
+						type = tribesmen
+						culture = culture:sennonian
+						religion = religion:druidism
+					}
+					define_pop = {
+						type = tribesmen
+						culture = culture:sennonian
+						religion = religion:druidism
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:sennonian
+						religion = religion:druidism
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:sennonian
+						religion = religion:druidism
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:sennonian
+						religion = religion:druidism
+					}
+					define_pop = {
+						type = citizen
+						culture = culture:sennonian
+						religion = religion:druidism
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = etruria_roman_incursion_task_6.c.tt
+			custom_tooltip = etruria_roman_incursion_task_6.c.tt3
+			custom_tooltip = etruria_roman_incursion_task_6.c.tt2
+			approval_effect = {
+				PARTY = traditionalist_party
+				VALUE = party_disapproval_large_svalue
+			}
+			current_ruler = {
+				add_popularity = -10
+			}
+			p:131 = {
+				add_permanent_province_modifier = { name = etruria_northern_crossroads_modifier }
+			}
+			trigger_event = {
+				id = me_etruria.14
+				days = 35
+			}
+			if = {
+				limit = {
+					has_variable = senones_accepted
+				}
+				remove_variable = senones_accepted
+			}
+		}
+	}
+
+	etruria_roman_incursion_task_7 = { # The Carthaginian Card
+		icon = "task_expansion"
+		duration = 120
+		requires = { etruria_roman_incursion_task_2 etruria_roman_incursion_task_11 }
+
+		allow = {
+			current_ruler = {
+                is_friend = c:CAR.current_ruler
+            }
+			hidden:c:CAR = {
+                opinion = {
+                    target = root
+                    value >= 90
+                }
+            }
+		}
+
+		bypass = {
+			is_ai = yes
+		}
+
+		on_completion = {
+			custom_tooltip = etruria_roman_incursion_task_7.c.tt
+			add_alliance = c:CAR
+			add_manpower = 12
+		}
+	}
+
+	etruria_roman_incursion_task_8 = { # Carthaginian Ways
+		icon = "task_economical"
+		duration = 35
+		requires = { etruria_roman_incursion_task_7 }
+
+		allow = {
+			political_influence >= 10
+			custom_tooltip = {
+				text = etruria_roman_incursion_task_8.a.tt
+				has_variable = carthage_accepted
+			}
+		}
+
+		on_start = {
+			hidden_effect = {
+				p:3515 = {
+					define_pop = {
+						type = nobles
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+					define_pop = {
+						type = citizen
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+					define_pop = {
+						type = citizen
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+					define_pop = {
+						type = slaves
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+					define_pop = {
+						type = slaves
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+					define_pop = {
+						type = slaves
+						culture = culture:carthaginian
+						religion = religion:carthaginian_pantheon
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = etruria_roman_incursion_task_8.c.tt
+			custom_tooltip = etruria_roman_incursion_task_8.c.tt3
+			custom_tooltip = etruria_roman_incursion_task_8.c.tt2
+			approval_effect = {
+				PARTY = traditionalist_party
+				VALUE = party_disapproval_large_svalue
+			}
+			add_political_influence = -10
+			current_ruler = {
+				add_popularity = -14
+			}
+			p:3515 = {
+				add_permanent_province_modifier = { name = etruria_popular_satellite_modifier }
+			}
+			trigger_event = {
+				id = me_etruria.15
+				days = 35
+			}
+			if = {
+				limit = {
+					has_variable = carthage_accepted
+				}
+				remove_variable = carthage_accepted
+			}
+		}
+	}
+
+	etruria_roman_incursion_task_9 = { # Epirote Ambitions
+		icon = "task_religion"
+		duration = 120
+		requires = { etruria_roman_incursion_task_2 etruria_roman_incursion_task_11 }
+
+		allow = {
+			current_ruler = {
+                is_friend = c:EPI.current_ruler
+            }
+			hidden:c:EPI = {
+                opinion = {
+                    target = root
+                    value >= 80
+                }
+            }
+			political_influence >= 50
+		}
+
+		bypass = {
+			is_ai = yes
+		}
+
+		on_completion = {
+			custom_tooltip = etruria_roman_incursion_task_9.c.tt
+			add_alliance = c:EPI
+			add_manpower = 10
+			add_treasury = 50
+		}
+	}
+
+	etruria_roman_incursion_task_10 = { # Greek Ways
+		icon = "task_heracles"
+		duration = 35
+		requires = { etruria_roman_incursion_task_9 }
+
+		allow = {
+			political_influence >= 15
+			custom_tooltip = {
+				text = etruria_roman_incursion_task_10.a.tt
+				has_variable = epirus_accepted
+			}
+		}
+
+		on_start = {
+			hidden_effect = {
+				p:14 = {
+					define_pop = {
+						type = nobles
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = nobles
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = citizen
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = citizen
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = citizen
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = freemen
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = slaves
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = slaves
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = slaves
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = slaves
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+					define_pop = {
+						type = slaves
+						culture = culture:epirote
+						religion = religion:roman_pantheon
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = etruria_roman_incursion_task_10.c.tt
+			custom_tooltip = etruria_roman_incursion_task_10.c.tt3
+			custom_tooltip = etruria_roman_incursion_task_10.c.tt2
+			approval_effect = {
+				PARTY = traditionalist_party
+				VALUE = party_disapproval_large_svalue
+			}
+			add_political_influence = -15
+			current_ruler = {
+				add_popularity = -14
+			}
+			p:14 = {
+				add_permanent_province_modifier = {
+					name = etruria_greek_hub_modifier
+				}
+			}
+			trigger_event = {
+				id = me_etruria.16
+			}
+			if = {
+				limit = {
+					has_variable = epirus_accepted
+				}
+				remove_variable = epirus_accepted
+			}
+		}
+	}
+
+	etruria_roman_incursion_task_11 = { # Roma Debet Esse Nostra
+		icon = "task_calm"
+		duration = 120
+		requires = { etruria_roman_incursion_task_1 }
+		prevented_by = { etruria_roman_incursion_task_2 }
+
+		allow = {
+			political_influence >= 10
+		}
+
+		bypass = { has_completed_mission_task = etruria_roman_incursion_task_2 }
+
+		on_start = {
+			trigger_event = {
+				id = me_etruria.17
+				days = 60
+			}
+		}
+
+		on_completion = {
+			add_political_influence = -10
+			add_stability = 10
+		}
+	}
+
+	#etruria_roman_incursion_task_12 = { # Woo the Roman Vassals
+	#	icon = "task_diplomatic"
+	#	duration = 120
+	#	requires = { etruria_roman_incursion_task_11 }
+	#
+	#	allow = {
+	#
+	#	}
+	#
+	#	bypass = {
+	#		is_ai = yes
+	#	}
+	#
+	#	on_completion = {
+	#		custom_tooltip = etruria_roman_incursion_task_12.c.tt
+	#	}
+	#}
+
+	etruria_roman_incursion_task_13 = { # Campanian Insurgency
+		icon = "task_battle"
+		duration = 120
+		requires = { etruria_roman_incursion_task_2 etruria_roman_incursion_task_11 }
+		prevented_by = { etruria_roman_incursion_task_14 }
+
+		allow = {
+			custom_tooltip = {
+				text = etruria_roman_incursion_one_of_three.a.tt
+				OR = {
+					has_completed_mission_task = etruria_roman_incursion_task_5
+					has_completed_mission_task = etruria_roman_incursion_task_7
+					has_completed_mission_task = etruria_roman_incursion_task_9
+				}
+			}
+
+			political_influence = 20
+			treasury = 200
+		}
+
+		on_start = {
+			trigger_event = {
+				id = me_etruria.18
+				days = 20
+			}
+		}
+
+		bypass = {
+			is_ai = yes
+		}
+
+		on_completion = {
+			custom_tooltip = etruria_roman_incursion_task_13.c.tt
+		}
+	}
+
+	etruria_roman_incursion_task_14 = { # The End of Roman Domination
+		icon = "task_political"
+		duration = 60
+		requires = { etruria_roman_incursion_task_2 etruria_roman_incursion_task_11 }
+
+		allow = {
+			custom_tooltip = {
+				text = etruria_roman_incursion_one_of_three.a.tt
+				OR = {
+					has_completed_mission_task = etruria_roman_incursion_task_5
+					has_completed_mission_task = etruria_roman_incursion_task_7
+					has_completed_mission_task = etruria_roman_incursion_task_9
+				}
+			}
+		}
+
+		on_start = {
+			trigger_event = {
+				id = me_etruria.23
+				days = 20
+			}
+		}
+
+		bypass = {
+			is_ai = yes
+		}
+
+		on_completion = {
+			custom_tooltip = etruria_roman_incursion_task_14.c.tt
+		}
+	}
+
+	etruria_roman_incursion_task_15 = { # The Fate of Rome
+		icon = "task_atlas"
+		duration = 20
+		requires = { etruria_roman_incursion_task_14 }
+
+		highlight = {
+			scope:province = {
+				owner = c:ROM
+				NOT = { controller = root }
+			}
+		}
+
+		allow = {
+			OR = {
+				custom_tooltip = {
+					text = etruria_roman_incursion_task_15.a.tt
+					c:ROM = {
+						any_owned_province = {
+							count = all
+							controller = c:ETR
+						}
+					}
+				}
+				custom_tooltip = {
+					text = etruria_roman_incursion_task_15.a.tt2
+					c:ROM = {
+						is_subject_of = c:ETR
+					}
+				}
+			}
+		}
+
+		on_start = {
+			trigger_event = {
+				id = me_etruria.27
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = etruria_roman_incursion_task_15.c.tt
+		}
+	}
+
+	etruria_roman_incursion_task_16 = { # Stealing Epirote Gains
+		icon = "task_conquest"
+		requires = { etruria_roman_incursion_task_9 etruria_roman_incursion_task_15 }
+
+		allow = {
+			manpower >= 20
+			stability >= 70
+			custom_tooltip = {
+				text = etruria_roman_incursion_task_16.a.tt
+				any_character = {
+            	    has_office = office_tribune_of_the_soldiers
+            	    martial >= etruria_roman_incursion_task_16_martial_target_svalue
+            	}
+            }
+			c:EPI = { stability <= 50 }
+		}
+
+		on_completion = {
+			random_character = {
+				limit = { has_office = office_tribune_of_the_soldiers }
+				add_prominence = 300
+				add_loyalty = etruria_took_epirote_land_loyalty
+			}
+			current_ruler = { add_popularity = 20 }
+			add_treasury = -350
+			add_manpower = -10
+			custom_tooltip = etruria_roman_incursion_task_16.c.tt
+			hidden_effect = {
+				region:central_italy_region = {
+					every_region_province = {
+						limit = { owned_or_subject_owned = c:EPI }
+						set_owned_by = root
+					}
+				}
+				region:magna_graecia_region = {
+					every_region_province = {
+						limit = { owned_or_subject_owned = c:EPI }
+						set_owned_by = root
+					}
+				}
+			}
+			c:EPI = { add_opinion = { target = root modifier = etruria_etruria_took_our_land_relations } }
+			add_country_modifier = {
+				name = etruria_imposing_power_modifier
+				duration = -1
+			}
+		}
+	}
+
+	etruria_roman_incursion_task_17 = { # A More Peaceful Italia
+		icon = "task_calm"
+		requires = { etruria_roman_incursion_task_15 }
+		final = yes
+
+		highlight = {
+			scope:province = {
+				owner = c:ROM
+			}
+		}
+
+		allow = {
+			custom_tooltip = {
+				text = etruria_roman_incursion_task_17.a.tt
+				OR = {
+					NOT = { exists = c:ROM }
+					trigger_if = {
+						limit = {
+							exists = c:ROM
+						}
+						c:ROM = { is_subject_of = c:ETR }
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			add_stability = 10
+			add_country_modifier = {
+				name = etruria_pacifier_of_rome_modifier
+				duration = -1
+			}
+			trigger_event = me_etruria.30
+		}
+	}
+}

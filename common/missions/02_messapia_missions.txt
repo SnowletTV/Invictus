@@ -1,0 +1,923 @@
+﻿messapia_missions = {
+    header = "mission_image_generic_greek"
+    icon = "cde_new_city_founded"
+
+    repeatable = no
+    chance = 1000
+
+    potential = {
+        NOT = { has_variable = mission_cooldown_var }
+        primary_culture = messapian
+    }
+
+    abort = {
+		ai_mission_back_out_trigger = yes
+	}
+    on_start = {
+        start_mission_ai_effect = yes
+        save_scope_as = mission_country_scope #Bcs also available to Apulia
+    }
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = mission_cooldown_var
+            days = 7300
+        }
+    }
+    on_completion = {
+        complete_mission_effect = yes
+        add_2_free_province_investments = yes
+    }
+    messapia_missions_task_1 = { # The Lucani War
+        icon = "task_political"
+        highlight = {
+            scope:province = {
+                OR = {
+                    owner = c:SPA
+                    owner = c:APU
+                    owner = c:MSP
+                    owner = c:LCA
+                    owner = c:TAR
+                }
+            }
+        }
+        allow = {
+            custom_tooltip = {
+                #stephan you can put what you need here
+                text = event_war_over_tt
+                OR = {
+                    has_global_variable = lucania_lost_war
+                    has_global_variable = tarentum_lost_war
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.1
+            show_as_tooltip = { 
+                if = {
+                    limit = {
+                        has_global_variable = lucania_lost_war # you win
+                    }
+                    add_stability = 5
+                    current_ruler = { # took the right decisions
+                        add_martial = 1
+                        add_charisma = 1
+                        add_popularity = 25
+                        add_character_experience = 8
+                        add_gold = 500
+                    }
+                    current_heir = { # heir learns new stuff
+                        add_martial = 1
+                        add_charisma = 1
+                        add_popularity = 25
+                        add_character_experience = 3
+                    }
+                }
+                if = {
+                    limit = {
+                        has_global_variable = tarentum_lost_war # you lose
+                    }
+                    # to recoup some of the losses
+                    add_country_modifier = {
+                        name = recovering_from_war_303
+                        duration = 3650 # 10 years
+                    }
+                    current_ruler = {
+                        add_popularity = -10
+                        add_trait = cautious
+                    }
+                }
+            }
+        }
+    }
+    messapia_missions_task_2 = { # Pyrrhic Plans
+        icon = "task_diplomatic"
+        duration = 180
+        highlight = {
+            scope:province = {
+                owner = c:EPI
+            }
+        }
+        requires = { messapia_missions_task_1 }
+        allow = {
+            hidden:c:EPI = {
+                alliance_with = root
+            }
+        }
+        bypass = {
+            c:EPI = { has_land = no }
+        }
+        on_start = {
+            c:EPI = { trigger_event = me_messapia.200 }
+            show_as_tooltip = {
+                custom_tooltip = pyrrhic_plans_1_tt
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.2
+            show_as_tooltip = {
+
+            }
+        }
+    }
+    messapia_missions_task_3 = { # Acquisition of Apulia
+        icon = "task_conquest"
+        highlight = {
+            scope:province = {
+                is_in_area = cannae_area
+            }
+        }
+        requires = { messapia_missions_task_1 messapia_missions_task_23 }
+        allow = {
+            owns_or_subject_owns_area = cannae_area
+        }
+        on_completion = {
+            trigger_event = me_messapia.3
+            show_as_tooltip = {
+                custom_tooltip = assimilate_pops_messapia_tt
+                mission_claim_region_effect = { REGION = magna_graecia_region }
+                hidden_effect = {
+                    while = {
+                        count = 15
+                        random_owned_province = {
+                            random_pops_in_province = {
+                                limit = {
+                                    NOT = { pop_culture = ROOT.culture }
+                                }
+                                set_pop_culture = ROOT.culture
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    messapia_missions_task_4 = { # Invasion of Italia
+        icon = "task_conquest"
+        requires = { messapia_missions_task_3 }
+        allow = {
+            calc_true_if = {
+                amount >= 3
+                owns = 1713
+                owns = 6
+                owns = 1718
+                owns = 35
+                owns = 32
+            }
+        }
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 1713
+                    province_id = 6
+                    province_id = 1718
+                    province_id = 35
+                    province_id = 32
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.4
+            show_as_tooltip = {
+                add_political_influence = 50
+                mission_claim_region_effect = { REGION = central_italy_region }
+            }
+        }
+    }
+    messapia_missions_task_5 = { # Across the Adriatic
+        icon = "task_expansion"
+        requires = { messapia_missions_task_3 }
+        allow = {
+            OR = {
+                custom_tooltip = {
+                    text = messapia_greece_attack_tt
+                    any_owned_province = {
+                        OR = {
+                            is_in_area = epirus_area
+                            is_in_area = illyria_graeca_area
+                        }
+                    }
+                }
+                hidden:c:EPI = {
+                    is_subject_of = root
+                }
+                hidden:c:TLN = {
+                    is_subject_of = root
+                }
+                hidden:c:APO = {
+                    is_subject_of = root
+                }
+                hidden:c:KRK = {
+                    is_subject_of = root
+                }
+            }
+        }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = epirus_area
+                    is_in_area = illyria_graeca_area
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.5
+            show_as_tooltip = {
+                mission_claim_region_effect = { REGION = greece_region }
+                mission_claim_region_effect = { REGION = illyria_region }
+            }
+        }
+    }
+    messapia_missions_task_6 = { # Mission to Magna Graecia
+        icon = "task_battle"
+        requires = { messapia_missions_task_3 }
+        allow = {
+            calc_true_if = {
+                amount >= 7
+                owns = 78
+                owns = 54
+                owns = 80
+                owns = 12
+                owns = 75
+                owns = 84
+                owns = 52
+                owns = 72
+                owns = 73
+                owns = 99
+                owns = 82
+            }
+        }
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 78
+                    province_id = 54
+                    province_id = 80
+                    province_id = 12
+                    province_id = 75
+                    province_id = 84
+                    province_id = 52
+                    province_id = 72
+                    province_id = 73
+                    province_id = 99
+                    province_id = 82
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.6
+            show_as_tooltip = {
+                add_research = {
+                    technology = military_tech
+                    value = 15
+                }
+                add_research = {
+                    technology = civic_tech
+                    value = 15
+                }
+                add_research = {
+                    technology = oratory_tech
+                    value = 15
+                }
+                add_research = {
+                    technology = religious_tech
+                    value = 15
+                }
+            }
+        }
+    }
+    messapia_missions_task_7 = { # Laws and Litigations
+        icon = "task_political"
+        requires = { messapia_missions_task_16 }
+        allow = {
+            political_influence >= 50
+            custom_tooltip = {
+                text = saba_admin_tt
+                any_character = {
+                    count >= 2
+                    is_head_of_family = yes
+                    from_ruler_family = no
+                    loyalty >= 66
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.7
+            show_as_tooltip = {
+                add_political_influence = -50
+                add_country_modifier = {
+                    name = laws_and_litigations
+                    duration = 9125 #25 years
+                }
+            }
+        }
+    }
+    messapia_missions_task_8 = { # Greek Governance
+        icon = "task_political"
+        requires = { messapia_missions_task_7 }
+        allow = {
+            custom_tooltip = {
+                text = messapia_hellenistic_tt
+                messapia_hellenistic_pops_svalue >= 250
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.8
+            show_as_tooltip = {
+                custom_tooltip = messapia_greeks_decision_tt
+            }
+        }
+    }
+    messapia_missions_task_9 = { # Italic Inquires
+        icon = "task_religion"
+        requires = { messapia_missions_task_7 }
+        allow = {
+            custom_tooltip = {
+                text = messapia_italian_tt
+                messapia_latin_pops_svalue >= 250
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.9
+            show_as_tooltip = {
+                custom_tooltip = messapia_romans_decision_tt
+            }
+        }
+    }
+    messapia_missions_task_10 = { # Enlightened Illyrians
+        icon = "task_diplomatic"
+        requires = { messapia_missions_task_7 }
+        allow = {
+            custom_tooltip = {
+                text = messapia_balkan_tt
+                messapia_balkan_pops_svalue >= 125
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.10
+            show_as_tooltip = {
+                custom_tooltip = messapia_illyrians_decision_tt
+            }
+        }
+    }
+    messapia_missions_task_11 = { # Embrace the Wolf Cult
+        icon = "task_artemis"
+        highlight = {
+            scope:province = {
+                dominant_province_religion = illyrian_pantheon
+            }
+        }
+        #prevented_by = { messapia_missions_task_12 messapia_missions_task_13 }
+        bypass = {
+            OR = {
+                has_variable = mes_mis_tas_12
+                has_variable = mes_mis_tas_13
+            }
+        }
+        requires = { messapia_missions_task_15 }
+        allow = {
+            custom_tooltip = {
+                text = messapia_conversion_illyric_tt
+                messapia_religion_illyrian_svalue >= 200
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.11
+            show_as_tooltip = {
+                set_country_religion = illyrian_pantheon
+                custom_tooltip = wolf_cult_tt
+            }
+            set_variable = mes_mis_tas_11
+            custom_tooltip = mes_rel_task_tt
+        }
+    }
+    messapia_missions_task_12 = { # Embelish the Zis Cult
+        icon = "task_zeus_cornucopia"
+        highlight = {
+            scope:province = {
+                dominant_province_religion = roman_pantheon
+            }
+        }
+        #prevented_by = { messapia_missions_task_11 messapia_missions_task_13 }
+        requires = { messapia_missions_task_15 }
+        bypass = {
+            OR = {
+                has_variable = mes_mis_tas_11
+                has_variable = mes_mis_tas_13
+            }
+        }
+        allow = {
+            custom_tooltip = {
+                text = messapia_conversion_hellenic_tt
+                messapia_religion_hellenic_svalue >= 200
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.12
+            show_as_tooltip = {
+                custom_tooltip = stay_hellenic_tt
+                add_country_modifier = {
+                    name = cult_of_zis
+                    duration = -1
+                }
+            }
+            custom_tooltip = mes_rel_task_tt
+            set_variable = mes_mis_tas_12
+        }
+    }
+    messapia_missions_task_13 = { # Empower the Menzanas Cult
+        icon = "task_heracles"
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 39
+                    dominant_province_religion = italic_pantheon
+                }
+            }
+        }
+        #prevented_by = { messapia_missions_task_12 messapia_missions_task_11 }
+        bypass = {
+            OR = {
+                has_variable = mes_mis_tas_11
+                has_variable = mes_mis_tas_13
+            }
+        }
+        requires = { messapia_missions_task_15 }
+        allow = {
+            custom_tooltip = {
+                text = messapia_conversion_italic_tt
+                messapia_religion_italic_svalue >= 200
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.13
+            set_variable = mes_mis_tas_13
+            show_as_tooltip = {
+                set_country_religion = italic_pantheon
+                custom_tooltip = menzanas_cult_tt
+            }
+            custom_tooltip = mes_rel_task_tt
+        }
+    }
+    messapia_missions_task_14 = { # Faith in Messapia
+        icon = "task_atlas"
+        highlight = {
+            scope:province = {
+                dominant_province_culture = messapian
+            }
+        }
+        requires = { messapia_missions_task_11 messapia_missions_task_12 messapia_missions_task_13 }
+        allow = {
+            custom_tooltip = {
+                text = cannae_and_tarentum_tt
+                area:cannae_area = {
+                    any_area_province = {
+                        governor_policy = religious_conversion
+                    }
+                }
+                area:tarentum_area = {
+                    any_area_province = {
+                        governor_policy = religious_conversion
+                    }
+                }
+            }
+
+        }
+        on_completion = {
+            trigger_event = me_messapia.14
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = messapian_religion
+                    duration = -1
+                }
+            }
+        }
+    }
+    messapia_missions_task_15 = { # Deus or Theos
+        icon = "task_religion"
+        duration = 60
+        requires = { messapia_missions_task_16 }
+        allow = {
+            political_influence >= 25
+        }
+        on_completion = {
+            trigger_event = me_messapia.15
+            show_as_tooltip = {
+                custom_tooltip = spread_religion_messapii_tt
+                add_political_influence = -25
+            }
+        }
+    }
+    messapia_missions_task_16 = { # Crossroads of the Adriatic
+        icon = "task_religion"
+        requires = { messapia_missions_task_1 }
+        allow = {
+            capital_scope = {
+                total_population >= 30
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.16
+            show_as_tooltip = {
+                capital_scope = {
+                    add_permanent_province_modifier = {
+                        name = crossroads_of_adriatic
+                    }
+                }
+            }
+        }
+    }
+    messapia_missions_task_17 = { # A Messapian Republic
+        icon = "task_economical"
+        requires = { messapia_missions_task_8 messapia_missions_task_9 messapia_missions_task_10 }
+        duration = 365
+        highlight = {
+            scope:province = {
+                OR = {
+                    dominant_province_culture = messapian
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.17
+            show_as_tooltip = {
+                custom_tooltip = mes_goc_choice_tt
+            }
+        }
+    }
+    messapia_missions_task_18 = { # into illyria
+        icon = "task_political"
+        requires = { messapia_missions_task_5 }
+        allow = {
+            custom_tooltip = {
+                text = illyria_owned_provinces_tt
+                illyria_region_owned_prov_svalue >= 40
+            }
+        }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = illyria_region
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.18
+            show_as_tooltip = {
+                add_stability = 10
+                add_aggressive_expansion = -25
+                random_owned_province = {
+                    limit = {
+                        num_of_port_building > 0 
+                    }
+                    owner = {
+                        create_unit = {
+                            navy = yes
+                            location = prev.prev
+                            hidden_effect = {
+                                add_subunit = tetrere
+                                add_subunit = tetrere
+                                add_subunit = tetrere
+                                add_subunit = tetrere
+                                add_subunit = hexere
+                                add_subunit = hexere
+                                add_subunit = hexere
+                                add_subunit = hexere
+                                add_subunit = octere # tbd if kept, I just added bcs it's neat to have
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    messapia_missions_task_19 = { # into greece
+        icon = "task_zeus_cornucopia"
+        requires = { messapia_missions_task_5 }
+        allow = {
+            calc_true_if = {
+                amount = 5
+                owns = 427
+                owns = 416
+                owns = 440
+                owns = 446
+                owns = 418
+                owns = 426
+                owns = 424
+                owns = 465
+            }
+        }
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 427
+                    province_id = 416
+                    province_id = 440
+                    province_id = 446
+                    province_id = 418
+                    province_id = 426
+                    province_id = 424
+                    province_id = 465
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.19
+            show_as_tooltip = {
+                custom_tooltip = access_greek_traditions_tt
+                mission_claim_region_effect = { REGION = macedonia_region }
+            }
+        }
+    }
+    messapia_missions_task_20 = { # Magna Illyria
+        icon = "task_athena"
+        requires = { messapia_missions_task_21 }
+        highlight = {
+            scope:province = {
+                owner = root
+            }
+        }
+        allow = {}
+        final = yes
+        on_completion = {
+            trigger_event = me_messapia.20
+            show_as_tooltip = {
+                change_country_name = "MAGNA_ILLYRIA_NAME"
+                hidden_effect = {
+                    change_country_adjective = "MAGNA_ILLYRIA_ADJECTIVE"
+                    change_country_tag = 1MI
+                    change_country_color = magna_illyria_color
+                    change_country_flag = MAGNA_ILLYRIA_FLAG
+                }
+                capital_scope = {
+                    capital_formable_medium_effect = yes
+                    formable_capital_modifier_normal_effect = yes
+                }
+                hidden_effect = {
+                    region:magna_graecia_region = { formable_region_province_effect = yes }
+                }
+                add_4_free_province_investments = yes
+                add_political_influence = 100
+                custom_tooltip = cant_form_illyria_tt
+            }
+        }
+        final = yes
+    }
+    messapia_missions_task_21 = { # Our Future Decided
+        icon = "task_happiness"
+        requires = { messapia_missions_task_17 messapia_missions_task_14 }
+        allow = {}
+        on_completion = {
+            trigger_event = me_messapia.21
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = messapian_identity
+                    duration = 18250
+                }
+            }
+        }
+    }
+    messapia_missions_task_22 = { # Triumph Over Tarentum
+        icon = "task_battle"
+        highlight = {
+            scope:province = {
+                province_id = 56
+            }
+        }
+        allow = {
+            owns_or_subject_owns_area = tarentum_area
+        }
+        requires = { messapia_missions_task_1 messapia_missions_task_23 }
+        on_completion = {
+            trigger_event = me_messapia.22
+            show_as_tooltip = { # should be adjusted
+                add_aggressive_expansion = -5
+                add_treasury = 250
+            }
+        }
+    }
+    messapia_missions_task_23 = { # Brothers By Blood
+        icon = "task_happiness"
+        highlight = {
+            scope:province = {
+                owner = c:APU
+            }
+        }
+        allow = {
+            trigger_if = { 
+                limit = {
+                    tag = MSP
+                }
+                hidden:c:APU = {
+                    opinion = {
+                        target = root
+                        value >= 125
+                    }
+                }  
+            }
+            trigger_else_if = { 
+                limit = {
+                    tag = APU
+                }
+                hidden:c:MSP = {
+                    opinion = {
+                        target = root
+                        value >= 125
+                    }
+                }  
+            }
+        }
+        bypass = {
+            is_subject = yes # first one to do the task will be overlord
+        }
+        on_completion = {
+            trigger_event = me_messapia.23
+            show_as_tooltip = {
+                if = {
+                    limit = {
+                        tag = MSP
+                    }
+                    make_subject = {
+                        target = c:APU
+                        type = feudatory
+                    }
+                }
+                else_if = {
+                    limit = {
+                        tag = APU
+                    }
+                    make_subject = {
+                        target = c:MSP
+                        type = feudatory
+                    }
+                }
+                capital_scope = { 
+                    create_state_pop = freemen
+                    create_state_pop = freemen  
+                }
+            }
+        }
+    }
+    messapia_missions_task_24 = { # Ruin Rome
+        icon = "task_political"
+        allow = {
+            owns = 1
+            c:ROM = {
+                num_of_cities < 10
+            }
+        }
+        highlight = {
+            scope:province = {
+                province_id = 1
+            }
+        }
+        requires = {
+            messapia_missions_task_4
+        }
+        on_completion = {
+            trigger_event = me_messapia.24
+            show_as_tooltip = {
+                add_innovation = 2
+                add_military_experience = 50
+                current_ruler = {
+                    add_nickname = NICKNAME_DESTROYER
+                    hidden_effect = {
+                        if = {
+                            limit = {
+                                has_trait = tactically_inflexible
+                            }
+                            remove_trait = tactically_inflexible
+                        }
+                    }
+                    add_trait = original_thinker
+                    add_popularity = 25
+                }
+            }
+        }
+    }
+    messapia_missions_task_25 = { #Seize Sicily
+        icon = "task_economical"
+        requires = {
+            messapia_missions_task_6
+        }
+        allow = {
+            owns_or_subject_owns_area = syracuse_area
+            owns_or_subject_owns_area = east_sicily_area
+            owns_or_subject_owns_area = west_sicily_area
+        }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = syracuse_area
+                    is_in_area = east_sicily_area
+                    is_in_area = west_sicily_area
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.25
+            show_as_tooltip = {
+                custom_tooltip = sicily_grain_tt
+                p:84 = { # all of sicily gets it
+                    add_permanent_province_modifier = {
+                        name = sicilian_grain_messapia
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+
+    messapia_missions_task_26 = { # Expand Northward
+        icon = "task_expansion"
+        requires = { messapia_missions_task_4 }
+        allow = {
+            custom_tooltip = {
+                text = italia_owned_provinces_tt
+                italia_region_owned_prov_svalue >= 40
+            }
+        }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = central_italy_region
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.26
+            show_as_tooltip = {
+                add_treasury = 500
+                mission_claim_region_effect = { REGION = cisalpine_gaul_region }
+                custom_tooltip = expand_statesmanship_tt
+                current_ruler = {
+                    add_martial = 2
+                }
+                current_heir = {
+                    add_martial = 1
+                }
+            }
+        }
+    }
+
+    messapia_missions_task_27 = {
+        icon = "task_heracles"
+        requires = { messapia_missions_task_26 messapia_missions_task_18 }
+        allow = {
+            custom_tooltip = {
+                text = marulum_nostrum_tt
+                adriatic_coast_owned_prov_svalue >= 59
+            }
+        }
+        highlight = {
+            scope:province = {
+                is_coastal = yes
+                OR = {
+                    is_in_region = illyria_region
+                    is_in_area = illyria_graeca_area
+                    is_in_area = asculum_area
+                    is_in_area = cannae_area
+                    is_in_area = ariminum_area
+                    is_in_area = aternum_area
+                    is_in_area = venetia_area
+                    is_in_area = ferraria_area
+                    is_in_area = aemilla_area
+                    is_in_area = tarentum_area
+                }
+                NOR = {
+                    province_id = 55
+                    province_id = 56
+                    province_id = 62
+                    province_id = 63
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_messapia.27
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = marulum_nostrum
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    messapia_missions_task_28 = {
+        icon = "task_political"
+        requires = { messapia_missions_task_1 }
+        allow = {
+            military_experience >= 50
+            war = yes
+        }
+        on_completion = {
+            trigger_event = me_messapia.28
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = lessons_from_war
+                    duration = -1
+                }
+            }
+        }
+    }
+}

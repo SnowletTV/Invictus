@@ -382,11 +382,12 @@ veneto_flavour_event.8 = { #spartan invasion
     trigger = {
         char:176 = {
             is_alive = yes
-            is_ruler = no
+            is_ruler  = no
         }
     }
 
     immediate = {
+        save_scope_as = venetic_country_owner_of_patavium
         c:BAR = {
             create_unit = {
                 navy = no
@@ -423,6 +424,10 @@ veneto_flavour_event.9 = { #A spartan army attacks Patavium!
     left_portrait = current_ruler
     right_portrait = char:176
     picture = greeks_marching
+
+    immediate = {
+        save_scope_as = venetic_country_owner_of_patavium
+    }
 
     option = {
         name = veneto_flavour_event.9.a
@@ -679,21 +684,19 @@ veneto_flavour_event.13 = { #check if Kleonymos controls patavium
         if = {
             limit = {
                 p:3594 = {
-                    controller = scope:venetic_country_owner_of_patavium
+                    controller = ROOT
                 }
             }
-            scope:venetic_country_owner_of_patavium = {
-                if = {
-                    limit = {
-                        NOT = {
-                            scope:venetic_country_owner_of_patavium = {
-                                has_variable = veneto_defeated_kleonymos
-                            }
+            if = {
+                limit = {
+                    NOT = {
+                        ROOT = {
+                            has_variable = veneto_defeated_kleonymos
                         }
                     }
-                    trigger_event = {
-                        id = veneto_flavour_event.12
-                    }
+                }
+                trigger_event = {
+                    id = veneto_flavour_event.12
                 }
             }
         }
@@ -728,7 +731,7 @@ veneto_flavour_event.13 = { #check if Kleonymos controls patavium
                     }
                 }
             }
-            scope:venetic_country_owner_of_patavium = { 
+            ROOT = { 
                 trigger_event = {
                     id = veneto_flavour_event.14
                 }
@@ -810,10 +813,8 @@ veneto_flavour_event.14 = {
                 COUNTRY = c:SPA 
             }
         }
-        scope:venetic_country_owner_of_patavium = {
-            current_ruler = {
-                add_popularity = -50
-            }
+        current_ruler = {
+            add_popularity = -50
         }
         c:SPA = {
             trigger_event = {
@@ -828,18 +829,14 @@ veneto_flavour_event.14 = {
     option = {
         name = veneto_flavour_event.14.b #[Patavium] is under Kleonymus' control now,
         custom_tooltip = veneto_flavour_event.14.b_tt
+        ROOT.current_ruler.country = {
+            trigger_event = {
+                id = veneto_flavour_event.25
+                days = { 3 5 }
+            }
+        }
         hidden_effect = {
             p:3594 = {
-                define_pop = {
-                    type = nobles
-                    culture = peloponnesian
-                    religion = roman_pantheon
-                }
-                define_pop = {
-                    type = nobles
-                    culture = peloponnesian
-                    religion = roman_pantheon
-                }
                 define_pop = {
                     type = nobles
                     culture = peloponnesian
@@ -855,23 +852,19 @@ veneto_flavour_event.14 = {
                         name = SPARTAN_PATAVIUM
                         adjective = SPARTAN_PATAVIUM_ADJ
                     }
+                    change_country_tag = PAT
                     change_country_color = light_yellow
-                    set_country_heritage = spartan_heritage
-                    change_government = despotic_monarchy
+                    change_country_flag = PAT_FLAG
+                    set_country_heritage = spartan_patavium_early_heritage
+                    change_government = spartan_monarchy
                     save_scope_as = spartan_patavium_country
-                    add_treasury = 10
-                    if = {
-                        limit = {
-                            NOT = {
-                                primary_culture = peloponnesian
-                            }
-                        }
-                        set_primary_culture_cleanup_effect = {
-                            NEW_PRIMARY_CULTURE = peloponnesian
-                            MAKE_OLD_CULTURE_INTEGRATED = yes
-                        }
+                    add_treasury = 50
+                    set_primary_culture_cleanup_effect = {
+                        NEW_PRIMARY_CULTURE = peloponnesian
+                        MAKE_OLD_CULTURE_INTEGRATED = no
                     }
                     set_country_religion = roman_pantheon
+                    set_variable = spartan_patavium_spawned_tag
                 }
                 change_province_name = PROV3594_hellenic
             }    
@@ -882,19 +875,25 @@ veneto_flavour_event.14 = {
             }
             scope:spartan_patavium_country = {
                 set_as_ruler = char:176
-             }
-            c:SPA = {
-                make_subject = {
-                    target = scope:spartan_patavium_country
-                    type = subject_colony
+                add_truce = {
+                    target = root
+                    duration = 3650 #10 years
                 }
             }
         }
-        scope:venetic_country_owner_of_patavium = {
-            add_stability = -20
-            current_ruler = {
-                add_popularity = -60
-            }
+        add_stability = -20
+        current_ruler = {
+            add_popularity = -60
+        }
+        add_truce = {
+            target = scope:spartan_patavium_country
+            duration = 3650 #10 years
+        }
+        switch_player_country_setup_effect = {
+            RULER_NAME = Kleomynos
+            RULER_LAST_NAME = Agiad
+            RULER_CULTURE = peloponnesian
+            RULER_RELIGION = roman_pantheon
         }
         c:SPA = {
             trigger_event = {
@@ -972,19 +971,13 @@ veneto_flavour_event.16 = { #Kleomynos retreats from Apulia
     picture = greeks_marching
 
     immediate = {
-         every_country = {
-            if = {
-                limit = {
-                    AND = {
-                        primary_culture = venetic
-                        owns_or_subject_owns = p:3594
-                    }
-                } 
-                save_scope_as = venetic_country_owner_of_patavium
-                trigger_event = {
-                    id = veneto_flavour_event.8
-                    days = { 30 65 }
-                }
+        random_country = {
+            limit = {
+                owns_or_subject_owns = p:3594
+            } 
+            trigger_event = {
+                id = veneto_flavour_event.8
+                days = { 30 65 }
             }
         }
         c:BAR = {
@@ -1230,6 +1223,96 @@ veneto_flavour_event.24 = { #Arrival of the Romans and Etruscans
         name = veneto_flavour_event.24.c #We can deal with this on our own.
         ai_chance = {
             factor = 30
+        }
+    }
+}
+
+veneto_flavour_event.25 = {
+    type = country_event
+    title = veneto_flavour_event.25.t 
+    desc = veneto_flavour_event.25.desc
+    picture = burning_alexandria
+    left_portrait = current_ruler
+    right_portrait = char:176 
+
+    immediate = {
+        p:3594 = {
+            add_to_list = new_country_province_list
+        }
+    }
+    
+    option = {
+        name = veneto_flavour_event.25.a #The Gods will one day come for Kleomynos!
+        ai_chance = {
+            factor = 100
+        }
+    }
+
+    option = {
+        name = veneto_flavour_event.25.b #I wonder what life will be like for the Patavii now?...
+        custom_tooltip = "veneto_flavour_event.25.b_tt" #"#E You#! will switch to playing as #E #Y #!#!  
+        trigger = {
+            is_ai = no
+         }
+        ai_chance = {
+            base = 0
+        }
+        hidden_effect = {
+            every_province = {
+                limit = {
+                    is_in_list = new_country_province_list
+                }
+                set_owned_by = root
+            }
+            switch_player_country_effect = { # Switch to Padouion
+                NEW_NAME = SPARTAN_PATAVIUM
+                NEW_ADJECTIVE = SPARTAN_PATAVIUM_ADJ
+                NEW_GOVERNMENT = spartan_monarchy
+                NEW_COLOR = light_yellow
+                NEW_RELIGION = roman_pantheon
+                NEW_CULTURE = peloponnesian
+                NEW_FLAG = PAT_FLAG
+                NEW_TAG = PAT
+                NEW_HERITAGE = spartan_patavium_early_heritage
+                OLD_COUNTRY_COLOR = veneto_blue
+                OLD_COUNTRY_NAME = VNT
+                OLD_COUNTRY_ADJ = VNT_ADJ
+                OLD_COUNTRY_FLAG = VNT
+                OLD_COUNTRY_HERITAGE = veneto_heritage
+                OLD_COUNTRY_CULTURE = venetic
+                OLD_COUNTRY_RELIGION = italic_pantheon
+                OLD_TAG = VNT
+            }
+            char:176 = {
+                move_country_with_close_family_effect = { 
+                    COUNTRY = ROOT
+                }
+            }
+            set_as_ruler = char:176
+            p:3594 = {
+                change_province_name = PROV3594_hellenic
+            }
+            trigger_event = {
+                id = veneto_flavour_event.26
+            }
+        }
+    }
+}
+
+veneto_flavour_event.26 = {
+    type = country_event
+    hidden = yes
+
+    immediate = {
+        random_country = {
+            limit = {
+                AND = {
+                    this.country.flag = VNT
+                    primary_culture = venetic
+                    religion = italic_pantheon
+                }
+            }
+            change_government = tribal_chiefdom
         }
     }
 }

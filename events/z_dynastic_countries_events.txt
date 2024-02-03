@@ -1,0 +1,215 @@
+﻿namespace = z_dynastic_countries
+
+#-----------------------------------------------------------------------------------------
+#
+#	Main event
+#
+#-----------------------------------------------------------------------------------------
+
+z_dynastic_countries.1 = {
+	type = country_event
+	hidden = yes
+	
+	picture = council_country
+	left_portrait = current_ruler
+	right_portrait = primary_heir
+	
+	trigger = {
+		NOT = {
+			has_variable = z_dynastic_countries_cooldown
+		}
+		# Don't bother the human players at game start - esp. if they already have a 'dynastic' name
+		trigger_if = {
+			limit = {
+				is_ai = no
+			}
+			NOT = {
+				AND = {
+					current_date < 475.1.1
+					NOR = {
+						tag = SEL
+						tag = PRY
+						tag = TRE
+						tag = MAC
+						tag = EGY
+					}
+				}
+				AND = {
+					current_date < 500.1.1
+					OR = {
+						tag = SEL
+						tag = PRY
+						tag = TRE
+						tag = MAC
+						tag = EGY
+					}
+				}
+			}
+		}
+		is_monarchy = yes
+		is_subject = no
+		has_civil_war = no
+		z_dynastic_countries_uneligible = no
+		OR = {
+			country_culture_group = hellenic
+			country_culture_group = illyrian_group
+			country_culture_group = latin
+			country_culture_group = west_levantine
+			country_culture_group = east_levantine
+			country_culture_group = south_levantine
+			country_culture_group = persia
+			country_culture_group = anatolian
+		}
+		z_dynastic_countries_has_dynastic_ruler = yes
+	}
+	
+	immediate = {
+		# Set default cooldown
+		set_variable = {
+			name = z_dynastic_countries_cooldown
+			days = 3650 # 10 years
+		}
+		# Trigger ad-hoc event...
+		# Scenario 1: Give dynastic country name (first time, visible)
+		if = {
+			limit = {
+				NOT = {
+					has_variable = z_dynastic_countries_flag
+				}
+			}
+			trigger_event = {
+				id = z_dynastic_countries.2
+			}
+		}
+		# Scenario 2: Change dynastic country name (hidden)
+		else_if = {
+			limit = {
+				has_variable = z_dynastic_countries_flag
+				exists = current_ruler.family
+				NOT = {
+					var:z_dynastic_countries_flag = current_ruler.family
+				}
+			}
+			z_dynastic_countries_rename_country = yes
+		}
+		# Scenario 3: Upgrade country name, from K to E (hidden)
+		else_if = {
+			limit = {
+				has_variable = z_dynastic_countries_flag_k
+				z_dynastic_countries_is_empire = yes
+			}
+			z_dynastic_countries_rename_country = yes
+		}
+		# Scenario 4: Downgrade country namer, from E to K (hidden)
+		else_if = {
+			limit = {
+				has_variable = z_dynastic_countries_flag_e
+				z_dynastic_countries_is_empire = no
+			}
+			z_dynastic_countries_rename_country = yes
+		}
+		# Scenario 5: None of this
+		else = {
+			# Nothing
+		}
+	}
+
+}
+
+#-----------------------------------------------------------------------------------------
+#
+#	Set a dynasitc country name
+#
+#-----------------------------------------------------------------------------------------
+
+z_dynastic_countries.2 = {
+	type = country_event
+	title = "z_dynastic_countries.2.t"
+	desc = "z_dynastic_countries.2.desc"
+	
+	picture = council_country
+	left_portrait = current_ruler
+	right_portrait = primary_heir
+	
+	# Triggered by z_dynastic_countries.1
+	
+	# Yes, give the country a dynastic name - AI will choose this depending on game rule
+	option = {
+		name = "z_dynastic_countries.2.a"
+		ai_chance = { 
+			factor = 100
+			#modifier = {
+			#	factor = 0
+			#	NOT = { has_global_variable = dynamic_dynastic_names_ai_game_rule }
+			#}
+		}
+		z_dynastic_countries_rename_country = yes
+		set_variable = {
+			name = z_dynastic_countries_flag
+		}
+	}
+	
+	# No, keep the current name for now (I want a dynastic name but my current dynasty sucks)
+	option = {
+		name = "z_dynastic_countries.2.b"
+		ai_chance = { factor = 0 }
+		remove_variable = z_dynastic_countries_cooldown # Clear current cooldown
+		set_variable = {
+			name = z_dynastic_countries_cooldown
+			value = 9125 # 25 years
+		}
+		custom_tooltip = "z_dynastic_countries.2.bt"
+	}
+	
+	# No, never ask again - AI will choose this depending on game rule
+	option = {
+		name = "z_dynastic_countries.2.c"
+		ai_chance = { 
+			#factor = 100
+			#modifier = {
+				factor = 0
+			#	has_global_variable = dynamic_dynastic_names_ai_game_rule
+			#}
+		}
+		remove_variable = z_dynastic_countries_cooldown # Clear current cooldown
+		set_variable = {
+			name = z_dynastic_countries_cooldown # Forever
+		}
+		custom_tooltip = "z_dynastic_countries.2.ct"
+	}
+}
+
+#-----------------------------------------------------------------------------------------
+#
+#	Lose dynastic name in favor of a regional name, if the country somehow became uneligible
+#
+#-----------------------------------------------------------------------------------------
+
+z_dynastic_countries.3 = {
+	type = country_event
+	title = "country_rename.3.t"
+	desc = "country_rename.3.desc"
+	
+	trigger = {
+		has_variable = z_dynastic_countries_flag
+		z_dynastic_countries_regional_name_trigger = yes
+		OR = {
+			is_monarchy = no
+			z_dynastic_countries_uneligible = yes
+			NOT = {
+				exists = current_ruler.family
+			}
+		}
+	}
+	
+	option = {
+		name = "z_dynastic_countries.3.a"
+		if = {
+			limit = {
+				has_variable = z_dynastic_countries_cooldown
+			}
+			remove_variable = z_dynastic_countries_cooldown # Clear current cooldown, a dynastic country name might come back sooner than expected
+		}
+		z_dynastic_countries_regional_name_effect = yes
+	}
+}

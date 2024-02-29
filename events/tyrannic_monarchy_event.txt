@@ -1,0 +1,441 @@
+﻿namespace = tyrannic_monarchy_event
+
+tyrannic_monarchy_event.1 = {
+	type = country_event
+	title = "tyrannic_monarchy_event.1.t"
+	desc = "tyrannic_monarchy_event.1.desc"
+	left_portrait = scope:old_tyrant_king
+	right_portrait = scope:old_tyrant_heir
+	picture = throneroom
+	
+	option = {
+		name = "tyrannic_monarchy_event.1.a"
+		change_government = aristocratic_republic
+        current_ruler = {
+            add_popularity = 25
+            add_charisma = 1            
+        }
+        ai_chance = {
+            modifier = {
+                factor = 5
+            }
+        }
+	}
+
+	option = {
+		name = "tyrannic_monarchy_event.1.b"
+		change_government = stratocratic_monarchy
+		add_military_experience = 25
+        current_ruler = {
+            add_popularity = -25
+            add_martial = 1
+        }
+        ai_chance = {
+            modifier = {
+                factor = 20
+            }
+        }		
+	}
+
+	option = {
+		name = "tyrannic_monarchy_event.1.c"
+		highlight = yes	
+		custom_tooltip = tyrannic_monarchy_event.1.ct		
+		add_political_influence = 25
+        current_ruler = {
+            add_finesse = 1
+        }
+		hidden_effect = {
+			random_list = {
+				15 = {
+					change_government = despotic_monarchy
+				}
+				20 = {
+					change_government = aristocratic_monarchy
+				}				
+				10 = {
+					change_government = theocratic_monarchy
+				}
+				20 = {
+					change_government = stratocratic_monarchy
+				}								
+			}		
+		}
+        ai_chance = {
+            modifier = {
+                factor = 20
+            }
+        }
+	}		
+
+	option = {
+		name = "tyrannic_monarchy_event.1.d"
+		highlight = yes	
+		custom_tooltip = tyrannic_monarchy_event.1.dt		
+		trigger_event = {
+			id = tyrannic_monarchy_event.2
+			days = { 20 40 }
+		}
+        ai_chance = {
+            modifier = {
+                factor = 100
+            }
+        }
+	}
+}
+
+tyrannic_monarchy_event.2 = {
+	type = country_event
+	title = "tyrannic_monarchy_event.2.t"
+	desc = "tyrannic_monarchy_event.2.desc"
+	left_portrait = scope:old_tyrant_heir
+	left_portrait = scope:old_tyrant_king
+	right_portrait = scope:tyrant_plotter
+	picture = greek_court
+	
+
+	immediate = {
+		set_variable = {
+			name = mon_15_toggle
+			days = 3650 # 10 years
+		}
+		ordered_character = { # Save relevant successor 
+			limit = {
+				age >= 16
+				loyalty <= 65
+				prisoner = no
+				is_primary_heir = no
+				NOT = { has_same_family = root.current_ruler }
+				OR = {
+					char_is_clever_trigger = yes
+					martial >= 6
+					finesse >= 6
+					charisma >= 6
+					zeal >= 6				
+				}
+				NOT = { has_any_illness_trigger = yes }
+			}
+			order_by = prominence
+			save_scope_as = tyrant_plotter
+			hidden_effect = {
+				add_martial = 5
+				add_trait = ambitious
+			}			
+		}
+			root.primary_heir = {
+				save_scope_as = old_tyrant_heir_heir
+			}
+		}
+	
+	option = { # Imprison plotter
+		name = "tyrannic_monarchy_event.2.a"
+		hidden_effect = {
+			scope:tyrant_plotter = {
+				remove_all_offices = yes
+			}
+		}
+		imprison = {
+			target = scope:tyrant_plotter
+		}
+		remove_stability_effect = yes # Stability hit
+	}
+	
+	option = { # Allow plotter to... plot
+		name = "tyrannic_monarchy_event.2.b"
+		highlight = yes		
+		custom_tooltip = "tyrannic_monarchy_event.2.bt"
+		add_legitimacy = subtract_legitimacy_medium # Gov allowing plots
+		trigger_event = {
+			id = tyrannic_monarchy_event.3
+			days = { 20 40 }
+		}
+	}
+}
+
+tyrannic_monarchy_event.3 = {
+	type = country_event
+	title = "tyrannic_monarchy_event.3.t"
+	desc = "tyrannic_monarchy_event.3.desc"
+	left_portrait = scope:old_tyrant_heir
+	left_portrait = scope:old_tyrant_heir_heir	
+	right_portrait = scope:tyrant_plotter
+	picture = proscription
+	
+	
+	option = { # To the dungeons
+		name = "tyrannic_monarchy_event.3.a"
+		set_as_ruler = scope:tyrant_plotter # Plotter crowned
+		imprison = { # Imprison old ruler
+			target = scope:old_tyrant_heir
+		}
+		add_tyranny = subtract_tyranny_medium # Tyrant removed
+		add_legitimacy = subtract_legitimacy_large # Swapping kings like socks
+	}
+	
+	option = { # Here ends the [SCOPE.sChar('old_tyrant_heir').GetFamilyDisplayAdjective] dynasty...
+		name = "tyrannic_monarchy_event.3.b"
+		set_as_ruler = scope:tyrant_plotter # Plotter crowned
+		scope:old_tyrant_heir = { # Old ruler executed
+			set_variable = overthrown_tyrant_flag
+			death = {
+				death_reason = death_execution
+				killer = scope:tyrant_plotter
+			}
+		}
+		hidden_effect = {
+			every_character = { # Kill ruler's whole family
+				limit = {
+					trigger_if = {
+						limit = {
+							employer.current_ruler = {
+								is_minor_character = no
+							}
+						}
+						has_same_family = scope:old_tyrant_heir
+						NOT = { has_same_family = scope:tyrant_plotter }
+					}
+					is_alive = yes
+					employer = root
+				}
+				set_variable = overthrown_tyrant_flag		
+				death = {
+					death_reason = death_execution
+					killer = scope:tyrant_plotter
+				}
+			}
+		}
+		custom_tooltip = tyrannic_monarchy_event.3.bt
+		remove_stability_effect = yes # Stability hit
+		add_tyranny = tyranny_large # Tyranny murdered a whole bunch of people
+		add_legitimacy = subtract_legitimacy_huge # Legitimacy stole throne and even worse
+	}
+
+	option = { # Make primary heir ruler
+		name = "tyrannic_monarchy_event.3.c"
+		if = {
+			limit = {
+				government = tyrannic_monarchy
+			}
+			change_government = stratocratic_monarchy
+		}	
+		custom_tooltip = tyrannic_monarchy_event.3.ct	
+		set_as_ruler = scope:old_tyrant_heir_heir # Crown primary heir	
+		scope:tyrant_plotter = {
+		set_family = scope:old_tyrant_heir
+			add_character_modifier = {
+				name = finesse_regent_2_charmod
+				duration = -1
+			}
+		}		
+		add_stability_effect = yes # stability offset
+		add_legitimacy = legitimacy_large # Legitimate heir of tyrant
+	}
+
+	option = { #
+		name = "tyrannic_monarchy_event.3.d"
+		highlight = yes
+		custom_tooltip = tyrannic_monarchy_event.3.dt
+		trigger = { # Male ruler has some martial
+			current_ruler = {
+				is_female = no
+				OR = {
+					has_trait = lunatic
+					has_trait = reckless
+					martial >= 5
+				}
+			}
+		}
+		current_ruler = { add_trait = reckless }
+		add_tyranny = subtract_tyranny_large # Tyranny got rid of tyrant
+		add_legitimacy = legitimacy_medium # Legitimacy tyrant really was a piece of work
+		hidden_effect = {
+			random_list = { #Outcome of mad melee
+				40 = {
+					scope:tyrant_plotter = { # Plotter dies
+						death = {
+							death_reason = death_battle
+							killer = scope:old_tyrant_heir
+						}
+					}
+				}
+				40 = {
+					scope:old_tyrant_heir = { # Ruler dies
+						set_variable = overthrown_tyrant_flag			
+						death = {
+							death_reason = death_battle
+							killer = scope:tyrant_plotter
+						}
+					}
+				}
+				20 = {
+					scope:tyrant_plotter = { # Everybody dies...
+						set_variable = overthrown_tyrant_flag
+						death = {
+							death_reason = death_battle
+							killer = scope:old_tyrant_heir
+						}
+					}
+					scope:old_tyrant_heir = {
+						set_variable = overthrown_tyrant_flag
+						death = {
+							death_reason = death_battle
+							killer = scope:tyrant_plotter
+						}
+					}
+				}
+			}		
+		}
+	}	
+}
+
+tyrannic_monarchy_event.4 = {
+	type = country_event
+	title = "tyrannic_monarchy_event.4.t"
+	desc = "tyrannic_monarchy_event.4.desc"
+	left_portrait = current_ruler
+	right_portrait = scope:tyrant_usurper
+	picture = proscription
+	
+	immediate = {
+		set_variable = {
+			name = mon_15_toggle
+			days = 3650 # 10 years
+		}
+		ordered_character = { # Save relevant successor 
+			limit = {
+				age >= 16
+				loyalty <= 65
+				prisoner = no
+				is_primary_heir = no
+				NOT = { has_same_family = root.current_ruler }
+				OR = {
+					char_is_clever_trigger = yes
+					martial >= 6
+					finesse >= 6
+					charisma >= 6
+					zeal >= 6				
+				}
+				NOT = { has_any_illness_trigger = yes }
+			}
+			order_by = prominence
+			save_scope_as = tyrant_usurper
+			hidden_effect = {
+				add_martial = 5
+				add_trait = ambitious
+			}			
+		}
+
+	option = { # To the dungeons
+		name = "tyrannic_monarchy_event.4.a"
+		highlight = yes		
+		change_government = tyrannic_monarchy
+		set_as_ruler = scope:tyrant_usurper # Plotter crowned
+		imprison = { # Imprison old ruler
+			target = current_ruler
+		}
+		add_tyranny = subtract_tyranny_medium # Tyrant removed
+		add_legitimacy = subtract_legitimacy_large # Swapping kings like socks
+	}
+	
+	option = { # Here ends the [SCOPE.sChar('old_tyrant_heir').GetFamilyDisplayAdjective] dynasty...
+		name = "tyrannic_monarchy_event.4.b"
+		change_government = tyrannic_monarchy
+		set_as_ruler = scope:tyrant_usurper # Plotter crowned
+		current_ruler = { # Old ruler executed
+			death = {
+				death_reason = death_execution
+				killer = scope:tyrant_usurper
+			}
+		}
+		hidden_effect = {
+			every_character = { # Kill ruler's whole family
+				limit = {
+					trigger_if = {
+						limit = {
+							employer.current_ruler = {
+								is_minor_character = no
+							}
+						}
+						from_ruler_family = yes
+					}
+					is_alive = yes
+					employer = root
+				}
+				death = {
+					death_reason = death_execution
+					killer = scope:tyrant_usurper
+				}
+			}
+		}
+		custom_tooltip = tyrannic_monarchy_event.4.bt
+		remove_stability_effect = yes # Stability hit
+		add_tyranny = tyranny_large # Tyranny murdered a whole bunch of people
+		add_legitimacy = subtract_legitimacy_huge # Legitimacy stole throne and even worse
+	}
+
+	option = { # Make primary heir ruler
+		name = "tyrannic_monarchy_event.4.c"
+		change_government = stratocratic_monarchy
+		custom_tooltip = tyrannic_monarchy_event.4.ct	
+		hidden_effect = {
+			set_as_ruler = primary_heir # Crown primary heir	
+		}
+		add_stability_effect = yes # stability offset
+		add_legitimacy = legitimacy_large # Legitimate heir of tyrant
+	}
+
+	option = { #
+		name = "tyrannic_monarchy_event.4.d"
+		custom_tooltip = tyrannic_monarchy_event.4.dt
+		trigger = { # Male ruler has some martial
+			current_ruler = {
+				is_female = no
+				OR = {
+					has_trait = lunatic
+					has_trait = reckless
+					martial >= 5
+				}
+			}
+		}
+		current_ruler = { add_trait = reckless }
+		add_tyranny = subtract_tyranny_large # Tyranny got rid of tyrant
+		add_legitimacy = legitimacy_medium # Legitimacy tyrant really was a piece of work
+		hidden_effect = {
+			random_list = { #Outcome of mad melee
+				40 = {
+					scope:tyrant_usurper = { # Plotter dies
+						death = {
+							death_reason = death_tribal_duel
+							killer = current_ruler
+						}
+					}
+				}
+				40 = {
+					change_government = tyrannic_monarchy
+					current_ruler = { # Ruler dies
+						death = {
+							death_reason = death_tribal_duel
+							killer = scope:tyrant_usurper
+						}
+					}
+				}
+				20 = {
+					change_government = stratocratic_monarchy
+					scope:tyrant_usurper = { # Everybody dies...
+						death = {
+							death_reason = death_tribal_duel
+							killer = current_ruler
+						}
+					}
+					current_ruler = {
+						death = {
+							death_reason = death_tribal_duel
+							killer = scope:tyrant_usurper
+							}
+						}
+					}
+				}		
+			}		
+		}
+	}
+}	

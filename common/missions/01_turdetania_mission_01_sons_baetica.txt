@@ -1,0 +1,881 @@
+﻿turdetanian_mission_01_sons_baetica_inv = {
+	icon = cde_greek_house
+	header = mission_image_generic_greek
+
+	repeatable = no
+
+	chance = {
+		factor = 10
+	}
+
+	ai_chance = { factor = 10 }
+
+	potential = {
+    	primary_culture = turdetanian
+    	NOT = { has_variable = turdetanian_mission_01_sons_baetica_cooldown }
+		NOT = { tag = TAT }
+    }
+
+	abort = {
+		OR = {
+			ai_mission_back_out_trigger = yes
+			any_country = {
+				NOT = {
+					has_variable = doing_turdetanian_mission_01_sons_baetica
+				}
+				tag = TAT
+			}
+		}
+	}
+
+	on_start = {
+    	start_mission_ai_effect = yes
+	    set_variable = doing_turdetanian_mission_01_sons_baetica
+		capital_scope = {
+			save_scope_as = turdetanian_01_capital_scope
+		}
+    }
+
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = turdetanian_mission_01_sons_baetica_cooldown
+            days = 7300
+        }
+		turdetanian_mission_01_sons_baetica_inv_variable_cleanup_effect = yes
+    }
+ 
+	on_completion = {
+		complete_mission_effect = yes
+		change_country_name = TURDETANIA_NAME
+		add_3_free_province_investments = yes
+        hidden_effect = {
+			turdetanian_mission_01_sons_baetica_inv_variable_cleanup_effect = yes
+			change_country_adjective = TURDETANIA_ADJECTIVE
+		}
+	}
+	
+	turdetania_01_generic_inv_task_1 = { # The Turdetanian Struggle
+		icon = task_political
+		duration = 60
+
+		requires = {}
+
+		allow = {}
+		
+		on_start = {
+			trigger_event = { id = me_turdetania_1_generic.1 }
+		}
+		
+		on_completion = {
+			custom_tooltip = turdetania_01_generic_inv_task_1_tooltip
+			trigger_event = me_turdetania_1_generic.4
+		}
+	}
+
+	turdetania_01_generic_inv_task_2 = { # Show of Force
+		icon = task_conquest
+
+		requires = { turdetania_01_generic_inv_task_1 }
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = couneia_area
+					is_in_area = turdetania_occidentalis_area
+					is_in_area = baetica_hispalensis_area
+					is_in_area = baetica_cordubensis_area
+					is_in_area = gaditanus_area
+					is_in_area = malacita_area
+				}
+				has_city_status = yes
+			}
+		}
+
+		allow = {
+            custom_tooltip = {
+                text = turdetania_01_generic_inv_task_2_tooltip
+                turdetania_01_generic_inv_task_2_owned_cities_current >= 4
+            }
+        }
+
+		on_completion = {
+			show_as_tooltip = {
+				current_ruler = {
+					add_popularity = 15
+				}
+			}
+			trigger_event = me_turdetania_1_generic.5
+		}
+	}
+
+	turdetania_01_generic_inv_task_3 = { # Control the River
+		icon = task_expansion
+
+		requires = { turdetania_01_generic_inv_task_2 }
+
+		allow = {
+			custom_tooltip = {
+                text = turdetania_01_generic_inv_task_3_tooltip
+                turdetania_01_generic_inv_task_3_owned_territories_current >= 30
+            }
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				#Something like a Capital Modifier
+			}
+			trigger_event = me_turdetania_1_generic.6
+		}
+	}
+	
+	turdetania_01_generic_inv_task_4 = { # Develop Trade Relations
+		icon = task_diplomatic
+
+		requires = { }
+		
+		highlight = {
+			scope:province = { this = ROOT.capital_scope }
+		}
+		
+		allow = {
+			hidden:capital_scope = {
+				trigger_if = {
+					limit = {
+						ROOT = { is_ai = no }
+					}
+					has_city_status = yes
+					has_building = commerce_building
+					custom_tooltip = {
+						text = turdetania_01_generic_inv_task_4_population_trigger_tt
+						turdetania_01_generic_inv_task_4_population_current >= turdetania_01_generic_inv_task_4_population_total
+					}
+					free_building_slots < 1
+					has_construction = no	
+				}
+				trigger_else = {
+					OR = {
+						has_city_status = yes
+						ROOT = { can_pay_price = price_found_city }
+					}
+				}
+			}
+			hidden:capital_scope = {
+				hidden:state = {
+					state_improvement_oratory_trigger = yes
+				}
+			}
+		}
+		
+		on_completion = {
+			ai_build_city_pay_price_effect = { CITY = capital_scope } # AI fallback.
+			trigger_event = { id = me_turdetania_1_generic.7 }
+			show_as_tooltip = {
+				capital_scope = {
+					create_state_pop = citizen
+					create_state_pop = freemen
+					add_province_modifier = {
+						name = turdetanian_trade_networks_developed
+						duration = 7300
+					}
+				}
+				add_1_free_province_investments = yes
+			}
+		}
+	}
+	
+	turdetania_01_generic_inv_task_5 = { #Establish control on Upper Baetica
+		icon = task_conquest
+
+		requires = { turdetania_01_generic_inv_task_2 }
+
+		highlight = {
+			scope:province = {
+				is_in_area = baetica_cordubensis_area
+				NOT = { 
+					owner = c:ORT
+					owner = c:TDL
+					owner = c:GRM
+				}
+			}
+		}
+		
+		bypass = {
+			c:ORT = { owns_or_subject_owns_area = baetica_cordubensis_area }
+		}
+
+		allow = {
+			custom_tooltip = {
+				text = turdetania_01_generic_inv_task_5_tooltip_a
+				area:baetica_cordubensis_area = {
+					any_area_province = {
+						limit = {
+							NOT = { 
+								owner = c:ORT
+								owner = c:TDL
+								owner = c:GRM
+							}
+						}
+						OR = {
+							has_owner = no
+							owned_or_subject_owned = root
+						}
+					}
+				}
+				owns = 1377
+			}
+			hidden:p:1377 = {
+				trigger_if = {
+					limit = {
+						ROOT = { is_ai = no }
+					}
+					has_city_status = yes
+					has_building = commerce_building
+					custom_tooltip = {
+						text = turdetania_01_generic_inv_task_5_population_trigger_tt
+						turdetania_01_generic_inv_task_5_population_current >= turdetania_01_generic_inv_task_5_population_total
+					}
+				}
+				trigger_else = {
+					OR = {
+						has_city_status = yes
+						ROOT = { can_pay_price = price_found_city }
+					}
+				}
+			}
+			
+		}
+
+		on_completion = {			
+			ai_build_city_pay_price_effect = { CITY = capital_scope } # AI fallback.
+			trigger_event = me_turdetania_1_generic.8
+			show_as_tooltip = {
+				p:1377 = {
+					add_province_modifier = {
+						name = turdetanian_capital_upper_turdetania
+						duration = -1
+					}
+				}
+			}
+		}
+	}
+	
+	turdetania_01_generic_inv_task_6 = { # Oretanian Royal Marriage
+		icon = task_diplomatic
+		
+		requires = { turdetania_01_generic_inv_task_5 }
+		
+		allow = {
+        	OR = {
+        		alliance_with = c:ORT
+        		hidden:c:ORT = {
+        			opinion = {
+        				target = root
+        				value >= 100
+        			}
+        		}
+                hidden:c:ORT = {
+                    is_guaranteed_by = root
+                }
+        	}
+        }
+		
+		highlight = {
+			scope:province = {
+				exists = c:ORT
+				owner = c:ORT
+			}
+        }
+		
+		bypass = {
+        	OR = {
+        		NOT = { exists = c:ORT }
+        		c:ORT = {
+        			has_land = no
+        		}
+        	}
+        }
+		
+		on_completion = {
+			trigger_event = me_turdetania_1_generic.9
+			custom_tooltip = turdetania_01_generic_inv_task_6_tooltip
+		}
+	}
+	
+	turdetania_01_generic_inv_task_7 = { # Embellishing the Capital
+		icon = task_diplomatic
+
+		requires = { turdetania_01_generic_inv_task_5 }
+		
+		highlight = {
+			scope:province = { this = ROOT.capital_scope }
+		}
+		
+		allow = {
+			hidden:capital_scope = {
+				calc_true_if = {
+					amount >= 2 
+					has_building = library_building
+					has_building = academy_building
+					has_building = aqueduct_building
+				}
+			}
+			hidden:capital_scope = {
+				custom_tooltip = {
+					text = turdetanian_generic_brings_stone_tooltip
+					OR = {
+						state = {
+							any_state_province = {
+								trade_goods = stone
+							}
+						}
+						is_importing_trade_good = stone
+					}
+				}
+			}
+			hidden:capital_scope = {
+				custom_tooltip = {
+					text = turdetanian_generic_brings_marble_tooltip
+					OR = {
+						state = {
+							any_state_province = {
+								trade_goods = marble
+							}
+						}
+						is_importing_trade_good = marble
+					}
+				}
+			}
+			hidden:capital_scope = {
+				hidden:state = {
+					calc_true_if = {
+						amount >= 2 
+						state_improvement_military_trigger = yes
+						state_improvement_civic_trigger = yes
+						state_improvement_oratory_trigger = yes
+						state_improvement_religious_trigger = yes
+					}
+				}
+			}
+		}
+		
+		on_completion = {
+			show_as_tooltip = {
+				add_2_free_province_investments = yes
+				capital_scope = {
+					create_state_pop = citizen
+					create_state_pop = citizen
+					add_permanent_province_modifier = {
+						name = turdetanian_center_of_culture
+						duration = -1
+					}
+				}
+			}
+			trigger_event = me_turdetania_1_generic.13
+		}
+	}
+	
+	turdetania_01_generic_inv_task_8 = { # Turdetanum Agrum
+		icon = task_economical
+
+		requires = { turdetania_01_generic_inv_task_4 }
+		
+		highlight = {
+			scope:province = {
+				owner = root
+				OR = {
+					is_in_area = couneia_area
+					is_in_area = turdetania_occidentalis_area
+					is_in_area = baetica_hispalensis_area
+					is_in_area = baetica_cordubensis_area
+					is_in_area = gaditanus_area
+					is_in_area = malacita_area
+				}
+				OR = {
+					trade_goods = grain
+					trade_goods = vegetables
+					trade_goods = fish
+					trade_goods = cattle
+				}
+			}
+		}
+		
+		allow = {
+            custom_tooltip = {
+                text = turdetania_01_generic_inv_task_8_tooltip
+                turdetania_01_generic_inv_task_8_owned_farming_settlements_current >= 4
+            }
+        }
+		
+		on_completion = {
+			trigger_event = me_turdetania_1_generic.14
+			show_as_tooltip = {
+				ordered_owned_province = {
+					limit = {
+						has_building = basic_settlement_infratructure_building
+					}
+					order_by = total_population
+					max = 6
+					add_permanent_province_modifier = {
+						name = turdetanian_farms
+					}
+				}
+			}
+		}
+	}
+	
+	turdetania_01_generic_inv_task_9 = { #'Country' Hegemony
+		icon = task_atlas
+		final = yes
+
+		requires = {
+			turdetania_01_generic_inv_task_7 turdetania_01_generic_inv_task_3 turdetania_01_generic_inv_task_16
+		}
+
+		allow = {
+			
+		}
+
+		on_completion = { 
+			trigger_event = me_turdetania_1_generic.15
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = turdetanian_hegemony_modifier
+					duration = -1
+				}
+			}
+		}
+	}
+	
+	turdetania_01_generic_inv_task_10 = { # A Bull for the Gods
+		icon = task_artemis
+
+		requires = { turdetania_01_generic_inv_task_8 }
+
+		highlight = {
+			scope:province = {
+				province_id = 1377
+			}
+        }
+
+		allow = {
+			treasury >= 35
+			owns_or_subject_owns = 1377
+			hidden:p:1377 = {
+				dominant_province_religion = animism
+				is_importing_trade_good = stone
+				has_city_status = yes
+				is_holy_site = yes
+			}
+		}
+
+		on_completion = {
+			add_treasury = -35
+			create_country_treasure = {
+				key = "treasure_turdetanian_ceremonial_bull"
+				icon = "treasure_it_gurzil_magical_bull" 
+				modifier = {
+					local_manpower_modifier = 0.05
+					local_defensive = 0.05
+				}
+			}
+			trigger_event = me_turdetania_1_generic.16
+		}
+	}
+
+	turdetania_01_generic_inv_task_11 = { # The Harvest Festival
+		icon = task_religion
+		duration = 30
+
+		requires = { turdetania_01_generic_inv_task_8 }
+
+		allow = {
+			treasury >= 200
+			war = no
+			hidden:capital_scope = {
+				custom_tooltip = {
+					text = turdetanian_generic_brings_horses_tooltip
+					OR = {
+						state = {
+							any_state_province = {
+								trade_goods = horses
+							}
+						}
+						is_importing_trade_good = horses
+					}
+				}
+			}
+			hidden:capital_scope = {
+				custom_tooltip = {
+					text = turdetanian_generic_brings_wine_tooltip
+					OR = {
+						state = {
+							any_state_province = {
+								trade_goods = wine
+							}
+						}
+						is_importing_trade_good = wine
+					}
+				}
+			}
+			custom_tooltip = {
+                text = turdetania_01_generic_inv_task_11_tooltip_a
+                any_character = {
+					OR = {
+						has_office = office_high_priest_monarchy
+						has_office = office_high_priest
+						has_office = office_augur
+					}
+                    zeal >= 9
+                }
+            }
+			custom_tooltip = {
+				text = turdetania_01_generic_inv_task_11_tooltip_b
+				has_global_variable = harvest_summer_var
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				province_id = 358
+			}
+        }
+		
+		on_start = {
+			trigger_event = me_turdetania_1_generic.17
+			show_as_tooltip = {
+				add_treasury = -200
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				current_ruler = {
+					add_zeal = 1
+				}
+			}
+			custom_tooltip = turdetania_01_generic_inv_task_11_tooltip_c
+		}
+	}
+	
+	turdetania_01_generic_inv_task_12 = { # Punic Relations
+		icon = task_diplomatic
+
+		requires = { }
+		
+		allow = {
+			custom_tooltip = {
+                text = turdetania_01_generic_inv_task_12_tooltip
+				any_country = {
+                    NOT = { this = root }
+                    primary_culture = carthaginian
+				    in_diplomatic_range = ROOT
+					opinion = {
+						target = root
+						value >= 35
+					}
+                }
+            }
+		}
+		
+		on_completion = {
+			trigger_event = me_turdetania_1_generic.21
+			show_as_tooltip = {
+				random_country_culture = {
+					limit = { THIS.culture = c:CAR.culture }
+					add_country_culture_modifier = {
+						name = "friendly_to_punics_modifier"
+						duration = 3650
+					}
+				}
+			}
+		}
+	}
+	
+	turdetania_01_generic_inv_task_13 = { # The Punics in our country
+		icon = task_political
+
+		requires = { turdetania_01_generic_inv_task_12 }
+
+		allow = {
+			has_law = syncretization_law_tribal
+			custom_tooltip = {
+				text = turdetania_01_generic_inv_task_13_tooltip
+				any_country_culture = {
+					is_culture = carthaginian
+					is_integrated = yes
+				}
+			}
+		}
+	
+		on_completion = {
+			trigger_event = me_turdetania_1_generic.23
+			show_as_tooltip = {
+				add_research = {
+					technology = military_tech
+					value = 20
+				}
+				add_research = {
+					technology = civic_tech
+					value = 20
+				}
+				add_research = {
+					technology = oratory_tech
+					value = 20
+				}
+				add_research = {
+					technology = religious_tech
+					value = 20
+				}
+			}
+			
+		}
+	}
+	
+	turdetania_01_generic_inv_task_14 = { # Melqart and Astarte
+		icon = task_political
+		duration = 30
+		
+		requires = { turdetania_01_generic_inv_task_13 }
+
+		allow = {
+			stability >= 55
+			has_deity_in_pantheon = deity:omen_melqart
+			has_deity_in_pantheon = deity:omen_astarte
+		}
+		
+		bypass = {
+			RELIGION = carthaginian_pantheon
+		}
+		
+		on_start = {
+            trigger_event = me_turdetania_1_generic.25
+        }
+		
+		on_completion = {
+			complete_mission_effect = yes
+			create_character = {
+                age = 28
+                culture = carthaginian
+                religion = carthaginian_pantheon
+                no_traits = yes
+                no_stats = yes
+                hidden_effect = {
+                    add_character_modifier = {
+                        name = punic_priest_char_modifier
+                        duration = -1
+                    }
+                    average_martial_effect = yes
+                    good_charisma_effect = yes
+                    average_finesse_effect = yes
+                    amazing_zeal_effect = yes
+                    add_trait = pious
+                    good_zeal_trait_effect = yes
+                    good_charisma_trait_effect = yes
+                }
+                save_scope_as = punic_priest_character
+            }
+            set_variable = {
+                name = punic_priest_character_scope_variable
+                value = scope:punic_priest_character
+            }
+			show_as_tooltip = {
+				add_stability = 10
+			}
+			trigger_event = me_turdetania_1_generic.28
+		}
+	}
+	
+	turdetania_01_generic_inv_task_15 = { # Embrace Canaanite Faith
+		icon = task_political
+
+		requires = { turdetania_01_generic_inv_task_14 }
+
+		allow = {
+			political_influence >= 15
+			trigger_if = {
+                limit = {
+                    is_ai = no
+                    has_variable = punic_priest_character_scope_variable
+                    var:punic_priest_character_scope_variable = {
+                        is_alive = yes
+                    }
+                }
+                hidden:var:punic_priest_character_scope_variable = {
+                    trigger_if = {
+                        limit = {
+                            root = { is_monarchy = yes }
+                        }
+                        has_office = office_high_priest_monarchy
+                    }
+                    trigger_if = {
+                        limit = {
+                            root = { is_republic = yes }
+                        }
+                        has_office = office_pontifex
+                    }
+                    trigger_if = {
+                        limit = {
+                            root = { is_tribal = yes }
+                        }
+                        has_office = office_high_priest
+                    }
+                    custom_tooltip = {
+                        text = turdetania_01_generic_inv_task_15_tooltip_a
+                        loyalty >= 75
+                    }
+                }
+            }
+            trigger_else = {
+                trigger_if = {
+                    limit = {
+                        is_monarchy = yes
+                    }
+                    custom_tooltip = {
+                        text = turdetania_01_generic_inv_task_15_tooltip_b
+                        always = no
+                    }
+                }
+                trigger_else_if = {
+                    limit = {
+                        is_republic = yes
+                    }
+                    custom_tooltip = {
+                        text = turdetania_01_generic_inv_task_15_tooltip_c
+                        always = no
+                    }
+                }
+                trigger_else_if = {
+                    limit = {
+                        is_tribal = yes
+                    }
+                    custom_tooltip = {
+                        text = turdetania_01_generic_inv_task_15_tooltip_d
+                        always = no
+                    }
+                }
+            }
+		}
+		
+		bypass = {
+            OR = {
+                NOT = { has_variable = punic_priest_character_scope_variable }
+                var:punic_priest_character_scope_variable = { is_alive = no }
+                is_ai = yes
+				RELIGION = carthaginian_pantheon
+            }
+        }
+
+		on_completion = { 
+			trigger_event = me_turdetania_1_generic.26
+			add_stability = 15
+        	add_political_influence = 150
+			show_as_tooltip = {
+				change_religion_effect = {
+					RELIGION = carthaginian_pantheon
+				}
+			}
+		}
+	}
+	
+	turdetania_01_generic_inv_task_16 = { # Stabilice the Country
+		icon = task_political
+
+		requires = { turdetania_01_generic_inv_task_14 }
+
+		allow = {
+			stability >= 65
+			OR = {
+				has_law = absolute_authority
+				has_law = increased_council_powers
+			}
+		}
+		
+		bypass = {
+			is_tribal = no
+		}
+	
+		on_completion = {
+			trigger_event = me_turdetania_1_generic.27
+			show_as_tooltip = {
+				add_political_influence = 50
+			}
+			custom_tooltip = turdetania_01_generic_inv_task_16_tooltip
+		}
+	}
+	
+	turdetania_01_generic_inv_task_17 = { # Turdetanum Metallum
+		icon = task_economical
+
+		requires = { turdetania_01_generic_inv_task_4 }
+		
+		highlight = {
+			scope:province = {
+				owner = root
+				OR = {
+					is_in_area = couneia_area
+					is_in_area = turdetania_occidentalis_area
+					is_in_area = baetica_hispalensis_area
+					is_in_area = baetica_cordubensis_area
+					is_in_area = gaditanus_area
+					is_in_area = malacita_area
+				}
+				OR = {
+					trade_goods = iron
+					trade_goods = base_metals
+				}
+			}
+		}
+		
+		allow = {
+            custom_tooltip = {
+                text = turdetania_01_generic_inv_task_17_tooltip
+                turdetania_01_generic_inv_task_17_owned_mines_current >= 4
+            }
+        }
+		
+		on_completion = {
+			trigger_event = me_turdetania_1_generic.29
+			show_as_tooltip = {
+				add_treasury = 300
+				add_country_modifier = {
+					name = turdetanian_metal_production_boom_modifier
+					duration = 9125
+				}
+				capital_scope = {
+					create_state_pop = slaves
+					create_state_pop = slaves
+				}
+			}
+		}
+	}
+	
+	turdetania_01_generic_inv_task_18 = { # Turdetanian Coallition
+		icon = task_political
+
+		requires = { }
+		
+		allow = {
+			custom_tooltip = {
+				text = turdetania_01_generic_inv_task_18_tooltip_a
+				any_current_war = {
+					is_war_leader = c:CAR
+					is_war_leader = ROOT
+					any_war_attacker = { this = c:CAR }
+				}
+				root = {
+					NOT = {
+						rank = major_power
+						rank = great_power
+					}
+				}
+			}
+		}
+		
+		on_completion = {
+			trigger_event = me_turdetania_1_generic.30
+			custom_tooltip = turdetania_01_generic_inv_task_18_tooltip_b
+		}
+	}
+	
+}

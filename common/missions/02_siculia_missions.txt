@@ -1,0 +1,1351 @@
+﻿01_siculia_missions = {
+	header = "mission_greek_villiage"
+	icon = general_3
+
+	repeatable = no
+	chance = {
+		factor = 20
+	}
+
+	potential = {
+		NOT = { has_variable = mission_cooldown_var }
+		is_subject = no
+		has_civil_war = no
+		tag = SCU
+	}
+
+	abort = {
+		ai_mission_back_out_trigger = yes
+	}
+	on_start = {
+		trigger_event = me_siculia.0
+		start_mission_ai_effect = yes
+		p:86 = { save_scope_as = acragas_province }
+	}
+	on_abort = {
+		custom_tooltip = general_mission_cooldown_tt
+		set_variable = {
+			name = mission_cooldown_var
+			days = 7300
+		}
+	}
+	on_completion = {
+		complete_mission_effect = yes
+		add_2_free_province_investments = yes
+		capital_scope = {
+			capital_formable_small_effect = yes
+		}
+	}
+
+	01_siculia_missions_task_1 = { #Prepare for War
+		icon = "task_atlas"
+	
+		allow = {
+			invention = experience_decay_inv_1
+			#area:east_sicily_area = {
+			hidden:p:89.state = {
+				OR = {
+					trade_good_surplus = { target = iron value >= 1 }
+					trade_good_surplus = { target = base_metals value >= 1 }
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = siculia_prepared_for_war
+					duration = 5475 # 15 years
+				}
+			}
+			trigger_event = me_siculia.1
+		}
+	}
+
+	01_siculia_missions_task_6 = { #Save Funds for Mercenaries
+		icon = "task_economical"
+		requires = { 01_siculia_missions_task_1 }
+		allow = {
+			treasury >= 215
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = siculia_saved_for_mercenaries
+					duration = 5475 # 15 years
+				}
+			}
+			#add_country_modifier = {
+			#	name = siculia_saved_for_mercenaries
+			#	duration = 5475 # 15 years
+			#}
+			trigger_event = me_siculia.6
+		}
+	}
+
+	01_siculia_missions_task_2 = { #Seek alliances
+		icon = "task_diplomatic"
+		#duration = 90
+	
+		allow = {
+			custom_tooltip = {
+				text = 01_siculia_missions_task_2_allies_tt
+				any_country = {
+					count >= 2
+					alliance_with = root
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = siculia_made_allies
+					duration = 5475 # 15 years
+				}
+			}
+			trigger_event = me_siculia.2
+		}
+	}
+
+	01_siculia_missions_task_3 = { #Strike Acragas
+		icon = "task_conquest"
+		duration = 31
+
+		requires = { 01_siculia_missions_task_1 }
+	
+		allow = {
+			political_influence >= 15
+
+			area:syracuse_area = {
+				p:86 = {
+					owned_or_subject_owned = c:ACR
+				}
+			}
+			c:ACR = {
+				is_subject = no
+			}		
+		}
+
+
+		highlight = {
+			scope:province = {
+				province_id = 86
+			}
+		}
+
+		bypass = {
+			owns_or_subject_owns = 86
+		}
+
+		on_completion = {
+			custom_tooltip = 01_siculia_missions_task_3_war_tt
+			add_political_influence = -15
+			trigger_event = { id = me_siculia.3 }
+			#p:86 = {
+			#	add_claim = root
+			#}
+			#area:syracuse_area = {
+			#	add_provincial_claim_effect = yes
+			#}
+		}
+	}
+
+	01_siculia_missions_task_5 = { #Betray Calactea
+		icon = "task_expansion"
+		duration = 31
+
+		requires = { 01_siculia_missions_task_1 }
+	
+		allow = {
+			political_influence >= 15
+
+			area:syracuse_area = {
+				p:100 = {
+					owned_or_subject_owned = c:CLA
+				}
+			}
+			c:CLA = {
+				is_subject = no
+			}
+			#root = {
+			#	defensive_league_with = c:CLA
+			#}
+			
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 100
+					province_id = 98
+					province_id = 99	
+					province_id = 1472
+				}
+			}
+		}
+
+		bypass = {
+			owns_or_subject_owns = 100
+		}
+
+		on_completion = {
+			add_political_influence = -15
+			trigger_event = { id = me_siculia.5 }
+			custom_tooltip = 01_siculia_missions_task_5_war_tt
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = siculia_betrayed_calactea_and_tyndaria
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+
+
+
+
+	01_siculia_missions_task_4 = { #War with Syracuse
+		icon = "task_battle"
+
+		requires = {
+			#01_siculia_missions_task_1
+			01_siculia_missions_task_6
+			01_siculia_missions_task_2
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 82
+					province_id = 84
+					province_id = 85	
+					province_id = 80
+				}
+			}
+		}
+	
+		allow = {
+			is_subject = no
+			has_civil_war = no
+			c:SYR = {
+				OR = {
+					any_owned_province = {
+						is_in_area = syracuse_area
+					}
+					any_owned_province = {
+						is_in_area = east_sicily_area
+					}
+				}
+			}
+			NOT = {
+				war_with = c:SYR
+			}
+		}
+
+		bypass = { #Bypass if Syracuse is kicked out of Sicily
+			OR = {
+				war_with = c:SYR
+				AND = {
+					NOT = {
+						any_owned_province = {
+							is_in_area = syracuse_area
+						}
+					}
+					NOT = {
+						any_owned_province = {
+							is_in_area = east_sicily_area
+						}
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = 01_siculia_missions_task_4_war_tt
+			trigger_event = me_siculia.4
+		}
+	}
+
+	01_siculia_missions_task_7 = { #War with Carthage
+		icon = "task_expansion"
+
+		requires = {
+			#01_siculia_missions_task_1
+			01_siculia_missions_task_6
+			01_siculia_missions_task_2
+		}
+	
+		allow = {
+			is_subject = no
+			has_civil_war = no
+			c:CAR = {
+				any_owned_province = {
+					is_in_area = west_sicily_area
+				}
+			}
+			NOT = {
+				war_with = c:CAR
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = west_sicily_area
+				}
+			}
+		}
+
+		bypass = { #Bypass if Carthage is kicked out of Sicily
+			OR = {
+				war_with = c:CAR
+				NOT = {
+					c:CAR = {
+						any_owned_province = {
+							is_in_area = west_sicily_area
+						}
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = 01_siculia_missions_task_7_war_tt
+			trigger_event = me_siculia.7
+		}
+	}
+
+
+
+
+
+	01_siculia_missions_task_8 = { #Victory over Syracuse
+		icon = "task_happiness"
+		#duration = 90
+		requires = { 01_siculia_missions_task_4 }
+	
+		allow = {
+			owns_or_subject_owns = 84
+			owns_or_subject_owns = 85
+			owns_or_subject_owns = 7840
+			owns_or_subject_owns_area = east_sicily_area
+		}
+
+		on_completion = {
+		trigger_event = me_siculia.8
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = siculia_victory_over_syracuse
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+
+	01_siculia_missions_task_10 = { #Raize Syracusai to the Ground
+		icon = "task_dying_gaul"
+		duration = 5
+		requires = { 01_siculia_missions_task_8 }
+	
+		allow = {
+			owns_or_subject_owns = p:84
+			#p:84 = { has_city_status = yes }
+			NOT = { religion = roman_pantheon }
+			#NOT = {
+			#	p:84 = {
+			#		has_province_modifier = province_improvement_merciful_conqueror
+			#	}
+			#}
+			custom_tooltip = {
+				text = 01_siculia_missions_task_10_tt
+				NOT = {
+					any_country_culture = {
+						is_integrated = yes
+						this.culture  = culture:syracusan
+					}
+
+				}
+			}
+			
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 84
+				}
+			}
+		}
+
+		#bypass = { #Bypass if city has been manually destroyed
+		#	p:84 = {
+		#		has_city_status = no
+		#	}	
+		#}
+
+		prevented_by = { 01_siculia_missions_task_11 }
+
+		on_completion = {
+			custom_tooltip = 01_siculia_missions_task_10_effect_tt
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = siculia_razed_syracuse
+					duration = 5475 # 15 years
+				}
+			}
+			trigger_event = me_siculia.10
+		}
+	}
+
+	01_siculia_missions_task_11 = { #Spare the City
+		icon = "task_diplomatic"
+		#duration = 90
+		requires = { 01_siculia_missions_task_8 }
+	
+		allow = {
+			owns_or_subject_owns = p:84
+			p:84 = { has_city_status = yes }
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 84
+				}
+			}
+		}
+
+		prevented_by = { 01_siculia_missions_task_10 }
+
+		on_completion = {
+			trigger_event = me_siculia.11
+		}
+	}
+
+	01_siculia_missions_task_12 = { #Rebuild Palice
+		icon = "task_economical"
+		duration = 360
+		requires = { 01_siculia_missions_task_8 }
+
+		bypass = { #Bypass if city already exists on province
+			p:7840 = {
+				has_city_status = yes
+			}	
+		}
+	
+		allow = {
+			owns = 7840
+			treasury >= 100
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 7840
+				}
+			}
+		}
+
+		on_start = {
+			add_treasury = -100
+		}
+
+		on_completion = {
+			p:7840 = {
+				found_city_effect = yes
+				change_province_name = "Palice"
+				custom_tooltip = 01_siculia_missions_task_12_tt2
+				hidden_effect = {
+					create_state_pop = citizen
+					create_state_pop = citizen
+					create_state_pop = freemen
+					create_state_pop = freemen
+					create_state_pop = freemen
+					create_state_pop = freemen
+				}
+			}
+			custom_tooltip = 01_siculia_missions_task_12_tt
+			trigger_event = me_siculia.12 #Will allow a player to relocate capital
+		}
+	}
+
+	01_siculia_missions_task_9 = { #Victory over Carthage
+		icon = "task_calm"
+		#duration = 90
+		requires = { 01_siculia_missions_task_7 }
+	
+		allow = {
+			owns_or_subject_owns_area = west_sicily_area
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_area = west_sicily_area
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = me_siculia.9
+			show_as_tooltip = {
+				area:west_sicily_area = {
+					random_area_province = {
+							state = {
+								add_state_modifier = {
+									name = trade_investments_province
+									duration = -1
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	01_siculia_missions_task_21 = { #Sicily United
+		icon = "task_heracles"
+		#duration = 90
+		requires = { 01_siculia_missions_task_9 01_siculia_missions_task_8 }
+	
+		allow = {
+			custom_tooltip = {
+				text = 01_siculia_missions_task_21_tt
+				tag = SII
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 80 #Messana
+					province_id = 84 #Syracuse
+					province_id = 86 #Acragas
+					province_id = 94 #Lilybaeum
+					province_id = 88 #Murgantia
+					province_id = 96 #Panormus
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = me_siculia.21
+			add_country_modifier = {
+				name = siculia_unified_sicily
+				duration = -1 # Lasts Forever
+			}
+		}
+	}
+
+
+	01_siculia_missions_task_13 = { #Preserve Our Traditions (Italic)
+		icon = "task_religion"
+		#duration = 90
+		requires = { 01_siculia_missions_task_10 }
+
+		prevented_by = {
+			01_siculia_missions_task_15
+			01_siculia_missions_task_11
+		}
+	
+		allow = {
+			trigger_if = {
+				limit = { is_tribal = yes }
+				job_holder:office_high_priest = {
+					has_religion = italic_pantheon
+					zeal >= 8
+				}
+			}
+			trigger_if = {
+				limit = { is_monarchy = yes }
+				job_holder:office_high_priest_monarchy = {
+					has_religion = italic_pantheon
+					zeal >= 8
+				}
+			}
+			trigger_if = {
+				limit = { is_republic = yes }
+				job_holder:office_augur = {
+					has_religion = italic_pantheon
+					zeal >= 8
+				}
+			}
+			custom_tooltip = {
+				text = 01_siculia_missions_task_10_tt
+				NOT = {
+					any_country_culture = {
+						is_integrated = yes
+						this.culture  = culture:syracusan
+					}
+
+				}
+			}
+			
+		}  
+
+
+		prevented_by = {
+			01_siculia_missions_task_14
+			01_siculia_missions_task_15
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = siculia_traditions_enforced
+					duration = 5475 # 15 years
+				}
+			}
+			trigger_event = me_siculia.13
+		}
+	}
+
+	01_siculia_missions_task_19 = { #Revive Matriarchal Customs
+		icon = "task_artemis"
+		#duration = 90
+		requires = { 01_siculia_missions_task_13 }
+
+		prevented_by = {
+			01_siculia_missions_task_15
+			01_siculia_missions_task_11
+		}
+	
+		allow = {
+			stability > 50
+			political_influence >= 40
+			custom_tooltip = {
+				text = 01_siculia_missions_task_10_tt
+				NOT = {
+					any_country_culture = {
+						is_integrated = yes
+						this.culture  = culture:syracusan
+					}
+
+				}
+			}
+		}
+
+		on_completion = {
+			set_gender_equality = yes
+			add_political_influence = -40
+			add_stability = -25
+			trigger_event = me_siculia.19
+		}
+	}
+
+	01_siculia_missions_task_26 = { #Enforce Our Language
+		icon = "task_apollo"
+		#duration = 90
+		requires = { 01_siculia_missions_task_13 }
+
+		prevented_by = {
+			01_siculia_missions_task_15
+			01_siculia_missions_task_11
+		}
+	
+		allow = {
+			capital_scope = {
+				num_of_academy_building >= 1
+			}
+			p:82 = {
+				num_of_academy_building >= 1
+			}
+			p:86 = {
+				num_of_academy_building >= 1
+			}
+			p:93 = {
+				num_of_academy_building >= 1
+			}
+			p:80 = {
+				num_of_academy_building >= 1
+			}
+			
+			#p:84 = {
+			#	dominant_province_religion = italic_pantheon
+			#}
+
+			trigger_if = {
+				limit = { is_tribal = yes }
+				job_holder:office_elder = {
+					has_culture = siculian
+					NOT = { has_religion = roman_pantheon }
+					charisma >= 6
+				}
+			}
+			trigger_if = {
+				limit = { is_monarchy = yes }
+				job_holder:office_royal_tutor = {
+					has_culture = siculian
+					NOT = { has_religion = roman_pantheon }
+					charisma >= 6
+				}
+			}
+			trigger_if = {
+				limit = { is_republic = yes }
+				job_holder:office_censor = {
+					has_culture = siculian
+					NOT = { has_religion = roman_pantheon }
+					charisma >= 6
+				}
+			}
+			custom_tooltip = {
+				text = 01_siculia_missions_task_10_tt
+				NOT = {
+					any_country_culture = {
+						is_integrated = yes
+						this.culture  = culture:syracusan
+					}
+
+				}
+			}
+
+
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 82
+					province_id = 86
+					province_id = 93
+					province_id = 80
+					AND = {
+						is_capital = yes
+						owner = root
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = siculia_embrace_siculian
+					duration = 5475 # 15 years
+				}
+			}
+			trigger_event = me_siculia.26
+		}
+	}
+
+	01_siculia_missions_task_14 = { #Follow Ducetius' Footsteps (Greek)
+		icon = "task_calm"
+		#duration = 90
+		requires = { 01_siculia_missions_task_11 }
+	
+		allow = {
+			custom_tooltip = {
+				text = 01_siculia_missions_task_14_tt
+				any_country_culture = {
+					is_integrated = yes
+					this.culture  = culture:syracusan
+				}
+			}
+		}
+
+		prevented_by = {
+			01_siculia_missions_task_10
+			01_siculia_missions_task_15
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = siculia_hellenic_synchronization
+					duration = 5475 # 15 years
+				}
+			}
+			trigger_event = me_siculia.14
+		}
+	}
+
+	01_siculia_missions_task_20 = { #Convert to Hellenic
+		icon = "task_zeus_cornucopia"
+		#duration = 90
+		requires = { 01_siculia_missions_task_14 }
+
+		prevented_by = {
+			01_siculia_missions_task_10
+			01_siculia_missions_task_15
+		}
+	
+		allow = {
+			custom_tooltip = { 
+				text = 01_siculia_missions_task_20_tt
+				religion = roman_pantheon
+			}
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = siculia_embraced_hellenic
+				duration = -1
+			}
+			trigger_event = me_siculia.20
+		}
+	}
+
+	01_siculia_missions_task_27 = { #Build Libraries
+		icon = "task_athena"
+		requires = { 01_siculia_missions_task_20 }
+
+		prevented_by = {
+			01_siculia_missions_task_10
+			01_siculia_missions_task_15
+		}
+	
+		allow = {
+			capital_scope = {
+				num_of_library_building >= 1
+			}
+			p:82 = {
+				num_of_library_building >= 1
+			}
+			p:86 = {
+				num_of_library_building >= 1
+			}
+			p:93 = {
+				num_of_library_building >= 1
+			}
+			p:80 = {
+				num_of_library_building >= 1
+			}
+			p:84 = {
+				num_of_library_building >= 1
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 82
+					province_id = 86
+					province_id = 93
+					province_id = 80
+					province_id = 84
+					AND = {
+						is_capital = yes
+						owner = root
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = siculia_built_libraries
+				duration = 5475 # 15 years
+			}
+			hidden_effect = {
+				random_list = {
+					10 = {
+						create_character = {
+							add_zeal = 8
+							add_trait = scholar
+							add_trait = wise
+							religion = roman_pantheon
+							culture = athenian
+							female = no
+							save_scope_as = siculian_hellenic_scholar
+						}
+					}
+					4 = {
+						create_character = {
+							add_zeal = 11
+							add_trait = scholar
+							add_trait = wise
+							add_trait = chaste
+							add_trait = zealous
+							religion = roman_pantheon
+							culture = athenian
+							female = no
+							save_scope_as = siculian_hellenic_scholar
+						}
+					}
+					10 = {
+						create_character = {
+							add_charisma = 8
+							add_trait = scholar
+							add_trait = wise
+							religion = roman_pantheon
+							culture = athenian
+							female = no
+							save_scope_as = siculian_hellenic_scholar
+						}
+					}
+					4 = {
+						create_character = {
+							add_charisma = 11
+							add_trait = scholar
+							add_trait = wise
+							religion = roman_pantheon
+							culture = athenian
+							female = no
+							save_scope_as = siculian_hellenic_scholar
+						}
+					}
+					4 = {
+						create_character = {
+							add_martial = 7
+							add_trait = scholar
+							add_trait = wise
+							add_trait = coward
+							add_trait = honest
+							add_trait = stubborn
+							religion = roman_pantheon
+							culture = macedonian
+							female = no
+							save_scope_as = siculian_hellenic_scholar
+						}
+					}
+					10 = {
+						create_character = {
+							add_finesse = 7
+							add_trait = scholar
+							add_trait = wise
+							religion = roman_pantheon
+							culture = athenian
+							female = no
+							save_scope_as = siculian_hellenic_scholar
+						}
+					}
+					4 = {
+						create_character = {
+							add_finesse = 10
+							add_trait = scholar
+							add_trait = wise
+							add_trait = stubborn
+							add_trait = honest
+							religion = roman_pantheon
+							culture = athenian
+							female = no
+							save_scope_as = siculian_hellenic_scholar
+						}
+					}
+					3 = {
+						create_character = {
+							add_zeal = 8
+							add_finesse = 10
+							add_charisma = 7
+							add_trait = scholar
+							add_trait = wise
+							add_trait = lunatic
+							add_trait = polymath
+							add_trait = honest
+							add_trait = blind
+							religion = roman_pantheon
+							culture = athenian
+							female = no
+							save_scope_as = siculian_hellenic_scholar
+						}
+					}
+				}
+			}
+			custom_tooltip = 01_siculia_missions_task_27_tt
+			trigger_event = me_siculia.27
+		}
+	}
+
+	01_siculia_missions_task_15 = { #A Third Option (Punic)
+		icon = "task_durga"
+		#duration = 90
+		#requires = { 01_siculia_missions_task_9 01_siculia_missions_task_8 }
+		requires = { 01_siculia_missions_task_21 }
+	
+		allow = {
+			custom_tooltip = {
+				text = 01_siculia_missions_task_15_tt
+				any_country_culture = {
+					is_integrated = yes
+					this.culture  = culture:carthaginian
+				}
+			}
+		}
+
+		prevented_by = {
+			01_siculia_missions_task_13
+			01_siculia_missions_task_14
+		}
+
+		on_completion = {
+			current_ruler = {
+				add_popularity = -10
+			}
+
+			trigger_event = me_siculia.15
+
+			random_family = {
+				limit = {
+					any_family_member = { is_head_of_family = yes }
+					NOT = { 
+						any_family_member = { this = root.current_ruler }
+					}
+				}
+
+				save_scope_as = siculiaFamily1
+				#head_of_family = { 
+				#	save_scope_as = siculiaFamily1Head
+				#}
+			}
+
+			random_family = {
+				limit = {
+					any_family_member = { is_head_of_family = yes }
+					NOT = { 
+						any_family_member = { this = root.current_ruler }
+					}
+					NOT = {
+						this = scope:siculiaFamily1
+					}
+				}
+
+				save_scope_as = siculiaFamily2
+			}
+
+			random_family = {
+				limit = {
+					any_family_member = { is_head_of_family = yes }
+					NOT = { 
+						any_family_member = { this = root.current_ruler }
+					}
+					NOT = {
+						this = scope:siculiaFamily1
+					}
+					NOT = {
+						this = scope:siculiaFamily2
+					}
+				}
+
+				save_scope_as = siculiaFamily3
+			}
+
+		}
+	}
+
+	01_siculia_missions_task_16 = { #Entice Punic Merchants from Abroad
+		icon = "task_economical"
+		#duration = 90
+		requires = { 01_siculia_missions_task_15 }
+
+		prevented_by = {
+			01_siculia_missions_task_13
+			01_siculia_missions_task_14
+		}
+	
+		allow = {
+			owns_or_subject_owns = p:96
+			owns_or_subject_owns = p:7842
+			owns_or_subject_owns = p:94
+			OR = {
+				p:96 = {
+					num_of_port_building >= 2
+					num_of_commerce_building >= 1
+				}
+				p:7842 = {
+					num_of_port_building >= 2
+					num_of_commerce_building >= 1
+				}
+				p:94 = {
+					num_of_port_building >= 2
+					num_of_commerce_building >= 1
+				}
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 96
+					province_id = 7842
+					province_id = 94
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = 01_siculia_missions_task_16_tt
+			trigger_event = me_siculia.16
+		}
+	}
+
+	01_siculia_missions_task_17 = { #Ensure Loyalty
+		icon = "task_expansion"
+		#duration = 90
+		requires = { 01_siculia_missions_task_15 }
+
+		prevented_by = {
+			01_siculia_missions_task_13
+			01_siculia_missions_task_14
+		}
+	
+		allow = {
+			stability > 33
+			trigger_if = {
+				limit = {
+					exists = scope:siculiaFamily1
+				}
+				hidden:scope:siculiaFamily1 = {
+					head_of_family = { 
+						OR = {
+							#has_religion = buddhism
+							loyalty >= 70
+						}
+					}
+				}
+			}
+			trigger_if = {
+				limit = {
+					exists = scope:siculiaFamily2
+				}
+				hidden:scope:siculiaFamily2 = {
+					head_of_family = { 
+						OR = {
+							#has_religion = buddhism
+							loyalty >= 70
+						}
+					}
+				}
+			}
+			trigger_if = {
+				limit = {
+					exists = scope:siculiaFamily3
+				}
+				hidden:scope:siculiaFamily3 = {
+					head_of_family = { 
+						OR = {
+							#has_religion = buddhism
+							loyalty >= 70
+						}
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = siculia_ensured_loyalty_punic
+					duration = 1825 # 5 years
+				}
+			}
+			trigger_event = me_siculia.17
+		}
+	}
+
+	01_siculia_missions_task_18 = { #Adopt the Canaanite religion
+		icon = "task_political"
+		#duration = 90
+		requires = { 01_siculia_missions_task_16 01_siculia_missions_task_17 }
+
+		prevented_by = {
+			01_siculia_missions_task_13
+			01_siculia_missions_task_14
+		}
+	
+		allow = {
+			stability > 50
+			custom_tooltip = {
+				text = pantheon_deity_tooltip
+				any_pantheon_deity = {
+					deity_religion = carthaginian_pantheon
+				}
+			}
+		}
+
+		on_completion = {
+			change_religion_effect = {
+				RELIGION = carthaginian_pantheon
+			}
+			if = {
+				limit = { is_republic = yes }
+				change_government = punic_republic
+				
+			}
+			#Perhaps if I can come up with a good flag, but no flag change for now
+			#if = {
+			#	limit = { tag = SII }
+			#	change_country_flag = SICILY_SICULIAN_PUNIC_FLAG
+			#	change_country_color =  burgundy_color
+			#}
+			trigger_event = me_siculia.18
+		}
+	}
+
+
+
+	01_siculia_missions_task_22 = { #Monarchy Reform
+		icon = "task_political"
+		duration = 90
+		requires = { 01_siculia_missions_task_21 }
+
+		prevented_by = {
+			01_siculia_missions_task_23
+		}
+
+		bypass = { #Bypass if the player has already reformed
+			is_tribal = no	
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					AND = {
+						is_capital = yes
+						owner = root
+					}
+				}
+			}
+		}
+	
+		allow = {
+			political_influence >= 40
+			capital_scope = {
+				civilization_value >= 45
+				trigger_if = {
+					limit = {
+						has_city_status = no
+					}
+					has_city_status = yes
+				}
+			}
+		}
+
+		on_start = {
+			add_political_influence = -40
+		}
+
+		on_completion = {
+			add_tyranny = 25
+			trigger_event = me_siculia.22
+		}
+	}
+
+	01_siculia_missions_task_24 = { #Secure Powerful Offices
+		icon = "task_calm"
+		#duration = 90
+		requires = { 01_siculia_missions_task_22 }
+
+		prevented_by = {
+			01_siculia_missions_task_23
+		}
+
+		bypass = { #Bypass if the player has already reformed
+			is_tribal = no	
+		}
+	
+		allow = {
+			job_holder:office_high_priest = {
+				from_ruler_family = yes
+				loyalty >= 33
+			}
+			job_holder:office_warchief = {
+				from_ruler_family = yes
+				loyalty >= 33
+			}
+			job_holder:office_magistrate = {
+				from_ruler_family = yes
+				loyalty >= 33
+			}
+		}
+
+		on_completion = {
+			job_holder:office_high_priest = { save_scope_as = siculia_monarchy_priest }
+			job_holder:office_warchief = { save_scope_as = siculia_monarchy_warchief }
+			job_holder:office_magistrate = { save_scope_as = siculia_monarchy_magistrate }
+			trigger_event = me_siculia.24
+		}
+	}
+
+	01_siculia_missions_task_25 = { #Proclaim Monarchy
+		icon = "task_zeus_cornucopia"
+		#duration = 90
+		requires = { 01_siculia_missions_task_24 }
+
+		prevented_by = {
+			01_siculia_missions_task_23
+		}
+
+		bypass = { #Bypass if the player has already reformed
+			is_tribal = no	
+		}
+
+		final = yes
+	
+		allow = {
+			current_ruler = { popularity >= 75 }
+		}
+
+		on_completion = {
+			change_government = despotic_monarchy
+			switch_government_type_event_clearup_effect = yes
+			scope:siculia_monarchy_priest = { give_office = office_high_priest_monarchy add_loyalty = loyalty_gift_bribe_1 }
+			scope:siculia_monarchy_warchief = { give_office = office_marshal add_loyalty = loyalty_gift_bribe_1 }
+			scope:siculia_monarchy_magistrate = { give_office = office_steward add_loyalty = loyalty_gift_bribe_1 }
+			trigger_event = me_siculia.25
+		}
+	}
+
+	01_siculia_missions_task_23 = { #Republic Reform
+		icon = "task_athena"
+		#duration = 90
+		requires = { 01_siculia_missions_task_21 }
+
+		prevented_by = {
+			01_siculia_missions_task_22
+		}
+
+		bypass = { #Bypass if the player has already reformed
+			is_tribal = no	
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					AND = {
+						is_capital = yes
+						owner = root
+					}
+				}
+			}
+		}
+
+		final = yes
+	
+		allow = {
+			stability >= 50
+			capital_scope = {
+				civilization_value >= 45
+				trigger_if = {
+					limit = {
+						has_city_status = no
+					}
+					has_city_status = yes
+				}
+			}
+			any_character = {
+				count = all
+				OR = {
+					is_clan_chief = no
+					loyalty >= 40
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = me_siculia.23
+			if = {
+				limit = { religion = carthaginian_pantheon }
+				change_government = punic_republic
+				
+			}
+			else = {
+				change_government = oligarchic_republic
+			}
+		}
+	}
+
+
+
+}

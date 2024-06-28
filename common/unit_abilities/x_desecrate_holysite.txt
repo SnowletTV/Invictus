@@ -1,0 +1,208 @@
+﻿desecrate_holysite = {
+
+	duration = 0
+	enable = yes
+	toggle = no
+	soundeffect = "event:/SFX/UI/Unit/sfx_ui_unit_desecrate_holy_site"
+
+	army_only = yes
+	is_desecrate = yes #Invokes hardcoded AI behavior for desecration.
+
+	# will prompt a confirmation window before triggering
+	confirm = yes
+
+	allow = {
+		hidden:unit_owner = { can_pay_price = desecrate }
+		
+		is_army = yes
+		in_combat = no
+		OR = {
+			is_moving = no
+			unit_owner = { is_ai = yes } #AI doesn't know how to stop for abilities.
+		}
+		in_siege = no
+		is_exiled = no
+		unit_location = {
+			has_owner = yes
+		}
+		hidden:unit_location = {
+			has_owner = yes
+			is_holy_site = yes
+			controller = root.unit_owner
+		}
+		trigger_if = {
+			limit = {
+				exists = commander
+			}
+			commander = {
+				loyalty > 33
+			}
+		}
+	}
+	
+	
+	start_effect = {
+		unit_owner = { 
+			pay_price = desecrate
+			save_scope_as = sacker
+			if = {
+				limit = {
+					invention = god_is_dead
+				}
+				add_stability = 10
+			}
+		}
+		unit_location = {
+			save_scope_as = shrine_location
+			if = {
+				limit = { is_holy_site = yes } #If we are actually doing this
+				province_deity = { save_scope_as = provincial_deity }
+				every_province_treasure = {	transfer_treasure_to_country = root.unit_owner }
+			}
+		}
+		desecrate_effect = yes
+		scope:shrine_location = {
+			if = { # Ping event for victim
+				limit = {
+					NOT = { root.unit_owner = owner }
+				}
+				trigger_event = { id = desecration.1 } #Sack of X
+			}
+			else = { # Ping event for sacker
+				root.unit_owner = {
+					trigger_event = { id = desecration.2 } #Holy Site Sacked
+				}
+			}
+		}
+		save_scope_as = pious_legion
+		if = {
+			limit = {
+				has_dlc = "Heirs of Alexander"
+				exists = scope:provincial_deity
+				scope:provincial_deity.religion = ROOT.unit_owner.religion
+				has_legion_trigger = yes
+			}
+			unit_owner = {
+				trigger_event = {
+					days = 10
+					id = distinction.24
+				}
+			}
+			show_as_tooltip = {
+				scope:pious_legion.legion = {
+					if = {
+		                limit = { has_distinction = distinction_pious }
+		                remove_distinction = distinction_pious
+		            }
+					add_distinction = distinction_dishonor_impious
+				}
+			}
+		}
+		else_if = {
+			limit = {
+				has_dlc = "Heirs of Alexander"
+				has_legion_trigger = yes
+			}
+			unit_owner = {
+				trigger_event = {
+					days = 10
+					id = distinction.11
+				}
+			}
+			show_as_tooltip = {
+				scope:pious_legion.legion = {
+					if = {
+		                limit = { has_distinction = distinction_dishonor_impious }
+		                remove_distinction = distinction_dishonor_impious
+		            }
+					add_distinction = distinction_pious
+				}
+			}
+		}
+		if = {
+			limit = {
+				unit_owner = { is_republic = yes }
+			}
+			unit_owner = {
+				set_variable = {
+					name = sacked_holy_site_flag
+					value = ROOT.unit_location
+				}
+			}
+		}
+	}
+	
+	ai_will_do = {
+	
+		#AI will descrate holy sites that either have treasures OR match either the religion or pantheon of its opponent IF:
+		#It has less than x AE.
+		#It is not a subject state.
+		#Its commander or ruler has certain traits.
+	
+		modifier = { #If the commander or ruler have the right traits and if we don't have a lot of AE then we consider this.
+			trigger = {
+				unit_location = { is_holy_site = yes }
+				unit_owner = {
+					is_subject = no
+					war_with = PREV.unit_location.owner #AI should never target its own holy sites.
+					has_aggressive_expansion < 15  #Don't accrue AE this way so you cannot demand territory later.
+				}
+				
+				#Either there is at least 1 treasure here, or its deity belongs to our opponents religion but it is not our religion.
+				unit_location = {
+					OR = {
+						any_province_treasure = { count >= 1 }
+						province_deity = { #Not our religion but it is the owners religion.
+							NOT = { deity_religion = root.unit_owner.religion }
+							OR = {
+								deity_religion = prev.owner.religion
+								PREV.owner = { has_deity_in_pantheon = PREV }
+							}
+						}
+					}
+				}
+				
+				#Traits evaluation:
+				trigger_if = { #If we have a commander then we look both to him and his boss.
+					limit = {
+						exists = commander
+						unit_owner = {
+							exists = current_ruler
+						}
+					}
+					OR = {
+						unit_owner.current_ruler = { has_trait = zealous }
+						unit_owner.current_ruler = { has_trait = vengeful }
+						unit_owner.current_ruler = { has_trait = reckless }
+						unit_owner.current_ruler = { has_trait = rash }
+						commander = { has_trait = zealous }
+						commander = { has_trait = vengeful }
+						commander = { has_trait = reckless }
+						commander = { has_trait = rash }
+					}
+				}
+				trigger_else_if = { #We look at the ruler.
+					limit = {
+						unit_owner = {
+							exists = current_ruler
+						}
+					}
+					OR = {
+						unit_owner.current_ruler = { has_trait = zealous }
+						unit_owner.current_ruler = { has_trait = vengeful }
+						unit_owner.current_ruler = { has_trait = reckless }
+						unit_owner.current_ruler = { has_trait = rash }
+					}
+				}
+				trigger_else = { #Troops from countries without rulers (barbarians, rebels) should not do this.
+					always = no
+				}
+			}
+			add = {
+				value = 100
+			}
+		}
+	}
+	
+	idle_entity_state = raiding
+}

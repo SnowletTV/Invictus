@@ -1,4 +1,4 @@
-version="1.8"
+version="1.8.0.2"
 tags={
 	"Overhaul"
 	"Total Conversions"

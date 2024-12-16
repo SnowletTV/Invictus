@@ -1,0 +1,1424 @@
+﻿igk_mission = { 
+
+	header = "german_mission1"
+	icon = "general_2"
+
+	repeatable = no 
+
+	potential = {
+		#is_tribal = yes
+		tag = IGK
+		#has_variable = can_igk_mission
+		NOT = {
+			has_variable = reform_cooldown
+		}
+		has_civil_war = no
+	} 
+
+	abort = {
+		ai_mission_back_out_trigger = yes
+	}
+
+	chance = {
+		factor = 100
+	} 
+
+	on_potential = {} 
+
+	on_start = {
+		start_mission_ai_effect = yes
+	} 
+
+	on_abort = {
+		custom_tooltip = "on_abort_igk_mission_tt"
+		set_variable = {
+			name = reform_cooldown
+			days = 7300
+		}
+	}  
+
+	on_completion = {
+		complete_mission_effect = yes
+		if = {
+			limit = {
+				any_owned_province = { has_province_modifier = tribal_civilization_pmod }
+			}
+			every_owned_province = {
+				limit = { has_province_modifier = tribal_civilization_pmod }
+				remove_province_modifier = tribal_civilization_pmod
+			}
+		}
+	}
+
+	igk_mission_syncronize = { #syncronization chain
+		icon = "task_political"
+
+		allow = {
+			custom_tooltip = { #Integrate an Indian culture
+				text = igk_mission_syncronize_tt
+				any_country_culture = {
+					is_integrated = yes
+					OR = {
+						this.culture.culture_group = culture_group:aryan
+						this.culture.culture_group = culture_group:pracyan
+						this.culture.culture_group = culture_group:indian
+					}
+				}
+			}
+		} 
+		
+		bypass = {
+			#is_tribal = no
+		} 
+		
+		#prevented_by = { igk_mission_preserve_our_ways }
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = igk_mission_syncronize_modifier
+					duration = 10950 #30 years
+				}
+			}
+		} 
+	}
+
+	#igk_mission_preserve_our_ways = { #enforce our ways chain
+	#	icon = "task_political"
+
+	#	allow = {
+	#		tag = IGK
+	#	} 
+	#	
+	#	bypass = {
+	#		#is_tribal = no
+	#	} 
+	#	
+	#	prevented_by = { igk_mission_syncronize }
+
+	#	on_completion = {
+	#		add_country_modifier = {
+	#			name = igk_mission_law_modifier
+	#			duration = 3650
+	#		}
+	#	} 
+	#}
+	
+	igk_mission_adopt_local_food = { 
+		icon = "task_political"
+
+		requires = { igk_mission_syncronize } 
+
+		allow = {
+			hidden:capital_scope.state = {
+				#AND = {
+					trade_good_surplus = { target = spices value >= 2 }
+					#trade_good_surplus = { target = vegetables value >= 1 }
+				#}
+			}
+			capital_scope = {
+				num_of_population_building >= 1
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					AND = {
+						is_capital = yes
+						owner = root
+					}
+				}
+			}
+		}
+
+		#prevented_by = { igk_mission_preserve_our_ways }
+
+		on_completion = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = igk_mission_adopt_local_food_modifier
+					duration = -1
+				}
+			}
+			trigger_event = me_indo_germanic_kingdom.201
+		} 
+	}
+
+	igk_mission_pacify_local_areas = { 
+		icon = "task_political"
+
+		requires = { igk_mission_syncronize } 
+
+		#requires = { igk_mission_preserve_our_ways } 
+
+		allow = {
+			custom_tooltip = { #Have 6 cities with a court of law
+				text = igk_mission_pacify_local_areas_tt
+				capital_scope.region = {
+					any_region_province = {
+						count >= 6
+						owner = root
+						has_city_status  = yes
+						num_of_court_building >= 1
+						#dominant_province_culture = cimbrian
+						#every_owned_province
+						#limit = { has_city_status  = yes }
+							
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = igk_mission_pacify_local_areas_reward_tt
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = igk_mission_pacify_local_areas_modifier
+					duration = 5475
+				}
+			}
+			hidden_effect = {
+				capital_scope.region = {
+					every_region_province = {
+						add_province_modifier = {
+							name = igk_mission_pacify_local_areas_modifier
+							duration = 5475
+						}
+					}
+				}
+			}
+		}
+	}
+
+	igk_mission_study_tactics = { 
+		icon = "task_political"
+
+		requires = { igk_mission_syncronize } 
+		duration = 365
+
+		allow = {
+			#military_experience >= 40
+			custom_tooltip = { #Study ways of war
+				text = igk_mission_study_tactics_tt
+				has_variable = indian_influence
+			}
+		}
+
+		prevented_by = { igk_mission_preserve_our_ways }
+
+		on_start = {
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = igk_mission_study_tactics_modifier
+					duration = 365 # 1 years
+				}
+			}
+			trigger_event = me_indo_germanic_kingdom.201
+		} 
+
+		on_completion = {
+			#enable_tactic = padma_vyuha
+			add_military_experience = 30
+			#custom_tooltip = igk_mission_study_tactics_reward_tt
+			#set_variable = {
+			#	name = indian_influence
+			#}
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = igk_mission_study_tactics_reward_modifier
+					duration = -1
+				}
+			}
+			trigger_event = me_indo_germanic_kingdom.202
+		} 
+	}
+
+	igk_mission_integrate_local_nobility = { 
+		icon = "task_political"
+
+		requires = { igk_mission_pacify_local_areas igk_mission_adopt_local_food igk_mission_study_tactics } 
+
+		allow = {
+			custom_tooltip = { #Have 3 cities with a university
+				text = igk_mission_integrate_local_nobility_tt
+				capital_scope.region = {
+					any_region_province = {
+						count >= 3
+						owner = root
+						has_city_status  = yes
+						num_of_academy_building >= 1		
+					}
+				}
+			}
+			#
+			custom_tooltip = {
+			text = igk_mission_integrate_local_nobility_offices_tt
+			trigger_if = {
+				limit = { is_tribal = yes }
+				OR = {
+					job_holder:office_high_priest = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_arbitrator = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_elder = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_warchief = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_bodyguard = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_wise_person = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_magistrate = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_apothecary = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+
+				}
+			}
+			#
+			#
+			trigger_if = {
+				limit = { is_monarchy = yes }
+				OR = {
+					job_holder:office_foreign_minister = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_royal_tutor = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_marshal = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_master_of_the_guard = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_high_priest_monarchy = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_philosopher = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_steward = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_physician = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+
+				}
+			}
+			#
+			#
+			trigger_if = {
+				limit = { is_republic = yes }
+				OR = {
+					job_holder:office_censor = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_praetor = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_tribune_of_the_soldiers = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_tribune_of_the_treasury = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_augur = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_pontifex = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_plebeian_aedile = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+					job_holder:office_republic_physician = {
+						OR = {
+							has_culture_group = aryan
+							has_culture_group = pracyan
+							has_culture_group = indian
+						}
+					}
+
+				}
+			}
+			}
+			#
+			
+		}
+
+		on_completion = {
+			custom_tooltip = igk_mission_pacify_local_areas_reward_tt
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = igk_mission_integrate_local_nobility_modifier
+					duration = 5475
+				}
+			}
+			hidden_effect = {
+				capital_scope.region = {
+					every_region_province = {
+						add_province_modifier = {
+							name = igk_mission_integrate_local_nobility_modifier
+							duration = 5475
+						}
+					}
+				}
+			}
+		} 
+	}
+
+	igk_mission_hybridization = { 
+		icon = "task_political"
+
+		requires = { igk_mission_integrate_local_nobility } 
+		duration = 365
+
+		allow = { 
+			political_influence >= 50
+			stability > 33
+			war = no
+		}
+
+		on_start = {
+			add_political_influence = -50
+			add_stability = -25
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = igk_mission_hybridization_bad_modifier
+					duration = 365 # 1 years
+				}
+			}
+		}
+
+		on_completion = {
+
+			#Up here to ensure that there will be some Indo-Germanic pops
+			#before switching culture, otherwise primary culture will not change
+			capital_scope = {
+				capital_formable_medium_effect = yes
+			}
+
+			custom_tooltip = igk_mission_hybridization_pops_tt
+			#Change up to 1,000 old culture pops to new culture
+			hidden_effect = {
+				every_owned_province = {
+					while = {
+						count = 1000
+						every_pops_in_province = {
+							limit = {
+								culture = root.culture
+							}
+							set_pop_culture = indo_germanic
+						}
+					}
+				}
+			}
+
+			custom_tooltip = igk_mission_hybridization_characters_tt
+			hidden_effect = {
+				#Change all old culture characters to new culture			
+				every_character = {
+					limit = {
+						AND = {
+							OR = {
+								from_ruler_family = yes
+								is_minor_character = no
+							}
+							has_culture = root.culture
+						}
+					}
+					set_culture = indo_germanic
+				}
+				set_primary_culture_cleanup_effect = {
+					NEW_PRIMARY_CULTURE = indo_germanic
+					MAKE_OLD_CULTURE_INTEGRATED = yes
+				}
+			}
+
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = igk_mission_hybridization_modifier
+					duration = 6570 #18 years
+				}
+			}
+			add_stability = 5
+
+
+		} 
+	}
+
+
+############################################################################################
+
+	igk_mission_rel = { #religion tree
+		icon = "task_political"
+
+		allow = {
+			tag = IGK
+		} 
+		
+		bypass = {
+			OR = {
+				religion = buddhism
+				religion = hindu
+				religion = jainism
+			}
+		} 
+		
+		#prevented_by = { igk_mission_syncronize }
+
+		on_completion = {
+			add_country_modifier = {
+				name = igk_mission_law_modifier
+				duration = 3650
+			}
+		} 
+	}
+
+	igk_mission_invite_buddists = {
+		icon = "task_political"
+
+		requires = { igk_mission_rel } 
+		duration = 180
+
+		allow = {
+			tag = IGK
+			treasury >= 50
+		} 
+		
+		bypass = {
+			OR = {
+				religion = buddhism
+				religion = hindu
+				religion = jainism
+			}
+		} 
+		
+		#prevented_by = { igk_mission_syncronize }
+
+		on_start = {
+			show_as_tooltip = { add_treasury = -50 }
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = igk_mission_law_modifier
+				duration = 3650
+			}
+			hidden_effect = {
+				create_character = {
+					add_zeal = 7
+					add_trait = devout
+					add_trait = scholar
+					add_trait = pious
+					religion = buddhism
+					culture = himalayan
+					female = no
+					save_scope_as = igk_buddhist_scholar
+				}
+			trigger_event = me_indo_germanic_kingdom.2
+			}
+		} 
+	}
+
+	igk_mission_invite_hindus = {
+		icon = "task_political"
+
+		requires = { igk_mission_rel } 
+		duration = 180
+
+		allow = {
+			tag = IGK
+			treasury >= 50
+		} 
+		
+		bypass = {
+			OR = {
+				religion = buddhism
+				religion = hindu
+				religion = jainism
+			}
+		} 
+		
+		#prevented_by = { igk_mission_syncronize }
+
+		on_start = {
+			show_as_tooltip = { add_treasury = -50 }
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = igk_mission_law_modifier
+				duration = 3650
+			}
+			hidden_effect = {
+				create_character = {
+					add_zeal = 7
+					add_trait = devout
+					add_trait = scholar
+					add_trait = pious
+					religion = hindu
+					culture = gandhari
+					female = no
+					save_scope_as = igk_hindu_scholar
+				}
+			trigger_event = me_indo_germanic_kingdom.3
+			}
+		} 
+	}
+
+	igk_mission_invite_jains = {
+		icon = "task_political"
+
+		requires = { igk_mission_rel } 
+		duration = 180
+
+		allow = {
+			tag = IGK
+			treasury >= 50
+		} 
+		
+		bypass = {
+			OR = {
+				religion = buddhism
+				religion = hindu
+				religion = jainism
+			}
+		} 
+		
+		#prevented_by = { igk_mission_syncronize }
+
+		on_start = {
+			show_as_tooltip = { add_treasury = -50 }
+		}
+
+		on_completion = {
+			add_country_modifier = {
+				name = igk_mission_law_modifier
+				duration = 3650
+			}
+			hidden_effect = {
+				create_character = {
+					add_zeal = 7
+					add_trait = devout
+					add_trait = scholar
+					add_trait = pious
+					religion = jainism
+					culture = andhran
+					female = no
+					save_scope_as = igk_jain_scholar
+				}
+			trigger_event = me_indo_germanic_kingdom.4
+			}
+		} 
+	}
+
+	igk_mission_adopt_new_faith = {
+		icon = "task_political"
+
+		requires = { igk_mission_invite_buddists igk_mission_invite_hindus igk_mission_invite_jains } 
+
+		allow = {
+			tag = IGK
+		} 
+		
+		bypass = {
+			OR = {
+				religion = buddhism
+				religion = hindu
+				religion = jainism
+			}
+		} 
+		
+		prevented_by = { igk_mission_remain_with_old_gods }
+
+		on_completion = {
+			add_country_modifier = {
+				name = igk_mission_law_modifier
+				duration = 3650
+			}
+			hidden_effect = {
+				trigger_event = me_indo_germanic_kingdom.5
+			}
+
+			random_family = {
+				limit = {
+					any_family_member = { is_head_of_family = yes }
+					NOT = { 
+						any_family_member = { this = root.current_ruler }
+					}
+				}
+
+				save_scope_as = indgerFamily1
+				#head_of_family = { 
+				#	save_scope_as = indgerFamily1Head
+				#}
+			}
+
+			random_family = {
+				limit = {
+					any_family_member = { is_head_of_family = yes }
+					NOT = { 
+						any_family_member = { this = root.current_ruler }
+					}
+					NOT = {
+						this = scope:indgerFamily1
+					}
+				}
+
+				save_scope_as = indgerFamily2
+			}
+
+			random_family = {
+				limit = {
+					any_family_member = { is_head_of_family = yes }
+					NOT = { 
+						any_family_member = { this = root.current_ruler }
+					}
+					NOT = {
+						this = scope:indgerFamily1
+					}
+					NOT = {
+						this = scope:indgerFamily2
+					}
+				}
+
+				save_scope_as = indgerFamily3
+			}
+
+			random_owned_province = {
+				limit = {
+					has_owner = yes
+					owner = ROOT
+					has_city_status = yes
+				}
+				weight = {
+					modifier = {
+						factor = 1000
+						num_of_library_building < 1
+					}
+					modifier = {
+						factor = 500
+						num_of_used_building_slots < num_of_total_building_slots 
+					}
+				}
+				save_scope_as = indgerPatronProv1
+			}
+			random_owned_province = {
+				limit = {
+					has_owner = yes
+					owner = ROOT
+					has_city_status = yes
+					NOT = {
+						this = scope:indgerPatronProv1
+					}
+				}
+				weight = {
+					modifier = {
+						factor = 1000
+						num_of_library_building < 1
+					}
+					modifier = {
+						factor = 500
+						num_of_used_building_slots < num_of_total_building_slots 
+					}
+				}
+				save_scope_as = indgerPatronProv2
+			}
+			random_owned_province = {
+				limit = {
+					has_owner = yes
+					owner = ROOT
+					has_city_status = yes
+					NOT = {
+						this = scope:indgerPatronProv1
+						this = scope:indgerPatronProv2
+					}
+				}
+				weight = {
+					modifier = {
+						factor = 1000
+						num_of_library_building < 1
+					}
+					modifier = {
+						factor = 500
+						num_of_used_building_slots < num_of_total_building_slots 
+					}
+				}
+				save_scope_as = indgerPatronProv3
+			}
+		} 
+	}
+
+	igk_mission_remain_with_old_gods = {
+		icon = "task_political"
+
+		requires = { igk_mission_invite_buddists igk_mission_invite_hindus igk_mission_invite_jains } 
+
+		allow = {
+			tag = IGK
+			NOR = {
+				religion = buddhism
+				religion = hindu
+				religion = jainism
+			}
+		} 
+		
+		bypass = {
+			#is_tribal = no
+		} 
+		
+		prevented_by = { igk_mission_adopt_new_faith }
+
+		on_completion = {
+			add_country_modifier = {
+				name = igk_mission_law_modifier
+				duration = 3650
+			}
+			hidden_effect = {
+				create_character = {
+					add_zeal = 6
+					add_trait = devout
+					add_trait = scholar
+					add_trait = pious
+					religion = jainism
+					culture = andhran
+					female = no
+					save_scope_as = igk_jain_scholar
+				}
+			trigger_event = me_indo_germanic_kingdom.4
+			}
+		} 
+	}
+
+	igk_mission_convince_elite = {
+		icon = "task_political"
+
+		requires = { igk_mission_adopt_new_faith } 
+
+		allow = {
+			tag = IGK
+			OR = {
+				religion = buddhism
+				religion = hindu
+				religion = jainism
+			}
+			#scope:indgerFamily1Head = {
+			#	has_religion = buddhism
+			#}
+			stability > 33
+			trigger_if = {
+				limit = {
+					exists = scope:indgerFamily1
+				}
+				hidden:scope:indgerFamily1 = {
+					head_of_family = { 
+						OR = {
+							has_religion = buddhism
+							has_religion = hindu
+							has_religion = jainism
+							loyalty >= 50
+						}
+					}
+				}
+			}
+			trigger_if = {
+				limit = {
+					exists = scope:indgerFamily2
+				}
+				hidden:scope:indgerFamily2 = {
+					head_of_family = { 
+						OR = {
+							has_religion = buddhism
+							has_religion = hindu
+							has_religion = jainism
+							loyalty >= 50
+						}
+					}
+				}
+			}
+			trigger_if = {
+				limit = {
+					exists = scope:indgerFamily3
+				}
+				hidden:scope:indgerFamily3 = {
+					head_of_family = { 
+						OR = {
+							has_religion = buddhism
+							has_religion = hindu
+							has_religion = jainism
+							loyalty >= 50
+						}
+					}
+				}
+			}
+		} 
+		
+		bypass = {
+			#is_tribal = no
+		} 
+
+		on_start = {
+			add_country_modifier = {
+				name = igk_mission_convince_elite_modifier
+				duration = 365
+			}
+		}
+
+		duration = 365
+		
+		monthly_on_action = indger_convince_elite_pulse
+		
+		prevented_by = { igk_mission_remain_with_old_gods }
+
+		#on_start = {
+			#start_mission_ai_effect = yes
+
+			#head_of_family = { 
+			#	save_scope_as = gm_family_head_1
+			#	set_variable = gm_family_head_1_flag
+			#}
+
+		on_completion = {
+			add_country_modifier = {
+				name = igk_mission_law_modifier
+				duration = 3650
+			}
+			hidden_effect = {
+				trigger_event = me_indo_germanic_kingdom.5
+			}
+		} 
+	}
+
+
+
+	igk_mission_patronize_new_faith = {
+		icon = "task_political"
+
+		requires = { igk_mission_adopt_new_faith } 
+
+		allow = {
+			tag = IGK
+			OR = {
+				religion = buddhism
+				religion = hindu
+				religion = jainism
+			}
+			trigger_if = {
+				limit = {
+					exists = scope:indgerPatronProv1
+				}
+				scope:indgerPatronProv1 = {
+					#num_of_commerce_building >= 1
+					num_of_library_building >= 1
+				}
+			}
+			trigger_if = {
+				limit = {
+					exists = scope:indgerPatronProv2
+				}
+				scope:indgerPatronProv2 = {
+					num_of_library_building >= 1
+				}
+			}
+			trigger_if = {
+				limit = {
+					exists = scope:indgerPatronProv3
+				}
+				scope:indgerPatronProv3 = {
+					num_of_library_building >= 1
+				}
+			}
+		} 
+		
+		bypass = {
+			#is_tribal = no
+		} 
+		
+		prevented_by = { igk_mission_remain_with_old_gods }
+
+		on_completion = {
+			add_country_modifier = {
+				name = igk_mission_patronize_new_faith_modifier
+				duration = 3650
+			}
+		} 
+	}
+
+
+
+#################################################################################################
+
+#ExpansionPath
+
+	igk_mission_northern_expansion = { 
+		icon = "task_political"
+
+		allow = {
+			political_influence >= 75
+		} 
+
+		duration = 365
+
+		on_start = {
+			add_political_influence = -75
+		}
+
+		on_completion = {
+			custom_tooltip = igk_mission_northern_expansion_tt
+			trigger_event = me_indo_germanic_kingdom.100
+		} 
+	}
+
+	igk_mission_to_the_indus = { 
+		icon = "task_political"
+
+		requires = { igk_mission_northern_expansion }
+
+		allow = {
+			owns_or_subject_owns_region = maru_region
+			owns_or_subject_owns_region = gandhara_region
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = maru_region
+					is_in_region = gandhara_region
+				}
+			}
+		}
+
+		on_completion = {
+			add_aggressive_expansion = -10
+		} 
+	}
+
+
+	igk_mission_the_center = { 
+		icon = "task_political"
+
+		requires = { igk_mission_northern_expansion }
+
+		allow = {
+			owns_or_subject_owns_region = avanti_region
+			#owns_or_subject_owns_region = aparanta_region
+			#owns_or_subject_owns_region = vindhyaprstha_region
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = avanti_region
+				}
+			}
+		}
+
+		on_completion = {
+			add_aggressive_expansion = -10
+		} 
+	}
+
+	igk_mission_the_ganges = { 
+		icon = "task_political"
+
+		requires = { igk_mission_northern_expansion }
+
+		allow = {
+			owns_or_subject_owns_region = pracya_region
+			owns_or_subject_owns_region = madhyadesa_region
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = pracya_region
+					is_in_region = madhyadesa_region
+				}
+			}
+		}
+
+		on_completion = {
+			add_aggressive_expansion = -10
+		} 
+	}
+
+	igk_mission_destroy_maurya = { 
+		icon = "task_political"
+
+		requires = {
+			igk_mission_to_the_indus
+			igk_mission_the_center
+			igk_mission_the_ganges
+		}
+
+		allow = { #Either kill or vassalize Maurya
+			custom_tooltip = {
+				text = igk_mission_destroy_maurya_tt
+				OR = {
+					NOT = {
+						any_country = {
+							tag = MRY
+						}
+					}
+					c:MRY = {
+						is_subject_of = ROOT
+					}
+				}
+			}
+		}
+
+		on_completion = {
+			root.current_ruler = { add_popularity = 50 }
+			add_political_influence = 50
+		} 
+	}
+
+	igk_mission_rehabilitate_pataliputra = { 
+		icon = "task_political"
+
+		requires = { igk_mission_destroy_maurya }
+
+		allow = {
+			p:4440 = {
+				num_of_court_building >= 3
+				num_of_library_building >= 1
+				num_of_barracks_building >= 1
+				num_of_town_hall_building >= 1
+				state_loyalty >= 75
+			}
+		}
+
+		on_completion = {
+			p:4440 = {
+				add_province_modifier = {
+					name = igk_mission_rehabilitate_pataliputra_modifier
+					duration = -1
+				}
+			}
+		} 
+	}
+
+	igk_mission_write_the_indo_germanic_saga = { 
+		icon = "task_political"
+
+		requires = { igk_mission_destroy_maurya }
+
+		allow = {
+			treasury >= 250
+		}
+
+		duration = 365
+
+		on_start = {
+			add_treasury = -250
+		}
+
+		on_completion = {
+			create_country_treasure = {
+				key = "indo_germanic_saga"
+				icon = "old_script_1"
+				modifier = {
+					local_nobles_output = 0.10
+				}
+			}
+			
+		} 
+	}
+
+	igk_mission_conquer_burma = { 
+		icon = "task_political"
+
+		requires = { igk_mission_the_ganges }
+
+		allow = {
+			owns_or_subject_owns_region = burma_region
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = burma_region
+				}
+			}
+		}
+
+		on_completion = {
+		} 
+	}
+
+	igk_mission_colonize_burma = { 
+		icon = "task_political"
+
+		requires = { igk_mission_conquer_burma }
+
+		allow = {
+			owns_or_subject_owns_region = burma_region
+			custom_tooltip = { #Have 8 cities in the region
+				text = igk_mission_colonize_burma_tt
+				p:8778.region = {
+					any_region_province = {
+						count >= 8
+						owner = root
+						has_city_status  = yes	
+					}
+				}
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					is_in_region = burma_region
+				}
+			}
+		}
+
+		on_completion = {
+			custom_tooltip = igk_mission_colonize_burma_reward_tt
+			hidden_effect = {
+				every_owned_province = {
+					limit = {
+						is_in_region = burma_region
+						has_city_status  = yes
+					}
+					igk_border_settlement_effect = yes
+				}
+			}
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = igk_border_settlement_modifier
+					duration = 10950 #30 years
+				}
+			}
+		} 
+	}
+
+	igk_mission_establish_settlements_along_the_indus = { 
+		icon = "task_political"
+
+		requires = { igk_mission_to_the_indus }
+
+		allow = {
+			owns_or_subject_owns_region = maru_region
+			owns_or_subject_owns_region = gandhara_region
+			political_influence >= 25
+			p:4352 = {
+				num_of_fortress_building >= 1
+			}
+			p:4371 = {
+				num_of_fortress_building >= 1
+			}
+			p:4350 = {
+				num_of_fortress_building >= 1
+			}
+			p:4821 = {
+				num_of_fortress_building >= 1
+			}
+			p:4355 = {
+				num_of_fortress_building >= 1
+			}
+			p:4330 = {
+				num_of_fortress_building >= 1
+			}
+			p:6821 = {
+				num_of_fortress_building >= 1
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 4352
+					province_id = 4371
+					province_id = 4350
+					province_id = 4821
+					province_id = 4355
+					province_id = 4330
+					province_id = 6821
+				}
+			}
+		}
+
+		duration = 60
+
+		on_start = {
+			add_political_influence = -25
+		}
+
+		on_completion = {
+			custom_tooltip = igk_mission_establish_settlements_along_the_indus_tt
+			hidden_effect = {
+				p:4352 = {
+					igk_border_settlement_effect = yes
+				}
+				p:4371 = {
+					igk_border_settlement_effect = yes
+				}
+				p:4350 = {
+					igk_border_settlement_effect = yes
+				}
+				p:4821 = {
+					igk_border_settlement_effect = yes
+				}
+				p:4355 = {
+					igk_border_settlement_effect = yes
+				}
+				p:4330 = {
+					igk_border_settlement_effect = yes
+				}
+				p:6821 = {
+					igk_border_settlement_effect = yes
+				}
+			}
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = igk_border_settlement_modifier
+					duration = 10950 #30 years
+				}
+			}
+		} 
+	}
+
+
+#Southern expansion
+
+	igk_mission_southern_expansion = { 
+		icon = "task_political"
+
+		allow = {
+			political_influence >= 75
+		} 
+		duration = 365
+
+		on_start = {
+			add_political_influence = -75
+		}
+
+		on_completion = {
+			custom_tooltip = igk_mission_southern_expansion_tt
+			trigger_event = me_indo_germanic_kingdom.100
+		} 
+	}
+
+	igk_mission_sri_lanka = { 
+		icon = "task_political"
+
+		requires = { igk_mission_southern_expansion }
+
+		allow = {
+			owns_or_subject_owns_area = north_tambapamni_area
+			owns_or_subject_owns_area = south_tambapamni_area
+		}
+
+		on_completion = {
+		} 
+	}
+
+
+
+	
+}

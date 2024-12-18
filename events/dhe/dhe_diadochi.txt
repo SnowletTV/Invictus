@@ -717,6 +717,23 @@ diadochi_flavor.8 = {
 			name = "lapse_of_authority"
 			duration = 3650
 		}
+		if = {
+			limit = {
+				c:DEL = {
+					has_land = yes
+					exists = c:MAC
+					is_subject_of = scope:antigonids_scope
+				}
+				c:MAC = { has_land = yes }
+			}
+			scope:antigonids_scope = { release_subject = c:DEL }
+			c:MAC = {
+				make_subject = {
+					type = feudatory
+					target = c:DEL
+				}
+			}
+		}
 		ai_chance = { factor = 2 }
 	}
 
@@ -996,6 +1013,7 @@ diadochi_flavor.8 = {
 							province_id = 281
 							province_id = 282
 							province_id = 279
+							province_id = 285
 						}
 					}
 					set_owned_by = scope:pergamon_scope
@@ -1186,12 +1204,6 @@ diadochi_flavor.8 = {
 			}
 		}
 		southern_release_effect = yes
-		hidden_effect = {
-			if = {
-				limit = { exists = scope:antigonids_scope }
-				scope:antigonids_scope = { diadochi_flavor_event_claim_effect = yes }
-			}
-		}
 	}
 
 }
@@ -1651,41 +1663,58 @@ diadochi_flavor.15 = {
 				factor = 0
 			}
 		}
-		p:7902 = { #Salamis
-			set_owned_by = c:ATH
-		}
-		p:442 = { #Aigina
-			create_country = {
-				name = {
-					name = AIGINA_NAME
-					adjective = AIGINA_ADJECTIVE
-				}
-				hidden_effect = {
-					if = {
-						limit = {
-							NOT = {
-								primary_culture = argolian
+		if = {
+			limit = {
+				owns = 442
+			}
+			p:442 = { #Aigina
+				create_country = {
+					name = {
+						name = AIGINA_NAME
+						adjective = AIGINA_ADJECTIVE
+					}
+					hidden_effect = {
+						if = {
+							limit = {
+								NOT = {
+									primary_culture = argolian
+								}
+							}
+							set_primary_culture_cleanup_effect = {
+								NEW_PRIMARY_CULTURE = argolian
+								MAKE_OLD_CULTURE_INTEGRATED = yes
 							}
 						}
-						set_primary_culture_cleanup_effect = {
-							NEW_PRIMARY_CULTURE = argolian
-							MAKE_OLD_CULTURE_INTEGRATED = yes
-						}
+						set_country_religion = roman_pantheon
+						change_government = plutocratic_republic
+						change_country_color = light_green
+						change_country_flag = AIGINA_FLAG
+						save_scope_as = aigina_scope
 					}
-					set_country_religion = roman_pantheon
-					change_government = plutocratic_republic
-					change_country_color = light_green
-					change_country_flag = AIGINA_FLAG
+				}
+			}
+			hidden_effect = {
+				if = {
+					limit = {
+						owns = 7902
+					}
+					p:7902 = { #Salamis
+						set_owned_by = scope:aigina_scope
+					}
 				}
 			}
 		}
-		p:407 = { #Chalcis
-			create_country = {
-				name = {
-					name = CHALKIS_NAME
-					adjective = CHALKIS_ADJECTIVE
-				}
-				hidden_effect = {
+		if = {
+			limit = {
+				owns = 407
+			}
+            p:407 = { #Chalkis
+                create_country = {
+                    save_scope_as = chalkis_country
+					name = {
+						name = CHALKIS_NAME
+						adjective = CHALKIS_ADJECTIVE
+					}
 					if = {
 						limit = {
 							NOT = {
@@ -1701,9 +1730,9 @@ diadochi_flavor.15 = {
 					change_government = oligarchic_republic
 					change_country_color = samnite_green
 					change_country_flag = CHALCIS_FLAG
-					change_country_tag = CH2
-				}
-			}
+                    change_country_tag = CH2
+                }
+            }
 		}
 		every_subject = {
 			limit = {
@@ -4051,6 +4080,12 @@ diadochi_flavor.49 = { # Egypt post Ipsos
 	            }
 	        }     
 			else = {
+				antigonid_split_area_effect = {
+					COUNTRY = ROOT
+					AREA = area:cyprus_area
+				}
+			}
+#			else = {
 				if = {
 					limit = {
 						any_subject = { 
@@ -4067,7 +4102,7 @@ diadochi_flavor.49 = { # Egypt post Ipsos
 					}
 					custom_tooltip = diadochi_flavor.49.tt3
 				}
-			}
+#			}
 		}
 	}
 
@@ -4566,6 +4601,40 @@ diadochi_flavor.50 = { # Thrace post Ipsos
 				force_white_peace = THIS
 			}
 		}
+#		if = {
+#			limit = {
+#				c:IOA = {
+#					has_land = yes
+#					exists = c:TRE
+#					is_subject_of = scope:antigonids_scope
+#				}
+#				c:TRE = { has_land = yes }
+#			}
+#			scope:antigonids_scope = { release_subject = c:IOA }
+#			c:TRE = {
+#				make_subject = {
+#					type = feudatory
+#					target = c:IOA
+#				}
+#			}
+#		}
+#		if = {
+#			limit = {
+#				c:ION = {
+#					has_land = yes
+#					exists = c:TRE
+#					is_subject_of = scope:antigonids_scope
+#				}
+#				c:TRE = { has_land = yes }
+#			}
+#			scope:antigonids_scope = { release_subject = c:ION }
+#			c:TRE = {
+#				make_subject = {
+#					type = feudatory
+#					target = c:ION
+#				}
+#			}
+#		}
 	}
 }
 
@@ -5043,6 +5112,33 @@ diadochi_flavor.54 = { # Pleistarchus ping
 
 	immediate = {
 		c:MAC = { save_scope_as = macedon_scope }
+		random_country = {
+			limit = { 
+				has_variable = pleistarchus_satrapy_flag 
+				any_owned_province = {
+					is_in_region = cilicia_region
+				}			
+			}
+			change_law = recruit_from_nobles #better levy law for this country to not be dogshit weak
+				random_country_culture = {
+					limit = { THIS.culture = culture:cilician }
+					ROOT = {
+						integrate_country_culture = PREV
+					}
+				}
+			random_owned_province = {
+				hidden_effect = {
+					ordered_pops_in_province = {
+						limit = {
+							NOT = { pop_culture = cilician }
+						}
+						order_by = pop_hapiness
+						max = 1
+						set_pop_culture = cilician
+					}
+				}
+			}			
+		}
 	}
 
 	option = {
@@ -5844,6 +5940,129 @@ diadochi_flavor.59 = { # Pergamon ping
 	}
 }
 
+diadochi_flavor.200 = { #ALX namechange
+	type = country_event
+    title = diadochi_flavor.200.t
+    desc = diadochi_flavor.200.desc
+	picture = successors
+	goto_location  = root.capital_scope
+
+	trigger = { has_land = yes }
+	
+	option = {
+		name = "diadochi_flavor.200.a"
+		if = {
+			limit = {
+				current_ruler = { has_trait = argeads }
+			}
+			change_country_name = "ARGEAD_NAME"
+			hidden_effect = { change_country_adjective = "ARGEAD_ADJECTIVE" }
+			custom_tooltip = hel_empire_tooltip
+		}
+		else = {
+			change_country_name = "MACEDONIAN_EMPIRE_NAME"
+			hidden_effect = { change_country_adjective = "MACEDONIAN_EMPIRE_ADJECTIVE" }
+			custom_tooltip = hel_empire_tooltip
+		}
+	}
+	
+	option = {
+		name = "diadochi_flavor.200.b"
+		custom_tooltip = hel_empire_tooltip
+		hidden_effect = {
+			if = {
+				limit ={ 
+					AND = {
+						has_global_variable = has_changed_name_flag 
+						this = c:TRE
+						current_ruler.family = fam:Alkimachid 
+					}
+				}
+				change_country_name = "LYSIMACHID_EMPIRE"
+			}
+			if = {
+				limit = {
+					AND = {
+						NOT = { has_global_variable = has_changed_name_flag }
+						this = c:TRE
+					}
+				}
+				change_country_name = "THRACIAN_EMPIRE"
+			}
+			if = {
+				limit ={ 
+					AND = {
+						has_global_variable = has_changed_name_flag 
+						this = c:MAC
+						current_ruler.family = fam:Antipatrid 
+					}
+				}
+				change_country_name = "ANTIPATRID_EMPIRE"
+			}
+			if = {
+				limit = {
+					AND = {
+						NOT = { has_global_variable = has_changed_name_flag }
+						this = c:MAC
+					}
+				}
+				change_country_name = "MACEDONIAN_EMPIRE"
+			}
+			if = {
+				limit = {
+					AND = {
+						this = c:EGY
+						current_ruler.family = fam:Lagid
+					}
+				}
+				change_country_name = "PTOLEMAIC_EMPIRE"
+			}		
+			if = {
+				limit = {
+					AND = {
+						this = c:PRY
+						current_ruler.family = fam:Antigonid 
+					}
+				}
+				change_country_name = "ANTIGONID_EMPIRE"
+			}										
+			if = {
+				limit = {
+					AND = {
+						this = c:SEL
+						current_ruler.family = fam:Seleukid
+					}
+				}
+				change_country_name = "SELEUKID_EMPIRE"
+			}
+			if = {
+				limit = {
+					AND = {
+						this = c:SEL
+						NOT = {current_ruler.family = fam:Seleukid }
+					}
+				}
+				change_country_name = "PERSIAN_EMPIRE_NAME"
+			}			
+			if = {
+				limit = {
+					this = c:BPK
+				}
+				change_country_name = "BOSPORAN_EMPIRE"
+			}
+			if = {
+				limit = {
+					AND = {
+						this = c:CYR
+						current_ruler = { has_same_family = char:46 }
+					}
+				}
+				change_country_name = "MAGID_EMPIRE"
+			}
+		}
+	}
+}
+
 diadochi_flavor.100 = {#NS
 	type = country_event
 	title = "diadochi_flavor.100.t"
@@ -6326,55 +6545,42 @@ diadochi_flavor.60 = { # Macedon post Ipsos (Fixed)
 				}
 				if = {
 					limit = {
-						owns = 7902
-					}
-		            p:7902 = { #Salamis
-		                create_country = {
-		                    save_scope_as = salamis_country
-							name = {
-								name = SALAMIS_NAME
-								adjective = SALAMIS_ADJECTIVE
-							}
-							set_country_religion = roman_pantheon
-							change_government = oligarchic_republic
-							change_country_color = salamis_green
-							change_country_flag = SALAMIS_FLAG
-		                    change_country_tag = SAL
-		                }
-		            }
-		            make_subject = {
-		                type = feudatory
-		                target = scope:salamis_country
-		            }
-				}
-				if = {
-					limit = {
 						owns = 442
 					}
-		            p:442 = { #Aigina
-		                create_country = {
-		                    save_scope_as = aigina_country
+					p:442 = { #Aigina
+						create_country = {
 							name = {
 								name = AIGINA_NAME
 								adjective = AIGINA_ADJECTIVE
 							}
-							if = {
-								limit = {
-									NOT = {
-										primary_culture = argolian
+							hidden_effect = {
+								if = {
+									limit = {
+										NOT = {
+											primary_culture = argolian
+										}
+									}
+									set_primary_culture_cleanup_effect = {
+										NEW_PRIMARY_CULTURE = argolian
+										MAKE_OLD_CULTURE_INTEGRATED = yes
 									}
 								}
-								set_primary_culture_cleanup_effect = {
-									NEW_PRIMARY_CULTURE = argolian
-									MAKE_OLD_CULTURE_INTEGRATED = yes
-								}
+								set_country_religion = roman_pantheon
+								change_government = plutocratic_republic
+								change_country_color = light_green
+								change_country_flag = AIGINA_FLAG
+								save_scope_as = aigina_scope
 							}
-							set_country_religion = roman_pantheon
-							change_government = plutocratic_republic
-							change_country_color = light_green
-							change_country_flag = AIGINA_FLAG
-		                }
-		            }
+						}
+					}
+					if = {
+						limit = {
+							owns = 7902
+						}
+						p:7902 = { #Salamis
+							set_owned_by = scope:aigina_scope
+						}
+					}
 		            make_subject = {
 		                type = feudatory
 		                target = scope:aigina_country
@@ -6451,24 +6657,6 @@ diadochi_flavor.60 = { # Macedon post Ipsos (Fixed)
 						set_owned_by = scope:caria_satrapy
 					}
 				}			
-			}
-			if = {
-				limit = { 
-					exists = c:LYC
-					c:LYC = { is_ai = no }
-				}
-				random_list = {
-	                20 = {
-						c:LYC = {
-							every_owned_province = {
-								set_owned_by = scope:caria_satrapy
-							}
-						}				
-					}				
-	                40 = {
-	                	#Nothing
-					}			
-				}		
 			}
 			scope:caria_satrapy = {
 				change_country_name = CIA
@@ -6718,26 +6906,82 @@ diadochi_flavor.60 = { # Macedon post Ipsos (Fixed)
 					type = satrapy
 				}
 			}
+##
 			if = {
-				limit = { 
-					exists = c:LYC
-					is_subject = no
+				limit = {
+					c:KAO = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				hidden_effect = {
+					c:KAO.overlord = { release_subject = c:KAO }
 				}
 				make_subject = {
-					target = c:LYC
 					type = tributary
-				}		
-			}			
+					target = c:KAO
+				}
+			}
 			if = {
-				limit = { 
-					exists = c:KAO
-					is_subject = no
+				limit = {
+					c:PYK = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
 				}
 				make_subject = {
 					target = c:KAO
 					type = tributary
 				}		
 			}
+				hidden_effect = {
+					c:MLO.overlord = { release_subject = c:MLO }
+				}
+				make_subject = {
+					type = tributary
+					target = c:MLO
+				}
+			}
+			if = {
+				limit = {
+					c:KNI = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				hidden_effect = {
+					c:KNI.overlord = { release_subject = c:KNI }
+				}
+				make_subject = {
+					type = tributary
+					target = c:KNI
+				}
+			}
+			if = {
+				limit = {
+					c:LYC = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				hidden_effect = {
+					c:LYC.overlord = { release_subject = c:LYC }
+				}
+				make_subject = {
+					type = tributary
+					target = c:LYC
+				}
+			}
+##
 			scope:cilicia_satrapy = {
 				save_scope_as = ptolemy_new_satrapy
 			}	
@@ -6766,8 +7010,8 @@ diadochi_flavor.60 = { # Macedon post Ipsos (Fixed)
 						NOR = {
 							tag = PRY
 							tag = MAC
-							tag = scope:caria_satrapy
-							tag = scope:cilicia_satrapy
+							THIS = scope:caria_satrapy
+							THIS = scope:cilicia_satrapy
 						}
 						is_subject = no
 		            	any_owned_province = {
@@ -6840,15 +7084,59 @@ diadochi_flavor.60 = { # Macedon post Ipsos (Fixed)
 				}		
 			}
 			if = {
-				limit = { 
-					exists = c:OBE
-					is_subject = no
+				limit = {
+					c:KNI = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				hidden_effect = {
+					c:KNI.overlord = { release_subject = c:KNI }
 				}
 				make_subject = {
-					target = c:OBE
 					type = tributary
-				}		
+					target = c:KNI
+				}
+			}
+			if = {
+				limit = {
+					c:OBE = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				hidden_effect = {
+					c:OBE.overlord = { release_subject = c:OBE }
+				}
+				make_subject = {
+					type = tributary
+					target = c:OBE
+				}
 			}	
+			if = {
+				limit = {
+					c:SSG = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				hidden_effect = {
+					c:SSG.overlord = { release_subject = c:SSG }
+				}
+				make_subject = {
+					type = vassal_tribe
+					target = c:SSG
+				}
+			}						
 			scope:caria_satrapy = {
 				save_scope_as = ptolemy_new_satrapy
 			}	
@@ -6878,8 +7166,8 @@ diadochi_flavor.60 = { # Macedon post Ipsos (Fixed)
 						NOR = {
 							tag = PRY
 							tag = MAC
-							tag = scope:caria_satrapy
-							tag = scope:cilicia_satrapy
+							THIS = scope:caria_satrapy
+							THIS = scope:cilicia_satrapy
 						}
 						is_subject = no
 		            	any_owned_province = {
@@ -6923,6 +7211,7 @@ diadochi_flavor.60 = { # Macedon post Ipsos (Fixed)
 
 	option = { # Caria and Cilicia
 		name = "diadochi_flavor.60.d"
+		custom_tooltip = diadochi_flavor.60.dt
 		trigger = { 
 			AND = {
 				exists = scope:caria_satrapy 
@@ -6998,36 +7287,127 @@ diadochi_flavor.60 = { # Macedon post Ipsos (Fixed)
 					type = feudatory
 				}		
 			}
+##
 			if = {
-				limit = { 
-					exists = c:OBE
-					is_subject = no
+				limit = {
+					c:KAO = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				hidden_effect = {
+					c:KAO.overlord = { release_subject = c:KAO }
 				}
 				make_subject = {
-					target = c:OBE
 					type = tributary
-				}		
-			}	
-			if = {
-				limit = { 
-					exists = c:LYC
-					is_subject = no
-				}
-				make_subject = {
-					target = c:LYC
-					type = tributary
-				}		
-			}			
-			if = {
-				limit = { 
-					exists = c:KAO
-					is_subject = no
-				}
-				make_subject = {
 					target = c:KAO
-					type = tributary
-				}		
+				}
 			}
+			if = {
+				limit = {
+					c:PYK = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				hidden_effect = {
+					c:PYK.overlord = { release_subject = c:PYK }
+				}
+				make_subject = {
+					type = tributary
+					target = c:PYK
+				}
+			}
+			if = {
+				limit = {
+					c:HKS = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				hidden_effect = {
+					c:HKS.overlord = { release_subject = c:HKS }
+				}
+				make_subject = {
+					type = tributary
+					target = c:HKS
+				}
+			}
+			if = {
+				limit = {
+					c:MLO = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				hidden_effect = {
+					c:MLO.overlord = { release_subject = c:MLO }
+				}
+				make_subject = {
+					type = tributary
+					target = c:MLO
+				}
+			}
+			if = {
+				limit = {
+					c:KNI = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				c:KNI.overlord = { release_subject = c:KNI }
+				make_subject = {
+					type = tributary
+					target = c:KNI
+				}
+			}
+			if = {
+				limit = {
+					c:LYC = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				c:LYC.overlord = { release_subject = c:LYC }
+				make_subject = {
+					type = tributary
+					target = c:LYC
+				}
+			}
+			if = {
+				limit = {
+					c:OBE = {
+						has_land = yes
+						OR = {
+							is_subject_of = scope:antigonids_scope
+							is_subject = no
+						}
+					}
+				}
+				c:OBE.overlord = { release_subject = c:OBE }
+				make_subject = {
+					type = tributary
+					target = c:OBE
+				}
+			}			
 		}
 		hidden_effect = {		
 			scope:cilicia_satrapy = {
@@ -7036,7 +7416,6 @@ diadochi_flavor.60 = { # Macedon post Ipsos (Fixed)
 				}
 			}
 		}							
-		custom_tooltip = diadochi_flavor.60.dt
 		add_alliance = scope:caria_satrapy
 		every_country = {
 			limit = {
@@ -7742,26 +8121,68 @@ diadochi_flavor.68 = { # Ptolemy Caria
 	}
 
 	immediate = {
-		if = {
-			limit = { 
-				exists = c:LYC
-				is_subject = no
+##
+			if = {
+				limit = {
+					c:KAO = {
+						has_land = yes
+						is_subject = no
+					}
+				}
+				make_subject = {
+					type = tributary
+					target = c:KAO
+				}
 			}
-			make_subject = {
-				target = c:LYC
-				type = tributary
-			}		
-		}			
-		if = {
-			limit = { 
-				exists = c:KAO
-				is_subject = no
+			if = {
+				limit = {
+					c:PYK = {
+						has_land = yes
+						is_subject = no
+					}
+				}
+				make_subject = {
+					type = tributary
+					target = c:KAO
+				}
 			}
-			make_subject = {
-				target = c:KAO
-				type = tributary
-			}		
-		}
+			if = {
+				limit = {
+					c:HKS = {
+						has_land = yes
+						is_subject = no
+					}
+				}
+				make_subject = {
+					type = tributary
+					target = c:HKS
+				}
+			}
+			if = {
+				limit = {
+					c:MLO = {
+						has_land = yes
+						is_subject = no
+					}
+				}
+				make_subject = {
+					type = tributary
+					target = c:MLO
+				}
+			}
+			if = {
+				limit = {
+					c:KNI = {
+						has_land = yes
+						is_subject = no
+					}
+				}
+				make_subject = {
+					type = tributary
+					target = c:KNI
+				}
+			}
+##
 		hidden_effect = {
 			every_owned_province = {
 				limit = {
@@ -7910,15 +8331,37 @@ diadochi_flavor.69 = { # Ptolemy Cilicia
 			}		
 		}
 		if = {
-			limit = { 
-				exists = c:OBE
-				is_subject = no
+			limit = {
+				c:OBE = {
+					has_land = yes
+					OR = {
+						is_subject_of = scope:antigonids_scope
+						is_subject = no
+					}
+				}
 			}
+			c:OBE.overlord = { release_subject = c:OBE }
 			make_subject = {
-				target = c:OBE
 				type = tributary
-			}		
-		}	
+				target = c:OBE
+			}
+		}
+		if = {
+			limit = {
+				c:SSG = {
+					has_land = yes
+					OR = {
+						is_subject_of = scope:antigonids_scope
+						is_subject = no
+					}
+				}
+			}
+			c:SSG.overlord = { release_subject = c:SSG }
+			make_subject = {
+				type = vassal_tribe
+				target = c:SSG
+			}
+		}		
 		hidden_effect = {
 			every_owned_province = {
 				limit = {

@@ -1,5 +1,6 @@
 import os
 from os import path as path
+import re
 
 import yaml
 
@@ -15,7 +16,22 @@ LANGUAGE_MAPPER = {
 def clean_yaml(text: str) -> str:
     for i in range(0, 10):
         text = text.replace(f":{i}", ":")
-    return text
+
+    # Escape the inner quotes in the values before parsing, to avoid false positives.
+    pattern = r'^([^:]+):\s*"(.+)"$'
+    cleaned_lines = []
+    for line in text.splitlines():
+        indent = len(line) - len(line.lstrip())
+
+        match = re.match(pattern, line.strip())
+        if match:
+            key, value = match.groups()
+            # Escape quotes in the value
+            value = value.replace('"', '\\"')
+            cleaned_lines.append(f'{" " * indent}{key}: "{value}"')
+        else:
+            cleaned_lines.append(line)
+    return '\n'.join(cleaned_lines)
 
 
 def read_file_into_string(file_name: str) -> str:

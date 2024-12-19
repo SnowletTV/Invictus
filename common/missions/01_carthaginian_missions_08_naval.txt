@@ -1,0 +1,592 @@
+﻿carthaginian_mission_naval_dominance = {
+    header = "mission_image_carthage"
+    icon = "carthage_3"
+
+    repeatable = no
+
+    chance = {
+        factor = 3 # Special missions more likely
+    }
+	ai_chance = { factor = 0 }
+
+    potential = {
+        has_variable = num_of_completed_missions
+        var:num_of_completed_missions >= 2
+        NOT = { has_variable = carthaginian_mission_08_naval }
+        has_dlc = "The Punic Wars"
+    	primary_culture = carthaginian
+    	owns = 3256
+    	any_owned_province = {
+    		count >= 10
+    		is_port = yes
+    		OR = {
+    			is_in_region = africa_region
+    			is_in_region = numidia_region
+    			is_in_region = mauretainia_region
+    		}
+    	}
+    	OR = {
+            rank = great_power
+            rank = major_power
+        }
+        is_subject = no
+        has_civil_war = no
+    }
+
+    abort = {
+        ai_mission_back_out_trigger = yes
+    }
+
+    on_start = {
+        start_mission_ai_effect = yes
+    	root = { save_scope_as = mission_country }
+    	p:2256 = { save_scope_as = narbo_scope }
+    	p:2313 = { save_scope_as = sextantio_scope }
+    	p:2319 = { save_scope_as = arelatis_scope }
+    	p:3256 = { save_scope_as = carthage_scope }
+    }
+
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = carthaginian_mission_08_naval
+            days = 7300
+        }
+    }
+
+    on_completion = {
+        complete_mission_effect = yes
+    }
+
+    carthaginian_mission_naval_dominance_task_1 = { # Expanding the Cothon
+        icon = "task_economical"
+
+    	duration = 365
+
+        allow = {
+        	trigger_if = {
+        		limit = {
+        			NOT = { owns = 3256 }
+        		}
+        		owns = 3256
+        	}
+        	treasury >= 250
+        	manpower >= 10
+        }
+
+        on_start = {
+        	add_treasury = -250
+        	add_manpower = -10
+        }
+
+        on_completion = {
+        	if = {
+        		limit = {
+        			scope:carthage_scope = {
+                        exists = owner
+        				owner = root
+        			}
+        		}
+        		scope:carthage_scope = {
+					add_province_modifier = {
+						name = "carthage_military_harbor"
+						duration = -1
+					}
+				}
+        	}
+        }
+    }
+
+    carthaginian_mission_naval_dominance_task_2 = { # Naval Experimentation
+        icon = "task_expansion"
+
+    	duration = 365
+
+    	requires = { carthaginian_mission_naval_dominance_task_1 }
+		
+        bypass = {
+			is_ai = yes
+		}
+		
+        allow = {
+        	trigger_if = {
+        		limit = {
+        			NOT = { owns = 3256 }
+        		}
+        		owns = 3256
+        	}
+        	custom_tooltip = {
+        		text = carthaginian_mission_naval_dominance_task_2_tt
+	        	any_country_sub_unit = {
+	        		count >= 10
+	        		owning_unit.unit_location = scope:carthage_scope
+	        		OR = {
+	    				sub_unit_type = trireme
+	    				sub_unit_type = tetrere
+	    			}
+	        	}
+        	}
+        }
+
+        on_start = {
+        	custom_tooltip = carthaginian_mission_naval_dominance_task_2_effect_tt
+        	hidden_effect = {
+	        	ordered_country_sub_unit = {
+	        		order_by = subunit_strength_percentage
+	        		limit = {
+	        			owning_unit.unit_location = scope:carthage_scope
+		        		OR = {
+		    				sub_unit_type = trireme
+		    				sub_unit_type = tetrere
+		    			}
+	        		}
+	        		max = 10
+	        		destroy_subunit = yes
+	        	}
+	        	if = {
+	        		limit = {
+	        			any_navy = {
+	        				unit_size = 0
+	        			}
+	        		}
+	        		every_navy = {
+	        			limit = {
+	        				unit_size = 0
+	        			}
+	        			destroy_unit = yes
+	        		}
+	        	}
+        	}
+        }
+
+        on_completion = {
+    		create_unit = {
+				location = 2564
+				navy = yes
+				sub_unit = mega_galley
+				add_subunit = octere
+				add_subunit = octere
+				add_subunit = octere
+				add_subunit = hexere
+				add_subunit = hexere
+				add_subunit = hexere
+				add_subunit = hexere
+				add_subunit = hexere
+				add_subunit = hexere
+			}
+    	}
+    }
+
+    carthaginian_mission_naval_dominance_task_3 = { # Phoenician Heritage
+        icon = "task_diplomatic"
+
+    	requires = { carthaginian_mission_naval_dominance_task_2 }
+
+        potential = {
+        	exists = c:BYB
+        	c:BYB = {
+        		has_land = yes
+        	}
+        }
+
+        allow = {
+        	hidden:c:BYB = {
+        		not = { war_with = root }
+        		opinion = {
+        			target = root
+        			value >= 50
+        		}
+        	}
+        	treasury >= 100
+        }
+
+        on_completion = {
+        	add_treasury = -100
+        	add_country_modifier = {
+        		name = carthage_mission_byblian_timber_modifier
+        		duration = 10950
+        	}
+        	c:BYB = {
+        		add_opinion = {
+        			modifier = mission_carthaginian_mission_friendly_descendant_opinion
+        			target = root
+        		}
+        		trigger_event = {
+        			id = me_carthage_naval_dominance.1
+        		}
+        	}
+        }
+    }
+
+    carthaginian_mission_naval_dominance_task_4 = { # The Ports of Africa
+        icon = "task_conquest"
+
+        highlight = {
+			scope:province = {
+				is_port = yes
+				OR = {
+					is_in_region = africa_region
+					is_in_region = numidia_region
+					is_in_region = mauretainia_region
+				}
+			}
+        }
+
+        allow = {
+        	custom_tooltip = {
+        		text = carthaginian_mission_naval_dominance_task_4_tt
+        		region:africa_region = {
+	        		any_region_province = {
+	        			count >= carthaginian_naval_dominance_mission_african_harbors_svalue
+	        			owned_or_subject_owned = root
+	        			is_port = yes
+	        		}
+	        	}
+        	}
+        	custom_tooltip = {
+        		text = carthaginian_mission_naval_dominance_task_4_tt_2
+        		region:numidia_region = {
+	        		any_region_province = {
+	        			count >= carthaginian_naval_dominance_mission_numidian_harbors_svalue
+	        			owned_or_subject_owned = root
+	        			is_port = yes
+	        		}
+	        	}
+        	}
+        	custom_tooltip = {
+        		text = carthaginian_mission_naval_dominance_task_4_tt_3
+        		region:mauretainia_region = {
+	        		any_region_province = {
+	        			count >= carthaginian_naval_dominance_mission_mauretanian_harbors_svalue
+	        			owned_or_subject_owned = root
+	        			is_port = yes
+	        		}
+	        	}
+        	}
+        }
+
+        on_completion = {
+        	ordered_owned_province = {
+        		limit = {
+        			OR = {
+        				is_in_region = africa_region
+        				is_in_region = numidia_region
+        				is_in_region = mauretainia_region
+        			}
+        			is_port = yes
+        		}
+                max = 10
+                order_by = total_population
+        		custom = carthaginian_mission_naval_dominance_task_4_effect_tt
+        		add_province_modifier = {
+        			name = punic_mission_trade_dominance_modifier
+        			duration = 7300
+        		}
+        	}
+        }
+    }
+
+    carthaginian_mission_naval_dominance_task_6 = { # A Focus for the Future
+        icon = "task_political"
+
+    	requires = { carthaginian_mission_naval_dominance_task_4 }
+
+        allow = {
+        	treasury >= 250
+        }
+
+        on_completion = {
+        	add_treasury = -250
+        	custom_tooltip = carthaginian_mission_naval_dominance_task_6_tt
+        	trigger_event = {
+        		id = me_carthage_naval_dominance.2
+        	}
+        }
+    }
+
+    carthaginian_mission_naval_dominance_task_7 = { # Controlling the Seas
+        icon = "task_expansion"
+
+    	allow = {
+			trigger_if = {
+				limit = { is_ai = yes }
+				always = yes
+			}
+			trigger_else = {
+				custom_tooltip = {
+					text = carthaginian_mission_naval_dominance_task_7_tt
+					any_country_sub_unit = {
+						count >= 200
+						is_ship = yes
+					}
+				}
+			}
+    	}
+
+    	on_completion = {
+    		add_country_modifier = {
+    			name = carthage_mission_controlling_the_seas_modifier
+    			duration = 7300
+    		}
+    	}
+    }
+
+    carthaginian_mission_naval_dominance_task_8 = { # A Port in the North
+        icon = "task_diplomatic"
+
+    	requires = { carthaginian_mission_naval_dominance_task_7 }
+
+        highlight = {
+			scope:province = {
+				OR = {
+					province_id = 2256
+					province_id = 2313
+					province_id = 2319
+				}
+			}
+        }
+
+    	potential = {
+    		NOT = {
+    			any_owned_province = {
+    				is_in_region = transalpine_gaul_region
+    			}
+    		}
+    	}
+
+    	allow = {
+    		treasury >= 200
+    		OR = {
+    			trigger_if = {
+    				limit = {
+    					scope:narbo_scope = {
+    						exists = owner
+    					}
+    				}
+    				custom_tooltip = {
+    					text = carthaginian_mission_naval_dominance_task_8_tt
+    					scope:narbo_scope.owner = {
+		    				opinion = {
+		    					target = root
+		    					value >= 25
+		    				}
+		    				NOT = { war_with = root }
+		    			}
+    				}
+    			}
+    			trigger_if = {
+    				limit = {
+    					scope:sextantio_scope = {
+    						exists = owner
+    					}
+    				}
+    				custom_tooltip = {
+    					text = carthaginian_mission_naval_dominance_task_8_tt_2
+    					scope:sextantio_scope.owner = {
+		    				opinion = {
+		    					target = root
+		    					value >= 25
+		    				}
+		    				NOT = { war_with = root }
+		    			}
+    				}
+    			}
+    			trigger_if = {
+    				limit = {
+    					scope:arelatis_scope = {
+    						exists = owner
+    					}
+    				}
+    				custom_tooltip = {
+    					text = carthaginian_mission_naval_dominance_task_8_tt_3
+    					scope:arelatis_scope.owner = {
+		    				opinion = {
+		    					target = root
+		    					value >= 25
+		    				}
+		    				NOT = { war_with = root }
+		    			}
+    				}
+    			}
+    		}
+    	}
+
+    	on_completion = {
+    		if = {
+    			limit = {
+    				calc_true_if = {
+    					amount >= 2
+    					scope:narbo_scope = {
+	    					exists = owner
+	    					owner = {
+	    						opinion = {
+			    					target = root
+			    					value >= 25
+			    				}
+			    				NOT = { war_with = root }
+	    					}
+	    				}
+		    			scope:sextantio_scope = {
+	    					exists = owner
+	    					owner = {
+	    						opinion = {
+			    					target = root
+			    					value >= 25
+			    				}
+			    				NOT = { war_with = root }
+	    					}
+	    				}
+		    			scope:arelatis_scope = {
+	    					exists = owner
+	    					owner = {
+	    						opinion = {
+			    					target = root
+			    					value >= 25
+			    				}
+			    				NOT = { war_with = root }
+	    					}
+	    				}
+    				}
+    			}
+    			custom_tooltip = carthaginian_mission_naval_dominance_task_8_effect_tt
+    			trigger_event = {
+	    			id = me_carthage_naval_dominance.3
+	    		}
+    		}
+    		else_if = {
+    			limit = {
+    				scope:narbo_scope = {
+    					exists = owner
+    					owner = {
+    						opinion = {
+		    					target = root
+		    					value >= 25
+		    				}
+		    				NOT = { war_with = root }
+    					}
+    				}
+    			}
+    			custom_tooltip = carthaginian_mission_naval_dominance_task_8_effect_tt_2
+    			scope:narbo_scope = {
+	        		save_scope_as = north_port_province
+	        		owner = {
+	        			trigger_event = {
+							id = me_carthage_naval_dominance.4
+							days = 5
+						}
+	        		}
+	        	}
+    		}
+    		else_if = {
+    			limit = {
+    				scope:sextantio_scope = {
+    					exists = owner
+    					owner = {
+    						opinion = {
+		    					target = root
+		    					value >= 25
+		    				}
+		    				NOT = { war_with = root }
+    					}
+    				}
+    			}
+    			custom_tooltip = carthaginian_mission_naval_dominance_task_8_effect_tt_3
+    			scope:sextantio_scope = {
+	        		save_scope_as = north_port_province
+	        		owner = {
+	        			trigger_event = {
+							id = me_carthage_naval_dominance.4
+							days = 5
+						}
+	        		}
+	        	}
+    		}
+    		else_if = {
+    			limit = {
+    				scope:arelatis_scope = {
+    					exists = owner
+    					owner = {
+    						opinion = {
+		    					target = root
+		    					value >= 25
+		    				}
+		    				NOT = { war_with = root }
+    					}
+    				}
+    			}
+    			custom_tooltip = carthaginian_mission_naval_dominance_task_8_effect_tt_4
+    			scope:arelatis_scope = {
+	        		save_scope_as = north_port_province
+	        		owner = {
+	        			trigger_event = {
+							id = me_carthage_naval_dominance.4
+							days = 5
+						}
+	        		}
+	        	}
+    		}
+    		else = {
+    			custom_tooltip = carthaginian_mission_naval_dominance_task_8_effect_tt
+    		}
+    	}
+    }
+
+    carthaginian_mission_naval_dominance_task_final = { # Lord of the Sea
+        icon = "task_expansion"
+
+    	requires = { carthaginian_mission_naval_dominance_task_2 carthaginian_mission_naval_dominance_task_6 carthaginian_mission_naval_dominance_task_7 }
+
+        final = yes
+
+        on_completion = {
+      		create_character = {
+      			age = 35
+      			culture = root.culture
+      			religion = root.religion
+      			no_stats = yes
+      			hidden_effect = {
+	      			amazing_martial_effect = yes
+	      			add_martial = 4
+	      			good_charisma_effect = yes
+	      			great_finesse_effect = yes
+	      			amazing_zeal_effect = yes
+	      			random_list = {
+	      				5 = {
+	      					trigger = {
+	      						NOT = { has_trait = daring }
+	      					}
+	      					add_trait = daring
+	      				}
+	      				5 = {
+	      					trigger = {
+	      						NOT = { has_trait = oarmaster }
+	      					}
+	      					add_trait = oarmaster
+	      				}
+	      				5 = {
+	      					trigger = {
+	      						NOT = { has_trait = tough }
+	      					}
+	      					add_trait = tough
+	      				}
+	      				5 = {
+	      					trigger = {
+	      						NOT = { has_trait = improviser }
+	      					}
+	      					add_trait = improviser
+	      				}
+	      			}
+	      			positive_martial_trait_effect = yes
+      			}
+      			save_scope_as = new_admiral
+      		}
+        	add_country_modifier = {
+        		name = punic_mission_naval_dominance_lord_of_the_sea_modifier
+        		duration = -1
+        	}
+        	trigger_event = {
+        		id = me_carthage_naval_dominance.7
+        	}
+        }
+    }
+}

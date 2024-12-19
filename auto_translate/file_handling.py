@@ -21,12 +21,14 @@ def clean_yaml(text: str) -> str:
     pattern = r'^([^:]+):\s*"(.+)"$'
     cleaned_lines = []
     for line in text.splitlines():
+        indent = len(line) - len(line.lstrip())
+
         match = re.match(pattern, line.strip())
         if match:
             key, value = match.groups()
             # Escape quotes in the value
             value = value.replace('"', '\\"')
-            cleaned_lines.append(f'{key}: "{value}"')
+            cleaned_lines.append(f'{" " * indent}{key}: "{value}"')
         else:
             cleaned_lines.append(line)
     return '\n'.join(cleaned_lines)

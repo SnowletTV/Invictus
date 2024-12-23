@@ -1,11 +1,11 @@
-version="1.8.0.2"
+version="1.7.1"
 tags={
 	"Overhaul"
 	"Total Conversions"
 }
-name="Imperator: Invictus"
+name="Imperator: InvictusDev"
 dependencies={
 	"2.0 Better UI"
 }
 supported_version="2.*"
-remote_file_id="2532715348"
+#remote_file_id="2532715348"

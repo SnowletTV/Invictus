@@ -1,0 +1,1682 @@
+﻿armenia_missions = {
+    header = "mission_image_seleukid"
+    icon = "seleukid_2"
+
+    repeatable = no
+    chance = {
+		factor = 5
+	}
+
+    potential = {
+        tag = ARM
+        NOT = { has_variable = armenia_mission_cooldown }
+    }
+
+    on_potential = {
+        set_variable = {
+            name = persian_culture_points
+            value = 0
+        }
+        set_variable = {
+            name = hellenic_culture_points
+            value = 0
+        }
+        set_variable = {
+            name = armenian_culture_points
+            value = 0
+        }
+    }
+
+    abort = {
+		ai_mission_back_out_trigger = yes
+	}
+
+    on_start = {
+        start_mission_ai_effect = yes
+        set_variable = armenia_mission_cooldown
+    }
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = armenia_mission_cooldown
+            days = 7300
+        }
+    }
+    on_completion = {
+		complete_mission_effect = yes
+        show_as_tooltip = {
+            custom_tooltip = culture_points_persian_tt
+            custom_tooltip = culture_points_hellenic_tt
+            custom_tooltip = culture_points_armenian_tt
+        }
+        custom_tooltip = armenia_end_bonus_tt
+	}
+
+    armenia_task_start = {
+        icon = "task_diplomatic"
+
+        duration = 180
+
+        on_completion = {
+            trigger_event = me_armenia.1
+            custom_tooltip = culture_points_info_tt
+            custom_tooltip = culture_points_persian_tt
+            custom_tooltip = culture_points_hellenic_tt
+            custom_tooltip = culture_points_armenian_tt
+        }
+    }
+
+    armenia_task_1 = { # start persian influences
+        icon = "task_happiness"
+
+        allow = {
+            custom_tooltip = {
+                text = integrate_persians_tt
+                any_integrated_culture = {
+                    this.culture.culture_group = culture_group:persia
+                }
+            }
+        }
+
+        requires = { armenia_task_start }
+
+        on_completion = {
+            trigger_event = me_armenia.2
+            show_as_tooltip = {
+                persian_culture_point_effect = yes
+                add_political_influence = 25
+                create_country_treasure = {
+                    key = persian_statue_gift
+                    icon = "treasure_statue"
+                    modifier = {
+                        local_nobles_desired_pop_ratio = 0.05
+                    }
+                }
+            }
+        }
+    }
+
+    armenia_task_2 = {
+        icon = "task_conquest"
+
+        requires = { armenia_task_1 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 3_culture_points_persian_tt
+                    var:persian_culture_points >= 3
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 2_culture_points_persian_tt
+                    var:persian_culture_points >= 2
+                }
+            }
+            custom_tooltip = {
+                text = persian_honor_guard_tt
+                any_integrated_culture = {
+                    this.culture.culture_group = culture_group:persia
+                    has_country_culture_modifier = honor_guard
+                }
+            }
+            custom_tooltip = {
+                text = primary_culture_eased_restrictions_on_citizenship_tt
+                any_integrated_culture = {
+                    is_culture = root.culture
+                    has_country_culture_modifier = citizenship_by_adoption
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.3
+            set_variable = increased_hellenic_point_cost_var
+            show_as_tooltip = {
+                persian_culture_point_effect = yes
+                custom_tooltip = increased_hellenic_points_needed_tt
+                add_country_modifier = {
+                    name = persian_influences_in_government
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    armenia_task_3 = {
+        icon = "task_political"
+        duration = 180
+        requires = { armenia_task_2 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 4_culture_points_persian_tt
+                    var:persian_culture_points >= 4
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 3_culture_points_persian_tt
+                    var:persian_culture_points >= 3
+                }
+            }
+            treasury >= 150
+            custom_tooltip = {
+                text = persian_country_opinion_tt
+                any_country = {
+                    NOT = { this = root}
+                    in_diplomatic_range = ROOT
+                    opinion = {
+                        target = root
+                        value >= 125
+                    }
+                    country_culture_group = persia
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.4
+            show_as_tooltip = {
+                persian_culture_point_effect = yes
+                add_treasury = -150
+                custom_tooltip = attract_settlers_tt
+            }
+        }
+    }
+
+    armenia_task_4 = {
+        icon = "task_battle"
+
+        requires = { armenia_task_2 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = _3_culture_points_hellenic_tt
+                    var:hellenic_culture_points < 3
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = _2_culture_points_hellenic_tt
+                    var:hellenic_culture_points < 2
+                }
+            }
+            custom_tooltip = {
+                text = _2_culture_points_armenia_tt
+                var:armenian_culture_points < 2
+            }
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 4_culture_points_persian_tt
+                    var:persian_culture_points >= 4
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 3_culture_points_persian_tt
+                    var:persian_culture_points >= 3
+                }
+            }
+            custom_tooltip = {
+                text = skilled_persian_general_tt
+                any_legion = {
+                    any_legion_commander = {
+                        this.culture.culture_group = culture_group:persia
+                        martial >= 8
+                    }
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.5
+            show_as_tooltip = {
+                persian_culture_point_effect = yes
+                add_military_experience = 20
+                custom_tooltip = access_persian_traditions_tt
+            }
+        }
+    }
+
+    armenia_task_5 = {
+        icon = "task_apollo"
+
+        requires = { armenia_task_4 armenia_task_3 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 6_culture_points_persian_tt
+                    var:persian_culture_points >= 6
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 5_culture_points_persian_tt
+                    var:persian_culture_points >= 5
+                }
+            }
+            OR = {
+                custom_tooltip = {
+                    text = zoro_conversion_tt
+                    any_pantheon_deity = {
+                        count >= 2
+                        deity_religion = zoroaster
+                    }  
+                }
+                custom_tooltip = {
+                    text = mithra_conversion_tt
+                    any_pantheon_deity = {
+                        count >= 2
+                        deity_religion = mithra_religion
+                    }
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.6
+            show_as_tooltip = {
+                persian_culture_point_effect = yes
+                add_innovation = 3
+                custom_tooltip = arm_we_can_convert_tt 
+            }
+        }
+    }
+
+    armenia_task_6 = { # start hellenic influences
+        icon = "task_athena"
+
+        requires = { armenia_task_start }
+
+        allow = {
+            custom_tooltip = {
+                text = integrate_hellenics_tt
+                any_integrated_culture = {
+                    this.culture.culture_group = culture_group:hellenic
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.7
+            show_as_tooltip = {
+                hellenic_culture_point_effect = yes
+                add_treasury = 100
+                create_country_treasure = {
+                    key = hellenic_statue_gift
+                    icon = "treasure_statue"
+                    modifier = {
+                        local_manpower_modifier = 0.15
+                    }
+                }
+            }
+        }
+    }
+
+    armenia_task_7 = {
+        icon = "task_apollo"
+
+        requires = { armenia_task_6 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 3_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 3
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 2_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 2
+                }
+            }
+            custom_tooltip = {
+                text = hellenic_honor_guard_tt
+                any_integrated_culture = {
+                    this.culture.culture_group = culture_group:hellenic
+                    has_country_culture_modifier = honor_guard
+                }
+            }
+            custom_tooltip = {
+                text = primary_culture_eased_restrictions_on_citizenship_tt
+                any_integrated_culture = {
+                    is_culture = root.culture
+                    has_country_culture_modifier = citizenship_by_adoption
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.8
+            set_variable = increased_persian_point_cost_var
+            show_as_tooltip = {
+                hellenic_culture_point_effect = yes
+                custom_tooltip = increased_persian_points_needed_tt
+                add_country_modifier = {
+                    name = greek_philosopohy_arm
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    armenia_task_8 = {
+        icon = "task_political"
+        duration = 180
+        requires = { armenia_task_7 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 4_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 4
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 3_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 3
+                }
+            }
+            treasury >= 150
+            custom_tooltip = {
+                text = hellenic_country_opinion_tt
+                any_country = {
+                    NOT = { this = root}
+                    in_diplomatic_range = ROOT
+                    country_culture_group = hellenic
+                    opinion = {
+                        target = root
+                        value >= 125
+                    }
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.9
+            show_as_tooltip = {
+                hellenic_culture_point_effect = yes
+                add_treasury = -150
+                custom_tooltip = attract_settlers_tt
+            }
+        }
+    }
+
+    armenia_task_9 = {
+        icon = "task_expansion"
+
+        requires = { armenia_task_7 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = _3_culture_points_persian_tt
+                    var:persian_culture_points < 3
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = _2_culture_points_persian_tt
+                    var:persian_culture_points < 2
+                }
+            }
+            custom_tooltip = {
+                text = _2_culture_points_armenia_tt
+                var:armenian_culture_points < 2
+            }
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 4_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 4
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 3_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 3
+                }
+            }
+            custom_tooltip = {
+                text = skilled_hellenic_general_tt
+                any_legion = {
+                    any_legion_commander = {
+                        this.culture.culture_group = culture_group:hellenic
+                        martial >= 8
+                    }
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.10
+            show_as_tooltip = {
+                hellenic_culture_point_effect = yes
+                add_military_experience = 20
+                custom_tooltip = sam_greek_kingdom_unlocked
+            }
+        }
+    }
+
+    armenia_task_10 = {
+        icon = "task_religion"
+
+        requires = { armenia_task_9 armenia_task_8 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 5_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 5
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 6_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 6
+                }
+            }
+            custom_tooltip = {
+                text = hellenism_conversion_tt
+                any_pantheon_deity = {
+                    count >= 2
+                    deity_religion = roman_pantheon
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.11
+            show_as_tooltip = {
+                hellenic_culture_point_effect = yes
+                add_innovation = 3
+                soft_change_religion_effect = {
+                    RELIGION = roman_pantheon
+                }
+            }
+        }
+    }
+
+    armenia_task_11 = { # start native purism
+        icon = "task_diplomatic"
+        duration = 365
+        allow = {
+            custom_tooltip = {
+                text = armenian_census_tt
+                any_country_culture = {
+                    is_culture = armenian
+                    country_culture_pop_count >= 600
+                }
+            }
+        }
+
+        requires = { armenia_task_start }
+        
+        on_completion = {
+            trigger_event = me_armenia.12
+            show_as_tooltip = {
+                armenian_culture_point_effect = yes
+                add_country_modifier = {
+                    name = armenian_census_mod
+                    duration = 9125 # 25 years
+                }
+            }
+        }
+    }
+
+    armenia_task_12 = {
+        icon = "task_calm"
+
+        requires = { armenia_task_11 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = _4_culture_points_hellenic_tt
+                    var:hellenic_culture_points < 4
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = _3_culture_points_hellenic_tt
+                    var:hellenic_culture_points < 3
+                }
+            }
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = _4_culture_points_persian_tt
+                    var:persian_culture_points < 4
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = _3_culture_points_persian_tt
+                    var:persian_culture_points < 3
+                }
+            }
+            custom_tooltip = {
+                text = armenian_offices_tt
+                NOT = {
+                    any_character = {
+                        has_any_office = yes
+                        NOT = {
+                            has_culture = armenian
+                        }
+                    }
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.13
+            show_as_tooltip = {
+                armenian_culture_point_effect = yes
+                add_political_influence = 150
+                add_stability = 5
+            }
+        }
+    }
+
+    armenia_task_13 = {
+        icon = "task_religion"
+
+        requires = { armenia_task_12 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = _3_culture_points_hellenic_tt
+                    var:hellenic_culture_points < 3
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = _2_culture_points_hellenic_tt
+                    var:hellenic_culture_points < 2
+                }
+            }
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = _3_culture_points_persian_tt
+                    var:persian_culture_points < 3
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = _2_culture_points_persian_tt
+                    var:persian_culture_points < 2
+                }
+            }
+            religious_unity >= 0.75
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.14
+            show_as_tooltip = {
+                armenian_culture_point_effect = yes
+                add_country_modifier = {
+                    name = enforced_unity 
+                    duration = 9125 # 25 years
+                }
+            }
+        }
+    }
+
+    armenia_task_14 = {
+        icon = "task_expansion"
+
+        requires = { armenia_task_12 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = _2_culture_points_hellenic_tt
+                    var:hellenic_culture_points < 2
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = _1_culture_points_hellenic_tt
+                    var:hellenic_culture_points < 1
+                }
+            }
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = _2_culture_points_persian_tt
+                    var:persian_culture_points < 2
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = _1_culture_points_persian_tt
+                    var:persian_culture_points < 1
+                }
+            }
+            custom_tooltip = {
+                text = enslaved_non_armenians_tt
+                NOT = {
+                    any_country_culture = {
+                        NOT = { this.culture = culture:armenian }
+                        NOT = { has_pop_type_right = slaves }
+                    }
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.15
+            show_as_tooltip = {
+                armenian_culture_point_effect = yes
+                add_country_modifier = {
+                    name = nativist_policies
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    armenia_task_15 = {
+        icon = "task_happiness"
+
+        requires = { armenia_task_14 armenia_task_13 }
+
+        allow = {
+            custom_tooltip = {
+                text = 5_culture_points_armenia_tt
+                var:armenian_culture_points >= 5
+            }
+            custom_tooltip = {
+                text = armenian_intellectual_elite_tt
+                country_arm_num_of_nobles >= 100
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.16
+            show_as_tooltip = {
+                armenian_culture_point_effect = yes
+                add_innovation = 2
+                add_country_modifier = {
+                    name = armenian_intellectualism_rising
+                    duration = 9125 # 25 years
+                }
+            }
+        }
+    }
+
+    # start of military
+
+    armenia_task_16 = { 
+        icon = "task_conquest"
+
+        duration = 365
+
+        allow = {
+            military_experience >= 5
+            treasury >= 50
+            hidden:capital_scope = {
+                free_building_slots >= 1
+            }
+        }
+
+        #on_start = {} # todo: add event chains for the neighbouring nations, some could become vassals, potentially through tasks
+        
+        on_completion = {
+            trigger_event = me_armenia.17
+            show_as_tooltip = {
+                add_military_experience = -5
+                add_treasury = -50
+                add_country_modifier = {
+                    name = armenia_army_start_buff
+                    duration = 9125 # 25 years
+                }
+                capital_scope = {
+                    add_building_level = fortress_building
+                }
+                mission_claim_region_effect = { REGION = armenia_region }
+                mission_claim_region_effect = { REGION = colchis_region }
+                mission_claim_region_effect = { REGION = albania_region }
+                mission_claim_region_effect = { REGION = media_region }
+                mission_claim_region_effect = { REGION = cappdocia_pontica_region }
+                mission_claim_region_effect = { REGION = cappadocia_region }
+                mission_claim_region_effect = { REGION = syria_region }
+                mission_claim_region_effect = { REGION = assyria_region }
+                mission_claim_area_effect = { AREA = cilicia_pedias_area }
+                mission_claim_area_effect = { AREA = cilicia_trachea_area }
+            }
+        }
+    }
+
+    armenia_task_17 = { 
+        icon = "task_battle"
+
+        requires = { armenia_task_16 } 
+
+        requires = { armenia_task_start } 
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = armenia_region
+                    is_in_region = colchis_region
+                    is_in_region = albania_region
+                }
+            }
+        }
+
+        allow = {
+            stability >= 55
+            owns_or_subject_owns_region = armenia_region
+            owns_or_subject_owns_region = colchis_region
+            owns_or_subject_owns_region = albania_region
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.18
+            show_as_tooltip = {
+                add_stability = -5
+                custom_tooltip = armenian_settlers_tt
+            }
+        }
+    }
+
+    armenia_task_18 = { 
+        icon = "task_expansion"
+
+        requires = { armenia_task_17 } 
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = cappadocia_pontica_region
+                    is_in_region = cappadocia_region
+                }
+            }
+        }
+
+        allow = {
+            owns_or_subject_owns_region = cappadocia_pontica_region
+            owns_or_subject_owns_region = cappadocia_region
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.19
+            show_as_tooltip = {
+                add_treasury = 500
+                add_military_experience = 25
+            }
+        }
+    }
+
+    armenia_task_19 = { 
+        icon = "task_battle"
+
+        requires = { armenia_task_17 } 
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = media_region
+                }
+            }
+        }
+
+        allow = {
+            owns_or_subject_owns_region = media_region
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.20
+            show_as_tooltip = {
+                add_innovation = 1
+                add_research = {
+                    technology = military_tech
+                    value = 20
+                }
+                add_research = {
+                    technology = civic_tech
+                    value = 20
+                }
+                add_research = {
+                    technology = oratory_tech
+                    value = 20
+                }
+                add_research = {
+                    technology = religious_tech
+                    value = 20
+                }
+            }
+        }
+    }
+
+    armenia_task_20 = { 
+        icon = "task_conquest"
+        duration = 90
+        requires = { armenia_task_18 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 3_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 3
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 2_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 2
+                }
+            }
+            trigger_if = {
+                limit = {
+                    var:hellenic_culture_points >= 4
+                }
+                military_experience >= 25
+            }
+            trigger_else = {
+                military_experience >= 50
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.21
+            show_as_tooltip = {
+                hellenic_culture_point_effect = yes
+                if = {
+                    limit = {
+                        var:hellenic_culture_points >= 4
+                    }
+                    add_military_experience = -25
+                }
+                else = {
+                    add_military_experience = -50
+                }
+                add_country_modifier = {
+                    name = integrating_macedonian_tactics
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    armenia_task_21 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_19 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 3_culture_points_persian_tt
+                    var:persian_culture_points >= 3
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 2_culture_points_persian_tt
+                    var:persian_culture_points >= 2
+                }
+            }
+            trigger_if = {
+                limit = {
+                    var:persian_culture_points >= 4
+                }
+                military_experience >= 25
+            }
+            trigger_else = {
+                military_experience >= 50
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.22
+            show_as_tooltip = {
+                persian_culture_point_effect = yes
+                if = {
+                    limit = {
+                        var:persian_culture_points >= 4
+                    }
+                    add_military_experience = -25
+                }
+                else = {
+                    add_military_experience = -50
+                }
+                add_country_modifier = {
+                    name = integrating_persian_tactics
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    armenia_task_22 = {
+        icon = "task_expansion"
+        duration = 90
+        requires = { armenia_task_31 } 
+
+        highlight = {
+            scope:province = {
+                province_id = 988
+            }
+        }
+
+        duration = 180
+
+        on_start = { #
+            # flavour event about lake van monster/vishaps (armenian dragons)
+            trigger_event = {
+                id = me_armenia.43
+                days = { 100 120 }
+            }
+            # flavour event about the van cat
+            trigger_event = {
+                id = me_armenia.42
+                days = { 30 60 }
+            }
+        }
+
+        allow = {
+            custom_tooltip = {
+                text = 2_culture_points_armenia_tt
+                var:armenian_culture_points >= 2
+            }
+            hidden:p:988 = {
+                has_building = fortress_building
+                is_state_capital = yes
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.23
+            show_as_tooltip = {
+                armenian_culture_point_effect = yes
+                p:988 = {
+                    set_city_status = city
+                    add_permanent_province_modifier = {
+                        name = van_fortress
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+
+    armenia_task_23 = {
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_22 } 
+
+        highlight = {
+            scope:province = {
+                this = root.capital_scope
+            }
+        }
+
+        allow = {
+            capital_scope = {
+                num_of_fortress_building >= 15 # this is the number required to get the achievement
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.24
+            show_as_tooltip = {
+                add_2_free_province_investments = yes
+                capital_scope = {
+                    add_permanent_province_modifier = {
+                        name = hall_of_the_mountain_king
+                        duration = -1
+                    }
+                    state = {
+                        add_state_modifier = {
+                            name = hall_of_the_mountain_king_state
+                            duration = -1
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    armenia_task_24 = {
+        icon = "task_conquest"
+
+        requires = { armenia_task_17 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = syria_region
+                    is_in_region = assyria_region
+                    is_in_area = cilicia_pedias_area
+                    is_in_area = cilicia_trachea_area
+                }
+            }
+        }
+
+        allow = {
+            owns_or_subject_owns_region = syria_region
+            owns_or_subject_owns_region = assyria_region
+            owns_or_subject_owns_area = cilicia_pedias_area
+            owns_or_subject_owns_area = cilicia_trachea_area
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.25
+            show_as_tooltip = {
+                custom_tooltip = southern_border_tt
+            }
+        }
+    }
+
+    armenia_task_25 = {
+        icon = "task_heracles"
+
+        final = yes
+
+        requires = { armenia_task_18 armenia_task_19 armenia_task_24 }
+
+        allow = {
+            military_experience >= 35
+            political_influence >= 50
+            custom_tooltip = {
+                text = formed_greater_armenia_tt
+                has_variable = has_formed_greater_armenia
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.26
+            show_as_tooltip = {
+                add_military_experience = -10
+                add_political_influence = -50
+                add_country_modifier = {
+                    name = greatest_armenia
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    # flavour 
+
+    armenia_task_26 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_start } 
+
+        duration = 365
+
+        allow = {
+            legitimacy >= 99
+            stability >= 65
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.27
+            show_as_tooltip = {
+                add_political_influence = 100
+                add_treasury = 250
+                add_aggressive_expansion = -10
+            }
+        }
+    }
+
+    armenia_task_27 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_start } 
+
+        duration = 365
+
+        allow = {
+            political_influence >= 50
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.28
+            show_as_tooltip = {
+                add_political_influence = -50
+                custom_tooltip = unlock_bactrian_mil_trads_tt
+                mission_claim_region_effect = { REGION = bactriana_region }
+            }
+        }
+    }
+
+    armenia_task_28 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_27 }
+
+        allow = {
+            current_ruler = {
+                has_trait = orontid
+            }
+            custom_tooltip = {
+                text = orontes_aqueduct_tt
+                country_aqueduct_count >= 25
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.29
+            show_as_tooltip = {
+                persian_culture_point_effect = yes
+                add_country_modifier = {
+                    name = orontid_duty
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    armenia_task_29 = { 
+        icon = "task_calm"
+
+        requires = { armenia_task_27 } 
+
+        duration = 365
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 4_culture_points_persian_tt
+                    var:persian_culture_points >= 4
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 3_culture_points_persian_tt
+                    var:persian_culture_points >= 3
+                }
+            }
+            political_influence >= 50
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.30
+            show_as_tooltip = {
+                persian_culture_point_effect = yes
+                add_political_influence = -50
+                current_ruler = {
+                    add_bloodline_effect = { BLOODLINE = achaemenid }
+                }
+            }
+        }
+    }
+
+    armenia_task_30 = { 
+        icon = "task_political"
+
+        requires = { armenia_task_26 }
+
+        allow = {
+            custom_tooltip = {
+                text = nakharar_tt
+                holdings_distributed_svalue >= 25
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.31
+            show_as_tooltip = {
+                armenian_culture_point_effect = yes
+                add_country_modifier = {
+                    name = nakharar_system
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    armenia_task_31 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_26 }
+
+        allow = {
+            custom_tooltip = {
+                text = saba_admin_tt
+                any_character = {
+                    count >= 2
+                    is_head_of_family = yes
+                    from_ruler_family = no
+                    loyalty >= 66
+                }
+            }
+            custom_tooltip = {
+                text = 3_culture_points_armenia_tt
+                var:armenian_culture_points >= 3
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.32
+            show_as_tooltip = { # todo option to switch to Urartu
+                armenian_culture_point_effect = yes
+                add_political_influence = 50
+                add_stability = 10
+                add_military_experience = 25
+            }
+        }
+    }
+
+    armenia_task_32 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_31 }
+
+        duration = 730 # 2 years
+
+        allow = {
+            job_holder:office_high_priest_monarchy = {
+               zeal >= 8
+            }   
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.33
+            show_as_tooltip = {
+                armenian_culture_point_effect = yes
+                p:5212 = {
+                    every_neighbor_province = {
+                        add_permanent_province_modifier = {
+                            name = home_of_the_gods
+                        }
+                        if = {
+                            limit = {
+                                any_pops_in_province = {
+                                    NOT = {
+                                        pop_religion = anahitic_religion
+                                    }
+                                }
+                            }
+                            random_pops_in_province = {
+                                limit = {
+                                    NOT = {
+                                        pop_religion = anahitic_religion
+                                    }
+                                }
+                                set_pop_religion = anahitic_religion
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    armenia_task_33 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_22 }
+
+        allow = {
+            political_influence >= 25
+            OR = {
+                trigger_if = {
+                    limit = {
+                        has_variable = increased_persian_point_cost_var
+                    }
+                    custom_tooltip = {
+                        text = 4_culture_points_persian_tt
+                        var:persian_culture_points >= 4
+                    }
+                }
+                trigger_else = {
+                    custom_tooltip = {
+                        text = 3_culture_points_persian_tt
+                        var:persian_culture_points >= 3
+                    }
+                }
+                custom_tooltip = {
+                    text = 3_culture_points_armenia_tt
+                    var:armenian_culture_points >= 3
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.34
+            show_as_tooltip = {
+                add_political_influence = -25
+                custom_tooltip = xerxes_inscription_tt
+            }
+        }
+    }
+
+    armenia_task_34 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_29 }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = _3_culture_points_hellenic_tt
+                    var:hellenic_culture_points < 3
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = _2_culture_points_hellenic_tt
+                    var:hellenic_culture_points < 2
+                }
+            }
+            custom_tooltip = {
+                text = _2_culture_points_armenia_tt
+                var:armenian_culture_points < 2
+            }
+            has_aggressive_expansion < 1
+            has_war_exhaustion < 1
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.35
+            show_as_tooltip = {
+                persian_culture_point_effect = yes
+                add_country_modifier = {
+                    name = adopting_edict_of_cyrus
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    armenia_task_35 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_start } 
+
+        duration = 180
+
+        allow = {
+            political_influence >= 25
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.36
+            show_as_tooltip = {
+                hellenic_culture_point_effect = yes
+                add_political_influence = -25
+                add_country_modifier = {
+                    name = invited_hellenic_architects
+                    duration = 9125 # 25 years
+                }
+            }
+        }
+    }
+
+    armenia_task_36 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_35 } 
+
+        highlight = {
+            scope:province = {
+                this = root.capital_scope
+            }
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_hellenic_point_cost_var
+                }
+                custom_tooltip = {
+                    text = 3_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 3
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = 2_culture_points_hellenic_tt
+                    var:hellenic_culture_points >= 2
+                }
+            }
+            treasury >= 150
+            capital_scope = {
+                num_of_library_building >= 3
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.37
+            show_as_tooltip = {
+                hellenic_culture_point_effect = yes
+                add_treasury = -150
+                capital_scope = {
+                    add_building_level = library_building
+                    add_province_modifier = {
+                        name = arm_greek_library 
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+
+    armenia_task_37 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_35 } 
+
+        highlight = {
+            scope:province = {
+                this = root.capital_scope
+            }
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    has_variable = increased_persian_point_cost_var
+                }
+                custom_tooltip = {
+                    text = _4_culture_points_persian_tt
+                    var:persian_culture_points < 4
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = _3_culture_points_persian_tt
+                    var:persian_culture_points < 3
+                }
+            }
+            custom_tooltip = {
+                text = _3_culture_points_armenia_tt
+                var:armenian_culture_points < 3
+            }
+            treasury >= 150
+            custom_tooltip = {
+                text = arm_gymnaseion_tt
+                any_character = {
+                    has_culture_group = hellenic
+                    charisma >= 8
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.38
+            show_as_tooltip = {
+                hellenic_culture_point_effect = yes
+                add_treasury = -150
+                capital_scope = {
+                    add_building_level = academy_building
+                    add_province_modifier = {
+                        name = arm_greek_gymnaseion
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+
+    armenia_task_38 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_26 } 
+
+        highlight = {
+            scope:province = {
+                this = root.capital_scope
+            }
+        }
+
+        allow = {
+            capital_scope = {
+                num_of_used_building_slots >= 10
+                trigger_if = {
+                    limit = { has_construction = yes }
+                    has_construction = no
+                }
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.39
+            show_as_tooltip = {
+                capital_scope = {
+                    if = {
+                        limit = {
+                            NOT = { has_province_rank = city_metropolis }
+                        }
+                        set_city_status = city_metropolis
+                    }
+                    add_province_modifier = {
+                        name = resplendent_capital
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+
+    armenia_task_39 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_38 }
+
+        allow = {
+            custom_tooltip = {
+                text = armenian_apricots_tt
+                armenian_apricots_svalue >= 25
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.40
+            show_as_tooltip = {
+                custom_tooltip = apricot_reward_tt
+                random_owned_province = {
+                    limit = {
+                        trade_goods = fruits
+                    }
+                    add_permanent_province_modifier = {
+                        name = armenian_apricots
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+
+    armenia_task_40 = { 
+        icon = "task_diplomatic"
+
+        requires = { armenia_task_38 }
+
+        allow = {
+            custom_tooltip = {
+                text = armenian_wine_tt
+                armenian_wine_svalue >= 25
+            }
+        }
+        
+        on_completion = {
+            trigger_event = me_armenia.41
+            custom_tooltip = wine_reward_tt
+            show_as_tooltip = {
+                random_owned_province = {
+                    limit = {
+                        trade_goods = wine
+                    }
+                    add_permanent_province_modifier = {
+                        name = armenian_wine
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+

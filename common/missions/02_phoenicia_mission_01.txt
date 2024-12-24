@@ -1,0 +1,1388 @@
+﻿phoenicia_missions = {
+    header = "mission_image_carthage"
+    icon = "carthage_1"
+
+    repeatable = no
+    chance = {
+        factor = 100
+    }
+
+    potential = {
+        NOT = { has_variable = phoenicia_missions_cooldown_var }
+        NAND = {#Don't have to worry about competition
+            is_ai = yes
+            any_country = {
+                primary_culture = phoenician
+                is_ai = no
+            }
+        }
+        OR = {
+            primary_culture = phoenician
+            heritage = sidon_heritage
+            heritage = arados_heritage
+            heritage = byblos_heritage
+            tag = TYE
+        }
+    }
+
+    abort = {
+        ai_mission_back_out_trigger = yes
+    }
+    on_start = {
+        start_mission_ai_effect = yes
+        save_scope_as = mission_country
+    }
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = phoenicia_missions_cooldown_var
+            days = 7300
+        }
+    }
+    on_completion = {
+        add_3_free_province_investments = yes
+        custom_tooltip = access_new_tree_tt
+    }
+    phoenicia_missions_task_1 = { # Royal Fleet
+        icon = "task_expansion"
+        allow = {
+            num_of_ships >= 30
+        }
+        on_completion = {
+            trigger_event = me_phoenicia.1
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = tyre_navy
+                    duration = 3650
+                }
+            }
+        }
+    }
+    phoenicia_missions_task_2 = { # Maritime Training
+        icon = "task_battle"
+        duration = 365
+        requires = { phoenicia_missions_task_1 }
+        allow = {
+            treasury >= 100
+            military_experience >= 20
+        }
+        on_completion = {
+            trigger_event = me_phoenicia.2
+            show_as_tooltip = {
+                add_treasury = -100
+                add_military_experience = -20
+                add_country_modifier = {
+                    name = maritime_training
+                    duration = -1
+                }
+            }
+        }
+    }
+    phoenicia_missions_task_3 = { # Construction of a Flagship
+        icon = "task_conquest"
+        duration = 120
+        requires = { phoenicia_missions_task_1 }
+        allow = {
+            treasury >= 100
+            political_influence >= 20
+        }
+        on_completion = {
+            trigger_event = me_phoenicia.3
+            show_as_tooltip = {
+                custom_tooltip = new_tyre_admiral_tt
+                add_treasury = -100
+                add_political_influence = -20
+                custom_tooltip = phoenicia_missions_task_3_tt
+            }
+        }
+    }
+    phoenicia_missions_task_4 = { # Aegean Outreach
+        icon = "task_zeus_cornucopia"
+        duration = 30
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 471 #Kythera
+                    province_id = 356 #Thasos
+                }
+            }
+        }            
+        allow = {
+             capital_scope.state = {
+                incoming_trade_routes >= 3
+            }       
+            political_influence >= 20
+        }
+        on_completion = {
+            trigger_event = me_phoenicia.4
+            show_as_tooltip = {
+                add_political_influence = -20
+                add_country_modifier = {
+                    name = greek_gold_routes
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    phoenicia_missions_task_5 = { # A Stable Economy
+        icon = "task_economical"
+        requires = { phoenicia_missions_task_7 }
+        highlight = {
+            scope:province = {
+                owner = root
+                is_capital = yes
+            }
+        }
+        allow = {
+            capital_scope = {
+                num_of_commerce_building > 2
+            }
+            capital_scope.state = {
+                incoming_trade_routes >= 5
+            }
+        }
+        on_completion = {
+            trigger_event = me_phoenicia.5
+            show_as_tooltip = {
+                add_4_free_province_investments = yes
+            }
+        }
+    }
+    phoenicia_missions_task_6 = { # Trade Emporium
+        icon = "task_happiness"
+        duration = 180
+        requires = { phoenicia_missions_task_5 }
+        highlight = {
+            scope:province = {
+                owner = root
+                is_capital = yes
+            }
+        }
+        allow = {
+            treasury >= 150
+            political_influence >= 30
+        }
+        on_completion = {
+            trigger_event = me_phoenicia.6
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = trade_emporium
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    phoenicia_missions_task_7 = { # Phoenician Allies - should be reworked/moved to later
+        icon = "task_diplomatic"
+        requires = { phoenicia_missions_task_1 phoenicia_missions_task_4 }
+        highlight = {
+            scope:province = {
+                has_owner = yes
+                owner = {
+                    primary_culture = phoenician
+                }
+            }
+        }
+
+        allow = {
+            political_influence >= 100
+        }
+        bypass = {
+            OR = {
+                is_ai = yes
+                has_global_variable = tripartite_pact             
+            }
+        }
+        on_completion = {
+            trigger_event = me_phoenicia.7
+            set_global_variable = tripartite_pact
+            show_as_tooltip = {
+                every_country = {
+                    limit = {
+                        OR = {
+                            primary_culture = phoenician
+                            tag = BYB
+                            tag = SID
+                            tag = ARA
+                        }
+                        NOT = {
+                            this = root
+                        }
+                    }
+                    add_opinion = {
+                        target = ROOT
+                        modifier = levant_friends
+                    }
+                }
+                add_country_modifier = {
+                    name = protected_homelands
+                    duration = 1825
+                }
+            }
+        }
+    }
+
+
+   phoenicia_missions_task_8 = { # Diadochi war
+        icon = "task_battle"
+        duration = 90
+
+        potential = {
+            NOT = { is_subject_type = feudatory }
+        }
+
+        allow = {
+            NOT = { has_global_variable = phoenicia_missions_task_8_var }
+            custom_tooltip = {
+                text = phoenicia_missions_task_8.tt
+                c:PRY = { NOT = { has_variable = antigonus_death } }
+                OR = {
+                    c:SEL = {
+                        war_with = c:PRY
+                    }
+                    c:EGY = {
+                        war_with = c:PRY
+                    }
+                }
+            }
+        }
+
+        bypass = {
+            current_date > 460.1.1
+        }
+
+        on_completion = {
+            trigger_event = {
+                id = me_phoenicia.8
+            }
+        }
+    }
+
+    phoenicia_missions_task_9 = { # Ashkelon
+        icon = "task_happiness"
+        duration = 180
+        requires = { phoenicia_missions_task_8 }
+        bypass = {###AI shouldn't compete with the player
+            OR = {
+                p:660.owner = { 
+                    primary_culture = phoenician
+                }
+                AND = {
+                    OR = {
+                        current_date > 460.1.1
+                        c:PRY = { has_variable = antigonus_death }        
+                    }
+                    is_ai = yes
+                    NOT = {
+                        any_country = {
+                            primary_culture = phoenician
+                            is_ai = no
+                        }
+                    }
+                }
+            }
+        }
+        on_bypass = { 
+            if = {#the event will still happen if there isn't a player
+                limit = {
+                    tag = TYE
+                    is_ai = yes
+                    NOT = {
+                        any_country = {
+                            primary_culture = phoenician
+                            is_ai = no
+                        }
+                    }
+                }
+                random_list = {
+                    25 = {
+                        c:TYE = { 
+                            set_variable = askelon_offerer
+                            save_scope_as = askelon_offer_country 
+                            trigger_event = {
+                                id = me_phoenicia.901
+                                days = 180
+                            }        
+                        }
+                    }
+                    25 = {
+                        #nothing
+                    }
+                    10 = {
+                        c:SID = { 
+                            set_variable = askelon_offerer
+                            save_scope_as = askelon_offer_country 
+                            trigger_event = {
+                                id = me_phoenicia.901
+                                days = 180
+                            }        
+                        }
+                    }
+                }
+                if = {
+                    limit = {
+                        exists = scope:askelon_offer_country
+                    }
+                    p:660.owner = { 
+                        trigger_event = me_phoenicia.9 
+                    } 
+                }
+                        
+            }
+         }
+        highlight = {
+            scope:province = {
+                province_id = 660 #Ashkelon
+            }
+        }
+        allow = {
+            trigger_if = {
+                limit = {
+                    p:660 = {
+                        has_owner = yes
+                        owner = { 
+                            OR = {
+                                THIS = c:PRY 
+                                THIS = c:EGY 
+                            }
+                        }
+                    }
+                }
+                custom_tooltip = {
+                    text = phoenicia_missions_task_9_egy.tt
+                    c:PRY = {
+                        OR = {
+                            has_variable = antigonus_death
+                            has_variable = ptolemaic_deal_flag
+                            NOT = {
+                                war_with = c:EGY
+                            }
+                        }
+                    }
+                }
+            }
+            trigger_else_if = {
+                limit = {
+                    p:660 = {
+                        has_owner = yes
+                        owner = { 
+                            THIS = c:SEL 
+                        }
+                    }
+                }
+                custom_tooltip = {
+                    text = phoenicia_missions_task_9_sel.tt
+                    c:PRY = {
+                        OR = {
+                            has_variable = antigonus_death
+                            has_variable = seleukid_deal_flag
+                            NOT = {
+                                war_with = c:SEL
+                            }
+                        }
+                    }
+                }
+            }
+            trigger_else = {
+                custom_tooltip = {
+                    text = phoenicia_missions_task_9_gen.tt
+                    c:PRY = {
+                        OR = {
+                            has_variable = antigonus_death
+                            NOT = {
+                                war_with = p:660.owner
+                            }
+                        }
+                    }
+                }
+            }
+            treasury >= 100
+        }
+        on_start = {
+            save_scope_as = askelon_offer_country
+            p:660.owner = { trigger_event = me_phoenicia.9 }
+            show_as_tooltip = {
+                custom_tooltip = phoenicia_missions_task_9.tt
+            }
+        }
+        on_completion = {
+            show_as_tooltip = {
+             area:philistia_area = {
+                add_provincial_claim_effect = yes
+                }
+            }
+            trigger_event = {
+                id = me_phoenicia.901
+            }
+        }
+    }
+
+
+    phoenicia_missions_task_10 = { #Repositories of Knowledge
+        icon = "task_athena"
+        requires = { phoenicia_missions_task_6 }
+    
+        allow = {
+            any_owned_province = {
+                count >= 3
+                num_of_library_building >= 2
+            } 
+        }
+
+        highlight = {
+            scope:province = {
+                AND = {
+                    has_city_status = yes
+                    owner = root
+                }
+            }
+        }
+
+        on_completion = {
+            custom_tooltip = phoenicia_missions_task_10_tt            
+            add_country_modifier = {
+                name = siculia_built_libraries
+                duration = -1
+            }
+            trigger_event = me_phoenicia.10
+        }
+    }
+
+
+    phoenicia_missions_task_11 = { # The Walls of Tyre
+        icon = "task_calm"
+        duration = 730
+        requires = { phoenicia_missions_task_15 }
+
+        highlight = {
+            scope:province = {
+                province_id = 743
+            }
+        }
+
+         allow = {
+            trigger_if = {
+                limit = {
+                    is_ai = no
+                }
+                invention = civic_tech_investment_inv_1
+            }
+            owns_or_subject_owns = p:743
+            treasury >= 350
+            p:743 = {
+                fort_level >= 1
+                custom_tooltip = {
+                    text = bring_the_stone_tooltip
+                    OR = {
+                        state = {
+                            any_state_province = {
+                                trade_goods = stone
+                            }
+                        }
+                        is_importing_trade_good = stone
+                    }
+                }
+            }
+        }
+
+        on_start = {
+            add_treasury = -350
+        }
+
+        on_completion = {
+            trigger_event = me_phoenicia.11
+            p:743 = {
+                add_permanent_province_modifier = {
+                    name = "walls_of_tyre"
+                }
+            }
+        }
+    }
+
+
+    phoenicia_missions_task_12 = { # Power of Purple
+        icon = "task_zeus_cornucopia"
+        requires = { phoenicia_missions_task_6 }
+        highlight = {
+            scope:province = {  
+                owner = root
+                trade_goods = dye
+            }
+        }
+        allow = {
+            custom_tooltip = {
+                text = phoenicia_dye_tooltip
+                phoenicia_dye_current >= phoenicia_dye_total
+            }
+        }
+        on_completion = {
+            trigger_event = me_phoenicia.12
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = "phoenician_purple_mod"
+                    duration = -1
+                }
+
+            }
+        }
+    }
+
+    phoenicia_missions_task_13 = { # Sons of Melqart
+        icon = "task_religion"
+        requires = { phoenicia_missions_task_11 }
+       
+        highlight = {
+            scope:province = {
+                is_capital = yes
+                has_owner = yes
+                owner = {
+                    primary_culture = carthaginian
+                }
+            }
+        }        
+        allow = {                                 
+            trigger_if = {
+                limit = {
+                    is_ai = no
+                }
+                has_deity_in_pantheon = deity:omen_melqart
+                hidden:deity:omen_melqart = {
+                    has_holy_site = yes
+                }
+            }
+            current_ruler = {
+                popularity >= 65
+            }
+            trigger_if = {
+                limit = {
+                    is_subject = yes
+                }
+                is_subject = no
+            }
+            trigger_if = {
+                limit = {
+                    is_republic = no
+                    exists = job_holder:office_high_priest_monarchy
+                }
+                job_holder:office_high_priest_monarchy = {
+                    loyalty >= 75
+                    zeal >= 8
+                }
+            }
+            trigger_else_if = {
+                is_republic = no
+                NOT = { office_is_empty = office_high_priest_monarchy }
+            }
+        }
+        
+        on_completion = {
+            custom_tooltip = phoenicia_missions_task_13_tt
+            trigger_event = me_phoenicia.13
+        }
+    }
+
+    phoenicia_missions_task_14 = { # The Philistine Pentapolis
+        icon = "task_happiness"
+        duration = 730
+        requires = { phoenicia_missions_task_9 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 659
+                    province_id = 660
+                    province_id = 661
+                    is_in_area = philistia_area                                        
+                }
+            }
+        }
+
+         allow = {
+            owns_or_subject_owns = p:659
+            owns_or_subject_owns = p:660
+            owns_or_subject_owns = p:661
+        }
+
+        on_completion = {
+            custom_tooltip = phoenicia_missions_task_14_tt
+            show_as_tooltip = { add_political_influence = 150 }
+            trigger_event = me_phoenicia.14
+        }
+    }
+
+    phoenicia_missions_task_15 = { # Processional Architecture
+        icon = "task_diplomatic"
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    is_ai = no
+                }
+                invention = research_points_modifier_inv_1
+            }
+            treasury >= 300
+        }
+
+        on_completion = {
+            add_treasury = -300
+
+            trigger_event = { id = me_phoenicia.15 }
+
+            show_as_tooltip = {
+                add_innovation = 2
+                add_2_free_province_investments = yes
+            }
+
+        }
+    }
+
+    phoenicia_missions_task_16 = { # Gazan Trade Networks
+        icon = "task_calm"
+        requires = { phoenicia_missions_task_9 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 659                                     
+                }
+            }
+        }
+
+        allow = {
+            owns_or_subject_owns = 659
+            hidden:p:659 = {
+                has_city_status = yes
+                num_of_commerce_building >= 3 # marketplace
+
+                custom_tooltip = { 
+                    text = phoenicia_missions_task_16_tt
+                    any_pops_in_province = {
+                        pop_type = citizen
+                        count >= 10
+                    }
+                }
+            }
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = gazan_trade
+                    duration = -1
+                }
+                p:659 = {
+                    add_permanent_province_modifier = {
+                        name = gem_philistia
+                    }
+                }
+            }            
+            trigger_event = me_phoenicia.16
+        }
+    }
+
+    phoenicia_missions_task_17 = { # Breaking the Cycle
+        icon = "task_calm"
+        requires = { phoenicia_missions_task_12 phoenicia_missions_task_13 }
+
+        highlight = {
+            scope:province = {
+                 owner = {
+                    OR = {
+                        primary_culture = carthaginian
+                        primary_culture = phoenician
+                    }
+                    num_of_cities <= 10
+                    NOT = { THIS = ROOT }
+                    NOT = { overlord = root }
+                }
+            }
+        }
+
+        bypass = {
+            NOT = { 
+                any_country = {
+                    primary_culture = phoenician
+                    NOT = { THIS = ROOT }
+                    NOT = { overlord = root }
+                }
+            }
+
+        }
+        allow = {
+            political_influence >= 150
+        }
+
+        on_completion = {
+            custom_tooltip = phoenicia_missions_task_17_tt
+            add_political_influence = -150          
+            save_scope_as = phoenician_offer_country
+            every_country = {
+                limit = {
+                    OR = {
+                        primary_culture = carthaginian
+                        primary_culture = phoenician
+                    }
+                    num_of_cities <= 10
+                    NOT = { THIS = ROOT }
+                    NOT = { overlord = root }
+                }
+                trigger_event = {
+                    id = me_phoenicia.1700
+                }
+            }
+        }
+    }
+
+
+
+    phoenicia_missions_task_18 = { # Crisis in Cyprus
+        icon = "task_diplomatic"
+        duration = 365
+        requires = { phoenicia_missions_task_3 phoenicia_missions_task_7 }
+        highlight = {
+            scope:province = {
+                is_in_area = cyprus_area
+            }
+        }
+        allow = {
+            political_influence >= 100
+        }
+        bypass = {
+            OR = {
+                has_global_variable = cypriot_kings_variable_pry 
+                any_owned_province = { is_in_area = cyprus_area }
+            }
+        }
+        on_start = {
+            trigger_event = me_phoenicia.18 #agents will be sent to sow chaos in cyprus
+        }
+        on_completion = {
+            set_global_variable = { name = cypriot_kings_variable_pry } 
+            show_as_tooltip = {
+                area:cyprus_area = {
+                    add_provincial_claim_effect = yes
+                }
+            }
+            custom_tooltip = cyprus_rebellion_tt
+        }
+         on_bypass = { 
+            area:cyprus_area = {
+                add_provincial_claim_effect = yes
+            }    
+        }
+    }
+
+
+
+    phoenicia_missions_task_19 = { # The New City
+        icon = "task_expansion"
+        requires = { phoenicia_missions_task_18 }
+        highlight = {
+            scope:province = {
+                is_in_area = cyprus_area
+            }
+        }
+        allow = {
+            is_subject = no
+            custom_tooltip = {
+                text = phoenicia_missions_task_19_allow_tt
+                any_country = {
+                    primary_culture = phoenician
+                    not = { THIS = ROOT }
+                    capital_scope = {
+                        is_in_area = cyprus_area
+                    }
+                } 
+            }  
+        }
+
+        on_completion = {
+            custom_tooltip = cyprus_rebellion_tt
+            show_as_tooltip = {
+                p:335 = {# Lapethos
+                    create_5_citizens_effect = yes
+                    create_2_nobles_effect = yes
+                }
+                p:332 = {# Kition
+                    create_5_citizens_effect = yes
+                    create_2_nobles_effect = yes
+                }
+                every_country = {
+                    limit = {
+                        primary_culture = phoenician
+                        not = { THIS = ROOT }
+                        capital_scope = {
+                            is_in_area = cyprus_area
+                        }
+                    }
+                    make_subject = {
+                        type = feudatory
+                        target = PREV
+                    }
+                }
+            }
+        }
+    }
+
+    phoenicia_missions_task_20 = { # Mines of Alashiya
+        icon = "task_expansion"
+        requires = { phoenicia_missions_task_19 }
+        highlight = {
+            scope:province = {
+                is_in_area = cyprus_area
+                has_minable_trade_good_trigger = yes
+            }
+        }
+        allow = {
+            treasury >= 500
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                add_treasury = -500
+                every_province = {
+                    limit = {
+                        is_in_area = cyprus_area
+                        has_minable_trade_good_trigger = yes
+
+                    }
+                    add_permanent_province_modifier= {
+                        name = cyprus_improved_mined_modifier
+                        duration = -1
+                    }
+                }
+            }
+        }
+    }
+
+    phoenicia_missions_task_21 = { # Phoenician Poleis
+        icon = "task_economical"
+        
+        requires = { phoenicia_missions_task_10 }
+        
+        allow = {
+            any_owned_province = {
+                count >= 5
+                custom_tooltip = {
+                    text = phoenicia_missions_task_21.tt
+                    has_building = forum_building
+                    OR = {
+                        has_building = theathre_building
+                        has_building = temple_building
+                    }
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = { 
+                id = me_phoenicia.21
+            }
+            custom_tooltip = greek_poleis_tradition_unlocked
+            show_as_tooltip = {
+                every_owned_province = {
+                    limit = {
+                        has_city_status = yes
+                        is_capital = no
+                    }
+                    custom = phoenicia_missions_task_21.tt2
+                    define_pop = {
+                        type = citizen
+                        religion = roman_pantheon
+                        culture = hellenistic
+                    }
+                    define_pop = {
+                        type = citizen
+                        religion = roman_pantheon
+                        culture = hellenistic
+                    }
+                    define_pop = {
+                        type = freemen
+                        religion = roman_pantheon
+                        culture = hellenistic
+                    }
+                    define_pop = {
+                        type = freemen
+                        religion = roman_pantheon
+                        culture = hellenistic
+                    }
+                    add_province_modifier = {
+                        name = syro_phoenician_hellenistic_poleis
+                        duration = 9125
+                    }
+                }
+            }
+        }
+    }
+
+    phoenicia_missions_task_22 = { # Greek Gods
+        icon = "task_religion"
+        
+        requires = { phoenicia_missions_task_10 }
+        
+        allow = {
+            custom_tooltip = {
+                text = phoenicia_missions_task_22_allow_tt
+                any_pantheon_deity = {
+                    count >= 2
+                    deity_religion = roman_pantheon
+                } 
+            }
+        }
+        on_completion = {
+            custom_tooltip = phoenicia_missions_task_22_tt
+            trigger_event = { 
+                id = me_phoenicia.22
+            }
+        }
+    }
+
+    phoenicia_missions_task_23 = { # Syro-Phoenician
+        icon = "task_happiness"
+        
+        requires = { phoenicia_missions_task_21 phoenicia_missions_task_22 }
+        
+        allow = {
+            trigger_if = {
+                limit = { is_ai = no }
+                 custom_tooltip = {
+                    text = phoenicia_missions_task_23_allow_tt
+                    any_country_culture = {
+                        this.culture.culture_group = culture_group:hellenic
+                        has_pop_type_right = nobles
+                    }
+                } 
+            }
+        }
+        on_completion = {
+            custom_tooltip = phoenicia_missions_task_23_tt
+            trigger_event = { 
+                id = me_phoenicia.23
+            }
+        }
+    }
+
+    phoenicia_missions_task_24 = { # Kothon of Kition
+        icon = "task_heracles"
+        
+        requires = { phoenicia_missions_task_15 }
+        
+        allow = {
+            custom_tooltip = {
+                text = phoenicia_missions_task_24_allow_tt
+                has_variable = kition_cothon_completed
+            }
+        }
+        on_completion = {
+            p:332 = {
+                add_permanent_province_modifier = {
+                    name = "kition_kothon_modifier"
+                }
+            }
+        }
+    }
+
+    phoenicia_missions_task_25 = { # Cilician Expedition
+        icon = "task_heracles"
+        requires = { phoenicia_missions_task_18 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = cilicia_pedias_area
+                    is_in_area = cilicia_trachea_area
+                }
+            }
+        }
+
+         allow = {
+            manpower >= 20
+            stability >= 40
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                add_military_experience = 60
+                 area:cilicia_pedias_area = {
+                    add_provincial_claim_effect = yes
+                }
+                 area:cilicia_trachea_area = {
+                    add_provincial_claim_effect = yes
+                }
+            }
+            trigger_event = me_phoenicia.25
+        }
+    }
+
+    phoenicia_missions_task_26 = { # Reclaiming Tarsus
+        icon = "task_calm"
+        requires = { phoenicia_missions_task_25 }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    #is_in_area = cilicia_pedias_area
+                    is_in_area = cilicia_trachea_area
+                }
+            }
+        }
+
+         allow = {
+            custom_tooltip = {
+                text = formable_not_cilicia_exists
+                NOT = {
+                    any_country = {
+                        tag = CCI
+                    }
+                }
+            }
+            owns_or_subject_owns_area = cilicia_trachea_area
+            owns = p:1883
+        }
+
+        on_completion = {
+            custom_tooltip = phoenicia_missions_task_26_tt
+            show_as_tooltip = {
+                p:1883 = {
+                    add_permanent_province_modifier = {
+                        name = cilician_trade
+                        duration = -1
+                    }
+                }
+                capital_scope = {
+                    add_permanent_province_modifier = {
+                        name = cilician_trade
+                        duration = -1
+                    }
+                }
+                 region:cilicia_region = {
+                    add_provincial_claim_effect = yes
+                }
+            }
+            trigger_event = me_phoenicia.25
+        }
+    }
+
+    phoenicia_missions_task_27 = { # Capturing Kythera
+        icon = "task_political"
+        duration = 365
+        requires = { phoenicia_missions_task_4 }
+        highlight = {
+            scope:province = {
+                province_id = 471 #Kythera
+            }
+        }            
+        allow = {
+            is_subject = no
+            hidden:p:471.owner = {
+                opinion = {
+                    target = root
+                    value > 100
+                }
+            }
+            treasury >= 100
+        }
+        bypass = {
+            p:471.owner = {
+                primary_culture = phoenician
+            }
+        }
+        on_start = {#
+            save_scope_as = kythera_buyer
+            p:471.owner = {
+            trigger_event = {
+                    id = me_phoenicia.27
+                    days = 364
+                }
+            }
+            show_as_tooltip = {
+                custom_tooltip = phoenicia_missions_task_27_start_tt
+            }
+            add_treasury = -100
+        }
+        on_completion = {
+            #trigger_event = me_phoenicia.27
+            custom_tooltip = phoenicia_missions_task_27_finish_tt
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = phoenicia_kythera_dye
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    phoenicia_missions_task_28 = { # Taking Thasos
+        icon = "task_expansion"
+        duration = 365
+        requires = { phoenicia_missions_task_4 }
+        highlight = {
+            scope:province = {
+                province_id = 356 #Thasos
+            }
+        }            
+        allow = {
+            is_subject = no
+            hidden:p:356.owner = {
+                opinion = {
+                    target = root
+                    value > 100
+                }
+            }
+            treasury >= 100
+        }
+        on_start = {#
+            save_scope_as = thasos_buyer
+            p:356.owner = {
+            trigger_event = {
+                    id = me_phoenicia.28
+                    days = 364
+                }   
+            }
+            show_as_tooltip = {
+                custom_tooltip = phoenicia_missions_task_28_start_tt
+            }
+            add_treasury = -100
+        }
+        on_completion = {
+            #trigger_event = me_phoenicia.28
+            custom_tooltip = phoenicia_missions_task_28_finish_tt
+            add_country_modifier = {
+                name = phoenicia_thasos_golds
+                duration = -1
+            }
+        }
+    }
+
+    phoenicia_missions_task_29 = { # Seizing Syria
+        icon = "task_battle"
+        requires = { phoenicia_missions_task_17 }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = cilicia_pedias_area
+                    is_in_area = cilicia_trachea_area
+                    is_in_region = palestine_region
+                    is_in_region = syria_region
+                }
+            }
+        }
+
+        allow = {
+           military_experience >= 120
+            stability >= 60
+        }
+
+        on_completion = {
+            trigger_event = me_phoenicia.29
+            show_as_tooltip = {
+                add_political_influence = 150
+                add_manpower = 10 #1 Manpower = 500 Manpower in the game
+                custom_tooltip = "phoenicia_missions_task_29_tt"
+                hidden_effect = {
+                     area:cilicia_pedias_area = {
+                        add_provincial_claim_effect = yes
+                    }
+                     area:cilicia_trachea_area = {
+                        add_provincial_claim_effect = yes
+                    }
+                    region:palestine_region = { formable_region_province_effect = yes }
+                    region:syria_region = { formable_region_province_effect = yes } 
+                }
+            }
+        }
+    }
+
+    phoenicia_missions_task_30 = { # Greater Syria
+        icon = "task_atlas"
+        requires = { phoenicia_missions_task_29 phoenicia_missions_task_23 }
+        final = yes
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_area = cilicia_pedias_area
+                    is_in_area = cilicia_trachea_area
+                    is_in_region = palestine_region
+                    is_in_region = syria_region
+                }
+            }
+        }
+
+        allow = {
+            custom_tooltip = {
+                text = formable_not_syria_exists
+                NOT = {
+                    any_country = {
+                        tag = SYA
+                    }
+                }
+            }
+            owns_or_subject_owns_area = cilicia_pedias_area
+            owns_or_subject_owns_area = cilicia_trachea_area
+            owns_or_subject_owns_region = palestine_region
+            owns_or_subject_owns_region = syria_region  
+        }
+
+        on_completion = {
+            trigger_event = me_phoenicia.30
+            show_as_tooltip = {
+                capital_scope = {
+                    capital_formable_huge_effect = yes
+                    add_province_modifier = {
+                        name = formable_capital_huge_modifier
+                        duration = -1
+                    }
+                }
+                add_legitimacy = legitimacy_huge
+                add_5_free_province_investments = yes
+            }
+        }
+    }
+
+    phoenicia_missions_task_31 = { # Blood of Dido
+        icon = "task_diplomatic"
+        requires = { phoenicia_missions_task_10 }
+        highlight = {
+            scope:province = {
+                is_capital = yes
+                owner = root
+            }
+        }        
+        allow = {                                 
+            current_ruler = {
+                popularity >= 75
+            }
+            political_influence >= 75
+        }
+        
+        on_completion = {
+            show_as_tooltip = {
+                add_political_influence = -75
+                current_ruler = {
+                    force_add_trait = dido
+                }
+            }
+            trigger_event = me_phoenicia.31
+        }
+    }
+
+    phoenicia_missions_task_32 = { # Strength with Antigonids
+        icon = "task_diplomatic"
+        #requires = { phoenicia_missions_task_2 }
+        highlight = {
+            scope:province = {
+                is_capital = yes
+                owner = root
+            }
+        }        
+
+        potential = {
+            is_subject = yes
+        }
+
+        allow = { 
+            trigger_if = {
+                limit = {
+                    is_subject = yes
+                }
+                hidden:overlord = { 
+                    opinion = { 
+                        target = root 
+                        value >= 120
+                    } 
+                }
+                hidden:current_ruler = { is_friend = root.overlord.current_ruler }
+            }
+        }
+
+        on_completion = {
+            trigger_event = {
+                id = me_phoenicia.32
+            }
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = loyal_to_overlord
+                    duration = -1
+                }
+            }
+            
+        }
+    }
+
+
+    phoenicia_missions_task_33 = { # Proving Our Worth
+        icon = "task_political"
+        requires = { phoenicia_missions_task_32 }
+        highlight = {
+            scope:province = {
+                is_capital = yes
+                owner = root
+            }
+        }        
+
+        potential = {
+            is_subject = yes
+        }
+
+        allow = { 
+            political_influence >= 150
+            stability >50
+        }
+
+        on_completion = {
+            save_scope_as = phoenicia_ally_country
+            root.overlord = {
+                trigger_event = {
+                    id = me_phoenicia.33
+                }
+            }
+            show_as_tooltip = {
+                root.overlord = {  
+                    release_subject = root
+                }
+                add_alliance = root.overlord
+            }
+        }
+
+        bypass = {
+            is_ai = yes
+        }
+    }
+
+    phoenicia_missions_task_34 = { # Republican Reforms
+        icon = "task_heracles"
+        potential = {
+            is_republic = no
+        }   
+
+        allow = { 
+            trigger_if = {
+                limit = {
+                    is_ai = no
+                }
+                political_influence >= 200
+                stability >= 75
+            }
+            trigger_else = {
+                OR = {
+                    AND = {
+                        political_influence >= 200
+                        stability >= 75
+                    }
+                current_date > 475.1.1
+                }
+            }
+        }
+
+        on_completion = {
+            custom_tooltip = phoenicia_missions_task_34_tt
+            trigger_event = {
+                id = me_phoenicia.34
+            }
+        }
+    }
+
+#
+#
+}

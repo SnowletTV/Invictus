@@ -1,0 +1,988 @@
+﻿namespace = diadochi_liberation
+
+#Master List
+diadochi_liberation.1001 = {
+    type = province_event
+    hidden = yes
+
+	trigger = {
+		province_id = 418
+		exists = owner
+		owner = {
+			NOT = {
+				has_global_variable = corinth_has_been_created
+			}
+			primary_culture = macedonian
+			has_variable = war_of_the_diadochs
+		}
+	}
+
+    immediate = {
+		if = {
+			limit = {
+				province_id = 418
+				owner = { 
+					NOT = { tag = MAC } 
+				}
+			}
+			p:418.owner = {
+			    trigger_event = {
+			        id = diadochi_liberation.1 #Corinth
+#			        days = { 5 15 }
+			    }
+			}
+		}
+#		if = {
+#			limit = {
+#				province_id = 407
+#				owner = { 
+#					NOT = { tag = PRY } 
+#				}
+#			}
+#			p:407.owner = {
+#			    trigger_event = {
+#			        id = diadochi_liberation.2 #Chalkis
+#			        days = { 5 15 }
+#			    }
+#			}
+#		}
+#		if = {
+#			limit = {
+#				province_id = 7902
+#				owner = { 
+#					NOT = { tag = PRY } 
+#				}
+#			}
+#			p:7902.owner = {
+#			    trigger_event = {
+#			        id = diadochi_liberation.3 #Salamis
+#			    }
+#			}
+#		}
+#		if = {
+#			limit = {
+#				province_id = 442
+#				owner = { 
+#					NOT = { tag = PRY } 
+#				}
+#			}
+#			p:442.owner = {
+#			    trigger_event = {
+#			        id = diadochi_liberation.4 #Aigina
+#			    }
+#			}
+#		}
+#		if = {
+#			limit = {
+#				province_id = 8003
+#				owner = { 
+#					NOT = { tag = EGY } 
+#				}
+#			}
+#			p:8003.owner = {
+#			    trigger_event = {
+#			        id = diadochi_liberation.5 #Sikyon
+#			        days = { 5 15 }
+#			    }
+#			}
+#		}
+    }
+}
+
+diadochi_liberation.1002 = { #Join the war
+    type = country_event
+    hidden = yes
+    trigger = { 
+		any_current_war = {
+            any_war_participant = {
+            	war_with = ROOT
+            }
+		}
+     }
+
+    immediate = {
+		every_current_war = {
+            limit = {
+                any_war_attacker = { THIS = ROOT }
+            }
+            scope:newly_liberated_state = {
+                add_to_war = {
+                    target = PREV
+                    attacker = yes
+                    leader = no
+                }
+            }
+        }
+        every_current_war = {
+            limit = {
+                any_war_defender = { THIS = ROOT }
+            }
+            scope:newly_liberated_state = {
+                add_to_war = {
+                    target = PREV
+                    attacker = no
+                    leader = no
+                }
+            }
+        }
+    }
+}
+
+# Corinth
+diadochi_liberation.1 = {
+	type = country_event
+	title = "diadochi_liberation.1.t"
+	desc = "diadochi_liberation.1.desc"
+	picture = greek_siege
+	
+	left_portrait = current_ruler
+	right_portrait = char:9
+
+	goto_location = p:418
+
+	fire_only_once = yes
+	trigger = { p:418.owner = ROOT }
+
+	option = { # keep the city "[GetProvince('(int32)418').GetName] is an important strategic garrison.
+		name = "diadochi_liberation.1.a"
+        show_as_tooltip = {
+	 		p:418 = { #Corinth
+				set_owned_by = ROOT
+			}
+        }
+        custom_tooltip = diadochi_liberation.1.a.t
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_bad } #Macedonian Garrisons
+            }
+        }
+		ai_chance = {
+			modifier = {
+				factor = 20
+			}
+		}
+	}
+
+	option = { # feudatory - "We will restore the Acrocorinth to glory!"
+		name = "diadochi_liberation.1.b"
+        custom_tooltip = diadochi_liberation.1.bt
+        hidden_effect = {
+            p:418 = {
+                create_country = {
+                    save_scope_as = newly_liberated_state
+                    name = {
+                        name = "CORINTH_NAME"
+                        adjective = "CORINTH_ADJECTIVE"
+                    }
+                    change_country_tag = KOR
+                    change_country_flag = CORINTH_FLAG
+                    change_country_color = ocean_blue
+                    set_country_religion = roman_pantheon
+                    set_country_heritage = corinthian_heritage
+                    change_government = democratic_republic
+                }
+            }
+			set_global_variable = corinth_has_been_created
+            make_subject = {
+                type = feudatory
+                target = scope:newly_liberated_state
+            }
+		    trigger_event = {
+		        id = diadochi_liberation.1002 #Join the war
+		    }
+        }
+		ai_chance = {
+			modifier = {
+				factor = 15
+			}
+		}
+	}
+
+	option = { # Tributary - The Corinthians have suffered occupation too long.
+		name = "diadochi_liberation.1.c"
+        custom_tooltip = diadochi_liberation.1.ct
+        custom_tooltip = diadochi_liberation.1.c.t2
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_good } #Macedonian Garrisons Removed
+	            }
+	        p:418 = {
+	            create_country = {
+	                save_scope_as = newly_liberated_state
+	                name = {
+	                    name = "CORINTH_NAME"
+	                    adjective = "CORINTH_ADJECTIVE"
+	                }
+	                change_country_tag = KOR
+	                change_country_flag = CORINTH_FLAG
+	                change_country_color = ocean_blue
+	                set_country_religion = roman_pantheon
+	                set_country_heritage = corinthian_heritage
+	                change_government = democratic_republic
+	            }
+	        }
+            make_subject = {
+                type = tributary
+                target = scope:newly_liberated_state
+            }
+		}
+		ai_chance = {
+			modifier = {
+				factor = 10
+			}
+		}
+	}
+
+	option = { # Tag switch
+		name = "diadochi_liberation.1.d"
+        custom_tooltip = diadochi_liberation.1.dt
+		highlight = yes
+		trigger = {
+			is_ai = no
+		}
+        hidden_effect = {
+	        p:418 = {
+	            create_country = {
+	                save_scope_as = newly_liberated_state
+	                name = {
+	                    name = "CORINTH_NAME"
+	                    adjective = "CORINTH_ADJECTIVE"
+	                }
+	                change_country_tag = KOR
+	                change_country_flag = CORINTH_FLAG
+	                change_country_color = ocean_blue
+	                set_country_religion = roman_pantheon
+	                set_country_heritage = corinthian_heritage
+	                change_government = democratic_republic
+	            }
+	        }
+            make_subject = {
+                type = tributary
+                target = scope:newly_liberated_state
+            }
+            set_player_country = scope:newly_liberated_state
+		}
+		ai_chance = {
+			modifier = {
+				factor = 0
+			}
+		}
+	}
+}
+
+# Chalkis
+diadochi_liberation.2 = {
+	type = country_event
+	title = "diadochi_liberation.2.t"
+	desc = "diadochi_liberation.2.desc"
+	picture = greek_siege
+	
+	left_portrait = current_ruler
+	right_portrait = char:37
+
+	goto_location = p:407
+
+	fire_only_once = yes
+	trigger = { p:407.owner = ROOT }
+
+	option = {
+		name = "diadochi_liberation.2.a"
+        show_as_tooltip = {
+	 		p:407 = { #Chalkis
+				set_owned_by = ROOT
+			}
+        }
+        custom_tooltip = diadochi_liberation.2.a.t
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_bad } #Macedonian Garrisons
+            }
+        }
+		ai_chance = {
+			modifier = {
+				factor = 20
+			}
+		}
+	}
+
+	option = { # feudatory 
+		name = "diadochi_liberation.2.b"
+        custom_tooltip = diadochi_liberation.2.bt
+        hidden_effect = {
+            p:407 = { #Chalkis
+                create_country = {
+                    save_scope_as = newly_liberated_state
+					name = {
+						name = CHALKIS_NAME
+						adjective = CHALKIS_ADJECTIVE
+					}
+					if = {
+						limit = {
+							NOT = {
+								primary_culture = euboean
+							}
+						}
+						set_primary_culture_cleanup_effect = {
+							NEW_PRIMARY_CULTURE = euboean
+							MAKE_OLD_CULTURE_INTEGRATED = yes
+						}
+					}
+					set_country_religion = roman_pantheon
+					change_government = oligarchic_republic
+					change_country_color = samnite_green
+					change_country_flag = CHALCIS_FLAG
+                    change_country_tag = CH2
+                }
+            }
+            make_subject = {
+                type = feudatory
+                target = scope:newly_liberated_state
+            }
+		    trigger_event = {
+		        id = diadochi_liberation.1002 #Join the war
+		    }
+        }
+		ai_chance = {
+			modifier = {
+				factor = 15
+			}
+		}
+	}
+
+	option = { # Tributary
+		name = "diadochi_liberation.2.c"
+        custom_tooltip = diadochi_liberation.2.ct
+        custom_tooltip = diadochi_liberation.2.c.t2
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_good } #Macedonian Garrisons Removed
+	            }
+            p:407 = { #Chalkis
+                create_country = {
+                    save_scope_as = newly_liberated_state
+					name = {
+						name = CHALKIS_NAME
+						adjective = CHALKIS_ADJECTIVE
+					}
+					if = {
+						limit = {
+							NOT = {
+								primary_culture = euboean
+							}
+						}
+						set_primary_culture_cleanup_effect = {
+							NEW_PRIMARY_CULTURE = euboean
+							MAKE_OLD_CULTURE_INTEGRATED = yes
+						}
+					}
+					set_country_religion = roman_pantheon
+					change_government = oligarchic_republic
+					change_country_color = samnite_green
+					change_country_flag = CHALCIS_FLAG
+                    change_country_tag = CH2
+                }
+            }
+            make_subject = {
+                type = tributary
+                target = scope:newly_liberated_state
+            }
+		}
+		ai_chance = {
+			modifier = {
+				factor = 10
+			}
+		}
+	}
+	option = { # Tag switch
+		name = "diadochi_liberation.2.d"
+        custom_tooltip = diadochi_liberation.2.dt
+		highlight = yes
+		trigger = {
+			is_ai = no
+		}
+        hidden_effect = {
+            p:407 = { #Chalkis
+                create_country = {
+                    save_scope_as = newly_liberated_state
+					name = {
+						name = CHALKIS_NAME
+						adjective = CHALKIS_ADJECTIVE
+					}
+					if = {
+						limit = {
+							NOT = {
+								primary_culture = euboean
+							}
+						}
+						set_primary_culture_cleanup_effect = {
+							NEW_PRIMARY_CULTURE = euboean
+							MAKE_OLD_CULTURE_INTEGRATED = yes
+						}
+					}
+					set_country_religion = roman_pantheon
+					change_government = oligarchic_republic
+					change_country_color = samnite_green
+					change_country_flag = SALAMIS_FLAG
+                    change_country_tag = CH2
+                }
+            }
+            make_subject = {
+                type = tributary
+                target = scope:newly_liberated_state
+            }
+            set_player_country = scope:newly_liberated_state
+		}
+		ai_chance = {
+			modifier = {
+				factor = 0
+			}
+		}
+	}
+}
+
+# Salamis
+diadochi_liberation.3 = {
+	type = country_event
+	title = "diadochi_liberation.3.t"
+	desc = "diadochi_liberation.3.desc"
+	picture = greek_siege
+	
+	left_portrait = current_ruler
+	left_portrait = char:380
+	right_portrait = char:37
+	right_portrait = char:38
+
+	goto_location = p:7902
+
+	fire_only_once = yes
+	trigger = { p:7902.owner = ROOT }
+
+	option = {
+		name = "diadochi_liberation.3.a"
+        show_as_tooltip = {
+	 		p:7902 = { #Salamis
+				set_owned_by = ROOT
+			}
+        }
+        custom_tooltip = diadochi_liberation.3.a.t
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_bad } #Macedonian Garrisons
+            }
+        }
+		ai_chance = {
+			modifier = {
+				factor = 20
+			}
+		}
+	}
+
+	option = { # feudatory 
+		name = "diadochi_liberation.3.b"
+        custom_tooltip = diadochi_liberation.3.bt
+        hidden_effect = {
+            p:7902 = { #Salamis
+                create_country = {
+                    save_scope_as = newly_liberated_state
+					name = {
+						name = SALAMIS_NAME
+						adjective = SALAMIS_ADJECTIVE
+					}
+					set_country_religion = roman_pantheon
+					change_government = oligarchic_republic
+					change_country_color = salamis_green
+					change_country_flag = SALAMIS_FLAG
+                    change_country_tag = SAL
+                }
+            }
+            make_subject = {
+                type = feudatory
+                target = scope:newly_liberated_state
+            }
+		    trigger_event = {
+		        id = diadochi_liberation.1002 #Join the war
+		    }
+        }
+		ai_chance = {
+			modifier = {
+				factor = 15
+			}
+		}
+	}
+
+	option = { # Tributary
+		name = "diadochi_liberation.3.c"
+        custom_tooltip = diadochi_liberation.3.ct
+        custom_tooltip = diadochi_liberation.3.c.t2
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_good } #Macedonian Garrisons Removed
+	            }
+	            p:7902 = { #Salamis
+	                create_country = {
+	                    save_scope_as = newly_liberated_state
+						name = {
+							name = SALAMIS_NAME
+							adjective = SALAMIS_ADJECTIVE
+						}
+						set_country_religion = roman_pantheon
+						change_government = oligarchic_republic
+						change_country_color = salamis_green
+						change_country_flag = SALAMIS_FLAG
+	                    change_country_tag = SAL
+	                }
+	            }
+	            make_subject = {
+	                type = tributary
+	                target = scope:newly_liberated_state
+	            }
+			}
+		ai_chance = {
+			modifier = {
+				factor = 10
+			}
+		}
+	}
+	option = { # Restore to owner
+		name = "diadochi_liberation.3.d"
+        custom_tooltip = diadochi_liberation.3.c.t2
+		trigger = {
+			is_ai = no
+		}
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_good } #Macedonian Garrisons Removed
+	            }
+	        }
+		if = {
+			limit = {
+				c:ATH = {
+					num_of_cities >= 1
+					NOT = { is_subject_of = c:PRY }
+				}
+			}
+			p:7902 = {
+				set_owned_by = c:ATH
+			}
+		}
+		else_if = {
+			limit = {
+				c:MGA = {
+					num_of_cities >= 1
+				}
+			}
+			p:7902 = {
+				set_owned_by = c:ATH
+			}
+		}
+		else_if = {
+			limit = {
+				c:MGA = {
+					num_of_cities >= 1
+				}
+			}
+			p:7902 = {
+				set_owned_by = c:ATH
+			}
+		}		
+		else = {
+	        custom_tooltip = diadochi_liberation.3.ct
+	        hidden_effect = {
+	            p:7902 = { #Salamis
+	                create_country = {
+	                    save_scope_as = newly_liberated_state
+						name = {
+							name = SALAMIS_NAME
+							adjective = SALAMIS_ADJECTIVE
+						}
+						set_country_religion = roman_pantheon
+						change_government = oligarchic_republic
+						change_country_color = salamis_green
+						change_country_flag = SALAMIS_FLAG
+	                    change_country_tag = SAL
+	                }
+	            }
+	            make_subject = {
+	                type = tributary
+	                target = scope:newly_liberated_state
+	            }
+			}
+		}	
+
+		ai_chance = {
+			modifier = {
+				factor = 0
+			}
+		}
+	}
+}
+
+# Aigina
+diadochi_liberation.4 = {
+	type = country_event
+	title = "diadochi_liberation.4.t"
+	desc = "diadochi_liberation.4.desc"
+	picture = greek_siege
+	
+	left_portrait = current_ruler
+	right_portrait = char:37
+	right_portrait = char:38
+
+	goto_location = p:442
+
+	fire_only_once = yes
+	trigger = { p:442.owner = ROOT }
+
+	option = {
+		name = "diadochi_liberation.4.a"
+        show_as_tooltip = {
+	 		p:442 = { #Aigina
+				set_owned_by = ROOT
+			}
+        }
+        custom_tooltip = diadochi_liberation.4.a.t
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_bad } #Macedonian Garrisons
+            }
+        }
+		ai_chance = {
+			modifier = {
+				factor = 20
+			}
+		}
+	}
+
+	option = { # feudatory 
+		name = "diadochi_liberation.4.b"
+        custom_tooltip = diadochi_liberation.4.bt
+        hidden_effect = {
+            p:442 = { #Aigina
+                create_country = {
+                    save_scope_as = newly_liberated_state
+					name = {
+						name = AIGINA_NAME
+						adjective = AIGINA_ADJECTIVE
+					}
+					if = {
+						limit = {
+							NOT = {
+								primary_culture = argolian
+							}
+						}
+						set_primary_culture_cleanup_effect = {
+							NEW_PRIMARY_CULTURE = argolian
+							MAKE_OLD_CULTURE_INTEGRATED = yes
+						}
+					}
+					set_country_religion = roman_pantheon
+					change_government = plutocratic_republic
+					change_country_color = light_green
+					change_country_flag = AIGINA_FLAG
+                }
+            }
+            make_subject = {
+                type = feudatory
+                target = scope:newly_liberated_state
+            }
+		    trigger_event = {
+		        id = diadochi_liberation.1002 #Join the war
+		    }
+        }
+		ai_chance = {
+			modifier = {
+				factor = 15
+			}
+		}
+	}
+
+	option = { # Tributary
+		name = "diadochi_liberation.4.c"
+        custom_tooltip = diadochi_liberation.4.ct
+        custom_tooltip = diadochi_liberation.4.c.t2
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_good } #Macedonian Garrisons Removed
+	        }
+            p:442 = { #Aigina
+                create_country = {
+                    save_scope_as = newly_liberated_state
+					name = {
+						name = AIGINA_NAME
+						adjective = AIGINA_ADJECTIVE
+					}
+					if = {
+						limit = {
+							NOT = {
+								primary_culture = argolian
+							}
+						}
+						set_primary_culture_cleanup_effect = {
+							NEW_PRIMARY_CULTURE = argolian
+							MAKE_OLD_CULTURE_INTEGRATED = yes
+						}
+					}
+					set_country_religion = roman_pantheon
+					change_government = plutocratic_republic
+					change_country_color = light_green
+					change_country_flag = AIGINA_FLAG
+                }
+            }
+            make_subject = {
+                type = tributary
+                target = scope:newly_liberated_state
+            }
+		}
+		ai_chance = {
+			modifier = {
+				factor = 10
+			}
+		}
+	}
+}
+
+# Sikyon
+diadochi_liberation.5 = {
+	type = country_event
+	title = "diadochi_liberation.5.t"
+	desc = "diadochi_liberation.5.desc"
+	picture = greek_siege
+	
+	left_portrait = current_ruler
+	right_portrait = char:42
+	right_portrait = char:523
+	right_portrait = char:522
+
+	goto_location = p:8003
+
+	fire_only_once = yes
+	trigger = { p:8003.owner = ROOT }
+
+	option = {
+		name = "diadochi_liberation.5.a"
+        show_as_tooltip = {
+	 		p:8003 = { #Sikyon
+				set_owned_by = ROOT
+			}
+        }
+        custom_tooltip = diadochi_liberation.5.a.t
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_bad } #Macedonian Garrisons
+            }
+        }
+		ai_chance = {
+			modifier = {
+				factor = 20
+			}
+		}
+	}
+
+	option = { # feudatory 
+		name = "diadochi_liberation.5.b"
+        custom_tooltip = diadochi_liberation.5.bt
+        hidden_effect = {
+            p:8003 = { #Sikyon
+                create_country = {
+                    save_scope_as = newly_liberated_state
+					name = {
+						name = SIKYON_NAME
+						adjective = SIKYON_ADJECTIVE
+					}
+					set_country_religion = roman_pantheon
+					change_government = aristocratic_republic
+					change_country_color = sicyon_purple
+					change_country_flag = SIKYON_FLAG
+                }
+            }
+            make_subject = {
+                type = feudatory
+                target = scope:newly_liberated_state
+            }
+		    trigger_event = {
+		        id = diadochi_liberation.1002 #Join the war
+		    }
+        }
+		ai_chance = {
+			modifier = {
+				factor = 15
+			}
+		}
+	}
+
+	option = { # Tributary
+		name = "diadochi_liberation.5.c"
+        custom_tooltip = diadochi_liberation.5.ct
+        custom_tooltip = diadochi_liberation.5.c.t2
+        hidden_effect = {
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_region = greece_region
+                        NOR = {
+                            is_in_area = crete_area
+                            is_in_area = epirus_area
+                        }
+                    }
+                    NOT = { primary_culture = macedonian }
+                }
+                add_opinion = { target = ROOT modifier = macedonian_garrisons_good } #Macedonian Garrisons Removed
+	        }
+            p:8003 = { #Sikyon
+                create_country = {
+                    save_scope_as = newly_liberated_state
+					name = {
+						name = SIKYON_NAME
+						adjective = SIKYON_ADJECTIVE
+					}
+					set_country_religion = roman_pantheon
+					change_government = aristocratic_republic
+					change_country_color = sicyon_purple
+					change_country_flag = SIKYON_FLAG
+                }
+            }
+            make_subject = {
+                type = tributary
+                target = scope:newly_liberated_state
+            }
+		}
+		ai_chance = {
+			modifier = {
+				factor = 10
+			}
+		}
+	}
+	option = { # Tag switch
+		name = "diadochi_liberation.5.d"
+        custom_tooltip = diadochi_liberation.5.dt
+		highlight = yes
+		trigger = {
+			is_ai = no
+		}
+        hidden_effect = {
+            p:8003 = { #Sikyon
+                create_country = {
+                    save_scope_as = newly_liberated_state
+					name = {
+						name = SIKYON_NAME
+						adjective = SIKYON_ADJECTIVE
+					}
+					set_country_religion = roman_pantheon
+					change_government = aristocratic_republic
+					change_country_color = sicyon_purple
+					change_country_flag = SIKYON_FLAG
+                }
+            }
+            make_subject = {
+                type = tributary
+                target = scope:newly_liberated_state
+            }
+            set_player_country = scope:newly_liberated_state
+		}
+		ai_chance = {
+			modifier = {
+				factor = 0
+			}
+		}
+	}
+}

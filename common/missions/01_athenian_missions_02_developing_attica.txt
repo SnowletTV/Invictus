@@ -1,0 +1,634 @@
+﻿athenian_mission_02_attica = {
+    header = "mission_image_athens"
+    icon = "athens_3"
+
+    repeatable = no
+
+    chance = {
+        factor = 3
+    }
+
+    potential = {
+        NOT = { has_variable = athenian_mission_02_attica }
+        has_dlc = "Magna Graecia"
+        OR = {
+            tag = ATH
+            has_variable = ath_unique_mech
+        }
+        is_subject = no
+        has_civil_war = no
+    }
+
+    abort = {
+        ai_mission_back_out_trigger = yes
+    }
+    
+    on_start = {
+        start_mission_ai_effect = yes
+    	save_scope_as = mission_country
+        if = {
+            limit = {
+                athenian_mission_02_attica_task_5_total >= 0
+            }
+            set_variable = attican_minerals_enabled
+        }
+        if = {
+            limit = {
+                owns = 416
+                #owns = 413
+                owns = 7799
+                owns = 417
+                owns = 7897
+                owns = 7898
+            }
+            set_variable = attica_for_athens_disabled
+        }
+    }
+
+    on_completion = {
+        complete_mission_effect = yes
+        athenian_mission_02_variable_cleanup_effect = yes
+        trigger_event = me_athens_02_attica.18
+        if = {
+            limit = {
+                owns = 416
+            }
+            p:416 = {
+                if = {
+                    limit = {
+                        has_province_modifier = athenian_mission_02_attica_restoration_modifier
+                    }
+                    remove_province_modifier = athenian_mission_02_attica_restoration_modifier
+                }
+                state = {
+                    add_state_modifier = {
+                        name = athenian_mission_02_restored_attica_final_modifier
+                        duration = -1
+                    }
+                }
+            }
+        }
+        else_if = {
+            limit = {
+                p:416.area = {
+                    any_area_province = {
+                        owner = root
+                    }
+                }
+            }
+            p:416.area = {
+                random_area_province = {
+                    limit = {
+                        owner = root
+                    }
+                    state = {
+                        add_state_modifier = {
+                            name = athenian_mission_02_restored_attica_final_modifier
+                            duration = -1
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = athenian_mission_02_attica
+            days = 7300
+        }
+        athenian_mission_02_variable_cleanup_effect = yes
+    }
+
+    athenian_mission_02_attica_task_1 = { # Attica for Athens
+        icon = "task_conquest"
+
+        highlight = {
+            scope:province = {
+                attica_region_trigger = yes
+            }
+        }
+
+        potential = {
+            NOT = { has_variable = attica_for_athens_disabled }
+        }
+
+        allow = {
+        	owns = 416
+        	#owns = 413
+        	owns = 7799
+        	owns = 417
+            owns = 7897
+            owns = 7898
+        }
+
+        on_completion = {
+            trigger_event = me_athens_02_attica.1
+            capital_scope = {
+                custom_tooltip = athenian_mission_02_attica_task_1_effect_tt
+                hidden_effect = {
+                    define_pop = {
+                        type = freemen
+                        culture = root.culture
+                        religion = root.religion
+                    }
+                    define_pop = {
+                        type = freemen
+                        culture = root.culture
+                        religion = root.religion
+                    }
+                    define_pop = {
+                        type = freemen
+                        culture = root.culture
+                        religion = root.religion
+                    }
+                }
+            }
+        }
+    }
+
+    athenian_mission_02_attica_task_2 = { # Developing the Land
+    	requires = { athenian_mission_02_attica_task_1 }
+
+        icon = "task_political"
+
+        highlight = {
+            scope:province = {
+                is_in_area = central_greece_area
+                owner = root
+            }
+        }
+
+        allow = {
+        	trigger_if = {
+        		limit = {
+        			NOT = { owns = 416 }
+        		}
+        		owns = 416
+        	}
+        	trigger_else = {
+	        	hidden:p:416 = {
+	        		hidden:state = {
+	        			calc_true_if = {
+			        		amount >= 3
+			        		state_improvement_military_trigger = yes
+			        		has_state_modifier = state_improvement_civic
+			        		has_state_modifier = state_improvement_oratory
+			        		state_improvement_religious_trigger = yes
+			        	}
+	        		}
+	        	}
+        	}
+        }
+
+        on_completion = {
+            add_3_free_province_investments = yes
+        }
+    }
+
+    athenian_mission_02_attica_task_3 = { # Restored to Greatness
+    	requires = { athenian_mission_02_attica_task_1 }
+
+        icon = "task_economical"
+
+        highlight = {
+            scope:province = { province_id = 416 }
+        }
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 416 }
+                }
+                owns = 416
+            }
+        	hidden:p:416 = {
+        		trigger_if = {
+        			limit = {
+                        ROOT = { is_ai = no }
+                    }
+        			has_city_status = yes
+                    custom_tooltip = {
+                        text = athenian_mission_02_attica_task_3_trigger_tt
+                        free_building_slots = 0
+                    }
+        		}   
+                trigger_else = {
+                    OR = {
+                        has_city_status = yes
+                        ROOT = { can_pay_price = price_found_city }
+                    }
+                }
+                trigger_if = {
+                    limit = { has_construction = yes }
+                    custom_tooltip = {
+                        text = ongoing_construction_trigger_tt
+                        has_construction = no
+                    }
+                }
+            }
+        }
+
+        on_completion = {
+            ai_build_city_pay_price_effect = { CITY = p:416 } # AI fallback.
+            if = {
+                limit = {
+                    NOT = { p:416 = { has_province_modifier = athenian_mission_02_attica_restoration_modifier } }
+                }
+                p:416 = {
+                    add_permanent_province_modifier = {
+                        name = athenian_mission_02_attica_restoration_modifier
+                    }
+                }
+                set_variable = athenian_mission_02_attica_task_3_effect_1
+            }
+            else = {
+                capital_scope = {
+                    custom_tooltip = athenian_mission_02_attica_task_1_effect_tt
+                    hidden_effect = {
+                        create_state_pop = freemen
+                        create_state_pop = freemen
+                        create_state_pop = freemen
+                    }
+                }
+            }
+            trigger_event = me_athens_02_attica.3
+        }
+    }
+
+    athenian_mission_02_attica_task_4 = { # Securing the Borders
+    	requires = { athenian_mission_02_attica_task_2 athenian_mission_02_attica_task_3 }
+
+        icon = "task_conquest"
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 418
+                    province_id = 7802
+                }
+            }
+        }
+
+        allow = {
+        	trigger_if = {
+        		limit = {
+        			owns = 418
+        		}
+        		owns = 418
+        	}
+        	trigger_else = {
+	        	OR = {
+	        		owns = 418
+	    			hidden:p:418 = {
+	    				custom_tooltip = {
+	    					text = athenian_mission_02_attica_task_4_trigger_tt
+		    				exists = owner
+		    				owner = { NOT = { this = root } }
+		    				hidden:owner = {
+		    					opinion = {
+		    						value >= athenian_mission_02_attica_task_4
+		    						target = root
+		    					}
+		    				}
+	    				}
+	    			}
+	        	}
+        	}
+        	trigger_if = {
+        		limit = {
+        			owns = 7802
+        		}
+        		owns = 7802
+        	}
+        	trigger_else = {
+        		OR = {
+	        		owns = 7802
+	    			hidden:p:7802 = {
+	    				custom_tooltip = {
+	    					text = athenian_mission_02_attica_task_4_trigger_tt
+		    				exists = owner
+		    				owner = { NOT = { this = root } }
+		    				hidden:owner = {
+		    					opinion = {
+		    						value >= athenian_mission_02_attica_task_4
+		    						target = root
+		    					}
+		    				}
+	    				}
+	    			}
+	        	}
+        	}
+        }
+
+        on_completion = {
+            trigger_event = me_athens_02_attica.4
+            add_stability = 10
+        }
+    }
+
+    athenian_mission_02_attica_task_5 = { # Attican Minerals
+    	requires = { athenian_mission_02_attica_task_2 }
+
+        icon = "task_expansion"
+
+        highlight = {
+            scope:province = {
+                attica_region_trigger = yes
+            }
+        }
+
+        bypass = {
+            athenian_mission_02_attica_task_5_total = 0
+        }
+
+        potential = {
+            has_variable = attican_minerals_enabled
+        }
+
+        allow = {
+            trigger_if = {
+                limit = { is_ai = no }
+                custom_tooltip = {
+                    text = athenian_mission_02_attica_task_5_trigger_tt
+                    any_owned_province = {
+                        count >= athenian_mission_02_attica_task_5_total
+                        num_of_slave_mine_building > 0
+                        attica_region_trigger = yes
+                    }
+                }
+            }
+            trigger_else = {
+                OR = {
+                    any_owned_province = {
+                        count >= athenian_mission_02_attica_task_5_total
+                        num_of_slave_mine_building > 0
+                        attica_region_trigger = yes
+                    }
+                    AND = {
+                        any_owned_province = {
+                            count >= 6
+                            attica_region_trigger = yes
+                        }
+                        can_pay_price = price_found_city
+                    }
+                }
+            }
+        }
+
+        on_completion = {
+            if = {
+                limit = {
+                    is_ai = yes
+                    NOT = {
+                        any_owned_province = {
+                            count >= athenian_mission_02_attica_task_5_total
+                            num_of_slave_mine_building > 0
+                            attica_region_trigger = yes
+                        }
+                    }
+                }
+                pay_price = price_found_city
+                ordered_owned_province = {
+                    limit = {
+                        attica_region_trigger = yes
+                        has_minable_trade_good_trigger = yes
+                        has_city_status = no
+                    }
+                    order_by = num_of_slaves
+                    add_building_level = slave_mine_building
+                }
+            }
+            trigger_event = me_athens_02_attica.5
+            every_owned_province = {
+                limit = {
+                    num_of_slave_mine_building >= 1
+                    attica_region_trigger = yes
+                }
+                add_province_modifier = {
+                    name = athenian_mission_02_attican_minerals_modifier
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    athenian_mission_02_attica_task_6 = { # Padding Piraeus
+        duration = 180
+
+    	requires = { athenian_mission_02_attica_task_3 }
+
+        icon = "task_economical"
+
+        highlight = {
+            scope:province = {
+                province_id = 416
+            }
+        }
+
+        allow = {  
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 416 }
+                }
+                owns = 416
+            }
+            treasury >= 100
+        }
+
+        on_start = {
+            trigger_event = me_athens_02_attica.6
+            add_treasury = -100
+        }
+
+        on_completion = {
+            trigger_event = me_athens_02_attica.7
+            p:416.state = {
+                add_state_modifier = {
+                    name = athenian_mission_02_ports_of_piraeus_modifier
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    athenian_mission_02_attica_task_7 = { # Academy of Athens
+        duration = 365
+
+    	requires = { athenian_mission_02_attica_task_4 }
+
+        icon = "task_political"
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 416 }
+                }
+                owns = 416
+            }
+            treasury >= 250
+        }
+
+        on_start = {
+            trigger_event = me_athens_02_attica.8
+            add_treasury = -250
+        }
+
+        on_completion = {
+            trigger_event = me_athens_02_attica.9
+            custom_tooltip = athenian_mission_02_attica_task_7_effect_tt
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = athenian_mission__07_military
+                    duration = -1
+                }
+                add_country_modifier = {
+                    name = athenian_mission__07_civic
+                    duration = -1
+                }
+                add_country_modifier = {
+                    name = athenian_mission__07_oratory
+                    duration = -1
+                }
+                add_country_modifier = {
+                    name = athenian_mission__07_religious
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    athenian_mission_02_attica_task_8 = { # Filling the Ranks
+        duration = 90
+
+    	requires = { athenian_mission_02_attica_task_7 }
+
+        icon = "task_diplomatic"
+
+        monthly_on_action = athenian_mission_02_attica_task_8_pulse
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 416 }
+                }
+                owns = 416
+            }
+            political_influence >= 10
+        }
+
+        on_start = {
+            trigger_event = me_athens_02_attica.10
+            add_political_influence = -10
+        }
+
+        on_completion = {
+            trigger_event = me_athens_02_attica.13
+            custom_tooltip = athenian_mission_02_attica_task_8_effect_tt
+        }
+    }
+
+    athenian_mission_02_attica_task_9 = { # The Rites in Eleusis
+    	requires = { athenian_mission_02_attica_task_4 }
+
+        icon = "task_economical"
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 416
+                    province_id = 7897
+                }
+            }
+        }
+
+        allow = {
+            treasury >= 50
+            OR = {
+                has_deity_in_pantheon = deity:omen_demeter
+                has_deity_in_pantheon = deity:omen_demeter_potnia
+            }
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 7897 }
+                }
+                owns = 7897
+            }
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 416 }
+                }
+                owns = 416
+            }
+        }
+
+        on_completion = {
+            trigger_event = me_athens_02_attica.14
+            add_treasury = -50
+            add_country_modifier = {
+                name = athenian_mission_09_rites_eleusis_modifier
+                duration = 3650
+            }
+        }
+    }
+
+    athenian_mission_02_attica_task_10 = { # The Eleusinian Mysteries
+    	requires = { athenian_mission_02_attica_task_9 }
+
+        icon = "task_economical"
+
+        allow = {
+            political_influence >= 10
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 7897 }
+                }
+                owns = 7897
+            }
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 416 }
+                }
+                owns = 416
+            }
+        }
+
+        on_completion = {
+            trigger_event = me_athens_02_attica.15
+            add_political_influence = -10
+            custom_tooltip = athenian_mission_02_attica_task_10_effect_tt
+            current_ruler = {
+                add_character_modifier = {
+                    name = athenian_mission_10_eleusinian_cult_modifier
+                    duration = -1
+                }
+            }
+            set_variable = eleusis_mystery_cult
+        }
+    }
+
+    athenian_mission_02_attica_task_final = { # Attican Glory
+    	requires = { athenian_mission_02_attica_task_8 athenian_mission_02_attica_task_10 }
+
+        icon = "task_political"
+
+        final = yes
+
+        allow = {
+            trigger_if = {
+                limit = {
+                    NOT = { owns = 416 }
+                }
+                owns = 416
+            }
+        }
+
+        on_completion = {
+            trigger_event = me_athens_02_attica.17
+            current_ruler = {
+                add_popularity = popularity_medium
+            }
+        }
+    }
+}

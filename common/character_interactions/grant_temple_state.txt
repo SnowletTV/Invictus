@@ -6,8 +6,8 @@
 	
 	potential_trigger = {
 		scope:actor = {
-			can_make_temple_state = yes			
-		}
+			is_monarchy = yes
+		}		
 		hidden:scope:target = {#Zeal
 			employer = scope:actor
 			NOT = { employer = { tag = REB } }
@@ -28,6 +28,16 @@
 	allowed_trigger = {
 		trigger_if = {
 			limit = {
+				NOR = {
+					can_make_temple_state = yes
+					invention = temple_estates_inv
+				}
+			}
+			invention = temple_estates_inv
+		}
+		
+		trigger_if = {
+			limit = {
 				has_variable = make_temple_state_cooldown
 			}
 			custom_tooltip = {
@@ -45,15 +55,19 @@
 					}
 		        }
 			}
-	        any_owned_province = {
-				NOR = {
-					own_religious_center_province_trigger = yes
-					has_province_modifier = temple_state_modifier 
+			custom_tooltip = {
+				text = own_valid_temple
+		        any_owned_province = {
+					OR = {
+						own_religious_center_province_trigger = yes
+						has_province_modifier = temple_state_modifier 
+						is_holy_site = yes
+					}
 				}
 			}
 		}
 		scope:actor = {
-			can_pay_price = grant_satrap_autonomy_price
+			can_pay_price = grant_temple_estate_price
 			war = no
 			has_civil_war = no
 			is_subject = no
@@ -62,12 +76,21 @@
 	
 	effect = {#Make event instead
 		scope:actor = {
-			pay_price = grant_satrap_autonomy_price
-			set_variable = {#can make variable longer to prevent AI spam if that is an issue
-				name = make_temple_state_cooldown
-				days = 9125
+			pay_price = grant_temple_estate_price
+			hidden_effect = {
+				scope:actor = {
+					every_character = {
+						limit = {
+							has_same_family = scope:target
+							is_ruler = no
+							NOT = {
+								this = scope:target
+							}
+						}
+						add_loyalty = family_made_temple_state
+					}
+				}	
 			}
-			custom_tooltip = temple_state_cooldown_effect_tooltip	
 			hidden_effect = {
 				if = {
 					limit = {
@@ -93,11 +116,35 @@
 						save_scope_as = temple_state_province
 			        }
 				}
+				else = {
+			        random_owned_province = {
+			            limit = {
+							is_holy_site = yes    
+			            }
+						save_scope_as = temple_state_province
+			        }
+				}
 				scope:temple_state_province = {
 					create_country = { save_scope_as = new_temple_state }
 				}
 				scope:target = {
-					remove_all_positions = yes
+					random_list = {
+						100 = {
+							add_trait = obsessive
+						}
+						100 = {
+							add_trait = pious
+						}
+						100 = {
+							add_trait = self_controlled
+						}
+						100 = {
+							add_trait = zealous
+						}
+						100 = {
+							add_trait = xenophobic
+						}
+					}
 					move_country = scope:new_temple_state
 					remove_character_modifier = foreign_citizen
 					set_home_country = scope:new_temple_state
@@ -190,25 +237,16 @@
 							target = scope:new_temple_state
 							type = temple_state
 						}
+		            	trigger_event = { id = temple_state_event.2 }
 					}					
 				}
 			}
 			custom_tooltip = family_made_temple_state_tt
-			hidden_effect = {
-				scope:actor = {
-					every_character = {
-						limit = {
-							has_same_family = scope:target
-							is_ruler = no
-							NOT = {
-								this = scope:target
-							}
-						}
-						add_loyalty = family_made_temple_state
-					}
-				}	
+			set_variable = {#can make variable longer to prevent AI spam if that is an issue
+				name = make_temple_state_cooldown
+				days = 9125
 			}
-
+			custom_tooltip = temple_state_cooldown_effect_tooltip	
 		}
 	}
 	

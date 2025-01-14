@@ -7,6 +7,11 @@ make sense of values set in the big picture. It can be hard to keep track of eve
 and then people maintaining it for years to come stand no chance whatsoever. You bash in some 100s and 9999s, but then
 making a broader sense out of them is a bit challenging.
 
+This system appeared is a result of me facing this issue, and not for the first time either, while setting ai_will_do
+values for all the key inventions in Invictus. I ended up giving some 100s to "just ok" inventions, then for the "good"
+inventions the values went to 1000s so the AI would prioritize them, then for "crucial" ones the numbers were in 10000s
+already... It ended up not feeling intuitive and coherent, while also looking like a horror to maintain in the future.
+
 The obvious issue is that the values, 100s and 9999s mentioned above, are arbitrary and not tied to anything, and you
 need to do some real extra to systemize it for yourself if it stays this way. So the big part of the solution as I see
 it is to force all the values into some measurement, preferrably abstracted behind script values, because it's more
@@ -71,6 +76,10 @@ Search-replace by "irc_65" may also affect other trees and singular inventions t
 while search-replace by "irc_discipline_tree_65" won't bring any side effects. Note that we still state which chance a
 tree has in value name, as otherwise you would need to check it every time in script value file.
 
+Invention trees also have targets and subtargets, which is the most important innovations in the tree. They are simply
+stronger that the others and should be taken ASAP. For this reason they don't follow IRC of the tree, instead targets
+usually have IRC 100% and subtargets have IRC 99%, keeping hierarchy between them.
+
 ------------------------------------------------------------------------------------------------------------------------
 
 Invention relative chance can be upgraded to higher one conditionaly:
@@ -128,22 +137,15 @@ irc_35 = {
     subtract = num_inventions_to_choose_from_minus_1
 }
 
-Simple enough, but with one more gotcha.
+Simple enough, but with one more gotcha. We don't have a trigger to get the number of inventions that the country can
+choose from. Because if this an arbitrary value is used instead of num_inventions_to_choose_from, something around how
+much inventions there are to choose from on rough average. As a side effect, IRC script values are actually just baked
+numbers, because we don't want the game to waste performance on calculating math that could be hardcoded.
 
 ------------------------------------------------------------------------------------------------------------------------
 
-We don't have a trigger to get the number of inventions that the country can choose from, of course we don't.
-
-The solution that won't smash performance is I can make a script to generate scripted effect that would cycle through
-all the inventions names checking can_unlock_invention against each of them, which then could be attached to yearly
-on_action as we don't need day-to-day precision here, writing num of inventions to country scope variable.
-
-The downside is added maintenance cause after adding new inventions one would need to re-generate the effect, but it's
-arguably not that big of a deal and won't be game breaking even if forgotten for a patch or two.
-
-Alternatively num_inventions_to_choose_from could be simply set to arbitrary value, something similar to how much
-inventions there are to choose from on rough average. In this case the precision of the chance against base ai_will_do
-will fall, but the precision between multiply inventions where all of them have IRC won't be affected.
+For technical details, the precision of the chance against base ai_will_do decreases because of using arbitrary number
+of inventions to choose from, but the precision between multiple inventions that has some IRC isn't affected that much.
 
 Let me illustrate:
 
@@ -163,4 +165,16 @@ actual probability would look like:
 And the further the hardcoded value would be from the actual pool size, the higher would be the deviation. But between
 IRC values of multiple inventions the proportions stay roughly the same. In other words, high deviation would lead to
 much higher or lower probability of non-IRC innovations to get chosen, leading to less strict following of priorities
-we set for AI, but when choosing between innovations with IRC the 35% won't magically become close to 55% or something.
+we set for AI. But when choosing between innovations with IRC the 35% won't magically become close to 55% or something.
+
+------------------------------------------------------------------------------------------------------------------------
+
+For future readers with a passion against bad precision...
+
+The alternative solution is to make a script, where you feed it invention files and it generates a scripted effect that
+cycles through all the inventions names, checking can_unlock_invention against each of them to determine the number of
+available ones to choose from. You then perform it on country scope every something, presumably year, writing num of
+inventions to a variable. IRC script values would of source require a rewrite to support these variables.
+
+The downside is increased maintenance, because after adding new inventions you would need to re-generate the effect,
+and possibly a small impact on game performance, albeit a minimal one.

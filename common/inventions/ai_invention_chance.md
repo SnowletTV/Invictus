@@ -1,0 +1,167 @@
+Anbeeld's AI Invention Chance
+
+------------------------------------------------------------------------------------------------------------------------
+
+My issue with AI chances in systems with many options, with technologies being the best example, is how hard it is to
+make sense of values set in the big picture. It can be hard to keep track of everything even while planning the system,
+and then people maintaining it for years to come stand no chance whatsoever. You bash in some 100s and 9999s, but then
+making a broader sense out of them is a bit challenging.
+
+The obvious issue is that the values, 100s and 9999s mentioned above, are arbitrary and not tied to anything, and you
+need to do some real extra to systemize it for yourself if it stays this way. So the big part of the solution as I see
+it is to force all the values into some measurement, preferrably abstracted behind script values, because it's more
+convenient to use this way and it discourages from overwriting the system with 9999s all over again.
+
+------------------------------------------------------------------------------------------------------------------------
+
+The measurement I suggest here is AI invention chance, aka AIC. Imagine you as AI have 26 inventions to choose from out
+of all the trees and stuff. Now imagine you want one particular invention to have 35% chance to get chosen, like it's a
+pretty good invention, not insane but still useful. In this case we say out loud (obligatory): "I want this invention
+to have 35% AIC!" then we open the files and 35% AIC all over them:
+
+global_citizen_output_inv_1 = { 
+    modifier = { global_citizen_output = output_small_svalue }
+    ai_will_do = {
+        modifier = {
+            factor = ai_invention_chance_35
+        }
+    }
+}
+
+And that's it.
+But what does it mean?
+
+So this script value is a calculation of what ai_will_do value an invention should have so that if all the other
+inventions have the base ai_will_do value, this will be picked in 35% of cases, and all the other ones share the 65%.
+
+Allegedly of course, because we don't know for sure how Paradox coded all the decision making under the hood, but we
+know that the base ai_will_do value is 1 and that it looks like it follows the simple math expectations we could have
+more than not. There's some weird stuff but generally big numba is better than small numba.
+
+------------------------------------------------------------------------------------------------------------------------
+
+The good stuff it brings is that now you just map all the important inventions with a certain AI invention chance, and
+you simultaneously can easily judge how prioritized it is over inventions without a set value, and then how it relates
+to other inventions with some AI invention chance.
+
+Like with ai_invention_chance_35 you can immediately say that it's pretty favoured in an open field against all the
+base ai_will_do value inventions. But then if there's also an invention with ai_invention_chance_65 that's available to
+the AI right now, the 35% one becomes much less likely to go through, though not improssible.
+
+Then you add ai_invention_chance_99 and ai_invention_chance_100 (which is not 100% ofc but still super high) to the mix
+and these 2 stomp everyone else. But after the AI will finish picking these ones the 35% and 65% will get back on board
+trying to make senpai notice them.
+
+You see, we went from assigning random 100s and 9999s catDespair-style to some pretty clear stuff, where I just wrote a
+small story about their adventures, that's how picturesque AI invention chance is.
+
+------------------------------------------------------------------------------------------------------------------------
+
+It's important to note that applying AIC just to one important invention deep in the tree is useless. We need to apply
+the same chance to all the inventions on the path to that important one, so the AI pushes towards it over time.
+
+For this reason there is a separate section in invention script values for AI invention chances per tree, looking like:
+
+aic_discipline_tree_65 = {
+	value = ai_invention_chance_65
+}
+
+Which may seem useless, but will turn out very handy if you would need to replace AIC for the entire tree at the time.
+Search-replace by "ai_invention_chance_65" may also affect other trees and singular inventions that just happened to
+have the same AIC, while search-replace by "aic_discipline_tree_65" can't bring any side effects. Note that we still
+state which chance a tree has in value name, as otherwise you would need to check it every time in script value file.
+
+------------------------------------------------------------------------------------------------------------------------
+
+AI invention chance can be updgraded to higher one conditionaly:
+
+global_citizen_output_inv_1 = { 
+    modifier = { global_citizen_output = output_small_svalue }
+    ai_will_do = {
+        modifier = {
+            factor = ai_invention_chance_35
+        }
+        modifier = {
+            factor = ai_invention_chance_from_35_to_80
+            is_tribal = yes
+        }
+    }
+}
+
+The syntax is self-explanatory: we set some base AI invention chance and then if the country meets a certain criteria,
+we can upgrade it to other chance using another set of special script values. Again script values abstraction is needed,
+because for e.g. 30 inventions to choose from the 35% value is 15.6153 while 80% is 116, but if you do some cringe like
+multiplying it by 2.2857 (80/35) instead you would get absolutely wrong result. Don't stick your raw numbers into this.
+
+------------------------------------------------------------------------------------------------------------------------
+
+Here's example with an invention that's a part of two different trees:
+
+happiness_for_wrong_group_modifier_inv_1 = { 
+    modifier = { happiness_for_wrong_culture_group_modifier = wrong_culture_group_small  }
+    requires = { ruler_popularity_gain_inv_1 }
+    # Auxiliary Recruitment and Great Temple tree
+    ai_will_do = {
+        modifier = {
+            factor = aic_auxiliary_recruitment_tree_40
+        }
+        modifier = {
+            factor = aic_from_auxiliary_recruitment_tree_40_to_great_temple_tree_45
+            does_benefit_from_unique_city_buildings = yes
+        }
+    }
+}
+
+While a bit wordy, you would spend much more time consulting script value source somewhere in the file, while in this
+case you can see what's base AIC and how will it change if the country would satisfy the condition of the other tree.
+
+------------------------------------------------------------------------------------------------------------------------
+
+In tools folder there's a script to generate chance script values with the step of 5% plus special cases e.g. 99%.
+We can further reduce the step if needed or add some more special values, it doesn't result in much issues other than
+file size and the amount of script values loaded by the game, which I honestly dunno if it has side effects or not.
+
+The script value looks like this under the hood:
+
+ai_invention_chance_35 = {
+    value = num_inventions_to_choose_from_minus_1
+    divide = 0.65
+    subtract = num_inventions_to_choose_from_minus_1
+}
+
+Simple enough, but with one more gotcha.
+
+------------------------------------------------------------------------------------------------------------------------
+
+We don't have a trigger to get the number of inventions that the country can choose from, of course we don't.
+
+The solution that won't smash performance is I can make a script to generate scripted effect that would cycle through
+all the inventions names checking can_unlock_invention against each of them, which then could be attached to yearly
+on_action as we don't need day-to-day precision here, writing num of inventions to country scope variable.
+
+The downside is added maintenance cause after adding new inventions one would need to re-generate the effect, but it's
+arguably not that big of a deal and won't be game breaking even if forgotten for a patch or two.
+
+Alternatively num_inventions_to_choose_from could be simply set to arbitrary value, something similar to how much
+inventions there are to choose from on rough average. In this case the precision of the chance against base ai_will_do
+will fall, but the precision between multiply inventions where all of them have AIC won't be affected.
+
+Let me illustrate:
+
+       10 innos    20 innos    30 innos
+35%    4.8461      10.2307     15.6153
+55%    11          23.2222     35.4444
+75%    27          57          87
+
+Now assuming we hardcode num_inventions_to_choose_from to 20 and this is the only invention with AIC in the pool, the
+actual probability would look like:
+
+       10 innos    20 innos    30 innos
+35%    53.19%      35%         26.07%
+55%    72.06%      55%         44.46%
+75%    86.36%      75%         66.27%
+
+And the further the hardcoded value would be from the actual pool size, the higher would be the deviation. But between
+AIC values of multiple inventions the proportions stay roughly the same. In other words, high deviation would lead to
+much higher or lower probability of non-AIC innovations to get chosen, leading to less strict following of priorities
+we set for AI, but when choosing between innovations with AIC the 35% won't magically become close to 55% or something.

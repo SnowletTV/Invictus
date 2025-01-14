@@ -31,12 +31,12 @@ let script_values = ``;
 for (let percent of percents) {
   if (percent === 100) {
     script_values += 
-    `ai_invention_chance_${percent} = { ` +
+    `irc_${percent} = { ` +
       `value = 99999999 ` +
     `}\n`;
   } else {
     script_values += 
-    `ai_invention_chance_${percent} = { ` +
+    `irc_${percent} = { ` +
       `value = num_inventions_to_choose_from_minus_1 ` +
       `divide = ${toStringFloat(100 - percent)} ` +
       `subtract = num_inventions_to_choose_from_minus_1 ` +
@@ -48,9 +48,9 @@ for (let percent of percents) {
       continue;
     }
     script_values += 
-    `ai_invention_chance_from_${percent}_to_${target} = { ` +
-      `value = ai_invention_chance_${target} ` +
-      `divide = ai_invention_chance_${percent} ` +
+    `irc_from_${percent}_to_${target} = { ` +
+      `value = irc_${target} ` +
+      `divide = irc_${percent} ` +
     `}\n`;
   }
 }

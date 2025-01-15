@@ -33,7 +33,7 @@ function roundFloat(value, precision) {
 const num_inventions_to_choose_from = 20;
 
 function calculateValue(percent) {
-  // For 100% just get some really big number to soft-guarantee the innovation getting chosen
+  // For 100% just get some really big number to soft-guarantee the invention getting chosen
   if (percent === 100) {
     return 99999999;
   }

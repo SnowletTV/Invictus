@@ -33,7 +33,7 @@
 #
 # Always write the chance itself in the name to remove the need to check script value contents on every step!
 # For conditional trees that have multiple values, write min and max in the name like this: cdt_census_data_65_to_95
-#
+# ----------------------------------------------------------------------------------------------------------------------
 # Sometimes inventions belong to multiple trees at the same time. In this case we write selector script values, where
 # you simply compare values of all the trees to find out which one is the biggest - check some examples in this file. 
 #
@@ -55,7 +55,7 @@
 # }
 #
 # These two modifiers have contradicting triggers so basically the bigger one will be chosen. Not that while currently
-# it looks useless cause obviously 55 > 50, after rebalancing with global find-replace these values might change while
+# it looks useless cause obviously 55 >= 50, after rebalancing with global find-replace these values might change while
 # you won't even remember about this block, but if the code was designed this way it will continue to work correctly:
 #
 # ai_will_do = {
@@ -69,10 +69,24 @@
 # 	  }
 # }
 # ----------------------------------------------------------------------------------------------------------------------
+# IMPORTANT: Different trees react differently to the same IRC, sometimes very much so. The reasons are pure math.
+#
+# 1) Tree width, aka how much of tree inventions are in the pool at any given moment. Naturally, if first tree has width
+#    of 2, while second tree has width of 1, they would have an equal chance of getting one of their inventions chosen
+#    even if first tree had 2x lower weight, and less difference would even lead to first tree being faster to advance.
+#    Btw please note that e.g. irc_35 and irc_70 is not 2x weight difference, but actually around 4x, check end of file.
+#
+# 2) Tree size, aka how much inventions a tree has. This one is actually more about subjective perception. The thing is,
+#    if first tree has 15 inventions, while a second tree has 6 of them, having equal advance speed for them would mean
+#    that in practice it would seem like first tree is being researched much slower. 5 inventions researched in first
+#    tree is just a start, while second tree would be almost done. It's all about % of researched inventions vs total.
+#
+# 3) (Sub)targets have elevated IRC, meaning that out of 2 equal trees one with more (sub)targets is faster on average.
+# ----------------------------------------------------------------------------------------------------------------------
 
-# ------------- #
-# MARTIAL TREES #
-# ------------- #
+# -------------------- #
+# MARTIAL TREES / LEFT #
+# -------------------- #
 
 # Professional Training - unconditional tree
 uct_professional_training_75 = {
@@ -138,6 +152,10 @@ uct_army_surgeons_target_25 = {
 	value = irc_25
 }
 
+# ---------------------- #
+# MARTIAL TREES / MIDDLE #
+# ---------------------- #
+
 # Sapping = unconditional tree
 uct_sapping_100 = {
 	value = irc_100 # Well you WILL siege forts in this game
@@ -200,6 +218,10 @@ uct_mangonel_20__cdt_timbered_roads_20 = {
 		value = cdt_timbered_roads_20
 	}
 }
+
+# --------------------- #
+# MARTIAL TREES / RIGHT #
+# --------------------- #
 
 # Cultural Naval - conditional tree
 # Normally AI won't research anything naval, but countries with early cultural inventions here should get them
@@ -278,15 +300,12 @@ cdt_cultural_naval = {
 	}
 }
 
-# ----------- #
-# CIVIC TREES #
-# ----------- #
+# ------------------ #
+# CIVIC TREES / LEFT #
+# ------------------ #
 
-# Basically all the civic left branch invs that are good for income.
-# This tree has higher IRC than maybe expected, but in practice it behaves like a lower one. This is related to the tree
-# being basically the whole branch, it's large in amount of invs but narrow at a given moment, meaning there's not much
-# invs from it in the pool but a lot of then need to be researched to feel the progress. It's also doesn't have much
-# subtrees compared to other branches, which means there are no short bursts of elevated IRC like it usually goes.
+# Civic Left Branch - conditional tree
+# Basically all the civic left branch inventions that are good for income
 cdt_civic_left_branch_70 = {
 	if = {
 		limit = {
@@ -386,6 +405,10 @@ cdt_civic_left_branch_70__cdt_world_port_school_of_philosophy_80__cdt_silent_tra
 		value = cdt_silent_trade_85
 	}
 }
+
+# ------------------- #
+# CIVIC TREES / RIGHT #
+# ------------------- #
 
 # Slave Latifundia tree
 cdt_slave_latifundia_35 = {
@@ -529,9 +552,9 @@ cdt_planning_1_to_35__cdt_servile_bondage_25_to_x__cdt_slave_latifundia_35 = {
 	}
 }
 
-# ------------- #
-# ORATORY TREES #
-# ------------- #
+# -------------------- #
+# ORATORY TREES - LEFT #
+# -------------------- #
 
 # Defending Liberty - conditional tree
 cdt_defending_liberty_75 = {
@@ -688,6 +711,10 @@ cdt_defending_liberty_75__cdt_gradual_economic_integration_40__cdt_book_binding_
 		value = cdt_defending_liberty_75
 	}
 }
+
+# --------------------- #
+# ORATORY TREES - RIGHT #
+# --------------------- #
 
 # Census Data - conditional tree
 cdt_census_data_65_to_95 = {
@@ -1089,8 +1116,10 @@ cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recru
 # SCRIPT VALUES FOR INVENTION LOGIC AND STUFF
 # ----------------------------------------------------------------------------------------------------------------------
 
+# Equal to ai_will_do base values, which is, well, 1
 irc_base = 1
 
+# Applied to inventions that reduce tyranny
 irc_high_tyranny = {
 	if = {
 		limit = {
@@ -1109,9 +1138,11 @@ irc_high_tyranny = {
 	}
 }
 
+# Bro this naming is absurd
 num_of_territories_svalue = {
 	value = num_of_cities
 }
+# Actual cities and NOT TERRITORIES
 num_of_cities_svalue = {
 	value = 0
 	every_owned_province = {
@@ -1124,6 +1155,7 @@ num_of_cities_svalue = {
 	}
 }
 
+# Amount of population qualified for levies in capital region
 capital_region_levy_population = {
 	capital_scope = {
 		region = {
@@ -1151,11 +1183,15 @@ capital_region_levy_population = {
 		}
 	}
 }
+
+# Amount of levy cohorts in capital region
 capital_region_levy_cohorts = {
 	value = capital_region_levy_population
 	multiply = modifier:levy_size_multiplier
 	floor = yes
 }
+
+# If we research an innovation that gives 5 free pops in capital, would we get one more cohort?
 capital_region_levy_cohorts_with_5_more_pops = {
 	value = capital_region_levy_population
 	add = 5

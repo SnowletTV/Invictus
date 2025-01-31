@@ -1,0 +1,1560 @@
+﻿# ----------------------------------------------------------------------------------------------------------------------
+# ANBEELD'S INVENTION RELATIVE CHANCE
+# First time you hear about it? Check /common/inventions/invention_relative_chance.info first!
+# TL;DR Nice and handy 1/x
+# ----------------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------------------------------------------
+# INVENTION RELATIVE CHANCE PER TREE
+# Applied to entire arrays of innovations at once, making balancing trivial.
+# To change IRC of the tree, edit "value = irc_xx" in its script value, then search-replace script value name to change
+# number(s) in it accordingly, e.g. "cdt_tree_name_55" -> "cdt_tree_name_65". Use "*/invention*" file filter for speed.
+# 
+# irc_ is short for invention relative chance
+# uct_ is short for unconditional tree, means setting value for invention tree without any triggers required to meet
+# cdt_ is short for conditional tree, means setting value for invention tree only if certain triggers are met
+#
+# Always write conditional trees in this style:
+#
+# cdt_some_invention_name_65 = {
+# 	  if = {
+# 		  limit = {
+# 		  	  some_trigger = yes
+# 		  }
+# 		  value = irc_65
+# 	  }
+# 	  else = {
+# 	  	  value = irc_base
+# 	  }
+# }
+#
+# Without "else" to "irc_base" (which is ai_will_do base value, which is 1) affected inventions may get disabled for AI.
+#
+# There are default value, subtarget value, target value and sometimes more specific ones.
+# Target is the top of the tree, usually what's in the tree's name, most often it's OP inno so we want it ASAP and thus
+# give it irc_100, although there are exceptions. Subtargets are OP invs in the middle of the tree, they have irc_99.
+#
+# Always write the chance itself in the name to remove the need to check script value contents on every step!
+# For conditional trees that have multiple values, write min and max in the name like this: cdt_census_data_65_to_95
+# ----------------------------------------------------------------------------------------------------------------------
+# Sometimes inventions belong to multiple trees at the same time. In this case we write selector script values, where
+# you simply compare values of all the trees to find out which one is the biggest - check some examples in this file. 
+#
+# When going for selector through script values, make sure it's name is equal to tree_1__tree_2__tree_3, for example
+# cdt_census_data_65_to_95__cdt_scientific_patronage_30__uct_town_criers_40. This preserves find-replace compatibility
+# with the original script values of these trees, while double underline make things readable as much as it's possible.
+#
+# You can also do it without script value, right in the ai_will_do block, something like this:
+#
+# ai_will_do = {
+# 	  modifier = {
+# 		  factor = cdt_number_one_55
+# 		  cdt_number_one_55 >= cdt_number_two_50
+# 	  }
+# 	  modifier = {
+# 		  factor = cdt_number_two_50
+# 		  cdt_number_one_55 < cdt_number_two_50
+# 	  }
+# }
+#
+# These two modifiers have contradicting triggers so basically the bigger one will be chosen. Not that while currently
+# it looks useless cause obviously 55 >= 50, after rebalancing with global find-replace these values might change while
+# you won't even remember about this block, but if the code was designed this way it will continue to work correctly:
+#
+# ai_will_do = {
+# 	  modifier = {
+# 		  factor = cdt_number_one_45
+# 		  cdt_number_one_45 >= cdt_number_two_50
+# 	  }
+# 	  modifier = {
+# 		  factor = cdt_number_two_50
+# 		  cdt_number_one_45 < cdt_number_two_50
+# 	  }
+# }
+# ----------------------------------------------------------------------------------------------------------------------
+# IMPORTANT: Different trees react differently to the same IRC, sometimes very much so. The reasons are pure math.
+#
+# 1) Tree width, aka how much of tree inventions are in the pool at any given moment. Naturally, if first tree has width
+#    of 2, while second tree has width of 1, they would have an equal chance of getting one of their inventions chosen
+#    even if first tree had 2x lower weight, and less difference would even lead to first tree being faster to advance.
+#    Btw please note that e.g. irc_35 and irc_70 is not 2x weight difference, but actually around 4x, check end of file.
+#
+# 2) Tree size, aka how much inventions a tree has. This one is actually more about subjective perception. The thing is,
+#    if first tree has 15 inventions, while a second tree has 6 of them, having equal advance speed for them would mean
+#    that in practice it would seem like first tree is being researched much slower. 5 inventions researched in first
+#    tree is just a start, while second tree would be almost done. It's all about % of researched inventions vs total.
+#
+# 3) (Sub)targets have elevated IRC, meaning that out of 2 equal trees one with more (sub)targets is faster on average.
+# ----------------------------------------------------------------------------------------------------------------------
+
+# -------------------- #
+# MARTIAL TREES / LEFT #
+# -------------------- #
+
+# Professional Training - unconditional tree
+uct_professional_training_75 = {
+	value = irc_75
+}
+uct_professional_training_target_100 = {
+	value = irc_100
+}
+
+# Manipular Legion - unconditional tree / Starts sideways to Professional Training tree
+uct_manipular_legion_55 = {
+	value = irc_55
+}
+uct_manipular_legion_target_75 = {
+	value = irc_75
+}
+
+# Discipline - unconditional tree / Starts after Professional Training and Manipular Legion trees
+uct_discipline_45 = {
+	value = irc_45
+}
+uct_discipline_target_100 = {
+	value = irc_100
+}
+
+# Centralized Production - conditional tree
+cdt_centralized_production_35 = {
+	if = {
+		limit = {
+			does_benefit_from_unique_city_buildings = yes
+		}
+		value = irc_35
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_centralized_production_target_100 = {
+	if = {
+		limit = {
+			does_benefit_from_unique_city_buildings = yes
+		}
+		value = irc_100
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Quick March - unconditional tree
+uct_quick_march_15 = {
+	value = irc_15
+}
+uct_quick_march_target_50 = {
+	value = irc_50
+}
+
+# Army Surgeons - unconditional tree
+uct_army_surgeons_10 = {
+	value = irc_10
+}
+uct_army_surgeons_target_25 = {
+	value = irc_25
+}
+
+# ---------------------- #
+# MARTIAL TREES / MIDDLE #
+# ---------------------- #
+
+# Sapping = unconditional tree
+uct_sapping_100 = {
+	value = irc_100 # Well you WILL siege forts in this game
+}
+
+# Tormenta - unconditional tree / Starts after Sapping
+uct_tormenta_30 = {
+	value = irc_30
+}
+uct_tormenta_target_100 = {
+	value = irc_100
+}
+
+# Mangonel - unconditional tree / Starts after Sapping and Tormenta
+uct_mangonel_20 = {
+	value = irc_20
+}
+uct_mangonel_target_100 = {
+	value = irc_100
+}
+
+# Timbered Roads - conditional tree / Celtic specific
+cdt_timbered_roads_20 = {
+	if = {
+		limit = {
+			# Copy-pasted from gallic_timbered_roads_inv
+			OR = {
+				country_culture_group = gallic
+				country_culture_group = celto_pannonian_group
+				country_culture_group = belgae_group
+				custom_tooltip = {
+					text = integrated_any_celtic_culture
+					has_variable = celtic_science
+					any_integrated_culture = {
+						OR = {
+							this.culture.culture_group = culture_group:gallic
+							this.culture.culture_group = culture_group:celto_pannonian_group
+							this.culture.culture_group = culture_group:belgae_group
+						}
+					}
+				}
+			}
+		}
+		value = irc_20
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Selector for Mangonel vs Timbered Roads
+uct_mangonel_20__cdt_timbered_roads_20 = {
+	if = {
+		limit = {
+			uct_mangonel_20 > cdt_timbered_roads_20
+		}
+		value = uct_mangonel_20
+	}
+	else = {
+		value = cdt_timbered_roads_20
+	}
+}
+
+# --------------------- #
+# MARTIAL TREES / RIGHT #
+# --------------------- #
+
+# Cultural Naval - conditional tree
+# Normally AI won't research anything naval, but countries with early cultural inventions here should get them
+cdt_cultural_naval = {
+	if = {
+		limit = {
+			OR = {
+				# Copy-pasted from lembus_inv
+				primary_culture = liburnian_culture
+
+				# Copy-pasted from archimedes_principle
+				OR = {
+					primary_culture = syracusan 
+					primary_culture = siculian
+					tag = SIC
+				}
+
+				# Copy-pasted from sewn_planks_inv
+				OR = {
+					country_culture_group = aryan
+					country_culture_group = pracyan
+					country_culture_group = indian
+					custom_tooltip = {
+						#Need a new text
+						text = integrated_any_indian_culture
+						has_variable = indian_science
+						any_integrated_culture = {
+							OR = {
+								this.culture.culture_group = culture_group:aryan
+								this.culture.culture_group = culture_group:pracyan
+								this.culture.culture_group = culture_group:indian
+							}
+						}
+					}
+					country_culture_group = south_levantine
+					country_culture_group = south_arabian
+					custom_tooltip = {
+						#Need a new text
+						text = integrated_any_arabian_culture
+						has_variable = arabian_science
+						any_integrated_culture = {
+							OR = {
+								this.culture.culture_group = culture_group:south_levantine
+								this.culture.culture_group = culture_group:south_arabian
+							}
+						}
+					}
+					country_culture_group = meroitic_group
+					country_culture_group = aksumite_group
+					custom_tooltip = {
+						#Need a new text
+						text = integrated_any_nubian_culture
+						OR = {
+							has_variable = new_egyptian_dynasty
+							has_variable = nubian_science
+						}
+						any_integrated_culture = {
+							OR = {
+								this.culture.culture_group = culture_group:meroitic_group
+								this.culture.culture_group = culture_group:aksumite_group
+							}
+						}	
+					}
+					tag = TYO
+					tag = TLM
+				}
+
+				# Copy-pasted from cotton_trade_inv
+				tag = TYO
+			}
+		}
+		value = irc_45
+	}
+	else = {
+		value = 0 # Because normally naval is prohibited
+	}
+}
+
+# ------------------ #
+# CIVIC TREES / LEFT #
+# ------------------ #
+
+# Civic Left Branch - conditional tree
+# Basically all the civic left branch inventions that are good for income
+cdt_civic_left_branch_65 = {
+	if = {
+		limit = {
+			cdt_clock_mechanics_70 = irc_base
+			cdt_trigonometry_70 = irc_base
+		}
+		value = irc_65
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Silent Trade - conditional tree / Unique to Punic
+cdt_silent_trade_85 = {
+	if = {
+		limit = {
+			# Copy-pasted from silent_trade_inv
+			OR = {
+				country_culture_group = west_levantine
+				custom_tooltip = {
+					#Need a new text
+					text = integrated_any_punic_culture
+					has_variable = punic_science
+					any_integrated_culture = {
+						this.culture.culture_group = culture_group:west_levantine
+					}
+				}
+			}
+		}
+		value = irc_85
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# World Port + School of Philosophy - conditional tree
+cdt_world_port_school_of_philosophy_80 = {
+	if = {
+		limit = {
+			does_benefit_from_buffing_capital = yes
+		}
+		value = irc_80
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_world_port_school_of_philosophy_target_100 = {
+	if = {
+		limit = {
+			does_benefit_from_buffing_capital = yes
+		}
+		value = irc_100
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Selector of Civic Left Branch vs Silent Trade
+cdt_civic_left_branch_65__cdt_silent_trade_85 = {
+	if = {
+		limit = {
+			cdt_civic_left_branch_65 >= cdt_silent_trade_85
+		}
+		value = cdt_civic_left_branch_65
+	}
+	else = {
+		value = cdt_silent_trade_85
+	}
+}
+
+# Selector of Civic Left Branch vs World Port + School of Philosophy
+cdt_civic_left_branch_65__cdt_world_port_school_of_philosophy_80 = {
+	if = {
+		limit = {
+			cdt_world_port_school_of_philosophy_80 >= cdt_civic_left_branch_65
+		}
+		value = cdt_world_port_school_of_philosophy_80
+	}
+	else = {
+		value = cdt_civic_left_branch_65
+	}
+}
+
+# Selector of Civic Left Branch vs World Port + School of Philosophy vs Silent Trade
+cdt_civic_left_branch_65__cdt_world_port_school_of_philosophy_80__cdt_silent_trade_85 = {
+	if = {
+		limit = {
+			cdt_civic_left_branch_65__cdt_world_port_school_of_philosophy_80 >= cdt_silent_trade_85
+		}
+		value = cdt_civic_left_branch_65__cdt_world_port_school_of_philosophy_80
+	}
+	else = {
+		value = cdt_silent_trade_85
+	}
+}
+
+# ------------------- #
+# CIVIC TREES / RIGHT #
+# ------------------- #
+
+# Slave Latifundia tree
+cdt_slave_latifundia_35 = {
+	if = {
+		limit = {
+			is_tribal = no
+		}
+		value = irc_35
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Planning - conditional tree with path variation for tribal and non-tribal
+# IRC multiplied by global territory buffs importance, note min = irc_base so the ai_will_do won't zero
+cdt_planning_1_to_35 = {
+	value = irc_35
+	multiply = global_territory_buffs_importance
+	min = irc_base
+}
+cdt_planning_1_to_35_tribal = {
+	if = {
+		limit = {
+			is_tribal = yes
+		}
+		value = cdt_planning_1_to_35
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_planning_1_to_35_non_tribal = {
+	if = {
+		limit = {
+			is_tribal = no
+		}
+		value = cdt_planning_1_to_35
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_planning_target_1_to_100 = {
+	value = irc_100
+	multiply = global_territory_buffs_importance
+	min = irc_base
+}
+
+# Servile Bondage - conditional tree
+# "x" in the name is: if you are Hellenic then it gets equal IRC to Clock Mechanics tree cause it's the same path
+cdt_servile_bondage_25_to_x = {
+	if = {
+		limit = {
+			cdt_clock_mechanics_70 >= irc_25
+		}
+		value = cdt_clock_mechanics_70
+	}
+	else = {
+		value = irc_25
+	}
+}
+cdt_servile_bondage_subtarget_99 = {
+	value = irc_99
+}
+cdt_servile_bondage_target_85 = { # Subtarget is a better inno
+	value = irc_85
+}
+
+# Clock Mechanics - conditional tree / Starts sideways to Servile Bondage and has related IRC
+# Hellenic alternative of big civic tree
+cdt_clock_mechanics_70 = {
+	if = {
+		limit = {
+			# Copy-pasted from greek_clock_mechanics_inv
+			OR = {
+				country_culture_group = hellenic
+				custom_tooltip = {
+					text = integrated_any_latin_culture
+					has_variable = greek_science
+					any_integrated_culture = {
+						is_greek_culture_group_trigger = yes
+					}
+				}
+			}
+		}
+		value = irc_70
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_clock_mechanics_target_100 = {
+	value = irc_100
+}
+
+# Divinely Guided - unconditional tree / Starts sideways to Servile Bondage
+uct_divinely_guided_15 = {
+	value = irc_15
+}
+uct_divinely_guided_target_100 = {
+	value = irc_100
+}
+
+# Selector of Planning vs Servile Bondage
+cdt_planning_1_to_35__cdt_servile_bondage_25_to_x = {
+	if = {
+		limit = {
+			cdt_planning_1_to_35 >= cdt_servile_bondage_25_to_x
+		}
+		value = cdt_planning_1_to_35
+	}
+	else = {
+		value = cdt_servile_bondage_25_to_x
+	}
+}
+
+# Selector of Planning (non-tribal) vs Slave Latifundia
+cdt_planning_1_to_35_non_tribal__cdt_slave_latifundia_35 = {
+	if = {
+		limit = {
+			cdt_planning_1_to_35_non_tribal >= cdt_slave_latifundia_35
+		}
+		value = cdt_planning_1_to_35_non_tribal
+	}
+	else = {
+		value = cdt_slave_latifundia_35
+	}
+}
+
+# Selector of Planning vs Servile Bondage vs Slave Latifundia
+cdt_planning_1_to_35__cdt_servile_bondage_25_to_x__cdt_slave_latifundia_35 = {
+	if = {
+		limit = {
+			cdt_planning_1_to_35__cdt_servile_bondage_25_to_x >= cdt_slave_latifundia_35
+		}
+		value = cdt_planning_1_to_35__cdt_servile_bondage_25_to_x
+	}
+	else = {
+		value = cdt_slave_latifundia_35
+	}
+}
+
+# -------------------- #
+# ORATORY TREES - LEFT #
+# -------------------- #
+
+# Defending Liberty - conditional tree
+cdt_defending_liberty_75 = {
+	if = {
+		limit = {
+			is_expansionist = yes
+		}
+		value = irc_75
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_defending_liberty_target_100 = {
+	if = {
+		limit = {
+			is_expansionist = yes
+		}
+		value = irc_100
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Gradual Economic Integration - conditional tree
+cdt_gradual_economic_integration_35 = {
+	if = {
+		limit = {
+			does_benefit_from_unique_city_buildings = yes
+		}
+		value = irc_35
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_gradual_economic_integration_target_100 = {
+	if = {
+		limit = {
+			does_benefit_from_unique_city_buildings = yes
+		}
+		value = irc_100
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Book Binding - conditional tree
+cdt_book_binding_1_to_95 = {
+	if = {
+		limit = {
+			# Until we get a trigger for research efficiency
+			# is_limited_by_max_research_efficiency = yes
+			invention = gw_effect_zeal_education_inv # Already has religious research efficiency invention
+		}
+		# Until we get a trigger for research efficiency
+		# value = irc_95
+		value = irc_45
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_book_binding_target_1_to_100 = {
+	if = {
+		limit = {
+			# Until we get a trigger for research efficiency
+			# is_limited_by_max_research_efficiency = yes
+			always = yes
+		}
+		value = irc_100
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Trigonometry - conditional tree / Indian specific
+cdt_trigonometry_70 = {
+	if = {
+		limit = {
+			# Copy-pasted from indian_trigonometric_functions_inv
+			OR = {
+				country_culture_group = aryan
+				country_culture_group = pracyan
+				country_culture_group = indian
+				custom_tooltip = {
+					text = integrated_any_indian_culture
+					has_variable = indian_science
+					any_integrated_culture = {
+						OR = {
+							is_culture = kannadan
+							is_culture = tamil
+							is_culture = telugu
+							is_culture = kalingan
+							is_culture = kamarupi
+							is_culture = bangli
+							is_culture = atavi
+							is_culture = magadhi
+							is_culture = himalayan
+							is_culture = vidharban
+							is_culture = saurashtran
+							is_culture = lankan
+							is_culture = maharashtran
+							is_culture = gandhari
+							is_culture = shauraseni
+							is_culture = avanti
+							is_culture = sindhi
+							is_culture = dardic
+						}
+					}
+				}
+			}
+		}
+		value = irc_70
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Selector of Gradual Economic Integration vs Book Binding
+cdt_gradual_economic_integration_35__cdt_book_binding_1_to_95 = {
+	if = {
+		limit = {
+			cdt_gradual_economic_integration_35 >= cdt_book_binding_1_to_95
+		}
+		value = cdt_gradual_economic_integration_35
+	}
+	else = {
+		value = cdt_book_binding_1_to_95
+	}
+}
+
+# Selector of Gradual Economic Integration vs Book Binding vs Trigonometry
+cdt_gradual_economic_integration_35__cdt_book_binding_1_to_95__cdt_trigonometry_70 = {
+	if = {
+		limit = {
+			cdt_gradual_economic_integration_35__cdt_book_binding_1_to_95 >= cdt_trigonometry_70
+		}
+		value = cdt_gradual_economic_integration_35__cdt_book_binding_1_to_95
+	}
+	else = {
+		value = cdt_trigonometry_70
+	}
+}
+
+# Selector of Defending Liberty vs Gradual Economic Integration vs Book Binding vs Trigonometry
+cdt_defending_liberty_75__cdt_gradual_economic_integration_35__cdt_book_binding_1_to_95__cdt_trigonometry_70 = {
+	if = {
+		limit = {
+			cdt_gradual_economic_integration_35__cdt_book_binding_1_to_95__cdt_trigonometry_70 >= cdt_defending_liberty_75
+		}
+		value = cdt_gradual_economic_integration_35__cdt_book_binding_1_to_95__cdt_trigonometry_70
+	}
+	else = {
+		value = cdt_defending_liberty_75
+	}
+}
+
+# --------------------- #
+# ORATORY TREES - RIGHT #
+# --------------------- #
+
+# Census Data - conditional tree
+cdt_census_data_65_to_95 = {
+	if = {
+		limit = {
+			slightly_benefits_from_5_pops = yes
+		}
+		if = {
+			limit = {
+				highly_benefits_from_5_pops = yes
+			}
+			value = irc_95
+		}
+		else_if = {
+			limit = {
+				noticeably_benefits_from_5_pops = yes
+			}
+			value = irc_80
+		}
+		else = {
+			value = irc_65
+		}
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_census_data_target_100 = {
+	if = {
+		limit = {
+			country_population_svalue <= 60
+		}
+		value = irc_100
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Approved Familia - conditional tree / Starts after Census Data tree
+cdt_approved_familia_20_to_40 = {
+	if = {
+		limit = {
+			slightly_benefits_from_5_pops = yes
+		}
+		if = {
+			limit = {
+				highly_benefits_from_5_pops = yes
+			}
+			value = irc_40
+		}
+		else_if = {
+			limit = {
+				noticeably_benefits_from_5_pops = yes
+			}
+			value = irc_30
+		}
+		else = {
+			value = irc_20
+		}
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_approved_familia_target_100 = {
+	if = {
+		limit = {
+			country_population_svalue <= 60
+		}
+		value = irc_100
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Town Criers - unconditional tree
+uct_town_criers_40 = {
+	value = irc_40
+}
+uct_town_criers_target_55 = {
+	value = irc_55
+}
+
+# Patrocinium - unconditional tree
+# Starts after other oratory trees, is meant to get researched only if you already got close through other trees
+uct_patrocinium_40 = {
+	if = {
+		limit = {
+			NOT = {
+				invention = monthly_character_loyalty_inv_4
+			}
+		}
+		value = irc_40
+	}
+	else = {
+		value = irc_base
+	}
+}
+uct_patrocinium_target_100 = {
+	value = irc_100
+}
+
+# Scientific Patronage - conditional tree
+cdt_scientific_patronage_30 = {
+	if = {
+		limit = {
+			rank >= regional_power # Required by inno itself
+			is_monarchy = yes # Required for law opened by inno
+		}
+		value = irc_30
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_scientific_patronage_target_100 = {
+	if = {
+		limit = {
+			rank >= regional_power # Required by inno itself
+			is_monarchy = yes # Required for law opened by inno
+		}
+		value = irc_100
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Selector of Census Data vs Scientific Patronage
+cdt_census_data_65_to_95__cdt_scientific_patronage_30 = {
+	if = {
+		limit = {
+			cdt_census_data_65_to_95 >= cdt_scientific_patronage_30
+		}
+		value = cdt_census_data_65_to_95
+	}
+	else = {
+		value = cdt_scientific_patronage_30
+	}
+}
+
+# Selector of Scientific Patronage vs Approved Familia
+cdt_approved_familia_20_to_40__cdt_scientific_patronage_30 = {
+	if = {
+		limit = {
+			cdt_approved_familia_20_to_40 >= cdt_scientific_patronage_30
+		}
+		value = cdt_approved_familia_20_to_40
+	}
+	else = {
+		value = cdt_scientific_patronage_30
+	}
+}
+
+# Selector of Census Data vs Scientific Patronage vs Town Criers
+cdt_census_data_65_to_95__cdt_scientific_patronage_30__uct_town_criers_40 = {
+	if = {
+		limit = {
+			cdt_census_data_65_to_95__cdt_scientific_patronage_30 >= uct_town_criers_40
+		}
+		value = cdt_census_data_65_to_95__cdt_scientific_patronage_30
+	}
+	else = {
+		value = uct_town_criers_40
+	}
+}
+
+# --------------- #
+# RELIGIOUS TREES #
+# --------------- #
+
+# Open Religion - conditional tree
+cdt_open_religion_35 = {
+	if = {
+		limit = {
+			does_benefit_from_unique_city_buildings = yes
+		}
+		value = irc_35
+	} else = {
+		value = irc_base
+	}
+}
+cdt_open_religion_target_100 = {
+	if = {
+		limit = {
+			does_benefit_from_unique_city_buildings = yes
+		}
+		value = irc_100
+	} else = {
+		value = irc_base
+	}
+}
+
+# Theological Colleges - conditional tree
+cdt_theological_colleges_1_to_95 = {
+	if = {
+		limit = {
+			# Until we get a trigger for research efficiency
+			# is_limited_by_max_research_efficiency = yes
+			always = yes
+		}
+		# Until we get a trigger for research efficiency
+		# value = irc_95
+		value = irc_45
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_theological_colleges_target_1_to_100 = {
+	if = {
+		limit = {
+			# Until we get a trigger for research efficiency
+			# is_limited_by_max_research_efficiency = yes
+			always = yes
+		}
+		value = irc_100
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Proscribed Canon - conditional tree
+# IRC multiplied by assimilation buffs importance, note min = irc_base so the ai_will_do won't zero
+cdt_proscribed_canon_1_to_65 = {
+	if = {
+		limit = {
+			is_monarchy = yes
+		}
+		value = irc_65
+		multiply = assimilation_buffs_importance
+		min = irc_base
+	}
+	else = {
+		value = irc_base
+	}
+}
+cdt_proscribed_canon_target_1_to_100 = {
+	if = {
+		limit = {
+			is_monarchy = yes
+		}
+		value = irc_100
+		multiply = assimilation_buffs_importance
+		min = irc_base
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Auxiliary Recruitment - unconditional tree
+uct_auxiliary_recruitment_40 = {
+	value = irc_40
+}
+uct_auxiliary_recruitment_target_100 = {
+	value = irc_100
+}
+
+# Formulaic Worship - conditional tree
+# IRC multiplied by conversion buffs importance, note min = irc_base so the ai_will_do won't zero
+cdt_formulaic_worship_1_to_50 = {
+	value = irc_50
+	multiply = conversion_buffs_importance
+	min = irc_base
+}
+cdt_formulaic_worship_target_1_to_100 = {
+	value = irc_100
+	multiply = conversion_buffs_importance
+	min = irc_base
+}
+
+# Scribae - conditional tree
+cdt_scribae_20_to_55 = {
+	if = {
+		limit = {
+			is_limited_by_max_research_efficiency = yes
+			invention = gw_effect_zeal_education_inv # Already has religious research efficiency invention
+			invention = book_binding_invention # Already has oratory research efficiency invention
+		}
+		value = irc_55
+	}
+	else = {
+		value = irc_20
+	}
+}
+cdt_scribae_subtarget_75 = {
+	value = irc_75
+}
+cdt_scribae_target_35_to_100 = {
+	if = {
+		limit = {
+			is_limited_by_max_research_efficiency = yes
+		}
+		value = irc_100
+	}
+	else = {
+		value = irc_35
+	}
+}
+
+# Zero - unconditional tree
+# Starts after other religious trees, is meant to get researched only if you already got close through other trees
+uct_zero_25 = {
+	if = {
+		limit = {
+			NOT = {
+				invention = technology_cost_inv_5
+			}
+		}
+		value = irc_25
+	}
+	else = {
+		value = irc_base
+	}
+}
+uct_zero_target_100 = {
+	value = irc_100
+}
+
+# Selector of Proscribed Canon vs Auxiliary Recruitment
+cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40 = {
+	if = {
+		limit = {
+			cdt_proscribed_canon_1_to_65 >= uct_auxiliary_recruitment_40
+		}
+		value = cdt_proscribed_canon_1_to_65
+	}
+	else = {
+		value = uct_auxiliary_recruitment_40
+	}
+}
+
+# Selector of Formulaic Worship vs Auxiliary Recruitment
+cdt_formulaic_worship_1_to_50__uct_auxiliary_recruitment_40 = {
+	if = {
+		limit = {
+			cdt_formulaic_worship_1_to_50 >= uct_auxiliary_recruitment_40
+		}
+		value = cdt_formulaic_worship_1_to_50
+	}
+	else = {
+		value = uct_auxiliary_recruitment_40
+	}
+}
+
+# Selector of Formulaic Worship vs Proscribed Canon vs Auxiliary Recruitment
+cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40 = {
+	if = {
+		limit = {
+			cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40 >= cdt_formulaic_worship_1_to_50
+		}
+		value = cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40
+	}
+	else = {
+		value = cdt_formulaic_worship_1_to_50
+	}
+}
+
+# Selector of Formulaic Worship vs Proscribed Canon vs Auxiliary Recruitment vs Theological Colleges
+cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40__cdt_theological_colleges_1_to_95 = {
+	if = {
+		limit = {
+			cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40 >= cdt_theological_colleges_1_to_95
+		}
+		value = cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40
+	}
+	else = {
+		value = cdt_theological_colleges_1_to_95
+	}
+}
+
+# Selector of Formulaic Worship vs Proscribed Canon vs Auxiliary Recruitment vs Theological Colleges vs Open Religion
+cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40__cdt_theological_colleges_1_to_95__cdt_open_religion_35 = {
+	if = {
+		limit = {
+			cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40__cdt_theological_colleges_1_to_95 >= cdt_open_religion_35
+		}
+		value = cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40__cdt_theological_colleges_1_to_95
+	}
+	else = {
+		value = cdt_open_religion_35
+	}
+}
+
+# Selector of Formulaic Worship vs Proscribed Canon vs Auxiliary Recruitment vs Theological Colleges vs Open Religion vs Scribae
+cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40__cdt_theological_colleges_1_to_95__cdt_open_religion_35__cdt_scribae_20_to_55 = {
+	if = {
+		limit = {
+			cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40__cdt_theological_colleges_1_to_95__cdt_open_religion_35 >= cdt_scribae_20_to_55
+		}
+		value = cdt_formulaic_worship_1_to_50__cdt_proscribed_canon_1_to_65__uct_auxiliary_recruitment_40__cdt_theological_colleges_1_to_95__cdt_open_religion_35
+	}
+	else = {
+		value = cdt_scribae_20_to_55
+	}
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# SCRIPT VALUES FOR INVENTION LOGIC AND STUFF
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Equal to ai_will_do base values, which is, well, 1
+irc_base = 1
+
+# Applied to inventions that reduce tyranny
+irc_high_tyranny = {
+	if = {
+		limit = {
+			tyranny >= 60
+		}
+		value = irc_65
+	}
+	else_if = {
+		limit = {
+			tyranny >= 30
+		}
+		value = irc_35
+	}
+	else = {
+		value = irc_base
+	}
+}
+
+# Vanilla naming is terrible with its inconsistency
+num_of_territories_svalue = {
+	# Had problems with weird error spam
+	if = {
+		limit = {
+			exists = this
+			exists = num_of_cities
+			num_of_cities != 0
+		}
+		value = num_of_cities
+		min = 1
+	}
+	else = {
+		value = 1
+	}
+}
+
+# Actual cities and NOT TERRITORIES
+num_of_cities_svalue = {
+	value = 0
+	every_owned_province = {
+		if = {
+			limit = {
+				has_city_status = yes
+			}
+			add = 1
+		}
+	}
+}
+
+slightly_benefits_from_5_pops = {
+	country_population_svalue <= 60
+}
+noticeably_benefits_from_5_pops = {
+	country_population_svalue <= 40
+}
+highly_benefits_from_5_pops = {
+	# capital_region_levy_cohorts_with_5_more_pops = 5
+	# capital_region_levy_cohorts = 4
+	country_population_svalue <= 20
+}
+
+# WILL BE AVAILABLE IN 2.0.5
+
+# # Amount of population qualified for levies in capital region
+# capital_region_levy_population = {
+# 	capital_scope = {
+# 		region = {
+# 			every_region_province = {
+# 				limit = {
+# 					exists = owner
+# 					owner = root
+# 				}
+# 				every_pops_in_province = {
+# 					limit = {
+# 						NOT = {
+# 							pop_type = slaves
+# 						}
+# 						save_temporary_scope_as = pop
+# 						root = {
+# 							any_country_culture = {
+# 								is_culture = scope:pop.culture
+# 								is_integrated = yes
+# 							}
+# 						}
+# 					}
+# 					add = 1
+# 				}
+# 			}
+# 		}
+# 	}
+# }
+
+# # Amount of levy cohorts in capital region
+# capital_region_levy_cohorts = {
+# 	value = capital_region_levy_population
+# 	multiply = modifier:levy_size_multiplier
+# 	floor = yes
+# }
+
+# # If we research an innovation that gives 5 free pops in capital, would we get one more cohort?
+# capital_region_levy_cohorts_with_5_more_pops = {
+# 	value = capital_region_levy_population
+# 	add = 5
+# 	multiply = modifier:levy_size_multiplier
+# 	floor = yes
+# }
+
+# How important global territory buffs are for a country on a scale from 0 to 1
+global_territory_buffs_importance = {
+	# From 0 at <=80 terrs to 1 at >=160 terrs
+	value = num_of_territories_svalue
+	subtract = 80
+	divide = 80
+	min = 0
+	max = 1
+}
+
+share_of_integrated_pops = {
+	# Had problems with weird error spam
+	if = {
+		limit = {
+			exists = this
+			exists = country_population
+			country_population != 0
+		}
+		value = 0
+		every_country_culture = {
+			limit = {
+				is_integrated = yes
+			}
+			add = country_culture_pop_count
+		}
+		divide = country_population_svalue
+		min = 0
+		max = 1
+	}
+	else = {
+		value = 1
+	}
+}
+
+# How important assimilation buff are for a country on a scale from 0 to 1
+assimilation_buffs_importance = {
+	# From 0 at >=95% integrated to 1 at <=70% integrated
+	value = 0.95
+	subtract = share_of_integrated_pops
+	divide = 0.25
+	min = 0
+	max = 1
+}
+
+# How important conversion buff are for a country on a scale from 0 to 1
+conversion_buffs_importance = {
+	# Had problems with weird error spam
+	if = {
+		limit = {
+			exists = this
+			exists = religious_unity
+		}
+		# From 0 at >=95% unity to 1 at <=70% unity
+		value = 0.95
+		subtract = religious_unity
+		divide = 0.25
+		min = 0
+		max = 1
+	}
+	else = {
+		value = 1
+	}
+}
+
+share_of_cities_in_territories = {
+	value = num_of_cities_svalue
+	divide = num_of_territories_svalue
+}
+
+country_population_svalue = {
+	# Had problems with weird error spam
+	if = {
+		limit = {
+			exists = this
+			exists = country_population
+			country_population != 0
+		}
+		value = country_population
+		min = 1
+	}
+	else = {
+		value = 1
+	}
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# GENERATED IRC SCRIPT VALUES, SEE /tools/inventions/invention_relative_chance.js
+# ----------------------------------------------------------------------------------------------------------------------
+
+irc_5 = 1
+irc_from_5_to_10 = 2.1111
+irc_from_5_to_15 = 3.3529
+irc_from_5_to_20 = 4.75
+irc_from_5_to_25 = 6.3333
+irc_from_5_to_30 = 8.1429
+irc_from_5_to_35 = 10.2308
+irc_from_5_to_40 = 12.6667
+irc_from_5_to_45 = 15.5455
+irc_from_5_to_50 = 19
+irc_from_5_to_55 = 23.2222
+irc_from_5_to_60 = 28.5
+irc_from_5_to_65 = 35.2857
+irc_from_5_to_70 = 44.3333
+irc_from_5_to_75 = 57
+irc_from_5_to_80 = 76
+irc_from_5_to_85 = 107.6667
+irc_from_5_to_90 = 171
+irc_from_5_to_95 = 361
+irc_from_5_to_99 = 1881
+irc_from_5_to_100 = 99999999
+irc_10 = 2.1111
+irc_from_10_to_15 = 1.5882
+irc_from_10_to_20 = 2.25
+irc_from_10_to_25 = 3
+irc_from_10_to_30 = 3.8571
+irc_from_10_to_35 = 4.8462
+irc_from_10_to_40 = 6
+irc_from_10_to_45 = 7.3636
+irc_from_10_to_50 = 9
+irc_from_10_to_55 = 11
+irc_from_10_to_60 = 13.5
+irc_from_10_to_65 = 16.7143
+irc_from_10_to_70 = 21
+irc_from_10_to_75 = 27
+irc_from_10_to_80 = 36
+irc_from_10_to_85 = 51
+irc_from_10_to_90 = 81
+irc_from_10_to_95 = 171
+irc_from_10_to_99 = 891
+irc_from_10_to_100 = 47368420.5789
+irc_15 = 3.3529
+irc_from_15_to_20 = 1.4167
+irc_from_15_to_25 = 1.8889
+irc_from_15_to_30 = 2.4286
+irc_from_15_to_35 = 3.0513
+irc_from_15_to_40 = 3.7778
+irc_from_15_to_45 = 4.6364
+irc_from_15_to_50 = 5.6667
+irc_from_15_to_55 = 6.9259
+irc_from_15_to_60 = 8.5
+irc_from_15_to_65 = 10.5238
+irc_from_15_to_70 = 13.2222
+irc_from_15_to_75 = 17
+irc_from_15_to_80 = 22.6667
+irc_from_15_to_85 = 32.1111
+irc_from_15_to_90 = 51
+irc_from_15_to_95 = 107.6667
+irc_from_15_to_99 = 561
+irc_from_15_to_100 = 29824561.1053
+irc_20 = 4.75
+irc_from_20_to_25 = 1.3333
+irc_from_20_to_30 = 1.7143
+irc_from_20_to_35 = 2.1538
+irc_from_20_to_40 = 2.6667
+irc_from_20_to_45 = 3.2727
+irc_from_20_to_50 = 4
+irc_from_20_to_55 = 4.8889
+irc_from_20_to_60 = 6
+irc_from_20_to_65 = 7.4286
+irc_from_20_to_70 = 9.3333
+irc_from_20_to_75 = 12
+irc_from_20_to_80 = 16
+irc_from_20_to_85 = 22.6667
+irc_from_20_to_90 = 36
+irc_from_20_to_95 = 76
+irc_from_20_to_99 = 396
+irc_from_20_to_100 = 21052631.3684
+irc_25 = 6.3333
+irc_from_25_to_30 = 1.2857
+irc_from_25_to_35 = 1.6154
+irc_from_25_to_40 = 2
+irc_from_25_to_45 = 2.4545
+irc_from_25_to_50 = 3
+irc_from_25_to_55 = 3.6667
+irc_from_25_to_60 = 4.5
+irc_from_25_to_65 = 5.5714
+irc_from_25_to_70 = 7
+irc_from_25_to_75 = 9
+irc_from_25_to_80 = 12
+irc_from_25_to_85 = 17
+irc_from_25_to_90 = 27
+irc_from_25_to_95 = 57
+irc_from_25_to_99 = 297
+irc_from_25_to_100 = 15789473.5263
+irc_30 = 8.1429
+irc_from_30_to_35 = 1.2564
+irc_from_30_to_40 = 1.5556
+irc_from_30_to_45 = 1.9091
+irc_from_30_to_50 = 2.3333
+irc_from_30_to_55 = 2.8519
+irc_from_30_to_60 = 3.5
+irc_from_30_to_65 = 4.3333
+irc_from_30_to_70 = 5.4444
+irc_from_30_to_75 = 7
+irc_from_30_to_80 = 9.3333
+irc_from_30_to_85 = 13.2222
+irc_from_30_to_90 = 21
+irc_from_30_to_95 = 44.3333
+irc_from_30_to_99 = 231
+irc_from_30_to_100 = 12280701.6316
+irc_35 = 10.2308
+irc_from_35_to_40 = 1.2381
+irc_from_35_to_45 = 1.5195
+irc_from_35_to_50 = 1.8571
+irc_from_35_to_55 = 2.2698
+irc_from_35_to_60 = 2.7857
+irc_from_35_to_65 = 3.449
+irc_from_35_to_70 = 4.3333
+irc_from_35_to_75 = 5.5714
+irc_from_35_to_80 = 7.4286
+irc_from_35_to_85 = 10.5238
+irc_from_35_to_90 = 16.7143
+irc_from_35_to_95 = 35.2857
+irc_from_35_to_99 = 183.8571
+irc_from_35_to_100 = 9774435.9925
+irc_40 = 12.6667
+irc_from_40_to_45 = 1.2273
+irc_from_40_to_50 = 1.5
+irc_from_40_to_55 = 1.8333
+irc_from_40_to_60 = 2.25
+irc_from_40_to_65 = 2.7857
+irc_from_40_to_70 = 3.5
+irc_from_40_to_75 = 4.5
+irc_from_40_to_80 = 6
+irc_from_40_to_85 = 8.5
+irc_from_40_to_90 = 13.5
+irc_from_40_to_95 = 28.5
+irc_from_40_to_99 = 148.5
+irc_from_40_to_100 = 7894736.7632
+irc_45 = 15.5455
+irc_from_45_to_50 = 1.2222
+irc_from_45_to_55 = 1.4938
+irc_from_45_to_60 = 1.8333
+irc_from_45_to_65 = 2.2698
+irc_from_45_to_70 = 2.8519
+irc_from_45_to_75 = 3.6667
+irc_from_45_to_80 = 4.8889
+irc_from_45_to_85 = 6.9259
+irc_from_45_to_90 = 11
+irc_from_45_to_95 = 23.2222
+irc_from_45_to_99 = 121
+irc_from_45_to_100 = 6432748.4737
+irc_50 = 19
+irc_from_50_to_55 = 1.2222
+irc_from_50_to_60 = 1.5
+irc_from_50_to_65 = 1.8571
+irc_from_50_to_70 = 2.3333
+irc_from_50_to_75 = 3
+irc_from_50_to_80 = 4
+irc_from_50_to_85 = 5.6667
+irc_from_50_to_90 = 9
+irc_from_50_to_95 = 19
+irc_from_50_to_99 = 99
+irc_from_50_to_100 = 5263157.8421
+irc_55 = 23.2222
+irc_from_55_to_60 = 1.2273
+irc_from_55_to_65 = 1.5195
+irc_from_55_to_70 = 1.9091
+irc_from_55_to_75 = 2.4545
+irc_from_55_to_80 = 3.2727
+irc_from_55_to_85 = 4.6364
+irc_from_55_to_90 = 7.3636
+irc_from_55_to_95 = 15.5455
+irc_from_55_to_99 = 81
+irc_from_55_to_100 = 4306220.0526
+irc_60 = 28.5
+irc_from_60_to_65 = 1.2381
+irc_from_60_to_70 = 1.5556
+irc_from_60_to_75 = 2
+irc_from_60_to_80 = 2.6667
+irc_from_60_to_85 = 3.7778
+irc_from_60_to_90 = 6
+irc_from_60_to_95 = 12.6667
+irc_from_60_to_99 = 66
+irc_from_60_to_100 = 3508771.8947
+irc_65 = 35.2857
+irc_from_65_to_70 = 1.2564
+irc_from_65_to_75 = 1.6154
+irc_from_65_to_80 = 2.1538
+irc_from_65_to_85 = 3.0513
+irc_from_65_to_90 = 4.8462
+irc_from_65_to_95 = 10.2308
+irc_from_65_to_99 = 53.3077
+irc_from_65_to_100 = 2834008.0688
+irc_70 = 44.3333
+irc_from_70_to_75 = 1.2857
+irc_from_70_to_80 = 1.7143
+irc_from_70_to_85 = 2.4286
+irc_from_70_to_90 = 3.8571
+irc_from_70_to_95 = 8.1429
+irc_from_70_to_99 = 42.4286
+irc_from_70_to_100 = 2255639.0752
+irc_75 = 57
+irc_from_75_to_80 = 1.3333
+irc_from_75_to_85 = 1.8889
+irc_from_75_to_90 = 3
+irc_from_75_to_95 = 6.3333
+irc_from_75_to_99 = 33
+irc_from_75_to_100 = 1754385.9474
+irc_80 = 76
+irc_from_80_to_85 = 1.4167
+irc_from_80_to_90 = 2.25
+irc_from_80_to_95 = 4.75
+irc_from_80_to_99 = 24.75
+irc_from_80_to_100 = 1315789.4605
+irc_85 = 107.6667
+irc_from_85_to_90 = 1.5882
+irc_from_85_to_95 = 3.3529
+irc_from_85_to_99 = 17.4706
+irc_from_85_to_100 = 928792.5604
+irc_90 = 171
+irc_from_90_to_95 = 2.1111
+irc_from_90_to_99 = 11
+irc_from_90_to_100 = 584795.3158
+irc_95 = 361
+irc_from_95_to_99 = 5.2105
+irc_from_95_to_100 = 277008.3075
+irc_99 = 1881
+irc_from_99_to_100 = 53163.2105
+irc_100 = 99999999

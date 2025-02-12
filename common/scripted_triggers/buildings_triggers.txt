@@ -8,34 +8,24 @@
 
 # Port
 brc_needs_port = {
-    OR = {
-        AND = {
+    trigger_if = {
+        limit = {
             owner = {
                 num_of_ports < 1
             }
-            is_best_territory_for_port_in_province = yes
-            OR = {
-                state = {
-                    is_capital_state = yes
-                }
-                owner.capital_scope = {
-                    any_territory_in_same_province_can_build_port = no
-                }
+        }
+        OR = {
+            state = {
+                is_capital_state = yes
+            }
+            owner.capital_scope = {
+                any_territory_in_same_province_can_build_port = no
             }
         }
-        AND = {
-            NOT = {
-                owner = {
-                    has_wanted_num_of_high_tier_ports = {
-                        tier = giga
-                    }
-                }
-            }
-            is_best_territory_for_high_tier_port = {
-                tier = giga
-            }
-        }
-        AND = {
+        is_best_territory_for_port_in_province = yes
+    }
+    trigger_else_if = {
+        limit = {
             NOT = {
                 owner = {
                     has_wanted_num_of_high_tier_ports = {
@@ -43,21 +33,38 @@ brc_needs_port = {
                     }
                 }
             }
-            is_best_territory_for_high_tier_port = {
-                tier = mega
+        }
+        is_best_territory_for_high_tier_port = {
+            tier = mega
+        }
+    }
+    trigger_else_if = {
+        limit = {
+            NOT = {
+                owner = {
+                    has_wanted_num_of_high_tier_ports = {
+                        tier = giga
+                    }
+                }
             }
         }
+        is_best_territory_for_high_tier_port = {
+            tier = giga
+        }
+    }
+    trigger_else = {
+        always = no
     }
 }
 brc_wants_port = {
     OR = {
         AND = {
-            province_of_territory_should_have_port = yes
-            is_best_territory_for_port_in_province = yes
+            has_city_status = yes
+            has_or_is_building_port = no
         }
         AND = {
-            has_city_status = yes
-            num_of_port_building = 0
+            province_of_territory_should_have_port = yes
+            is_best_territory_for_port_in_province = yes
         }
     }
 }
@@ -161,6 +168,7 @@ territory_has_more_than_one_mill = {
 
 brc_wants_any_ratio_building = {
     OR = {
+        has_any_city_ratio_building_maxed_out = no # Simple level check first for performance
         brc_wants_academy = yes
         brc_wants_court_of_law = yes
         brc_wants_forum = yes
@@ -229,8 +237,8 @@ is_territory_of_capital_region = {
     region = owner.capital_scope.region
 }
 
-has_port = {
-    num_of_port_building > 0
+has_or_is_building_port = {
+    territory_port_level_including_construction > 0
 }
 
 can_build_port = {
@@ -243,15 +251,15 @@ province_of_territory_should_have_port = {
         is_territory_of_capital_province = yes
         num_of_owned_territories_in_same_province >= 5
         owner.capital_scope = {
-            any_territory_in_same_province_has_port = no
+            any_territory_in_same_province_has_or_is_building_port = no
         }
     }
 }
 
-any_territory_in_same_province_has_port = {
+any_territory_in_same_province_has_or_is_building_port = {
     state = {
         any_state_province = {
-            has_port = yes
+            has_or_is_building_port = yes
         }
     }
 }
@@ -265,37 +273,40 @@ any_territory_in_same_province_can_build_port = {
 }
 
 any_other_city_territory_in_same_province_can_build_port = {
+    save_temporary_scope_as = territory
     state = {
         any_state_province = {
             NOT = {
-                this = root
+                this = scope:territory
             }
-            can_build_port = yes
             has_city_status = yes
+            can_build_port = yes
         }
     }
 }
 
-any_other_non_important_territory_in_same_province_has_port = {
+any_other_non_important_territory_in_same_province_has_or_is_building_port = {
+    save_temporary_scope_as = territory
     state = {
         any_state_province = {
             NOT = {
-                this = root
+                this = scope:territory
             }
-            has_port = yes
+            has_or_is_building_port = yes
             is_territory_with_preference_for_mine_or_farm = no
         }
     }
 }
 
-any_other_non_important_territory_in_same_province_has_or_can_build_port = {
+any_other_non_important_territory_in_same_province_has_or_is_building_or_can_build_port = {
+    save_temporary_scope_as = territory
     state = {
         any_state_province = {
             NOT = {
-                this = root
+                this = scope:territory
             }
             OR = {
-                has_port = yes
+                has_or_is_building_port = yes
                 can_build_port = yes
             }
             is_territory_with_preference_for_mine_or_farm = no
@@ -313,7 +324,7 @@ is_best_territory_for_port_in_province = {
 has_wanted_num_of_high_tier_ports = {
     save_temporary_scope_as = territory_owner
     OR = {
-        num_of_$tier$_ports_wanted = 0
+        num_of_$tier$_ports_wanted < 1
         any_owned_province = {
             count >= scope:territory_owner.num_of_$tier$_ports_wanted
             is_territory_with_high_tier_port = {
@@ -340,6 +351,8 @@ is_best_territory_for_high_tier_port = {
         tier = $tier$
     }
 
+    save_temporary_scope_as = territory
+
     # Some capital province territory can build required port level, possibly including this one
     trigger_if = {
         limit = {
@@ -360,13 +373,13 @@ is_best_territory_for_high_tier_port = {
             owner.capital_scope.state = {
                 any_state_province = {
                     NOT = {
-                        this = root
+                        this = scope:territory
                     }
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
-                    territory_port_level_including_construction > root.territory_port_level_including_construction
-                    free_building_slots > root.free_building_slots
+                    territory_port_level_including_construction > scope:territory.territory_port_level_including_construction
+                    free_building_slots > scope:territory.free_building_slots
                 }
             }
         }
@@ -394,13 +407,13 @@ is_best_territory_for_high_tier_port = {
             owner.capital_scope.state.region = {
                 any_region_province = {
                     NOT = {
-                        this = root
+                        this = scope:territory
                     }
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
-                    territory_port_level_including_construction > root.territory_port_level_including_construction
-                    free_building_slots > root.free_building_slots
+                    territory_port_level_including_construction > scope:territory.territory_port_level_including_construction
+                    free_building_slots > scope:territory.free_building_slots
                 }
             }
         }
@@ -412,13 +425,13 @@ is_best_territory_for_high_tier_port = {
             owner = {
                 any_owned_province = {
                     NOT = {
-                        this = root
+                        this = scope:territory
                     }
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
-                    territory_port_level_including_construction > root.territory_port_level_including_construction
-                    free_building_slots > root.free_building_slots
+                    territory_port_level_including_construction > scope:territory.territory_port_level_including_construction
+                    free_building_slots > scope:territory.free_building_slots
                 }
             }
         }
@@ -448,11 +461,11 @@ has_any_city_ratio_building_maxed_out = {
 
 is_territory_with_preference_for_mine_or_farm = {
     has_city_status = no
+    num_of_total_building_slots < 2
     OR = {
         has_minable_trade_good_trigger = yes
         has_food_trade_good_trigger = yes
     }
-    num_of_total_building_slots < 2
 }
 
 is_dominant_territory_culture_integrated = {

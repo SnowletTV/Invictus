@@ -22,13 +22,13 @@ brc_port = {
                     is_territory_with_preference_for_mine_or_farm = yes
                     OR = {
                         province_of_territory_should_have_port = no
-                        any_other_non_important_territory_in_same_province_has_or_can_build_port = yes
+                        any_other_non_important_territory_in_same_province_has_or_is_building_or_can_build_port = yes
                     }
                 }
                 # Is not a city, some other territory in the province already has the port that we don't plan to delete
                 AND = {
                     has_city_status = no
-                    any_other_non_important_territory_in_same_province_has_port = yes
+                    any_other_non_important_territory_in_same_province_has_or_is_building_port = yes
                 }
                 # Tier >=2 ports in countries that don't want any mega ports
                 AND = {
@@ -65,21 +65,22 @@ brc_port = {
     }
     # Build... unless?
     else = {
-        value = brc_territory_importance
         if = {
             limit = {
                 brc_needs_port = yes
             }
+            value = brc_territory_importance
             multiply = brc_100
         }
         else_if = {
             limit = {
                 brc_wants_port = yes
             }
+            value = brc_territory_importance
             multiply = brc_40
         }
         else = {
-            multiply = 0
+            value = 0
         }
     }
 }
@@ -242,25 +243,20 @@ brc_academy = {
     }
 }
 
+# If many nobles set to base value of its siblings, otherwise never build
 brc_commerce = {
     if = {
         limit = {
-            brc_wants_any_ratio_building = yes
+            OR = {
+                brc_wants_any_ratio_building = yes
+                territory_has_more_than_one_academy = no
+            }
         }
         value = 0
     }
-    # If many nobles set to base value of its siblings, otherwise never build
     else = {
         value = brc_territory_importance
-        if = {
-            limit = {
-                territory_has_more_than_one_academy = yes
-            }
-            multiply = brc_25
-        }
-        else = {
-            multiply = 0
-        }
+        multiply = brc_25
     }
 }
 
@@ -438,10 +434,9 @@ brc_hill_fort = {
             OR = {
                 # Can build mine or farm
 			    is_territory_with_preference_for_mine_or_farm = yes
-                # Very few tribesmen
-                any_pops_in_province = {
-                    percent < 0.25
-                    pop_type = tribesmen
+                # Not tribal
+                owner = {
+                    is_tribal = no
                 }
             }
         }
@@ -512,37 +507,32 @@ num_of_giga_ports_wanted = {
     value = 0
     if = {
         limit = {
+            rank >= regional_power
             OR = {
-                AND = {
-                    rank >= regional_power
-                    OR = {
-                        num_of_unit_type = {
-                            type = octere
-                            value > 0
-                        }
-                        num_of_unit_type = {
-                            type = mega_galley
-                            value > 0
-                        }
-                    }
-                }
-                AND = {
-                    rank >= major_power
-                    OR = {
-                        # Military traditions that unlock Octere
-                        has_military_bonus = nubian_path_13
-                        has_military_bonus = lydian_path_12
-                        has_military_bonus = greek_antigonid_path_2_octere
-                        has_military_bonus = illyrian_path_3
-                        has_military_bonus = levantine_arabian_path_5
-                        has_military_bonus = mauryan_coastal_path_end_bonus
-                        has_military_bonus = persian_achaemenid_path_3
-                        # Military traditions that unlock Mega-Polyreme
-                        has_military_bonus = greek_states_path_5
-                        has_military_bonus = levantine_egyptian_path_2
-                    }
-                }
+                # Military traditions that unlock Octere
+                has_military_bonus = nubian_path_13
+                has_military_bonus = lydian_path_12
+                has_military_bonus = greek_antigonid_path_2_octere
+                has_military_bonus = illyrian_path_3
+                has_military_bonus = levantine_arabian_path_5
+                has_military_bonus = mauryan_coastal_path_end_bonus
+                has_military_bonus = persian_achaemenid_path_3
+                # Military traditions that unlock Mega-Polyreme
+                has_military_bonus = greek_states_path_5
+                has_military_bonus = levantine_egyptian_path_2
             }
+
+            # Removed due to performance concerns, reintroduce if there's a cheap way to do so
+            # OR = {
+            #     num_of_unit_type = {
+            #         type = octere
+            #         value > 0
+            #     }
+            #     num_of_unit_type = {
+            #         type = mega_galley
+            #         value > 0
+            #     }
+            # }
         }
         add = 1
         if = {
@@ -560,17 +550,19 @@ num_of_mega_ports_wanted = {
     value = 0
     if = {
         limit = {
-            OR = {
-                rank >= regional_power
-                num_of_unit_type = {
-                    type = tetrere
-                    value > 0
-                }
-                num_of_unit_type = {
-                    type = hexere
-                    value > 0
-                }
-            }
+            rank >= regional_power
+
+            # Removed due to performance concerns, reintroduce if there's a cheap way to do so
+            # OR = {
+            #     num_of_unit_type = {
+            #         type = tetrere
+            #         value > 0
+            #     }
+            #     num_of_unit_type = {
+            #         type = hexere
+            #         value > 0
+            #     }
+            # }
         }
         add = 1
         if = {

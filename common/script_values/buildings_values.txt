@@ -16,23 +16,36 @@ brc_port = {
     # Don't build and delete if exists
     if = {
         limit = {
+            # State borders change very rapidly in the first years
+            current_date >= 460.1.1
             # Don't delete anything while at war
             owner = {
                 war = no
             }
+            # Don't ever delete the last port we have country wide
             OR = {
-                # Can build mine or farm, has some other territory to build port in or it's not needed
-                AND = {
-                    is_territory_with_preference_for_mine_or_farm = yes
-                    OR = {
-                        province_of_territory_should_have_port = no
-                        any_other_non_important_territory_in_same_province_has_or_is_building_or_can_build_port = yes
-                    }
-                }
-                # Is not a city, some other territory in the province already has the port that we don't plan to delete
+                owner.num_of_ports > 1
+                num_of_port_building > 1
+            }
+            OR = {
+                # Handle non-city territories where state has too much ports
                 AND = {
                     has_city_status = no
-                    any_other_non_important_territory_in_same_province_has_or_is_building_port = yes
+                    # If mine or farm, delete if more than enough ports or can build it somewhere without mine or farm
+                    trigger_if = {
+                        limit = {
+                            is_territory_with_preference_for_mine_or_farm = yes
+                        }
+                        OR = {
+                            territory_state_has_more_than_enough_ports = yes
+                            territory_state_can_build_new_port_elsewhere_without_mine_or_farm = yes
+                        }
+                    }
+                    # If not, delete if more than enough ports and there's no mine or farm that wants it port deleted
+                    trigger_else = {
+                        territory_state_has_more_than_enough_ports = yes
+                        territory_state_has_port_elsewhere_with_mine_or_farm = no
+                    }
                 }
                 # Tier >=2 ports in countries that don't want any mega ports
                 AND = {
@@ -81,7 +94,7 @@ brc_port = {
                 brc_wants_port = yes
             }
             value = brc_territory_importance
-            multiply = brc_40
+            multiply = brc_80
         }
         else = {
             value = 0
@@ -502,13 +515,16 @@ brc_territory_importance = {
     }
 }
 
-num_of_owned_territories_in_same_province = {
+num_of_territories_in_state = {
     value = 0
-    state = {
-        every_state_province = {
-            add = 1
-        }
+    every_state_province = {
+        add = 1
     }
+}
+
+num_of_territories_in_same_state = {
+    value = 0
+    add = state.num_of_territories_in_state
 }
 
 population_cap_minus_3 = {
@@ -517,12 +533,69 @@ population_cap_minus_3 = {
 }
 
 territory_port_level_including_construction = {
-    value = num_of_port_building
     if = {
         limit = {
-            has_specific_construction = port_building
+            can_have_port = no
+        }
+        value = 0
+    }
+    else = {
+        value = num_of_port_building
+        if = {
+            limit = {
+                has_specific_construction = port_building
+            }
+            add = 1
+        }
+    }
+}
+
+num_of_ports_wanted_in_territory_state = {
+    value = 0
+    if = {
+        limit = {
+            save_temporary_scope_as = territory
+            OR = {
+                num_of_territories_in_same_state >= 5
+                # Country has no ports and there's no state where we can build one by the usual rules
+                owner = {
+                    country_has_at_least_one_port_including_construction = no
+                    NOT = {
+                        any_country_state = {
+                            num_of_territories_in_state >= 5
+                            any_state_province = {
+                                can_build_port = yes
+                            }
+                        }
+                    }
+                }
+                # No nearby state of same owner with port, should connect to mainland by water
+                NOT = {
+                    area = {
+                        any_neighbor_area = {
+                            any_area_province = {
+                                owner = scope:territory.owner
+                                has_or_is_building_port = yes
+                            }
+                        }
+                    }
+                }
+            }
         }
         add = 1
+        # +1 in big states where at least 50% of territories can have port
+        if = {
+            limit = {
+                num_of_territories_in_same_state >= 10
+                state = {
+                    any_state_province = {
+                        percent >= 0.50
+                        can_have_port = yes
+                    }
+                }
+            }
+            add = 1
+        }
     }
 }
 
@@ -574,7 +647,7 @@ level_of_mega_port_wanted = 3
 num_of_mega_ports_wanted = {
     value = 0
 
-    # 1 per every 25 coastal territories
+    # 1 per every 35 coastal territories
     every_owned_province = {
         limit = {
             OR = {
@@ -584,7 +657,7 @@ num_of_mega_ports_wanted = {
         }
         add = 1
     }
-    divide = 25
+    divide = 35
     floor = yes
 
     # Base value depending on rank so they always want at least some

@@ -10,19 +10,9 @@
 brc_needs_port = {
     trigger_if = {
         limit = {
-            owner = {
-                num_of_ports < 1
-            }
+            territory_state_has_enough_ports = no
         }
-        OR = {
-            state = {
-                is_capital_state = yes
-            }
-            owner.capital_scope = {
-                any_territory_in_same_province_can_build_port = no
-            }
-        }
-        is_best_territory_for_port_in_province = yes
+        is_best_territory_for_new_port_in_state = yes
     }
     trigger_else = {
         # OR instead of trigger_else_if so they don't block each other in edge cases
@@ -55,16 +45,8 @@ brc_needs_port = {
     }
 }
 brc_wants_port = {
-    OR = {
-        AND = {
-            has_city_status = yes
-            has_or_is_building_port = no
-        }
-        AND = {
-            province_of_territory_should_have_port = yes
-            is_best_territory_for_port_in_province = yes
-        }
-    }
+    has_city_status = yes
+    has_or_is_building_port = no
 }
 
 # Academy
@@ -244,33 +226,59 @@ can_build_port = {
     free_building_slots > 0
 }
 
-province_of_territory_should_have_port = {
+can_build_new_port = {
+    can_build_port = yes
+    has_or_is_building_port = no
+}
+
+country_has_at_least_one_port_including_construction = {
     OR = {
-        is_territory_of_capital_province = yes
-        num_of_owned_territories_in_same_province >= 5
-        owner.capital_scope = {
-            any_territory_in_same_province_has_or_is_building_port = no
+        num_of_ports > 0 # In-built trigger first for performance
+        any_owned_province = {
+            territory_port_level_including_construction > 0
         }
     }
 }
 
-any_territory_in_same_province_has_or_is_building_port = {
-    state = {
-        any_state_province = {
-            has_or_is_building_port = yes
+territory_state_has_enough_ports = {
+    save_temporary_scope_as = territory
+    OR = {
+        num_of_ports_wanted_in_territory_state = 0
+        state = {
+            any_state_province = {
+                count >= scope:territory.num_of_ports_wanted_in_territory_state
+                territory_port_level_including_construction > 0
+            }
         }
     }
 }
 
-any_territory_in_same_province_can_build_port = {
-    state = {
-        any_state_province = {
-            can_build_port = yes
+territory_state_has_more_than_enough_ports = {
+    save_temporary_scope_as = territory
+    OR = {
+        num_of_ports_wanted_in_territory_state = 0
+        state = {
+            any_state_province = {
+                count > scope:territory.num_of_ports_wanted_in_territory_state
+                territory_port_level_including_construction > 0
+            }
         }
     }
 }
 
-any_other_city_territory_in_same_province_can_build_port = {
+is_best_territory_for_new_port_in_state = {
+    territory_port_level_including_construction < 1
+    OR = {
+        has_city_status = yes
+        territory_state_can_build_new_port_elsewhere_in_city = no
+    }
+    OR = {
+        is_territory_with_preference_for_mine_or_farm = no
+        territory_state_can_build_new_port_elsewhere_without_mine_or_farm = no
+    }
+}
+
+territory_state_can_build_new_port_elsewhere_in_city = {
     save_temporary_scope_as = territory
     state = {
         any_state_province = {
@@ -278,12 +286,12 @@ any_other_city_territory_in_same_province_can_build_port = {
                 this = scope:territory
             }
             has_city_status = yes
-            can_build_port = yes
+            can_build_new_port = yes
         }
     }
 }
 
-any_other_non_important_territory_in_same_province_has_or_is_building_port = {
+territory_state_has_port_elsewhere_with_mine_or_farm = {
     save_temporary_scope_as = territory
     state = {
         any_state_province = {
@@ -291,31 +299,21 @@ any_other_non_important_territory_in_same_province_has_or_is_building_port = {
                 this = scope:territory
             }
             has_or_is_building_port = yes
-            is_territory_with_preference_for_mine_or_farm = no
+            is_territory_with_preference_for_mine_or_farm = yes
         }
     }
 }
 
-any_other_non_important_territory_in_same_province_has_or_is_building_or_can_build_port = {
+territory_state_can_build_new_port_elsewhere_without_mine_or_farm = {
     save_temporary_scope_as = territory
     state = {
         any_state_province = {
             NOT = {
                 this = scope:territory
             }
-            OR = {
-                has_or_is_building_port = yes
-                can_build_port = yes
-            }
+            can_build_new_port = yes
             is_territory_with_preference_for_mine_or_farm = no
         }
-    }
-}
-
-is_best_territory_for_port_in_province = {
-    OR = {
-        has_city_status = yes
-        any_other_city_territory_in_same_province_can_build_port = no
     }
 }
 

@@ -861,12 +861,6 @@
             }
             military_experience >= 10
             treasury >= 50
-            c:DOD = {
-                opinion = {
-                    value <= 0
-                    target = root
-                }
-            }
         }
 
         on_completion = {
@@ -951,7 +945,17 @@
         requires = {blemmia_missions_task_9 blemmia_missions_task_10}
         icon = "task_political"
 
+        bypass = {
+            p:583 = {
+                owner = root
+            }
+        }
+
         allow = {
+            political_influence >= 35
+            stability >= 60
+            manpower >= 10
+            treasury >= 100
             custom_tooltip = {
                 text = blemmia_missions_task_16_tt 
                 any_army = { # THIS IS NOT WORKING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -976,9 +980,15 @@
 		}
 
         on_completion = {
-            trigger_event = me_blemmia.16
-            show_as_tooltip = {
-
+            trigger_event = me_blemmia.16 # Event chain to dominate / puppet Berenike or to take over ownership of it automatically or other outcome
+            add_tyranny = 10
+            add_aggressive_expansion = 5
+            add_manpower = -5
+            add_political_influence = -35
+            add_military_experience = 20
+            add_country_modifier = {
+                name = subjugating_berenike
+                duration = 2500
             }
         }
     }
@@ -988,13 +998,64 @@
         icon = "task_economical"
 
         allow = {
+            OR = {
+                diplomatic_stance = trading_stance
+                diplomatic_stance = warmongering_stance
+            }
+            owns_or_subject_owns = 8072
+            owns_or_subject_owns = 8084
+            owns_or_subject_owns = 8091
+            owns_or_subject_owns = 8615
+            owns_or_subject_owns = 8079
+            hidden:p:8072 = {
+                has_building = hill_fort
+            }
+            hidden:p:8084 = {
+                has_building = hill_fort
+            }
+            hidden:p:8091 = {
+                has_building = hill_fort
+            }
+            hidden:p:8079 = {
+                has_building = hill_fort
+            }
+        }
 
+        highlight = {
+            scope:province = {
+				OR = {
+                    province_id = 8072
+                    province_id = 8084
+                    province_id = 8091
+                    province_id = 8615
+                    province_id = 8079
+                }
+			}
         }
 
         on_completion = {
-            trigger_event = me_blemmia.17
-            show_as_tooltip = {
-
+            trigger_event = me_blemmia.17 # option to turn other territories into camel goods
+            add_treasury = 100
+            current_ruler = {
+                add_gold =100
+            }
+            if = {
+                limit = {
+                    diplomatic_stance = trading_stance
+                }
+                add_country_modifier = {
+                    name = blemmyan_caravans
+                    duration = -1
+                }
+            }
+            if = {
+                limit = {
+                    diplomatic_stance = warmongering_stance
+                }
+                add_country_modifier = {
+                    name = blemmyan_dromedary_cavalry
+                    duration = -1
+                }
             }
         }
     }
@@ -1004,13 +1065,65 @@
         icon = "task_calm"
 
         allow = {
-
+            custom_tooltip = {
+                text = blemmia_missions_task_18_tt1
+                any_country = {
+                    OR = {
+                        country_culture_group = south_levantine
+				        country_culture_group = south_arabian
+                    }
+                    opinion = {
+                        target = root
+                        value >= 50
+                    }
+                    save_temporary_scope_as = blemmyan_arabian_friendly_nation
+                }
+                scope:blemmyan_arabian_friendly_nation = {
+                    current_ruler = {
+                        is_friend = root.current_ruler
+                    }
+                }
+            }
+            current_ruler = {
+                popularity >= 65
+                num_holdings_owned >= 1
+                custom_tooltip = {
+                    text = blemmia_missions_task_18_tt2
+                    any_holdings = {
+                        num_of_slaves >= 10
+                        OR = {
+                            has_building = latifundia_building
+                            has_building = workshop_building
+                        }
+                        save_temporary_scope_as = blemmyan_slave_holding
+                    }  
+                }
+            }
+            custom_tooltip = {
+                text = blemmia_missions_task_18_tt3
+                any_country_culture = {
+                    has_pop_type_right = slaves
+                } 
+            }
         }
 
         on_completion = {
-            trigger_event = me_blemmia.18
-            show_as_tooltip = {
-
+            trigger_event = me_blemmia.18 # Individual slave selling events???
+            add_treasury = 200
+            add_innovation = 2
+            add_4_free_province_investments = yes
+            while = { # FIX THIS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                count = 5
+                scope:blemmyan_slave_holding = {
+                    random_pops_in_province = {
+                        pop_type = slaves
+                        move_pop = scope:blemmyan_arabian_friendly_nation.capital_scope
+                    }
+                }
+            }
+            add_country_modifier = {
+                name = blemmyan_slave_trade
+                duration = -1
             }
         }
     }
@@ -1028,12 +1141,6 @@
             }
             military_experience >= 15
             treasury >= 50
-            c:EGY = {
-                opinion = {
-                    value <= 0
-                    target = root
-                }
-            }
         }
 
         highlight = {
@@ -1166,7 +1273,23 @@
         icon = "task_athena"
 
         allow = {
-
+            p:577.state = {
+                governor_policy = encourage_trade
+                trade_good_surplus = {
+                    target = grain
+                    value >= 2
+                }
+            }
+            p:577 = {
+                owner = root
+                has_city_status = yes
+                num_of_commerce_building >= 3
+                num_of_town_hall_building >= 3
+                num_of_workshop_building >= 2
+                has_building = court_building
+                has_building = foundry_building
+                has_no_ongoing_construction = yes
+            }
         }
 
         highlight = {
@@ -1176,9 +1299,49 @@
 		}
 
         on_completion = {
-            trigger_event = me_blemmia.23
-            show_as_tooltip = {
-
+            add_treasury = -100
+            add_manpower = -10
+            add_political_influence = 50
+            trigger_event = me_blemmia.23 # Chance to invest more into the city + add buildings + add pops
+            p:576 = {
+                set_trade_goods = grain
+            }
+            p:577 = {
+                if = {
+                    limit = {
+                        NOT = {has_province_rank = city_metropolis}
+                    }
+                    increase_province_rank_effect = yes
+                }
+                set_trade_goods = precious_metals
+                while = {
+                    count = 4
+                    define_pop = {
+                        type = nobles
+                        culture = root.culture
+                        religion = root.religion
+                    }
+                    define_pop = {
+                        type = citizen
+                        culture = root.culture
+                        religion = root.religion
+                    }
+                }
+                add_permanent_province_modifier = {
+                    name = blemmyan_golden_rule
+                }
+            }
+            hidden_effect = {
+                p:8089 = { add_road_towards = p:8088 }
+			    p:8088 = { add_road_towards = p:8086 }
+			    p:8086 = { add_road_towards = p:8085 }
+                p:8085 = { add_road_towards = p:8083 }
+			    p:8083 = { add_road_towards = p:8081 }
+                p:8081 = { add_road_towards = p:8079 }
+                p:8079 = { add_road_towards = p:593 }
+                p:593 = { add_road_towards = p:592 }
+                p:592 = { add_road_towards = p:591 }
+                p:591 = { add_road_towards = p:577 }
             }
         }
     }
@@ -1189,6 +1352,11 @@
         final = yes
 
         allow = {
+            stability >= 70
+            political_influence >= 75
+            current_ruler = {
+                popularity >= 90
+            }
             owns_or_subject_owns = p:8636
             owns_or_subject_owns = p:7500
             owns_or_subject_owns = p:632
@@ -1223,9 +1391,47 @@
 		}
         
         on_completion = {
-            trigger_event = me_blemmia.24
-            show_as_tooltip = {
-
+            trigger_event = me_blemmia.24 # Completion Event
+            current_ruler = {
+                add_finesse = 2
+            }
+            add_innovation = 4
+            add_8_free_province_investments = yes
+            add_political_influence = -75
+            change_government = imperial_cult
+            change_country_name = BLEMMYAN_EMPIRE 
+            area:meroe_area = {
+                add_provincial_claim_effect = yes
+            }
+            area:awateib_area = {
+                add_provincial_claim_effect = yes
+            }
+            area:aksum_area = {
+                add_provincial_claim_effect = yes
+            }
+            area:ona_area = {
+                add_provincial_claim_effect = yes
+            }
+            area:hema_nome_area = {
+                add_provincial_claim_effect = yes
+            }
+            area:heptanomis_area = {
+                add_provincial_claim_effect = yes
+            }
+            area:memphis_area = {
+                add_provincial_claim_effect = yes
+            }
+            area:western_delta_area = {
+                add_provincial_claim_effect = yes
+            }
+            area:central_delta_area = {
+                add_provincial_claim_effect = yes
+            }
+            area:eastern_delta_area = {
+                add_provincial_claim_effect = yes
+            }
+            hidden_effect = {
+                change_country_color = hsv { 0.32 0.45 0.9 }
             }
         }
     }

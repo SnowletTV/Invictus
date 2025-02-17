@@ -2113,6 +2113,157 @@ me_parthia.2102 = {
 	}
 }
 
+me_parthia.22 = { #Either become protected march or death
+	type = country_event
+
+	title = "me_parthia.22.t"
+	desc = "me_parthia.22.desc"
+	picture = event_horses_escaping
+	left_portrait = current_ruler
+	
+	option = {	#Yes
+		name = "me_parthia.22.a"
+		ai_chance = {
+			base = 20
+        }
+		scope:pth_ruler_scope.employer = {
+			make_subject = {
+				target = ROOT
+				type = march
+			}
+			add_country_modifier = {
+				name = parthian_adiabene
+				duration = 7300
+			}
+			trigger_event = me_parthia.2201
+		}
+		hidden_effect = {
+			new_march_colour_effect = yes
+			set_variable = pth_excepted_var
+		}	
+	}
+	
+	option = {	#No
+		name = "me_parthia.22.b"
+		every_owned_province = { add_claim = scope:pth_ruler_scope.employer }
+		scope:pth_ruler_scope.employer = {
+			trigger_event = me_parthia.2202
+		}
+		ai_chance = {
+			base = 10
+			modifier = {
+				add = -5
+				opinion = { target = scope:pth_ruler_scope.employer value >= 50 }
+			}
+			modifier = {
+				add = -5
+				opinion = { target = scope:pth_ruler_scope.employer value >= 100 }
+			}
+		}
+	}
+}
+
+me_parthia.2201 = {
+	type = country_event
+	title = me_parthia.2201.t
+	desc = me_parthia.2201.desc
+	picture = greek_states_path_1_event
+
+	left_portrait = current_ruler
+
+	option = { #
+		name = me_parthia.2201.a
+		show_as_tooltip = {
+			add_country_modifier = {
+				name = parthian_adiabene
+				duration = 7300
+			}
+		}
+		if = {
+			limit = {
+				any_country = { 
+					tag = OSR
+					is_subject_of = ROOT
+					is_subject_type = march					
+				}
+				any_province = {
+					is_in_area = niniveh_area
+					owner = {
+						is_subject_of = ROOT
+						is_subject_type = march
+						NOT = { has_variable = pth_excepted_var }
+					}
+				}
+			}
+			every_province = {
+				limit = {
+					is_in_area = niniveh_area
+					owner = {
+						is_subject_of = ROOT
+						is_subject_type = march
+						NOT = { has_variable = pth_excepted_var }
+					}					
+				}
+				set_owned_by = c:ADI
+			}
+			random_country = {
+				limit = {
+					tag = OSR
+				}
+				save_scope_as = osr_scope
+			}
+			every_province = {
+				limit = {
+					is_in_region = assyria_region
+					owner = {
+						is_subject_of = ROOT
+						is_subject_type = march
+						NOT = { has_variable = pth_excepted_var }
+					}					
+				}
+				set_owned_by = scope:osr_scope
+			}
+		}
+		else_if = {
+			limit = {
+				any_province = {
+					is_in_region = assyria_region
+					owner = {
+						is_subject_of = ROOT
+						is_subject_type = march
+						NOT = { has_variable = pth_excepted_var }
+					}
+				}
+			}
+			every_province = {
+				limit = {
+					is_in_region = assyria_region
+					owner = {
+						is_subject_of = ROOT
+						is_subject_type = march
+						NOT = { has_variable = pth_excepted_var }
+					}					
+				}
+				set_owned_by = c:ADI
+			}
+		}
+	}
+}
+
+me_parthia.2202 = {
+	type = country_event
+	title = me_parthia.2202.t
+	desc = me_parthia.2202.desc
+	picture = greek_states_path_1_event
+
+	left_portrait = current_ruler
+
+	option = { #
+		name = me_parthia.2202.a
+		custom_tooltip = me_parthia.2202.a.tt
+	}
+}
+
 me_parthia.9900 = { #Choose what region to hold directly - 1st step
     type = country_event 
 	title = "me_parthia.9900.t"
@@ -2952,7 +3103,11 @@ me_parthia.9902 = { #spawn a march in an illegal region
 				new_march_colour_effect = yes
 				parthia_rename_march_effect = yes
 				parthian_change_culture_march_effect = yes
-				parthia_march_move_capital_eff = yes
+				ordered_owned_province = {
+					order_by = total_population
+					save_scope_as = new_capital
+				}
+				set_capital = scope:new_capital
 				if = {
 					limit = {
 						any_owned_province = {
@@ -2968,7 +3123,7 @@ me_parthia.9902 = { #spawn a march in an illegal region
 				}				
 			}
 		}
-		if = {
+		if = { #debugging CAR and PES provinces, TODO maybe more elegant and universal solution
 			limit = {
 				any_subject = {
 					THIS = c:CAM
@@ -2977,46 +3132,6 @@ me_parthia.9902 = { #spawn a march in an illegal region
 				}
 			}
 			c:CAM = {
-				every_owned_province = {
-					set_owned_by = ROOT
-				}
-				every_character = {
-					death = {
-						death_reason = death_obscurity
-					}
-				}
-				every_country_treasure = { transfer_treasure_to_country = ROOT }
-			}
-		}
-		if = {
-			limit = {
-				any_subject = {
-					THIS = c:PES
-					is_subject_type = march
-					capital_scope.region = scope:spawn_scope.capital_scope.region
-				}
-			}
-			c:PES = {
-				every_owned_province = {
-					set_owned_by = ROOT
-				}
-				every_character = {
-					death = {
-						death_reason = death_obscurity
-					}
-				}
-				every_country_treasure = { transfer_treasure_to_country = ROOT }
-			}
-		}
-		if = {
-			limit = {
-				any_subject = {
-					THIS = c:BAC
-					is_subject_type = march
-					capital_scope.region = scope:spawn_scope.capital_scope.region
-				}
-			}
-			c:BAC = {
 				every_owned_province = {
 					set_owned_by = ROOT
 				}

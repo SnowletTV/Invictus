@@ -150,32 +150,33 @@ galatian_invasion.1 = { # Barbarian Rumblings
 			# }
 		# }
 		if ={
-			limit = { # Scordiscia
+			limit = { # Celegeria
 				c:CEL = { exists = yes }
 			}
-			c:CEL = { # Dardania
+			c:CEL = { # Celegeria
 				save_scope_as = tylis_attacker
 			}
 		}
-		# else = {
-			# random_country = {
-				# limit = {
-					# country_culture_group = gallic
-					# capital_scope = {
-						# OR = {
-							# is_in_region = macedonia_region
-							# is_in_region = moesia_region
-							# is_in_region = pannonia_region
-						# }
-					# }
-					# NOR = {
-						# this = scope:pella_attacker
-						# this = scope:delphi_attacker
-					# }
-				# }
-				# save_scope_as = delphi_attacker
-			# }
-		# }
+		else = {
+			random_country = {
+				limit = {
+					country_culture_group = gallic
+					capital_scope = {
+						OR = {
+							is_in_region = macedonia_region
+							is_in_region = moesia_region
+							is_in_region = moesia_s_region
+							is_in_region = pannonia_region
+						}
+					}
+					NOR = {
+						this = scope:pella_attacker
+						this = scope:delphi_attacker
+					}
+				}
+				save_scope_as = tylis_attacker
+			}
+		}
 		if ={
 			limit = {
 				c:TOI = { exists = yes }
@@ -314,18 +315,60 @@ galatian_invasion.1 = { # Barbarian Rumblings
 				}
 			}
 			random_country = {
-				limit = { owns = 480 } # Mesembria
+				limit = { owns = 4244 } # Tylis
 				save_scope_as = tylis_defender
 			}
-			scope:tylis_defender ={
+			scope:tylis_defender = {
 				trigger_event = {
 					id = galatian_invasion.30
 					days = 75
 				}
 			}
-
 		}
-		
+		if = {
+			limit = {
+				c:TRE = {
+					exists = yes
+				}
+			}
+			c:TRE = { save_scope_as = triballia_notifier }
+		}
+		else_if = {
+			limit = {
+				c:ODR = {
+					exists = yes
+				}
+			}
+			c:ODR = { save_scope_as = triballia_notifier }
+		}
+		if = {
+			limit = {
+				scope:tylis_attacker = {
+					exists = yes
+					is_ai = yes
+				}
+				scope:triballia_notifier = {
+					exists = yes
+				}
+				c:TBL = {
+					exists = yes
+					is_ai = yes
+				}
+			}
+			random_list = {
+				40 = {
+					scope:triballia_notifier = {
+						trigger_event = {
+							id = galatian_invasion.31
+							days = 50
+						}
+					}
+				}
+				60 = {
+					#Nothing
+				}
+			}
+		}		
 		if = {
 			limit = {
 				NOT = { # verifies that special player events will not occur
@@ -616,7 +659,6 @@ galatian_invasion.2 = { # Volcae Brethren
 				}
 				force_white_peace = THIS
 			}
-
 		}
 	}
 
@@ -1136,15 +1178,24 @@ galatian_invasion.12 = { # Hellenic Notification of Invasion
 		NOT = { tag = TRE }
 	}
 
-	# immediate = {
-
-	# }
+	immediate = {
+		show_as_tooltip = {
+			if = {
+				limit = { exists = scope:pella_attacker }
+				scope:pella_attacker = {
+					declare_war_with_wargoal = {
+						war_goal = conquer_wargoal
+						province = p:379
+						target = scope:pella_defender
+					}
+				}
+			}
+		}
+	}
 
 	option = {
 		name = galatian_invasion.12.a
-		add_manpower = 1		
 	}
-
 }
 
 # .13 for peace treaty
@@ -1826,11 +1877,273 @@ galatian_invasion.30 = {
 	title = "galatian_invasion.30.t"
 	desc = "galatian_invasion.30.desc"
 
-	left_portrait = scope:tylis_attacker.current_ruler
-	right_portrait = scope:tylis_defender.current_ruler
+	left_portrait = scope:tylis_defender.current_ruler
+	right_portrait = scope:tylis_attacker.current_ruler
 	picture = city_siege #walled_city_under_siege #aka city_siege
 
-	goto_location = root
+	goto_location = p:4244
+
+	fire_only_once = yes 
+
+
+	trigger = {
+		owns = 4244
+	}
+
+	immediate = { # invade
+		hidden_effect = {
+			random_country = {
+				limit = {
+					owns = 4244
+				}
+				save_scope_as = tylis_defender
+			}
+			random_country = {
+				limit = {
+					owns = 480
+				}
+				save_scope_as = tylis_second_defender
+			}
+			p:4244 = {
+                add_building_level = fortress_building
+				set_owned_by = scope:tylis_attacker
+			}			
+			p:4238 = {
+				set_owned_by = scope:tylis_attacker
+			}
+			p:4237 = {
+				set_owned_by = scope:tylis_attacker
+			}	
+			p:4236 = {
+				set_owned_by = scope:tylis_attacker
+			}						
+			scope:tylis_attacker = {
+				set_capital = p:4244 #TYLIS
+				declare_war_with_wargoal = {
+					war_goal = horde_conquest
+					target = scope:tylis_defender
+				}
+				set_variable = {
+					name = is_not_allowed_to_go_broke
+					days = 9125
+				}
+				set_variable = {
+					name = is_ignoring_ae
+					days = 3650
+				}
+				create_character = {
+					culture = scope:tylis_attacker.current_ruler.culture
+					religion = scope:tylis_attacker.current_ruler.religion
+					female = no
+					age = adult_character_age_range_svalue
+					great_martial_effect = yes
+					save_scope_as = galatian_invasion_30_unit_commander
+				}
+				create_unit = {
+					navy = no
+					location = p:4244
+					commander = scope:galatian_invasion_30_unit_commander
+					while = {
+						count = 12
+						add_subunit = light_infantry
+					}
+					while = {
+						count = 4
+						add_subunit = chariots
+					}
+					add_food = 50
+					add_morale = 2
+				}
+			}
+
+			random_current_war = {
+				limit = {
+					any_war_attacker = { this = scope:tylis_attacker }
+					any_war_defender = { this = scope:tylis_defender }
+				}
+				save_scope_as = tylis_war_scope
+			}
+		}
+	}
+
+	option = {
+		name = galatian_invasion.30.a
+		custom_tooltip = galatian_invasion.30.at
+		scope:tylis_second_defender = {
+			trigger_event = {
+				id = galatian_invasion.33
+				days = 3
+			}
+		}
+	}
+
+	after = {
+		scope:tylis_attacker = {
+			trigger_event = {
+				id = galatian_invasion.34
+				days = { 700 1400 }
+			}
+		}
+	}
+}
+
+galatian_invasion.31 = {
+	type = country_event
+	title = "galatian_invasion.31.t"
+	desc = "galatian_invasion.31.desc"
+
+	left_portrait = current_ruler
+	right_portrait = scope:tylis_attacker.current_ruler
+	picture = city_siege
+
+	goto_location = scope:tbl_former_capital
+
+	trigger = {
+		scope:triballia_notifier = {
+			exists = yes
+		}
+		c:TBL = {
+			exists = yes
+			is_ai = yes
+		}
+	}
+
+	immediate = {
+		if = {
+			limit = {
+				THIS = scope:triballia_notifier
+			}
+			hidden_effect = {
+				c:TBL = {
+					capital_scope = { save_scope_as = tbl_former_capital }
+					every_owned_province = {
+						set_owned_by = scope:tylis_attacker
+					}
+				}
+				if = {
+					limit = {
+						p:4216.owner = { is_ai = yes }
+						p:4215.owner = { is_ai = yes }
+						p:4214.owner = { is_ai = yes }
+					}
+					p:4216 = { set_owned_by = scope:tylis_attacker } 
+					p:4215 = { set_owned_by = scope:tylis_attacker } 
+					p:4214 = { set_owned_by = scope:tylis_attacker } 
+				}
+				if = {#Move Triballoi West
+					limit = {
+						c:TLT = {
+							exists = yes
+							is_ai = yes
+						}
+					}
+					if = {
+						limit = {
+							p:4219.owner = { is_ai = yes }
+						}
+						p:4219 = { set_owned_by = c:TBL }
+					}
+					scope:tylis_attacker = {
+						every_owned_province = {
+							limit = {
+								is_in_area = dacia_mediterranea_area
+							}
+							set_owned_by = c:TBL
+						}
+					}
+					c:TLT = {
+						every_owned_province = {
+							set_owned_by = c:TBL
+						}
+					}
+				}
+			}
+		}
+	}
+
+	option = {
+		name = galatian_invasion.31.a
+		custom_tooltip = galatian_invasion.31.at
+	}
+}
+
+galatian_invasion.32 = { # Hellenic Notification of Invasion
+	type = country_event
+	title = "galatian_invasion.32.t"
+	desc = "galatian_invasion.32.desc"
+
+	left_portrait = scope:tylis_attacker.current_ruler
+	right_portrait = scope:tylis_second_defender.current_ruler
+	picture = city_siege
+
+	goto_location = p:480
+
+
+	trigger = {
+		#country_culture_group = hellenic
+		NOT = {	owns = 480 }
+	}
+
+	immediate = {
+		custom_tooltip = galatian_invasion.32.tt
+		show_as_tooltip = {
+			scope:tylis_attacker = {
+				declare_war_with_wargoal = {
+					war_goal = conquer_wargoal
+					province = p:480
+					target = scope:tylis_second_defender
+				}
+			}
+		}
+	}
+
+	option = {
+		name = galatian_invasion.32.a
+		ai_chance = { factor = 10 }
+	}
+
+	option = {
+		name = galatian_invasion.32.b
+		trigger = {
+			OR = {
+				capital_scope = {
+					OR = {
+						is_in_region = moesia_region
+						is_in_region = thrace_region
+					}
+				}
+				tag = ODR
+				tag = TRE
+				tag = OLB
+			}
+		}
+		add_manpower = 4
+		every_current_war = {
+            limit = {
+				any_war_attacker = { this = scope:tylis_attacker }
+				any_war_defender = { this = scope:tylis_second_defender }
+            }
+            ROOT = {
+                add_to_war = {
+                    target = PREV
+                    attacker = no
+                    leader = no
+                }
+            }
+        }
+		ai_chance = { factor = 90 }
+	}
+}
+
+galatian_invasion.33 = {
+	type = country_event
+	title = "galatian_invasion.33.t"
+	desc = "galatian_invasion.33.desc"
+	left_portrait = scope:tylis_attacker.current_ruler
+	right_portrait = scope:tylis_second_defender.current_ruler
+	picture = city_siege #walled_city_under_siege #aka city_siege
+
+	goto_location = p:480
 
 	fire_only_once = yes 
 
@@ -1840,19 +2153,18 @@ galatian_invasion.30 = {
 	}
 
 	immediate = { # invade
-
 		random_country = {
 			limit = {
 				owns = 480
 			}
-			save_scope_as = tylis_defender
+			save_scope_as = tylis_second_defender
 		}
 
 		scope:tylis_attacker = {
 			declare_war_with_wargoal = {
 				war_goal = conquer_wargoal
 				province = p:480
-				target = scope:tylis_defender
+				target = scope:tylis_second_defender
 			}
 			set_variable = {
 				name = is_not_allowed_to_go_broke
@@ -1867,276 +2179,627 @@ galatian_invasion.30 = {
 				religion = scope:tylis_attacker.current_ruler.religion
 				female = no
 				age = adult_character_age_range_svalue
-				save_scope_as = galatian_invasion_30_unit_commander
+				save_scope_as = galatian_invasion_33_unit_commander
 			}
 			create_unit = {
 				navy = no
 				location = p:480
-				commander = scope:galatian_invasion_30_unit_commander
+				commander = scope:galatian_invasion_33_unit_commander
 				while = {
-					count = 39
+					count = 15
 					add_subunit = light_infantry
 				}
 				while = {
-					count = 10
+					count = 5
 					add_subunit = chariots
 				}
 				add_food = 50
 				add_morale = 2
 			}
-			# save_scope_as = first_gauls
 		}
 
 		random_current_war = {
 			limit = {
 				any_war_attacker = { this = scope:tylis_attacker }
-				any_war_defender = { this = scope:tylis_defender }
+				any_war_defender = { this = scope:tylis_second_defender }
 			}
-			save_scope_as = tylis_war_scope
+			save_scope_as = second_tylis_war_scope
 		}
 	}
 
 	option = {
-		name = galatian_invasion.30.a
+		name = galatian_invasion.33.a
+		custom_tooltip = galatian_invasion.33.at
+		show_as_tooltip = {
+			scope:tylis_attacker = {
+				declare_war_with_wargoal = {
+					war_goal = conquer_wargoal
+					province = p:480
+					target = scope:tylis_second_defender
+				}
+			}
+		}
 	}
 
-	# option = {
-		# name = galatian_invasion.2.b #
-
-	# }
-
 	after = {
-
 		every_country = {
 			limit = {
-				country_culture_group = hellenic
+				OR = {
+					country_culture_group = hellenic
+					capital_scope = {
+						OR = {
+							is_in_region = moesia_region
+							is_in_region = thrace_region
+						}
+					}
+				}	
 			}
 			trigger_event = {
 				id = galatian_invasion.32
 				days = 3
 			}
 		}
-
 	}
+}	
 
-}
-
-# 31 skipped for numerical consistency
-
-galatian_invasion.32 = { # Hellenic Notification of Invasion
+galatian_invasion.34 = {
 	type = country_event
-	title = "galatian_invasion.32.t"
-	desc = "galatian_invasion.32.desc"
-
-	left_portrait = scope:tylis_attacker.current_ruler
-	right_portrait = scope:tylis_defender.current_ruler
-	picture = city_siege
-
-	trigger = {
-		country_culture_group = hellenic
-		NOT = {	owns = 480 }
-	}
-
-	# immediate = {
-
-	# }
-
-	option = {
-		name = galatian_invasion.32.a
-		custom_tooltip = galatian_invasion.32.at
-	}
-
-}
-
-# 33 for scripted peace
-
-galatian_invasion.34 = { # Setting - Start Task
-	type = country_event
-	title = "galatian_invasion.44.t"
-	desc = "galatian_invasion.44.desc"
-
-	right_portrait = current_ruler
+	title = "galatian_invasion.34.t"
+	desc = "galatian_invasion.34.desc"
+	left_portrait = current_ruler
+	right_portrait = c:TIM.current_ruler
 	picture = celtic_village
-
-	fire_only_once = yes
+	goto_location = p:4244
 
 	trigger = {
-		country_culture_group = gallic
 		any_owned_province = {
-			is_in_region = thrace_region
-		}
-		is_ai = yes
-	}
-
-	immediate = {
-
-		random_country = {
-			limit = {
-				country_culture_group = gallic
-				any_owned_province = {
-					is_in_region = thrace_region
-				}
-				is_ai = yes
-			}
-			save_scope_as = migrating_nation
-		}
-	}
-
-	option = {
-		name = galatian_invasion.44.a
-
-		scope:migrating_nation = {
-			while = {
-				count = { 15 20 }
-				if = {
-					limit = {
-						NOR = { has_variable = tylis_chosen_city }
-						any_owned_province = {
-							OR = {
-								is_in_region = moesia_region
-								is_in_region = illyria_region
-								is_in_region = pannonia_region
-								is_in_region = dacia_region
-							}
-							province_dominant_culture_group = gallic
-						}
-					}
-					random_owned_province = {
-						limit = {
-							NOT = { has_variable = tylis_chosen_city }
-							OR = {
-								is_in_region = moesia_region
-								is_in_region = illyria_region
-								is_in_region = pannonia_region
-								is_in_region = dacia_region
-							}
-							province_dominant_culture_group = gallic
-						}
-						set_variable = tylis_chosen_city
-
-						trigger_event = {
-							id = galatian_invasion.35
-							days = 3
-						}
-					}
-				}
-			}
-		}
-	}
-
-}
-
-
-galatian_invasion.35 = { # Settling - Settling
-    type = country_event
-    hidden = yes
-
-
-	immediate = {
-
-		random_ownable_province = {
-			limit = {
+			OR = {
+				is_in_region = moesia_region
+#				is_in_region = moesia_s_region							
 				is_in_region = thrace_region
-				trigger_if = {
-					limit = {
-						exists = owner
-					}
-					owner = scope:migrating_nation
-				}
 			}
-			weight = {
-				modifier = {
-					factor = 15
-					total_population < 15
-				}
-				modifier = {
-					factor = 15
-					total_population < 10
-				}
-				modifier = {
-					factor = 5
-					is_capital = yes
-				}
-				modifier = {
-					factor = 5
-					is_state_capital = yes
-				}
-				modifier = {
-					factor = 3
-					total_population < population_cap
-				}
-				modifier = {
-					factor = 0.005
-					total_population > population_cap
-				}
-			}
-			save_scope_as = new_city
 		}
+	}
 
-		while = {
-			count = { 15 20 }
+	immediate = {
+		hidden_effect = { 
+			capital_scope = {
+		        define_pop = {
+		            type = tribesmen
+		            culture = culture:tylite
+		            religion = religion:druidism
+		        }
+		    }
+			every_country = {
+				limit = {
+					is_ai = yes
+					country_culture_group = gallic
+					capital_scope = {
+						OR = {
+							is_in_region = moesia_region
+#							is_in_region = moesia_s_region							
+							is_in_region = thrace_region
+						}
+					}
+					NOT = { tag = TYL }
+				}
+				every_owned_province = {
+					set_owned_by = scope:tylis_attacker
+				}
+			}
+			#Finding Tylis
 			if = {
 				limit = {
 					any_owned_province = {
-						any_pops_in_province = {
-							pop_culture_group = gallic
-						}
+						is_in_area = moesia_occidentalis_area
 					}
 				}
-				random_owned_province = {
-					limit = {
-						any_pops_in_province = {
-							pop_culture_group = gallic
+				area:moesia_occidentalis_area = {
+					ordered_area_province = {
+						limit = {
+							has_owner = yes
+							owner = scope:tylis_attacker
+						}
+						order_by = total_population
+						save_scope_as = tylis_cap_scope
+					}
+				}
+			}
+			else_if = {
+				limit = {
+					any_owned_province = {
+						is_in_area = moesia_orientalis_area
+					}
+				}
+				area:moesia_orientalis_area = {
+					ordered_area_province = {
+						limit = {
+							has_owner = yes
+							owner = scope:tylis_attacker
+						}
+						order_by = total_population
+						save_scope_as = tylis_cap_scope
+					}
+				}
+			}			
+			else_if = {
+				limit = {
+					any_owned_province = {
+						is_in_region = moesia_region
+					}
+				}
+				region:moesia_region = {
+					ordered_region_province = {
+						limit = {
+							has_owner = yes
+							owner = scope:tylis_attacker
+						}
+						order_by = total_population
+						save_scope_as = tylis_cap_scope
+					}
+				}
+			}
+			else_if = {
+				limit = {
+					any_owned_province = {
+						is_in_region = thrace_region
+					}
+				}
+				region:thrace_region = {
+					ordered_region_province = {
+						limit = {
+							has_owner = yes
+							owner = scope:tylis_attacker
+						}
+						order_by = total_population
+						save_scope_as = tylis_cap_scope
+					}
+				}
+			}
+			else_if = {
+				limit = {
+					any_owned_province = {
+						is_in_region = moesia_s_region
+					}
+				}
+				region:moesia_s_region = {
+					ordered_region_province = {
+						limit = {
+							has_owner = yes
+							owner = scope:tylis_attacker
+						}
+						order_by = total_population
+						save_scope_as = tylis_cap_scope
+					}
+				}
+			}			
+			p:4244 = { change_province_name = "Rachovets" }
+			scope:tylis_attacker = {
+				set_capital = scope:tylis_cap_scope		
+			}
+            random_list = {#Historical
+                60 = {
+					set_variable = eastern_thrace #add healthy AI chance
+                }
+                40 = {
+                    #Nothing
+                }
+            }
+            random_list = {#Ahistorical sucess in the north
+                40 = {
+					set_variable = northern_thrace
+                }
+                60 = {
+                    #Nothing
+                }
+            }
+			if = {
+				limit = {
+					scope:tylis_defender = {
+						has_land = yes
+						is_ai = yes
+					}
+				}
+	            random_list = {
+	                40 = {
+						scope:tylis_defender = {
+							every_owned_province = {
+								set_owned_by = scope:tylis_attacker
+							}
+						}
+	                }
+	                60 = {
+	                    #Nothing
+	                }
+	            }
+			}
+		}
+		change_country_name = TYLIS_NAME
+		custom_tooltip = "unlock_daco_thracian_tradition"
+		set_variable = {
+			name = haemic_influence
+			days = -1
+		}
+		change_government = despotic_monarchy
+		switch_government_type_event_clearup_effect = yes
+		hidden_effect = {
+			change_country_adjective = TYLIS_ADJ
+			capital_scope = {
+		        define_pop = {
+		            type = tribesmen
+		            culture = culture:tylite
+		            religion = religion:druidism
+		        }
+		    }
+			set_country_religion = druidism
+			change_country_color = tylis_color
+			change_country_flag = TYLIS_FLAG
+			change_country_tag = TYL	
+		}
+		capital_scope = {
+			establish_city_effect = yes					
+			change_province_name = "Tylis"	
+			capital_formable_tribal_effect = yes
+			formable_capital_modifier_tribal_effect = yes
+		}
+	}
+
+	option = {
+		name = galatian_invasion.34.a
+		add_stability = 5
+		every_owned_province = {
+			limit = {
+				OR = {
+					is_in_area = dacia_inferioris_area
+					is_in_region = moesia_s_region
+				}
+			}
+			set_owned_by = c:TIM
+		}
+		ai_chance = { factor = 50 }
+	}
+
+	option = {
+		name = galatian_invasion.34.b
+		add_manpower = -4
+		ai_chance = { factor = 50 }
+	}
+
+	after = {
+		trigger_event = {#ethnogenesis
+			id = galatian_invasion.36
+			days = { 35 70 }
+		}
+		every_country = {
+			limit = {
+				NOR = {
+					primary_culture = massalian
+					primary_culture = italiotian
+					primary_culture = syracusan
+				}
+				OR = {
+					capital_scope = {
+						OR = {
+							is_in_region = moesia_region
+							is_in_region = moesia_s_region							
+							is_in_region = thrace_region
+							is_in_region = illyria_region
+							is_in_region = pannonia_region
+							is_in_region = dacia_region
 						}
 					}
-					random_pops_in_province = {
-						limit = {
-							pop_culture_group = gallic
-						}
-						move_pop = scope:new_city
+					country_culture_group = hellenic
+				}
+				NOT = {scope:tylis_attacker}
+			}
+			trigger_event = {#Peace event
+				id = galatian_invasion.35
+				days = { 1 30 }
+			}
+		}
+	}
+}
+
+galatian_invasion.35 = {#Peace Option
+	type = country_event
+	title = "galatian_invasion.35.t"
+	desc = "galatian_invasion.35.desc"
+	left_portrait = current_ruler
+	right_portrait = scope:tylis_attacker.current_ruler	
+	picture = celtic_village
+	goto_location = scope:tylis_attacker.capital_scope
+
+	immediate = {
+		custom_tooltip = galatian_invasion.35.tt
+	}
+
+	option = {
+		name = galatian_invasion.35.a
+	    trigger = { 
+			war_with = scope:tylis_attacker
+	    }
+		add_stability = 5
+		if = {
+			limit = {
+				num_of_cities >= 5
+			}
+			if = {
+				limit = {
+					capital_scope = { controller = scope:tylis_attacker }	
+				}
+				if = {
+					limit = {
+						is_subject = yes
+					}
+					overlord = {
+						release_subject = ROOT
 					}
 				}
 				if = {
 					limit = {
-						has_variable = galatian_pop_move_variable
+						any_owned_province = {
+							is_capital = no
+							OR = {
+								province_id = 479
+								province_id = 4307
+								province_id = 4312
+								province_id = 495
+								province_id = 343
+								province_id = 4314
+								province_id = 342
+							}
+						}
 					}
-					change_variable = {
-						name = galatian_pop_move_variable
-						add = 1
+					every_owned_province = {
+						limit = {
+							is_capital = no
+							OR = {
+								controller = scope:tylis_attacker
+								province_id = 479
+								province_id = 4307
+								province_id = 4312
+								province_id = 495
+								province_id = 343
+								province_id = 4314
+								province_id = 342
+							}
+						}
+						set_owned_by = scope:tylis_attacker
+					}
+				}
+				if = {
+					limit = {
+						is_tribal = yes
+					}
+					scope:tylis_attacker = {
+						make_subject = {
+							target = ROOT
+							type = vassal_tribe
+						}
 					}
 				}
 				else = {
-					set_variable = {
-						name = galatian_pop_move_variable
-						value = 1
+					scope:tylis_attacker = {
+						make_subject = {
+							target = ROOT
+							type = tributary
+						}
 					}
 				}
-				scope:new_city = {
-					if = {
+				if = {
+					limit = {
+						scope:tylis_attacker = { has_variable = northern_thrace } 
+					}
+					every_owned_province = {
 						limit = {
-							has_variable = galatian_pop_move_variable
+							is_capital = no
+						is_in_region = moesia_region
 						}
-						change_variable = {
-							name = galatian_pop_move_variable
-							add = 1
+						set_owned_by = scope:tylis_attacker
+					}
+				}
+			}
+			else = {
+				every_owned_province = {
+					limit = {
+						is_capital = no
+						OR = {
+							controller = scope:tylis_attacker
+							province_id = 479
+							province_id = 4307
+							province_id = 4312
+							province_id = 495
+							province_id = 343
+							province_id = 4314
+							province_id = 342
 						}
 					}
-					else = {
-						set_variable = {
-							name = galatian_pop_move_variable
-							value = 1
-						}
+					set_owned_by = scope:tylis_attacker
+				}
+			}
+		}
+		else = {
+			if = {
+				limit = {
+					is_subject = yes
+				}
+				overlord = {
+					release_subject = ROOT
+				}
+			}
+			if = {
+				limit = {
+					is_tribal = yes
+				}
+				scope:tylis_attacker = {
+					make_subject = {
+						target = ROOT
+						type = vassal_tribe
+					}
+				}
+			}
+			else = {
+				scope:tylis_attacker = {
+					make_subject = {
+						target = ROOT
+						type = tributary
 					}
 				}
 			}
 		}
 		if = {
 			limit = {
-				has_variable = tylis_chosen_city
+				any_current_war = {
+					any_war_participant = {
+						THIS = scope:tylis_attacker
+					}
+				}
 			}
-			remove_variable = tylis_chosen_city
+			every_current_war = {
+				limit = {
+					any_war_participant = {
+						THIS = scope:tylis_attacker
+					}
+				}
+				force_white_peace = THIS
+			}
 		}
+		scope:tylis_attacker = {
+			add_opinion = {
+				modifier = tylis_accept
+				target = root
+			}
+		}
+		###add weight for variables
+		ai_chance = {
+			modifier = {
+				factor = 25
+			}
+			modifier = {
+				factor = 200
+				NOT = {
+					capital_scope = {
+						is_in_region = thrace_region
+					}	
+				}
+				scope:tylis_attacker = { has_variable = northern_thrace } 
+			}
+			modifier = {
+				factor = 200
+				capital_scope = {
+					is_in_region = thrace_region
+				}
+				scope:tylis_attacker = { has_variable = eastern_thrace } 
+			}
+		}
+	}
 
+	option = {
+		name = galatian_invasion.35.b
+		if = {
+			limit = {
+				any_current_war = {
+					any_war_participant = {
+						THIS = scope:tylis_attacker
+					}
+				}
+			}
+			add_manpower = 4
+		}
+		scope:tylis_attacker = {
+			add_opinion = {
+				modifier = tylis_refusal
+				target = root
+			}
+		}
+		ai_chance = { factor = 75 }
+	}
+
+	after = {
+#
+	}
+}
+
+galatian_invasion.34 = {
+	type = country_event
+	title = "galatian_invasion.34.t"
+	desc = "galatian_invasion.34.desc"
+	left_portrait = current_ruler
+	right_portrait = c:TIM.current_ruler
+	picture = celtic_village
+	goto_location = p:4244
+
+	trigger = {
+		any_owned_province = {
+			OR = {
+				is_in_region = moesia_region
+				is_in_region = thrace_region
+			}
+		}
+	}
+
+	immediate = {
+		hidden_effect = {
+			capital_scope = {
+		        define_pop = {
+		            type = tribesmen
+		            culture = culture:tylite
+		            religion = religion:druidism
+		        }
+		    }
+			every_owned_province = {
+				random_list = {
+					20 = {
+						ordered_pops_in_province = {
+							order_by = pop_hapiness	
+							max = 3
+							check_range_bounds = no
+							set_pop_culture = tylite
+						}
+					}
+					40 = {
+						ordered_pops_in_province = {
+							order_by = pop_hapiness	
+							max = 4
+							check_range_bounds = no
+							set_pop_culture = tylite
+						}
+					}
+					20 = {
+						ordered_pops_in_province = {
+							order_by = pop_hapiness	
+							max = 6
+							check_range_bounds = no
+							set_pop_culture = tylite
+						}
+					}
+				}
+				ordered_pops_in_province = {
+					limit = {
+						pop_culture_group = gallic
+					}
+					order_by = pop_hapiness	
+					max = 10
+					check_range_bounds = no
+					set_pop_culture = tylite
+				}
+			}
+		}
+	}
+
+	option = {
+		name = galatian_invasion.36.a
+		if = {
+			limit = {
+				NOT = {
+					primary_culture = tylite
+				}
+			}
+			set_primary_culture_cleanup_effect = {
+				NEW_PRIMARY_CULTURE = tylite
+				MAKE_OLD_CULTURE_INTEGRATED = yes
+			}
+		}
 	}
 }
 
@@ -2362,7 +3025,6 @@ galatian_invasion.40 = { # Anatolia invasion
 	}
 
 	after = {
-
 		every_country = {
 			limit = {
 				country_culture_group = hellenic
@@ -2373,11 +3035,6 @@ galatian_invasion.40 = { # Anatolia invasion
 			}
 		}
 	}
-
-	# option = {
-		# name = galatian_invasion.32.b
-	# }
-
 }
 
 # skip 41 for numerical consistency
@@ -2394,6 +3051,8 @@ galatian_invasion.42 = { # Hellenic Notification of Invasion
 	right_portrait = scope:ankyra_defender.current_ruler
 	right_portrait = scope:tavium_defender.current_ruler
 	picture = elephant_battle
+	goto_location = p:189
+
 
 	trigger = {
 		country_culture_group = hellenic
@@ -2436,7 +3095,12 @@ galatian_invasion.43 = { # Special Peace - Trocmeria
 
 	option = { # Give land and make subject
 		name = galatian_invasion.43.a
-
+		scope:tavium_defender = {
+			make_subject = {
+				target = scope:tavium_attacker
+				type = vassal_tribe
+			}
+		}
 		if = {
 			limit = {
 				has_global_variable = phrygian_invasion_flag
@@ -2451,13 +3115,7 @@ galatian_invasion.43 = { # Special Peace - Trocmeria
 			}
 			every_country = {
 				limit = {
-					OR = {
-						tag = PRY
-						tag = SEL
-						tag = MAC
-						tag = TRE
-						tag = EGY
-					}
+					primary_culture = macedonian
 				}
 				every_owned_province = {
 					limit = {
@@ -2480,25 +3138,15 @@ galatian_invasion.43 = { # Special Peace - Trocmeria
 				}
 			}
 		}
-
-		# scope:tavium_defender = {
-			# make_subject = {
-				# target = scope:tavium_attacker
-				# type = vassal_tribe
-			# }
-		# }
-
 		scope:tavium_attacker = {
-			
 			set_capital = 194 # ankyra
-			
 			trigger_event = {
 				id = galatian_invasion.44 # Move Pops
 				days = 1
 			}
 
 			# trigger_event = {
-				# id = galatian_invasion.38 # Form Galatia
+				# id = galatian_invasion.71 # Form Galatia
 				# days = 10
 			# }
 			# make_subject
@@ -2604,6 +3252,7 @@ galatian_invasion.44 = { # Setting Galatia - Start Task
 						OR = {
 							is_in_region = macedonia_region
 							is_in_region = moesia_region
+							is_in_region = moesia_s_region
 							is_in_region = illyria_region
 							is_in_region = pannonia_region
 							is_in_region = dacia_region
@@ -2624,6 +3273,7 @@ galatian_invasion.44 = { # Setting Galatia - Start Task
 						OR = {
 							is_in_region = macedonia_region
 							is_in_region = moesia_region
+							is_in_region = moesia_s_region
 							is_in_region = illyria_region
 							is_in_region = pannonia_region
 							is_in_region = dacia_region
@@ -3054,7 +3704,12 @@ galatian_invasion.53 = { # Special Peace - Tectosagia
 
 	option = { # Give land and make subject
 		name = galatian_invasion.53.a
-
+		scope:ankyra_defender = {
+			make_subject = {
+				target = scope:ankyra_attacker
+				type = vassal_tribe
+			}
+		}
 		if = {
 			limit = {
 				has_global_variable = phrygian_invasion_flag
@@ -3075,13 +3730,7 @@ galatian_invasion.53 = { # Special Peace - Tectosagia
 			}
 			every_country = {
 				limit = {
-					OR = {
-						tag = PRY
-						tag = SEL
-						tag = MAC
-						tag = TRE
-						tag = EGY
-					}
+					primary_culture = macedonian
 				}
 				every_owned_province = {
 					limit = {
@@ -3111,24 +3760,16 @@ galatian_invasion.53 = { # Special Peace - Tectosagia
 			}
 		}
 
-		# scope:ankyra_defender = {
-			# make_subject = {
-				# target = scope:ankyra_attacker
-				# type = vassal_tribe
-			# }
-		# }
 
-		scope:ankyra_attacker = {
-			
+		scope:ankyra_attacker = {			
 			set_capital = 189 # gordion
-			
 			trigger_event = {
 				id = galatian_invasion.44 # Move Pops
 				days = 1
 			}
 
 			# trigger_event = {
-				# id = galatian_invasion.38 # Form Galatia
+				# id = galatian_invasion.71 # Form Galatia
 				# days = 10
 			# }
 			# make_subject
@@ -3281,31 +3922,33 @@ galatian_invasion.60 = { # Anatolia invasion
 					target = c:EGY
 				}
 			}
-			create_character = {
-				culture = scope:pessinous_attacker.current_ruler.culture
-				religion = scope:pessinous_attacker.current_ruler.religion
-				female = no
-				age = adult_character_age_range_svalue
-				save_scope_as = galatian_invasion_60_unit_commander
-			}
-			create_unit = {
-				navy = no
-				location = scope:galatian_target_scope_3 #p:1941
-				commander = scope:galatian_invasion_60_unit_commander
-				while = {
-					count = 79
-					add_subunit = light_infantry
+			hidden_effect = {
+				create_character = {
+					culture = scope:pessinous_attacker.current_ruler.culture
+					religion = scope:pessinous_attacker.current_ruler.religion
+					female = no
+					age = adult_character_age_range_svalue
+					save_scope_as = galatian_invasion_60_unit_commander
 				}
-				while = {
-					count = 20
-					add_subunit = chariots
+				create_unit = {
+					navy = no
+					location = scope:galatian_target_scope_3 #p:1941
+					commander = scope:galatian_invasion_60_unit_commander
+					while = {
+						count = 79
+						add_subunit = light_infantry
+					}
+					while = {
+						count = 20
+						add_subunit = chariots
+					}
+					add_food = 50
+					add_morale = 2
 				}
-				add_food = 50
-				add_morale = 2
-			}
-			add_country_modifier = {
-				name = celtic_hordes
-				duration = 730
+				add_country_modifier = {
+					name = celtic_hordes
+					duration = 730
+				}					
 			}
 		}
 
@@ -3438,7 +4081,12 @@ galatian_invasion.63 = { # Special Peace - Tolistobogia
 
 	option = { # Give land and make subject
 		name = galatian_invasion.63.a
-
+		scope:pessinous_defender = {
+			make_subject = {
+				target = scope:pessinous_attacker
+				type = vassal_tribe
+			}
+		}
 		if = {
 			limit = {
 				has_global_variable = phrygian_invasion_flag
@@ -3473,6 +4121,7 @@ galatian_invasion.63 = { # Special Peace - Tolistobogia
 						tag = MAC
 						tag = TRE
 						tag = EGY
+						primary_culture = macedonian
 					}
 				}
 				every_owned_province = {
@@ -3511,24 +4160,15 @@ galatian_invasion.63 = { # Special Peace - Tolistobogia
 			}
 		}
 
-		# scope:pessinous_defender = {
-			# make_subject = {
-				# target = scope:pessinous_attacker
-				# type = vassal_tribe
-			# }
-		# }
-
 		scope:pessinous_attacker = {
-			
 			set_capital = 1941 #synnada
-			
 			trigger_event = {
 				id = galatian_invasion.44 # Move Pops
 				days = 1
 			}
 
 			# trigger_event = {
-				# id = galatian_invasion.38 # Form Galatia
+				# id = galatian_invasion.71 # Form Galatia
 				# days = 10
 			# }
 			# make_subject

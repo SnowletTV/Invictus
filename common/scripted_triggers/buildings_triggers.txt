@@ -1,0 +1,514 @@
+﻿# ----------------------------------------------------------------------------------------------------------------------
+# ANBEELD'S BUILDING RELATIVE CHANCE
+# ----------------------------------------------------------------------------------------------------------------------
+
+# --------------------- #
+# PER-BUILDING TRIGGERS #
+# --------------------- #
+
+# Port
+brc_needs_port = {
+    trigger_if = {
+        limit = {
+            territory_state_has_enough_ports = no
+        }
+        is_best_territory_for_new_port_in_state = yes
+    }
+    trigger_else = {
+        # OR instead of trigger_else_if so they don't block each other in edge cases
+        OR = {
+            AND = {
+                NOT = {
+                    owner = {
+                        has_wanted_num_of_high_tier_ports = {
+                            tier = mega
+                        }
+                    }
+                }
+                is_best_territory_for_high_tier_port = {
+                    tier = mega
+                }
+            }
+            AND = {
+                NOT = {
+                    owner = {
+                        has_wanted_num_of_high_tier_ports = {
+                            tier = giga
+                        }
+                    }
+                }
+                is_best_territory_for_high_tier_port = {
+                    tier = giga
+                }
+            }
+        }
+    }
+}
+brc_wants_port = {
+    has_city_status = yes
+    has_or_is_building_port = no
+}
+
+# Academy
+brc_wants_academy = {
+    num_of_academy_building < 3
+    brc_wants_nobles = yes
+}
+brc_wants_nobles = {
+    OR = {
+        # Capital territory
+        this = owner.capital_scope
+        # Stick to it
+        territory_has_more_than_one_academy = yes
+        # Territory culture can produce nobles
+        is_dominant_territory_culture_rights_equal_to = {
+            pop_type = nobles
+        }
+    }
+}
+territory_has_more_than_one_academy = {
+    num_of_academy_building >= 2
+}
+
+# Court of Law
+brc_wants_court_of_law = {
+    num_of_court_building < 3
+    brc_wants_citizen = yes
+}
+# At first I had countries building Academy over Court in capital region despite any conditions, but for the AI it just
+# doesn't work, Ptolemaic ended up with bunch of Memphite cities filled with 3 Academies but not. a. single. noble.
+brc_wants_citizen = {
+    NOT = {
+        this = owner.capital_scope
+    }
+    OR = {
+        # Stick to it
+        territory_has_more_than_one_court_of_law = yes
+        # Territory culture can produce citizen, but not nobles
+        is_dominant_territory_culture_rights_equal_to = {
+            pop_type = citizen
+        }
+    }
+}
+territory_has_more_than_one_court_of_law = {
+    num_of_court_building >= 2
+}
+
+# Forum
+brc_wants_forum = {
+    num_of_forum_building < 3
+    brc_wants_freemen = yes
+}
+brc_wants_freemen = {
+    NOT = {
+        this = owner.capital_scope
+    }
+    OR = {
+        territory_has_more_than_one_forum = yes # Stick to it
+        AND = {
+            # Territory culture can't produce nobles or citizens
+            is_dominant_territory_culture_rights_freemen_or_lower = yes
+            # No valuable trade goods here
+            NOR = {
+                has_trade_good_of_high_priority = yes
+                has_trade_good_of_extreme_priority = yes
+            }
+        }
+    }
+}
+territory_has_more_than_one_forum = {
+    num_of_forum_building >= 2
+}
+
+# Mill
+brc_wants_mill = {
+    num_of_workshop_building < 3
+    brc_wants_slaves = yes
+}
+brc_wants_slaves = {
+    NOT = {
+        this = owner.capital_scope
+    }
+    OR = {
+        territory_has_more_than_one_mill = yes # Stick to it
+        AND = {
+            # Territory culture can't produce nobles or citizens
+            is_dominant_territory_culture_rights_freemen_or_lower = yes
+            # Has some valuable trade goods here
+            OR = {
+                has_trade_good_of_high_priority = yes
+                has_trade_good_of_extreme_priority = yes
+            }
+        }
+    }
+}
+territory_has_more_than_one_mill = {
+    num_of_workshop_building >= 2
+}
+
+brc_wants_any_ratio_building = {
+    OR = {
+        has_any_city_ratio_building_maxed_out = no # Simple level check first for performance
+        brc_wants_academy = yes
+        brc_wants_court_of_law = yes
+        brc_wants_forum = yes
+        brc_wants_mill = yes
+    }
+}
+
+# ------------------- #
+# SUPPORTING TRIGGERS #
+# ------------------- #
+
+has_trade_good_of_extreme_priority = {
+    OR = {
+        # 0.50
+		trade_goods = gems
+		trade_goods = jade
+        # 0.45
+		trade_goods = myrrh
+		trade_goods = cinnabar
+		trade_goods = lapis
+		trade_goods = silphium
+    }
+}
+
+has_trade_good_of_high_priority = {
+    OR = {
+        # 0.50
+		trade_goods = amber
+		trade_goods = precious_metals
+		trade_goods = sugar
+        # 0.45
+		trade_goods = spices
+		trade_goods = papyrus
+		trade_goods = dye
+		trade_goods = incense
+		trade_goods = silk
+        # 0.40
+        trade_goods = elephants
+        trade_goods = marble
+        trade_goods = honey
+        trade_goods = glass
+    }
+}
+
+has_trade_good_of_medium_priority = {
+    OR = {
+        # 0.35
+		trade_goods = cloth
+		trade_goods = earthware
+		trade_goods = woad
+        # 0.30
+		trade_goods = salt
+		trade_goods = wine
+		trade_goods = cattle
+		trade_goods = dates
+		trade_goods = cedar
+		trade_goods = fruits
+    }
+}
+
+is_territory_of_capital_province = {
+    state = owner.capital_scope.state
+}
+
+is_territory_of_capital_region = {
+    region = owner.capital_scope.region
+}
+
+has_or_is_building_port = {
+    territory_port_level_including_construction > 0
+}
+
+can_build_port = {
+    can_have_port = yes
+    free_building_slots > 0
+}
+
+can_build_new_port = {
+    can_build_port = yes
+    has_or_is_building_port = no
+}
+
+country_has_at_least_one_port_including_construction = {
+    OR = {
+        num_of_ports > 0 # In-built trigger first for performance
+        any_owned_province = {
+            territory_port_level_including_construction > 0
+        }
+    }
+}
+
+territory_state_has_enough_ports = {
+    save_temporary_scope_as = territory
+    OR = {
+        num_of_ports_wanted_in_territory_state = 0
+        state = {
+            any_state_province = {
+                count >= scope:territory.num_of_ports_wanted_in_territory_state
+                territory_port_level_including_construction > 0
+            }
+        }
+    }
+}
+
+territory_state_has_more_than_enough_ports = {
+    save_temporary_scope_as = territory
+    OR = {
+        num_of_ports_wanted_in_territory_state = 0
+        state = {
+            any_state_province = {
+                count > scope:territory.num_of_ports_wanted_in_territory_state
+                territory_port_level_including_construction > 0
+            }
+        }
+    }
+}
+
+is_best_territory_for_new_port_in_state = {
+    territory_port_level_including_construction < 1
+    OR = {
+        has_city_status = yes
+        territory_state_can_build_new_port_elsewhere_in_city = no
+    }
+    OR = {
+        is_territory_with_preference_for_mine_or_farm = no
+        territory_state_can_build_new_port_elsewhere_without_mine_or_farm = no
+    }
+}
+
+territory_state_can_build_new_port_elsewhere_in_city = {
+    save_temporary_scope_as = territory
+    state = {
+        any_state_province = {
+            NOT = {
+                this = scope:territory
+            }
+            has_city_status = yes
+            can_build_new_port = yes
+        }
+    }
+}
+
+territory_state_has_port_elsewhere_with_mine_or_farm = {
+    save_temporary_scope_as = territory
+    state = {
+        any_state_province = {
+            NOT = {
+                this = scope:territory
+            }
+            has_or_is_building_port = yes
+            is_territory_with_preference_for_mine_or_farm = yes
+        }
+    }
+}
+
+territory_state_can_build_new_port_elsewhere_without_mine_or_farm = {
+    save_temporary_scope_as = territory
+    state = {
+        any_state_province = {
+            NOT = {
+                this = scope:territory
+            }
+            can_build_new_port = yes
+            is_territory_with_preference_for_mine_or_farm = no
+        }
+    }
+}
+
+has_wanted_num_of_high_tier_ports = {
+    save_temporary_scope_as = territory_owner
+    OR = {
+        num_of_$tier$_ports_wanted < 1
+        any_owned_province = {
+            count >= scope:territory_owner.num_of_$tier$_ports_wanted
+            is_territory_with_high_tier_port = {
+                tier = $tier$
+            }
+        }
+    }
+}
+
+is_territory_with_high_tier_port = {
+    territory_port_level_including_construction >= owner.level_of_$tier$_port_wanted
+    OR = {
+        port_tier_enum_$tier$ = port_tier_enum_giga
+        territory_port_level_including_construction < owner.level_of_giga_port_wanted
+    }
+}
+
+is_territory_with_high_or_higher_tier_port = {
+    territory_port_level_including_construction >= owner.level_of_$tier$_port_wanted
+}
+
+is_best_territory_for_high_tier_port = {
+    is_eligible_for_building_high_tier_port = {
+        tier = $tier$
+    }
+
+    save_temporary_scope_as = territory
+
+    # Some capital province territory can build required port level, possibly including this one
+    trigger_if = {
+        limit = {
+            owner.capital_scope.state = {
+                any_state_province = {
+                    is_eligible_for_building_high_tier_port = {
+                        tier = $tier$
+                    }
+                }
+            }
+        }
+
+        # Then it must be a territory of capital state
+        is_territory_of_capital_province = yes
+
+        # It should be territory with highest port level and free building slots out of eligible ones
+        NOT = {
+            owner.capital_scope.state = {
+                any_state_province = {
+                    NOT = {
+                        this = scope:territory
+                    }
+                    is_eligible_for_building_high_tier_port = {
+                        tier = $tier$
+                    }
+                    territory_port_level_including_construction > scope:territory.territory_port_level_including_construction
+                    free_building_slots > scope:territory.free_building_slots
+                }
+            }
+        }
+    }
+
+    # Some capital region territory can build required port level, possibly including this one
+    trigger_else_if = {
+        limit = {
+            owner = {
+                capital_scope.state.region = {
+                    any_region_province = {
+                        is_eligible_for_building_high_tier_port = {
+                            tier = $tier$
+                        }
+                    }
+                }
+            }
+        }
+
+        # Then it must be a territory of capital region
+        is_territory_of_capital_region = yes
+
+        # It should be territory with highest port level and free building slots out of eligible ones
+        NOT = {
+            owner.capital_scope.state.region = {
+                any_region_province = {
+                    NOT = {
+                        this = scope:territory
+                    }
+                    is_eligible_for_building_high_tier_port = {
+                        tier = $tier$
+                    }
+                    territory_port_level_including_construction > scope:territory.territory_port_level_including_construction
+                    free_building_slots > scope:territory.free_building_slots
+                }
+            }
+        }
+    }
+
+    # Otherwise build just in any territory with highest port level and free building slots in the country
+    trigger_else = {
+        NOT = {
+            owner = {
+                any_owned_province = {
+                    NOT = {
+                        this = scope:territory
+                    }
+                    is_eligible_for_building_high_tier_port = {
+                        tier = $tier$
+                    }
+                    territory_port_level_including_construction > scope:territory.territory_port_level_including_construction
+                    free_building_slots > scope:territory.free_building_slots
+                }
+            }
+        }
+    }
+}
+
+is_eligible_for_building_high_tier_port = {
+    can_have_port = yes
+    # Enough building slots for wanted levels
+    free_building_slots >= port_levels_to_$tier$_tier
+    # Is not port of this or higher tier already
+    NOT = {
+        is_territory_with_high_or_higher_tier_port = {
+            tier = $tier$
+        }
+    }
+}
+
+has_any_city_ratio_building_maxed_out = {
+    OR = {
+        num_of_academy_building >= 3
+        num_of_court_building >= 3
+        num_of_forum_building >= 3
+        num_of_workshop_building >= 3
+    }
+}
+
+is_territory_with_preference_for_mine_or_farm = {
+    has_city_status = no
+    num_of_total_building_slots < 2
+    OR = {
+        has_minable_trade_good_trigger = yes
+        has_food_trade_good_trigger = yes
+    }
+}
+
+is_dominant_territory_culture_integrated = {
+    save_temporary_scope_as = territory
+    owner = {
+        any_country_culture = {
+            is_integrated = yes
+            culture = {
+                scope:territory = {
+                    dominant_province_culture = prev
+                }
+            }
+        }
+    }
+}
+
+is_dominant_territory_culture_rights_freemen_or_lower = {
+    save_temporary_scope_as = territory
+    owner = {
+        any_country_culture = {
+            OR = {
+                has_pop_type_right = freemen
+                is_integrated = no
+            }
+            culture = {
+                scope:territory = {
+                    dominant_province_culture = prev
+                }
+            }
+        }
+    }
+}
+
+is_dominant_territory_culture_rights_equal_to = {
+    save_temporary_scope_as = territory
+    owner = {
+        any_country_culture = {
+            has_pop_type_right = $pop_type$
+            culture = {
+                scope:territory = {
+                    dominant_province_culture = prev
+                }
+            }
+        }
+    }
+}
+
+is_dominant_territory_religion_same_as_country = {
+    dominant_province_religion = owner.religion
+}

@@ -1,4 +1,5 @@
 ﻿country_decisions = {
+
 	cyr_control_grazing = {
 		potential = {
 			num_of_cities >= 1
@@ -8,10 +9,12 @@
 		}
 
 		highlight = {
-			OR = {
-				is_in_area = cyrenaica_superioris_area
-				is_in_area = cyrenaica_inferioris_area
-			}		
+			scope:province = {
+				OR = {
+					is_in_area = cyrenaica_superioris_area
+					is_in_area = cyrenaica_inferioris_area
+				}	
+			}	
 		}
 
 		allow = {
@@ -208,16 +211,19 @@
 		}
 
 		allow = {
-			any_country = {
-				any_subject = {
-					tag = DEL
-					owns = p:454
-				}    
-	            has_opinion = {
-	                modifier = opinion_insult 
-	                target = ROOT
-	            }
-			}			
+			custom_tooltip = {
+				text = "cyr_wooing_DEL_insult.tt"
+				any_country = {
+					any_subject = {
+						tag = DEL
+						owns = p:454
+					}    
+					has_opinion = {
+						modifier = opinion_insult 
+						target = ROOT
+					}
+				}	
+			}		
 		}
 
 		effect = {
@@ -624,5 +630,503 @@
 			base = 1
 		}
 	}
+	
+	cyr_area_to_secure = {
+		potential = {
+			has_variable = cyr_egy_path_var
+			num_of_cities >= 1
+			has_variable = cyr_contest_area 
+			any_country = {
+				tag = EGY
+				any_country_state = {
+					count > 1
+				}
+			}
+			any_area = {
+				any_area_province = {
+					NOT = { is_in_area = c:EGY.capital_scope }
+					owner = c:EGY
+					any_unit_in_province = { 
+						unit_owner = ROOT
+					}
+					NOT = { has_province_modifier = cyr_secured_area }
+				}
+			}
+		}
+
+		allow = {
+			NOT = {
+				has_variable = cyr_area_to_secure_cooldown_var
+			}
+		}
+
+		effect = {
+			custom_tooltip = "cyr_area_to_secure.tt"
+			trigger_event = {
+				id = cyr_magas_01.34
+			}
+		}
+	}
+	
+	
+	
+	cyr_steal_money = {
+		potential = {
+			has_variable = cyr_timer_t
+			has_civil_war = no
+			c:EGY = { treasury > 100 }
+		}
+
+		allow = {
+			political_influence >= 10
+			tyranny < 90
+			NOT = {
+				has_variable = cyr_gold_cooldown_var
+			}
+		}
+
+		effect = { 
+			add_political_influence = -10
+			add_tyranny = 10
+			add_treasury = 100
+			c:EGY = {
+				add_treasury = -100			
+			}
+			custom_tooltip = "cyr_steal_money_tt"
+			change_variable = {
+				name = cyr_timer
+				subtract = 30
+			}
+			set_variable = {
+				name = cyr_gold_cooldown_var
+				days = 60
+			}			
+		}
+	}
+	
+	cyr_entice_troop_defection = {
+		potential = {
+			has_variable = cyr_timer_t
+			has_civil_war = no
+		}
+
+		allow = {
+			treasury >= 50
+			NOT = {
+				has_variable = cyr_troop_cooldown_var
+			}
+		}
+
+		effect = { 
+			add_treasury = -50
+			cyr_defection_small_effect = yes
+			cyr_coup_support_small_effect = yes
+			custom_tooltip = "cyr_entice_troop_defection_tt"
+			change_variable = {
+				name = cyr_timer
+				subtract = 30
+			}
+			set_variable = {
+				name = cyr_troop_cooldown_var
+				days = 60
+			}	
+		}
+	}
+	
+	cyr_entice_char_defection = {
+		potential = {
+			has_variable = cyr_timer_t
+			has_civil_war = no			
+		}
+
+		allow = {
+			treasury >= 50
+			NOT = {
+				has_variable = cyr_char_cooldown_var
+			}
+		}
+
+		effect = { 
+			add_treasury = -50
+			cyr_coup_support_small_effect = yes
+			random_living_character = {
+				limit = {
+					has_any_office = yes
+					employer = c:EGY
+					is_ruler = no
+					from_ruler_family = no
+				}
+				add_to_list = cyr_to_defect_list
+			}
+			set_variable = {
+				name = cyr_char_cooldown_var
+				days = 60
+			}	
+		}
+	}
+	
+	cyr_blackmail_char = {
+		potential = {
+			has_variable = cyr_timer_t
+			OR = {
+				var:cyr_timer <= 800
+				current_ruler = char:45
+			}
+		}
+
+		allow = {
+			tyranny < 90
+			NOT = {
+				has_variable = cyr_char_cooldown_var
+			}
+		}
+
+		effect = { 
+			add_tyranny = 10
+			cyr_coup_support_small_effect = yes
+			random_living_character = {
+				limit = {
+					has_any_office = yes
+					employer = c:EGY
+					is_ruler = no
+					from_ruler_family = no
+				}
+				add_to_list = cyr_to_defect_list
+			}
+			set_variable = {
+				name = cyr_char_cooldown_var
+				days = 60
+			}
+		}
+	}
+
+	cyr_distribute_bribes = {
+		potential = {
+			has_variable = cyr_egy_path_var
+			has_civil_war = no
+			OR = {
+				current_ruler = {
+					this = char:45
+				}
+				c:EGY = {has_land = no}
+			}
+		}
+
+		allow = {
+			treasury > 25
+			NOT = {
+				has_variable = cyr_bribe_cooldown_var
+			}
+		}
+
+		effect = { 
+			add_legitimacy = 2
+			add_treasury = -25
+			cyr_coup_support_small_effect = yes
+			set_variable = {
+				name = cyr_bribe_cooldown_var
+				days = 60
+			}
+		}
+	}
+	
+	cyr_prolong_war = {
+		potential = {
+			has_civil_war = no	
+			has_variable = cyr_timer_t
+		}
+
+		allow = {
+			political_influence >= 25
+			NOT = {
+				has_variable = cyr_prolong_cooldown_var
+			}
+		}
+
+		effect = { 
+			custom_tooltip = "cyr_prolong_war.tt"
+			add_political_influence = -25
+			change_variable = {
+				name = cyr_timer
+				add = 30
+			}
+			set_variable = {
+				name = cyr_prolong_cooldown_var
+				days = 90
+			}
+		}
+	}
+	
+	cyr_appeal_kush = {
+		potential = {
+			tag = CYR
+			exists = c:KSH	
+			has_variable = cyr_egy_path_var
+			NOT = { has_variable = cyr_asked_kush }
+			NOT = { has_variable = cyr_asked_sel }
+			war = yes
+			any_current_war = {
+				any_war_participant = {
+					has_variable = cyr_allow_help
+				}
+			}
+		}
+
+		allow = { always = yes }
+
+		effect = { 
+			add_legitimacy = -15
+			custom_tooltip = "cyr_appeal_kush_tt"
+			c:KSH = {
+				trigger_event = { #event asking for Kush joining the war
+					id = cyr_magas_01.42
+					days = 7
+				}
+			}
+			set_variable = {
+				name = cyr_asked_kush
+				days = -1
+			}
+		}
+	}
+
+	cyr_ask_sel = {
+		potential = {
+			tag = CYR
+			has_variable = cyr_egy_path_var
+			NOT = { has_variable = cyr_asked_kush }
+			NOT = { has_variable = cyr_asked_sel }
+			war = yes
+			any_current_war = {
+				any_war_participant = {
+					has_variable = cyr_allow_help
+				}
+			}
+		}
+
+		allow = { always = yes }
+
+		effect = {
+			add_legitimacy = -15
+			custom_tooltip = "cyr_ask_sel.tt"
+			c:SEL = {
+				trigger_event = { #event asking for Kush joining the war
+					id = cyr_magas_01.43
+					days = 7
+				}
+			}
+			set_variable = {
+				name = cyr_asked_sel
+				days = -1
+			}
+		}
+	}
+	
+	cyr_winwar = {
+		potential = {
+			tag = CYR
+			has_variable = cyr_cyr_path_var
+			NOT = { has_variable = cyr_asked_egy }
+			any_current_war = {
+				any_war_participant = {
+					this = c:EGY
+				}
+			}
+		}
+
+		allow = { 
+			any_current_war = {
+				is_war_leader = ROOT
+				war_score = {
+					target = ROOT
+					value >= 25
+				}
+			}
+		}
+
+		effect = {
+			remove_variable = cyr_cyr_path_var
+			custom_tooltip = "cyr_winwar.tt"
+			c:EGY = {
+				trigger_event = { #event asking EGY to give white peace
+					id = cyr_magas_01.46
+					days = 7
+				}
+			}
+			set_variable = {
+				name = cyr_asked_egy
+				days = -1
+			}
+		}
+	}
+	
+	cyr_thera_more_pops = {
+		potential = {
+			num_of_cities >= 1
+			OR = {
+				has_completed_mission_task = cyrene_1_thera_task_6
+				has_completed_mission_task = cyrene_1_thera_task_7
+			}
+			NOT = { has_completed_mission_task = cyrene_1_thera_task_8 }
+			p:454.owner = {
+				tag = CYR
+			}
+		}
+
+		allow = {
+			p:454 = {
+				total_population < 21
+	        }
+		}
+
+		effect = {
+			custom_tooltip = "cyr_thera_more_pops.tt"
+            p:454 = {
+                while = {
+                    limit = {
+						total_population < 21
+					}
+					random_province = {   
+						limit = {
+							owner = c:CYR
+							any_pops_in_province = {
+								pop_type = slaves
+							}
+						}
+						random_pops_in_province = {     
+							limit = {
+								pop_type = slaves
+							}
+							move_pop = p:454
+						}
+					}
+					c:CYR = { add_treasury = -8 }
+                }
+            }
+		}
+
+		ai_will_do = {
+			base = 1
+		}
+	}
+
+	cyr_car_subj_decision = {
+		potential = {
+			has_land = yes
+			has_variable = cyr_car_conquest
+			war = yes
+		}
+		
+		allow = {
+			AND = {
+				war = yes
+				any_country = {
+					war_with = ROOT
+					is_subject = yes
+					capital_scope = { controller = ROOT }
+				}
+			}
+		}
+
+		effect = {
+			random_country = {
+				limit = {
+					AND = {
+						war_with = ROOT
+						is_subject_of = c:CAR
+						capital_scope = { controller = ROOT }
+					}
+				}
+				every_owned_province = { set_owned_by = ROOT }
+				every_country_treasure = { transfer_treasure_to_country = ROOT }
+				every_character = {
+					death = {
+						death_reason = death_obscurity
+					}
+				}
+			}
+			add_aggressive_expansion = 4
+		}
+		
+		ai_will_do = {
+			base = 1
+		}
+	}
+	
+	cyr_roads_decision = {
+		potential = {
+			has_land = yes
+			has_completed_mission_task = cyrene_1_intoegypt_task_2
+			NOT = { has_completed_mission_task = cyrene_1_intoegypt_task_3 }
+			civic_tech < 5
+			NOT = {
+				p:3366 = {
+					has_road_towards = 3367
+				}
+			}
+		}
+		
+		allow = { 
+			treasury > 200 
+			owns_or_subject_owns_area = marmarica_occidentalis_area
+			owns_or_subject_owns_area = marmarica_orientalis_area
+		}
+		
+		effect = {
+			add_treasury = -200
+			p:3366 = { add_road_towards = p:3367 }
+			p:3367 = { add_road_towards = p:3368 }
+			p:3368 = { add_road_towards = p:3369 }
+			p:3369 = { add_road_towards = p:3370 }
+			p:3370 = { add_road_towards = p:3371 }
+			p:3371 = { add_road_towards = p:3372 }
+			p:3372 = { add_road_towards = p:3373 }
+			p:3373 = { add_road_towards = p:3374 }
+			p:3374 = { add_road_towards = p:3375 }
+			p:3375 = { add_road_towards = p:3376 }
+			p:3376 = { add_road_towards = p:3377 }
+			p:3377 = { add_road_towards = p:3378 }
+		}
+	}
+	
+
+#	cyr_renegotiate_terms_ksh = {
+#		potential = {
+#			has_variable = cyr_appealed_kush
+#		}
+#		
+#		allow = {
+#			legitimacy > 90
+#		}
+#
+#		effect = {
+#			c:KSH = {
+#				trigger_event = {
+#					name = cyr_magas_01.46
+#					days = 3
+#				}
+#			}
+#		}
+#	}
+#	
+#	cyr_renegotiate_terms_diadochos = {
+#		potential = {
+#			has_variable = cyr_appealed_diadochi
+#		}
+#		
+#		allow = {
+#			legitimacy > 90
+#		}
+#
+#		effect = {
+#			scope:diadochos_scope = {
+#				trigger_event = {
+#					name = cyr_magas_01.47
+#					days = 3
+#				}
+#			}
+#		}
+#	}
+	
 }
 

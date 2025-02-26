@@ -16,57 +16,88 @@ brc_port = {
     # Don't build and delete if exists
     if = {
         limit = {
+            # State borders change very rapidly in the first years
+            current_date >= 460.1.1
+            # Don't delete anything while at war
+            owner = {
+                war = no
+            }
+            # Don't ever delete the last port we have country wide
             OR = {
-                # Can build mine or farm, has some other territory to build port in or it's not needed
-                AND = {
-                    is_territory_with_preference_for_mine_or_farm = yes
-                    OR = {
-                        province_of_territory_should_have_port = no
-                        any_other_non_important_territory_in_same_province_has_or_can_build_port = yes
-                    }
-                }
-                # Is not a city, some other territory in the province already has the port that we don't plan to delete
+                owner.num_of_ports > 1
+                num_of_port_building > 1
+            }
+            OR = {
+                # Handle non-city territories where state has too much ports
                 AND = {
                     has_city_status = no
-                    any_other_non_important_territory_in_same_province_has_port = yes
+                    # If mine or farm, delete if more than enough ports or can build it somewhere without mine or farm
+                    trigger_if = {
+                        limit = {
+                            is_territory_with_preference_for_mine_or_farm = yes
+                        }
+                        OR = {
+                            territory_state_has_more_than_enough_ports = yes
+                            territory_state_can_build_new_port_elsewhere_without_mine_or_farm = yes
+                        }
+                    }
+                    # If not, delete if more than enough ports and there's no mine or farm that wants it port deleted
+                    trigger_else = {
+                        territory_state_has_more_than_enough_ports = yes
+                        territory_state_has_port_elsewhere_with_mine_or_farm = no
+                    }
+                }
+                # Tier >=2 ports in countries that don't want any mega ports
+                AND = {
+                    territory_port_level_including_construction >= 2
+                    owner = {
+                        num_of_mega_ports_wanted = 0
+                        num_of_giga_ports_wanted = 0
+                    }
+                }
+                # Tier 2 ports that won't turn mega anytime soon but are taking up building slots
+                AND = {
+                    territory_port_level_including_construction = 2
+                    owner = {
+                        has_wanted_num_of_high_tier_ports = {
+                            tier = mega
+                        }
+                        has_wanted_num_of_high_tier_ports = {
+                            tier = giga
+                        }
+                    }
+                }
+                # Tier 4 ports that won't turn giga anytime soon but are taking up building slots
+                AND = {
+                    territory_port_level_including_construction = 4
+                    owner = {
+                        has_wanted_num_of_high_tier_ports = {
+                            tier = giga
+                        }
+                    }
                 }
             }
         }
         value = -1
     }
-    # Don't build
-    else_if = {
-        limit = {
-            has_city_status = yes
-            has_port = yes
-            has_any_city_ratio_building_maxed_out = no
-            is_best_territory_for_largest_port = no
-        }
-        value = 0
-    }
     # Build... unless?
     else = {
-        value = brc_territory_importance
         if = {
             limit = {
                 brc_needs_port = yes
             }
+            value = brc_territory_importance
             multiply = brc_100
         }
         else_if = {
             limit = {
                 brc_wants_port = yes
             }
-            multiply = brc_40
-        }
-        else_if = {
-            limit = {
-                has_city_status = yes
-            }
-            multiply = brc_15
+            value = brc_territory_importance
+            multiply = brc_80
         }
         else = {
-            multiply = 0
+            value = 0
         }
     }
 }
@@ -75,6 +106,10 @@ brc_barracks = {
     # Don't build and delete if exists
     if = {
         limit = {
+            # Don't delete anything while at war
+            owner = {
+                war = no
+            }
             is_territory_with_preference_for_mine_or_farm = yes
         }
         value = -1
@@ -176,7 +211,16 @@ brc_temple = {
 }
 
 brc_granary = {
-    value = 0
+    if = {
+        limit = {
+            num_of_population_building < level_of_granary_wanted
+        }
+        value = brc_territory_importance
+        multiply = brc_75
+    }
+    else = {
+        value = 0
+    }
 }
 
 brc_theatre = {
@@ -203,7 +247,10 @@ brc_library = {
         value = brc_territory_importance
         if = {
             limit = {
-                territory_has_more_than_one_academy = yes
+                OR = {
+                    territory_has_more_than_one_academy = yes
+                    territory_has_more_than_one_court_of_law = yes
+                }
             }
             multiply = brc_35
         }
@@ -226,25 +273,20 @@ brc_academy = {
     }
 }
 
+# If many nobles set to base value of its siblings, otherwise never build
 brc_commerce = {
     if = {
         limit = {
-            brc_wants_any_ratio_building = yes
+            OR = {
+                brc_wants_any_ratio_building = yes
+                territory_has_more_than_one_academy = no
+            }
         }
         value = 0
     }
-    # If many nobles set to base value of its siblings, otherwise never build
     else = {
         value = brc_territory_importance
-        if = {
-            limit = {
-                territory_has_more_than_one_academy = yes
-            }
-            multiply = brc_25
-        }
-        else = {
-            multiply = 0
-        }
+        multiply = brc_25
     }
 }
 
@@ -333,6 +375,10 @@ brc_latifundia = {
     # Don't build and delete if exists
     if = {
         limit = {
+            # Don't delete anything while at war
+            owner = {
+                war = no
+            }
             # Can build mine or farm
             is_territory_with_preference_for_mine_or_farm = yes
         }
@@ -419,13 +465,16 @@ brc_hill_fort = {
     # Don't build and delete if exists
     if = {
         limit = {
+            # Don't delete anything while at war
+            owner = {
+                war = no
+            }
             OR = {
                 # Can build mine or farm
 			    is_territory_with_preference_for_mine_or_farm = yes
-                # Very few tribesmen
-                any_pops_in_province = {
-                    percent < 0.25
-                    pop_type = tribesmen
+                # Not tribal
+                owner = {
+                    is_tribal = no
                 }
             }
         }
@@ -466,17 +515,16 @@ brc_territory_importance = {
     }
 }
 
-num_of_owned_territories_in_same_province = {
+num_of_territories_in_state = {
     value = 0
-    state = {
-        every_state_province = {
-            limit = {
-                exists = owner
-                owner = root.owner
-            }
-            add = 1
-        }
+    every_state_province = {
+        add = 1
     }
+}
+
+num_of_territories_in_same_state = {
+    value = 0
+    add = state.num_of_territories_in_state
 }
 
 population_cap_minus_3 = {
@@ -485,28 +533,80 @@ population_cap_minus_3 = {
 }
 
 territory_port_level_including_construction = {
-    value = num_of_port_building
     if = {
         limit = {
-            has_specific_construction = port_building
+            can_have_port = no
         }
-        add = 1
+        value = 0
+    }
+    else = {
+        value = num_of_port_building
+        if = {
+            limit = {
+                has_specific_construction = port_building
+            }
+            add = 1
+        }
     }
 }
 
-level_of_largest_port_wanted = {
+num_of_ports_wanted_in_territory_state = {
+    value = 0
+    if = {
+        limit = {
+            save_temporary_scope_as = territory
+            OR = {
+                num_of_territories_in_same_state >= 5
+                # Country has no ports and there's no state where we can build one by the usual rules
+                owner = {
+                    country_has_at_least_one_port_including_construction = no
+                    NOT = {
+                        any_country_state = {
+                            num_of_territories_in_state >= 5
+                            any_state_province = {
+                                can_build_port = yes
+                            }
+                        }
+                    }
+                }
+                # No nearby state of same owner with port, should connect to mainland by water
+                NOT = {
+                    area = {
+                        any_neighbor_area = {
+                            any_area_province = {
+                                owner = scope:territory.owner
+                                has_or_is_building_port = yes
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        add = 1
+        # +1 in big states where at least 50% of territories can have port
+        if = {
+            limit = {
+                num_of_territories_in_same_state >= 10
+                state = {
+                    any_state_province = {
+                        percent >= 0.50
+                        can_have_port = yes
+                    }
+                }
+            }
+            add = 1
+        }
+    }
+}
+
+level_of_giga_port_wanted = 5
+
+num_of_giga_ports_wanted = {
+    value = 0
     if = {
         limit = {
             rank >= regional_power
             OR = {
-                num_of_unit_type = {
-                    type = octere
-                    value >= 0
-                }
-                num_of_unit_type = {
-                    type = mega_galley
-                    value >= 0
-                }
                 # Military traditions that unlock Octere
                 has_military_bonus = nubian_path_13
                 has_military_bonus = lydian_path_12
@@ -519,23 +619,102 @@ level_of_largest_port_wanted = {
                 has_military_bonus = greek_states_path_5
                 has_military_bonus = levantine_egyptian_path_2
             }
+
+            # Removed due to performance concerns, reintroduce if there's a cheap way to do so
+            # OR = {
+            #     num_of_unit_type = {
+            #         type = octere
+            #         value > 0
+            #     }
+            #     num_of_unit_type = {
+            #         type = mega_galley
+            #         value > 0
+            #     }
+            # }
         }
-        value = 5
-    }
-    else = {
-        value = 1
+        add = 1
         if = {
             limit = {
-                rank >= major_power
+                rank >= great_power
             }
-            add = 2
+            add = 1
         }
     }
 }
 
-port_levels_to_largest_wanted = {
-    value = owner.level_of_largest_port_wanted
+level_of_mega_port_wanted = 3
+
+num_of_mega_ports_wanted = {
+    value = 0
+
+    # 1 per every 35 coastal territories
+    every_owned_province = {
+        limit = {
+            OR = {
+                is_coastal = yes
+                can_have_port = yes
+            }
+        }
+        add = 1
+    }
+    divide = 35
+    floor = yes
+
+    # Base value depending on rank so they always want at least some
+    if = {
+        limit = {
+            rank >= regional_power
+
+            # Removed due to performance concerns, reintroduce if there's a cheap way to do so
+            # OR = {
+            #     num_of_unit_type = {
+            #         type = tetrere
+            #         value > 0
+            #     }
+            #     num_of_unit_type = {
+            #         type = hexere
+            #         value > 0
+            #     }
+            # }
+        }
+        add = 1
+        if = {
+            limit = {
+                rank >= major_power
+            }
+            add = 1
+            if = {
+                limit = {
+                    rank >= great_power
+                }
+                add = 1
+            }
+        }
+    }
+
+    # Num of high tier ports is shared with giga
+    subtract = num_of_giga_ports_wanted
+    min = 0
+}
+
+port_levels_to_giga_tier = {
+    value = owner.level_of_giga_port_wanted
     subtract = territory_port_level_including_construction
+}
+
+port_levels_to_mega_tier = {
+    value = owner.level_of_mega_port_wanted
+    subtract = territory_port_level_including_construction
+}
+
+port_tier_enum_mega = 1
+port_tier_enum_giga = 2
+
+# 1 per every 40 pops - better to sync with 10s, so after reaching threshold AI could instantly build it using new slot
+level_of_granary_wanted = {
+    value = total_population
+    divide = 40
+    floor = yes
 }
 
 # ----------------------------------------------------------------------------------------------------------------------

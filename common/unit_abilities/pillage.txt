@@ -1,0 +1,134 @@
+﻿pillage = {
+
+	duration = 0
+	enable = yes
+	toggle = no
+	army_only = yes
+	
+	map = yes
+
+	hidden = {
+		NOT  ={
+			unit_owner = { 
+				government = tribal_chiefdom 
+			}
+		}
+	}
+	
+	allow = {
+		is_army = yes
+		in_combat = no
+		is_moving = no
+		in_siege = no
+		is_exiled = no
+		hidden:unit_location = {
+			has_owner = yes
+			civilization_value > 20
+			total_population > 0
+			OR = {
+				has_city_status = yes
+				is_state_capital = yes
+			}
+		}
+		NOR = {
+			hidden:unit_location = { 
+				has_province_modifier = province_pillaged
+			}
+			hidden:unit_location = { 
+				has_province_modifier = province_razed_ua
+			}
+			hidden:unit_location = { 
+				owner = root.unit_owner 
+			}
+		}
+		trigger_if = {
+			limit = {
+				exists = commander
+			}
+			commander = {
+				loyalty > 33
+			}
+		}
+		trigger_if = {
+			limit = {
+				unit_location = {
+					exists = owner
+					NOT = { owner = root.unit_owner }
+					fort_level >= 1
+				}
+			}
+			unit_location.controller = root.unit_owner
+		}
+	}
+	
+	start_effect = {
+		unit_location = {
+			if = {
+				limit = {
+					exists = owner
+				}
+				owner = {
+					if = {
+						limit = {
+							NOT = {
+								war_with = root.unit_owner
+							}
+						}
+						if = {
+							limit = {
+								opinion = {
+									target = root.unit_owner
+									value < -100
+								}
+							}
+							root.unit_owner = {
+								declare_war_with_wargoal = {
+									war_goal = raiding_wargoal
+									target = prev
+								}
+							}
+						} 
+					}
+				}
+				root = {
+					unit_owner = {
+						add_political_influence = {
+							value = root.unit_location.total_population
+							multiply = root.unit_location.civilization_value
+							divide = 80
+							floor = 1
+							min = 1
+						}
+						add_treasury = {
+							value = {
+								value = root.unit_location.total_population
+								max = root.unit_size
+							}
+							multiply = 2.4
+						}
+					}
+					unit_location = {
+						add_province_modifier = {
+							name = province_pillaged
+							duration = 1825
+						}
+					}
+					unit_location = {
+						add_city_smoke_effect = yes
+					}
+					unit_location.owner = {
+						add_opinion = {
+							modifier = opinion_we_pillaged_them
+							target = root.unit_owner
+						}
+					}
+				}
+			}
+		}
+		unit_owner = {
+			
+		}
+	}
+	
+	idle_entity_state = raiding
+}

@@ -3,73 +3,99 @@
         limit = {
             is_ai = yes
             war = no
-            can_pay_price = enact_law
-            NOT = {
-                has_variable = ai_recently_enacted_law # Cooldown for law enacting
-            }
         }
 
-        # Pay price to judge law enacting importance based on what will remain. Price is refunded if no law is enacted.
-        pay_price = enact_law
-        set_local_variable = {
-            name = enacted_law
-            value = 0
-        }
-
-        # Choose some law to enact based on government type
+        # Use political influence stored for future law enacting if the country has it
         if = {
             limit = {
-                is_tribal = yes
+                has_variable = stored_pi_to_enact_law
             }
-            ai_choose_and_enact_law_by_government = {
-                type = tribal
-            }
+            add_political_influence = 35
+            remove_variable = stored_pi_to_enact_law
         }
-        else_if = {
+
+        if = {
             limit = {
-                is_monarchy = yes
+                can_pay_price = enact_law
+                NOT = {
+                    has_variable = ai_recently_enacted_law # Cooldown for law enacting
+                }
             }
-            ai_choose_and_enact_law_by_government = {
-                type = monarchy
+
+            # Pay price to judge law enacting importance based on what will remain, refund later if no law is enacted
+            pay_price = enact_law
+            set_local_variable = {
+                name = enacted_law
+                value = 0
             }
-        }
-        else_if = {
-            limit = {
-                is_republic = yes
-            }
+
+            # Choose some law to enact based on government type
             if = {
                 limit = {
-                    tag = ROM
+                    is_tribal = yes
                 }
                 ai_choose_and_enact_law_by_government = {
-                    type = republic_rome
+                    type = tribal
                 }
             }
             else_if = {
                 limit = {
-                    tag = CAR
+                    is_monarchy = yes
                 }
                 ai_choose_and_enact_law_by_government = {
-                    type = republic_carthage
+                    type = monarchy
                 }
             }
-            else = {
-                ai_choose_and_enact_law_by_government = {
-                    type = republic
+            else_if = {
+                limit = {
+                    is_republic = yes
+                }
+                if = {
+                    limit = {
+                        tag = ROM
+                    }
+                    ai_choose_and_enact_law_by_government = {
+                        type = republic_rome
+                    }
+                }
+                else_if = {
+                    limit = {
+                        tag = CAR
+                    }
+                    ai_choose_and_enact_law_by_government = {
+                        type = republic_carthage
+                    }
+                }
+                else = {
+                    ai_choose_and_enact_law_by_government = {
+                        type = republic
+                    }
                 }
             }
+
+            # If no law was found worthy to be enacted, refund the price
+            if = {
+                limit = {
+                    local_var:enacted_law = 0
+                }
+                refund_price = enact_law
+            }
+
+            # Garbage collection
+            remove_local_variable = enacted_law
         }
 
-        # If no law was found worthy to be enacted, refund the price
+        # Store political influence for future law enacting if can and hasn't yet
         if = {
             limit = {
-                local_var:enacted_law = 0
+                NOT = {
+                    has_variable = stored_pi_to_enact_law
+                }
+                political_influence >= 35
             }
-            refund_price = enact_law
+            add_political_influence = -35
+            set_variable = stored_pi_to_enact_law
         }
-
-        # Garbage collection
-        remove_local_variable = enacted_law
     }
 }
 

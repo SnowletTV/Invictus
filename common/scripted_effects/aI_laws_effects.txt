@@ -32,6 +32,21 @@
                 value = 0
             }
 
+            # Perform levy calculations once and save the result to local variables for better performance
+            if = {
+                # Triggers might require adjustment in the future if law enacting logic will be changed
+                limit = {
+                    # Only these government types use levy calculations
+                    OR = {
+                        is_monarchy = yes
+                        is_republic = yes
+                    }
+                    # Only these law priorities use levy calculations
+                    ai_should_enact_law_high_priority = yes
+                }
+                save_levy_population_to_local_variables = yes
+            }
+
             # Choose some law to enact based on government type
             if = {
                 limit = {
@@ -86,6 +101,8 @@
 
             # Garbage collection
             remove_local_variable = enacted_law
+            remove_local_variable = country_levy_population
+            remove_local_variable = capital_region_levy_population
         }
 
         # Store political influence for future law enacting if can and hasn't yet
@@ -99,6 +116,45 @@
             add_political_influence = -35
             set_variable = stored_pi_to_enact_law
         }
+    }
+}
+
+save_levy_population_to_local_variables = {
+    set_local_variable = {
+        name = country_levy_population
+        value = 0
+    }
+    set_local_variable = {
+        name = capital_region_levy_population
+        value = 0
+    }
+    every_owned_province = {
+        # Calculate once and save to local variable
+        set_local_variable = {
+            name = territory_levy_population
+            value = territory_levy_population
+        }
+        # Add to country levy population
+        owner = {
+            change_local_variable = {
+                name = country_levy_population
+                add = local_var:territory_levy_population 
+            }
+        }
+        # Add to capital region levy population if it's that
+        if = {
+            limit = {
+                region = owner.capital_scope.region
+            }
+            owner = {
+                change_local_variable = {
+                    name = capital_region_levy_population
+                    add = local_var:territory_levy_population 
+                }
+            }
+        }
+        # Garbage collection
+        remove_local_variable = territory_levy_population
     }
 }
 

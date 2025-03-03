@@ -23,32 +23,133 @@
 }
 
 country_levy_population = {
-    value = 0
-    every_owned_province = {
-        add = territory_levy_population
+    if = {
+        limit = {
+            has_local_variable = country_levy_population
+        }
+        value = local_var:country_levy_population
+        min = 0
+    }
+    else = {
+        value = 0
+        every_owned_province = {
+            add = territory_levy_population
+        }
     }
 }
 
 capital_region_levy_population = {
-    value = 0
-    every_owned_province = {
+    if = {
         limit = {
-            region = owner.capital_scope.region
+            has_local_variable = capital_region_levy_population
         }
-        add = territory_levy_population
+        value = local_var:capital_region_levy_population
+        min = 0
+    }
+    else = {
+        value = 0
+        every_owned_province = {
+            limit = {
+                region = owner.capital_scope.region
+            }
+            add = territory_levy_population
+        }
     }
 }
 
 non_capital_regions_levy_population = {
-    value = 0
-    every_owned_province = {
+    if = {
         limit = {
-            NOT = {
-                region = owner.capital_scope.region
-            }
+            has_local_variable = country_levy_population
+            has_local_variable = capital_region_levy_population
         }
-        add = territory_levy_population
+        value = local_var:country_levy_population
+        subtract = local_var:capital_region_levy_population
+        min = 0
     }
+    else = {
+        value = 0
+        every_owned_province = {
+            limit = {
+                NOT = {
+                    region = owner.capital_scope.region
+                }
+            }
+            add = territory_levy_population
+        }
+    }
+}
+
+# This is stability that must remain after paying law enacting price, note that 7 zeal ruler subtracts ~2.5 stability
+ai_stability_for_extreme_priority_law = {
+    value = 32.5
+    subtract = ai_stability_for_law_from_modifiers
+}
+ai_stability_for_high_priority_law = {
+    value = 37.5
+    subtract = ai_stability_for_law_from_modifiers
+}
+ai_stability_for_medium_priority_law = {
+    value = 42.5
+    subtract = ai_stability_for_law_from_modifiers
+}
+ai_stability_for_low_priority_law = {
+    value = 47.5
+    subtract = ai_stability_for_law_from_modifiers
+}
+
+ai_stability_for_law_from_modifiers = {
+    value = 0
+    if = {
+        limit = {
+            exists = current_ruler
+        }
+        add = {
+            if = {
+                limit = {
+					any_character = {
+						is_co_ruler = yes
+                        zeal > prev.current_ruler.zeal
+                    }
+                }
+                ordered_character = {
+                    limit = {
+                        is_co_ruler = yes
+                    }
+                    order_by = zeal
+                    position = 0
+                    value = zeal
+                }
+            }
+            else_if = {
+                limit = {
+                    exists = consort
+                    consort.zeal > current_ruler.zeal
+                }
+                value = consort.zeal
+            }
+            else = {
+                value = current_ruler.zeal
+            }
+            multiply = 0.01
+        }
+    }
+    if = {
+        limit = {
+            can_perform_sacrifice_or_already_did_so = yes
+        }
+        add = 0.15
+    }
+    if = {
+        limit = {
+            has_aggressive_expansion > 0
+        }
+        subtract = {
+            value = has_aggressive_expansion
+            multiply = 0.0075
+        }
+    }
+    multiply = 36 # Projected to 3 years
 }
 
 5_percent_of_country_levy_population = {

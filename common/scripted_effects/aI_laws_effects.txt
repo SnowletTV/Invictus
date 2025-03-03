@@ -17,8 +17,11 @@
         if = {
             limit = {
                 can_pay_price = enact_law
-                NOT = {
-                    has_variable = ai_recently_enacted_law # Cooldown for law enacting
+                OR = {
+                    is_tribal = no
+                    NOT = {
+                        has_variable = ai_recently_enacted_tribal_law # Cooldown for law enacting
+                    }
                 }
             }
 
@@ -27,6 +30,21 @@
             set_local_variable = {
                 name = enacted_law
                 value = 0
+            }
+
+            # Perform levy calculations once and save the result to local variables for better performance
+            if = {
+                # Triggers might require adjustment in the future if law enacting logic will be changed
+                limit = {
+                    # Only these government types use levy calculations
+                    OR = {
+                        is_monarchy = yes
+                        is_republic = yes
+                    }
+                    # Only these law priorities use levy calculations
+                    ai_should_enact_law_high_priority = yes
+                }
+                save_levy_population_to_local_variables = yes
             }
 
             # Choose some law to enact based on government type
@@ -83,6 +101,8 @@
 
             # Garbage collection
             remove_local_variable = enacted_law
+            remove_local_variable = country_levy_population
+            remove_local_variable = capital_region_levy_population
         }
 
         # Store political influence for future law enacting if can and hasn't yet
@@ -96,6 +116,45 @@
             add_political_influence = -35
             set_variable = stored_pi_to_enact_law
         }
+    }
+}
+
+save_levy_population_to_local_variables = {
+    set_local_variable = {
+        name = country_levy_population
+        value = 0
+    }
+    set_local_variable = {
+        name = capital_region_levy_population
+        value = 0
+    }
+    every_owned_province = {
+        # Calculate once and save to local variable
+        set_local_variable = {
+            name = territory_levy_population
+            value = territory_levy_population
+        }
+        # Add to country levy population
+        owner = {
+            change_local_variable = {
+                name = country_levy_population
+                add = local_var:territory_levy_population 
+            }
+        }
+        # Add to capital region levy population if it's that
+        if = {
+            limit = {
+                region = owner.capital_scope.region
+            }
+            owner = {
+                change_local_variable = {
+                    name = capital_region_levy_population
+                    add = local_var:territory_levy_population 
+                }
+            }
+        }
+        # Garbage collection
+        remove_local_variable = territory_levy_population
     }
 }
 
@@ -138,7 +197,7 @@ ai_enact_law = {
             is_tribal = yes
         }
         set_variable = {
-            name = ai_recently_enacted_law
+            name = ai_recently_enacted_tribal_law
             days = 9125 # 25 years
         }
     }
@@ -150,8 +209,13 @@ ai_enact_law = {
     }
 
     # If stability is negative, perform sacrifice immediately if haven't yet
+    ai_perform_divine_sacrifice = yes
+}
+
+ai_perform_divine_sacrifice = {
     if = {
         limit = {
+            is_ai = yes
             stability < 50
             NOT = {
                 has_country_modifier = stability_investment
@@ -605,7 +669,7 @@ ai_choose_and_enact_law_monarchy_high_priority = {
             }
             # Religious unity is moderately low
             has_moderate_religious_unity_deficit = yes
-            # Only if we don't want assimilation law at all because there's barely any 
+            # Assimilation law won't be useful that much because there are very few unintegrated pops
             has_noticeable_amount_of_unintegrated_pops = no
         }
         ai_enact_law = {
@@ -629,14 +693,12 @@ ai_choose_and_enact_law_monarchy_high_priority = {
             NOT = {
                 has_variable = ai_recently_changed_monarchy_religious_laws
             }
-            # There's at least a bit of unintegrated pops
-            has_noticeable_amount_of_unintegrated_pops = yes
             # If we have converting law, stick to it until religious unity deficit will get low
             OR = {
                 NOT = {
                     has_law = religious_integration_efforts
                 }
-                has_moderate_religious_unity_deficit = no
+                has_noticeable_religious_unity_deficit = no
             }
         }
         ai_enact_law = {

@@ -1,0 +1,77 @@
+﻿# ----------------------------------------------------------------------------------------------------------------------
+# In order of priority. Every next stance requires previous ones to not get wanted, so at any given point the AI may
+# only want one particular stance, thus avoiding swapping back and forth.
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Highest prio, high AE = lower stability = AI in shambles
+ai_wants_appeasement_stance = {
+    # AE >20 is over -0.15 stability, so won't mitigate with sacrifice, plus buffer of 10 to prevent low value switching
+    trigger_if = {
+        limit = {
+            diplomatic_stance = appeasement_stance
+        }
+        has_aggressive_expansion > 20
+    }
+    trigger_else = {
+        has_aggressive_expansion > 30
+    }
+}
+
+# For bad boys and all sort of boys at war
+ai_wants_warmongering_stance = {
+    ai_wants_appeasement_stance = no
+    is_subject = no # Ain't getting much use of it
+    OR = {
+		is_antagonist = yes # I'm a bad boy yeeeaaah
+        AND = {
+            war = yes # For cheaper wargoals and less AE impact
+            OR = {
+                # Already switched to the stance, don't check conditions to prevent switching back and forth
+                diplomatic_stance = warmongering_stance
+                # Check if it's worth switching the stance 
+                AND = {
+                    any_current_war = {
+                        is_war_leader = prev # Otherwise not getting enough spoils to warrant stance change
+                    }
+                    needs_neutral_stance_for_diplomatic_relations = no # Switching to non-neutral stance won't hurt us
+                    save_temporary_scope_as = war_leader_country
+                    num_of_territories_of_enemies_where_is_war_leader >= 40 # Only if potential AE gain is large enough
+                }
+            }
+        }
+    }
+}
+
+# Only if overboard on relations without it
+ai_wants_neutral_stance = {
+    ai_wants_appeasement_stance = no
+    ai_wants_warmongering_stance = no
+    needs_neutral_stance_for_diplomatic_relations = yes
+}
+
+# I'm really not sure AI should ever want it
+ai_wants_vassaling_stance = {
+    # ai_wants_appeasement_stance = no
+    # ai_wants_warmongering_stance = no
+    # ai_wants_neutral_stance = no
+    always = no
+}
+
+# Base stance if all others are not fit
+ai_wants_trading_stance = {
+    ai_wants_appeasement_stance = no
+    ai_wants_warmongering_stance = no
+    ai_wants_neutral_stance = no
+    ai_wants_vassaling_stance = no
+}
+
+# Is used in multiple places
+needs_neutral_stance_for_diplomatic_relations = {
+    OR = {
+        num_active_relations > max_diplomatic_relations
+        AND = {
+            num_active_relations >= max_diplomatic_relations
+            diplomatic_stance = neutral_stance
+        }
+    }
+}

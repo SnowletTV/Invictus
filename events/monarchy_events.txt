@@ -1,0 +1,2740 @@
+﻿namespace = monarchy_events
+
+# Pretender questions the legitimacy of the monarch
+monarchy_events.1 = {
+	type = country_event
+	title = "monarchy_events.1.t"
+	desc = "monarchy_events.1.desc"
+	picture = proscription
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:legitimacy_denier
+	
+	trigger = {
+		is_monarchy = yes
+		any_character = {
+			is_pretender = yes
+			is_adult = yes
+			exists = father
+			NOT = {
+				is_child_of = root.current_ruler
+			}
+			father = {
+				exists = father
+				NOT = {
+					is_child_of = root.current_ruler
+				}
+			}
+			loyalty < 50
+		}
+		legitimacy > 10
+	}
+	
+	immediate = {
+		random_character = {
+			limit = {
+				is_pretender = yes
+				is_adult = yes
+				exists = father
+				loyalty < 50
+				NOT = {
+					is_child_of = root.current_ruler
+				}
+				father = {
+					exists = father
+					NOT = {
+						is_child_of = root.current_ruler
+					}
+				}
+			}
+			save_scope_as = legitimacy_denier
+		}
+	}
+	
+	option = { # ignore it
+		name = "monarchy_events.1.a"
+		add_legitimacy = subtract_legitimacy_large
+	}
+	
+	option = { # publicly repudiate the claims
+		name = "monarchy_events.1.b"
+		remove_stability_effect = yes
+		scope:legitimacy_denier = {
+			add_loyalty = loyalty_lies_revealed
+		}
+	}
+}
+
+# Philosopher-King
+
+monarchy_events.2 = {
+	type = country_event
+	title = "monarchy_events.2.t"
+	desc = "monarchy_events.2.desc"
+	picture = senator_conversing
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:philosopher_king_educator
+	
+	goto_location = scope:philosopher_move_country
+	
+	trigger = {
+		country_culture_group = hellenic
+		is_monarchy = yes
+		current_ruler = {
+			NOT = {
+				has_variable = philosopher_king_student
+			}
+		}
+	}
+	
+	immediate = {
+		hidden_effect = {
+			create_character = {
+				add_trait = wise
+				add_trait = polymath
+				add_trait = scholar
+				age = 40
+				save_scope_as = philosopher_king_educator
+			}
+		}
+		random_country = {
+			limit = {
+				country_culture_group = hellenic
+				NOT = { tag = THIS }
+			}
+			save_scope_as = philosopher_move_country
+		}
+		current_ruler = {
+			save_scope_as = philosopher_king_student
+			set_variable = {
+				name = philosopher_king_student
+			}
+		}
+	}
+	
+	option = { # Hire as your teacher
+		name = "monarchy_events.2.a"
+		add_legitimacy = legitimacy_small
+		scope:philosopher_king_educator = {
+			give_office = office_philosopher
+		}
+		hidden_effect = {
+			if = {
+				limit = {
+					current_ruler = {
+						OR = {
+							has_trait = wise
+							has_trait = polymath
+							has_trait = scholar
+							finesse > 7
+						}
+					}
+				}
+				trigger_event = {
+					id = monarchy_events.3
+					days = { 90 180 }
+				}
+			}
+			else_if = {
+				limit = {
+					current_ruler = {
+						OR = {
+							has_trait = dumb
+							has_trait = arrogant
+							has_trait = narrowminded
+							finesse < 4
+						}
+					}
+				}
+				trigger_event = {
+					id = monarchy_events.5
+					days = { 90 180 }
+				}
+			}
+			else = {
+				trigger_event = {
+					id = monarchy_events.4
+					days = { 90 180 }
+				}
+			}
+		}
+	}
+	
+	option = { 
+		name = "monarchy_events.2.b"
+		current_ruler = {
+			add_popularity = popularity_small
+		}
+		scope:philosopher_king_educator = {
+			move_country = scope:philosopher_move_country
+		}
+	}
+}
+
+# Ruler is a philosopher-king
+monarchy_events.3 = {
+	type = country_event
+	title = "monarchy_events.3.t"
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					var:philosopher_king_virtue = 1
+				}
+				desc = "monarchy_events.3.desc.a"
+			}
+			triggered_desc = {
+				trigger = {
+					var:philosopher_king_virtue = 2
+				}
+				desc = "monarchy_events.3.desc.b"
+			}
+			triggered_desc = {
+				trigger = {
+					var:philosopher_king_virtue = 3
+				}
+				desc = "monarchy_events.3.desc.c"
+			}
+		}
+	}
+	picture = throneroom
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:philosopher_king_educator
+	
+	trigger = {
+		scope:philosopher_king_student = {
+			char_valid_for_country_events_trigger = yes
+			NOT = {
+				has_variable = had_philosopher_king_outcome
+			}
+		}
+		scope:philosopher_king_educator = {
+			has_office = office_philosopher
+		}
+	}
+	immediate = {
+		hidden_effect = {
+			random_list = {
+				33 = {
+					set_variable = {
+						name = philosopher_king_virtue
+						value = 1
+					}
+				}
+				33 = {
+					set_variable = {
+						name = philosopher_king_virtue
+						value = 2
+					}
+				}
+				33 = {
+					set_variable = {
+						name = philosopher_king_virtue
+						value = 3
+					}
+				}
+			}
+			set_variable = {
+				name = had_philosopher_king_outcome
+				value = 1
+			}
+		}
+	}
+	
+	option = {
+		name = "monarchy_events.3.a"
+		current_ruler = {
+			add_finesse = 1
+		}
+		# Monarch cultivates justice
+		if = {
+			limit = {
+				var:philosopher_king_virtue = 1
+				NOT = {
+					current_ruler = {
+						OR = {
+							has_trait = just
+							has_trait = arbitrary
+						}
+					}
+				}
+			}
+			current_ruler = {
+				add_trait = just
+			}
+		}
+		else_if = {
+			limit = {
+				var:philosopher_king_virtue = 1
+				current_ruler = {
+					has_trait = just
+				}
+			}
+			add_political_influence = influence_large
+		}
+		# Monarch cultivates bravery
+		else_if = {
+			limit = {
+				var:philosopher_king_virtue = 2
+				NOT = {
+					current_ruler = {
+						OR = {
+							has_trait = brave
+							has_trait = coward
+						}
+					}
+				}
+			}
+			current_ruler = {
+				add_trait = brave
+			}
+		}
+		else_if = {
+			limit = {
+				var:philosopher_king_virtue = 2
+				current_ruler = {
+					has_trait = brave
+				}
+			}
+			add_stability_effect = yes
+		}
+		# Monarch becomes skilled at political discourse
+		else_if = {
+			limit = {
+				var:philosopher_king_virtue = 3
+				NOT = {
+					current_ruler = {
+						OR = {
+							has_trait = silver_tongued
+							has_trait = blunt
+						}
+					}
+				}
+			}
+			current_ruler = {
+				add_trait = silver_tongued
+			}
+		}
+		else_if = {
+			limit = {
+				var:philosopher_king_virtue = 3
+				current_ruler = {
+					has_trait = silver_tongued
+				}
+			}
+			add_political_influence = influence_large
+		}
+		scope:philosopher_king_educator = {
+			add_loyalty = loyalty_teaching_praised_1
+		}
+	}
+}
+
+# Monarch learns a little but is not philosopher-king material
+monarchy_events.4 = {
+	type = country_event
+	title = "monarchy_events.4.t"
+	desc = "monarchy_events.4.desc"
+	picture = greek_philosophers
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:philosopher_king_educator
+	
+	trigger = {
+		scope:philosopher_king_student = {
+			char_valid_for_country_events_trigger = yes
+			NOT = {
+				has_variable = had_philosopher_king_outcome
+			}
+		}
+		scope:philosopher_king_educator = {
+			has_office = office_philosopher
+		}
+	}
+	
+	immediate = {
+		hidden_effect = {
+			random_list = {
+				33 = {
+					set_variable = {
+						name = philosopher_king_virtue
+						value = 1
+					}
+				}
+				33 = {
+					set_variable = {
+						name = philosopher_king_virtue
+						value = 2
+					}
+				}
+				33 = {
+					set_variable = {
+						name = philosopher_king_virtue
+						value = 3
+					}
+				}
+			}
+			set_variable = {
+				name = had_philosopher_king_outcome 
+				value = 1
+			}
+		}
+	}
+	
+	option = { # hire philosopher
+		name = "monarchy_events.4.a"
+		if = {
+			limit = {
+				var:philosopher_king_virtue = 1
+			}
+			add_political_influence = influence_medium
+		}
+		else_if = {
+			limit = {
+				var:philosopher_king_virtue = 2
+			}
+			add_stability_effect = yes
+		}
+		else_if = {
+			limit = {
+				var:philosopher_king_virtue = 3
+			}
+			add_political_influence = influence_medium
+		}
+		add_treasury = -100
+		scope:philosopher_king_educator = {
+			add_loyalty = loyalty_teaching_praised_2
+		}
+	}
+	
+	option = { # philosopher moves on
+		name = "monarchy_events.4.b"
+		if = {
+			limit = {
+				var:philosopher_king_virtue = 1
+			}
+			add_political_influence = influence_medium
+		}
+		else_if = {
+			limit = {
+				var:philosopher_king_virtue = 2
+			}
+			add_stability_effect = yes
+		}
+		else_if = {
+			limit = {
+				var:philosopher_king_virtue = 3
+			}
+			current_ruler = {
+				add_popularity = popularity_medium
+			}
+		}
+		scope:philosopher_king_educator = {
+			move_country = scope:philosopher_move_country
+		}
+	}
+}
+
+# Ruler learns nothing, philosopher leaves while slandering their name
+monarchy_events.5 = {
+	type = country_event
+	title = "monarchy_events.5.t"
+	desc = "monarchy_events.5.desc"
+	picture = great_library
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:philosopher_king_educator
+	
+	trigger = {
+		scope:philosopher_king_student = {
+			char_valid_for_country_events_trigger = yes
+			NOT = {
+				has_variable = had_philosopher_king_outcome
+			}
+		}
+		scope:philosopher_king_educator = {
+			has_office = office_philosopher
+		}
+	}
+	
+	immediate = {
+		current_ruler = {
+			set_variable = {
+				name = had_philosopher_king_outcome
+				value = 1
+			}
+		}
+	}
+	
+	option = {
+		name = "monarchy_events.5.a"
+		add_legitimacy = subtract_legitimacy_medium
+		scope:philosopher_king_educator = {
+			move_country = scope:philosopher_move_country
+		}
+	}
+}
+
+# Impious monarch upsets the high priest.
+monarchy_events.6 = {
+	type = country_event
+	title = "monarchy_events.6.t"
+	desc = "monarchy_events.6.desc"
+	picture = hellenic_temple
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:turbulent_priest
+	
+	trigger = {
+		is_monarchy = yes
+		current_ruler = {
+			NOR = {
+				zeal > 5
+				has_trait = devout
+				has_trait = pious
+			}
+		}
+		any_character = {
+			has_office = office_high_priest_monarchy
+			NOT = {
+				OR = {
+					zeal < 4
+					has_trait = sceptical
+					has_trait = lapsed
+				}
+				is_friend = root.current_ruler
+			}
+		}
+	}
+	
+	immediate = {
+		random_character = {
+			limit = {
+				has_office = office_high_priest_monarchy
+			}
+			save_scope_as = turbulent_priest
+		}
+	}
+	
+	option = { # ignore him
+		name = "monarchy_events.6.a"
+		add_legitimacy = subtract_legitimacy_medium
+		scope:turbulent_priest = {
+			add_loyalty = loyalty_impious_ruler
+		}
+	}
+	
+	option = { # make a large donation to the priesthood
+		name = "monarchy_events.6.b"
+		add_treasury = {
+			value = 0
+			subtract = root.has_monthly_income
+			multiply = 3
+		}
+		scope:turbulent_priest = {
+			add_loyalty = loyalty_bribed_priest
+		}
+	}
+}
+
+# Pious monarch impresses the high priest
+monarchy_events.7 = {
+	type = country_event
+	title = "monarchy_events.7.t"
+	desc = "monarchy_events.7.desc"
+	picture = hellenic_temple
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:pious_high_priest
+	
+	trigger = {
+		is_monarchy = yes
+		current_ruler = {
+			OR = {
+				zeal > 8
+				has_trait = devout
+				has_trait = pious
+			}
+		}
+		any_character = {
+			has_office = office_high_priest_monarchy
+			OR = {
+				zeal > 5
+				has_trait = devout
+				has_trait = pious
+			}
+			NOT = { is_rival = root.current_ruler }
+		}
+	}
+	
+	immediate = {
+		random_character = {
+			limit = {
+				has_office = office_high_priest_monarchy
+			}
+			save_scope_as = pious_high_priest
+		}
+	}
+	
+	option = {
+		name = "monarchy_events.7.a"
+		add_legitimacy = legitimacy_medium
+		scope:pious_high_priest = {
+			add_loyalty = loyalty_pious_ruler_thanks
+		}
+	}
+	
+	option = { # use the priesthood to increase legitimacy further
+		name = "monarchy_events.7.b"
+		add_legitimacy = legitimacy_huge
+		remove_stability_effect = yes
+	}
+}
+
+# Court philosopher extolls the virtues of despotism
+monarchy_events.8 = {
+	type = country_event
+	title = "monarchy_events.8.t"
+	desc = "monarchy_events.8.desc"
+	picture = throneroom
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:monarchist_philosopher
+	
+	trigger = {
+		is_monarchy = yes
+		any_character = {
+			has_office = office_philosopher
+			OR = {
+				has_trait = wise
+				finesse > 8
+			}
+			NOT = { is_rival = root.current_ruler }
+			NOT = { has_variable = philosopher_is_republican }
+		}
+		current_ruler = {
+			OR = {
+				finesse > 8
+				has_trait = wise
+				has_trait = just
+			}
+			NOT = { has_trait = arbitrary }
+		}
+	}
+	
+	immediate = {
+		random_character = {
+			limit = {
+				has_office = office_philosopher
+			}
+			save_scope_as = monarchist_philosopher
+			set_variable = {
+				name = philosopher_is_monarchist
+			}
+		}
+	}
+	
+	option = { # a fine read
+		name = "monarchy_events.8.a"
+		add_legitimacy = legitimacy_medium
+		scope:monarchist_philosopher = {
+			add_loyalty = loyalty_praised_despot_1
+		}
+	}
+	
+	option = { # have their work read throughout the land
+		name = "monarchy_events.8.b"
+		add_political_influence = subtract_influence_large
+		add_legitimacy = legitimacy_huge
+		scope:monarchist_philosopher = {
+			add_loyalty = loyalty_praised_despot_2
+		}
+	}
+}
+
+# Court philosopher extolls the virtues of democracy
+monarchy_events.9 = {
+	type = country_event
+	title = "monarchy_events.9.t"
+	desc = "monarchy_events.9.desc"
+	picture = senate_debate
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:republican_philosopher
+	
+	trigger = {
+		is_monarchy = yes
+		any_character = {
+			has_office = office_philosopher
+			NOT = { is_friend = root.current_ruler }
+			OR = {
+				has_trait = wise
+				finesse > 8
+			}
+			NOT = { has_variable = philosopher_is_monarchist }
+		}
+		any_neighbour_country = {
+			# has_same_culture_group_as = ROOT
+			is_republic = yes
+		}
+		current_ruler = {
+			OR = {
+				has_trait = arbitrary
+				has_trait = cruel
+			}
+			NOT = {
+				has_trait = just
+			}
+		}
+	}
+	
+	immediate = {
+		random_character = {
+			limit = {
+				has_office = office_philosopher
+			}
+			save_scope_as = republican_philosopher
+			set_variable = {
+				name = philosopher_is_republican
+			}
+		}
+		random_neighbour_country = {
+			limit = {
+				# has_same_culture_group_as = ROOT
+				is_republic = yes
+			}
+			save_scope_as = republican_philosopher_country
+		}
+	}
+	
+	option = { # lose legitimacy
+		name = "monarchy_events.9.a"
+		add_legitimacy = subtract_legitimacy_medium
+	}
+	
+	option = { # exile to a republic
+		name = "monarchy_events.9.b"
+		scope:republican_philosopher = {
+			remove_all_positions = yes
+			move_country = scope:republican_philosopher_country
+			set_as_minor_character = this
+		}
+	}
+}
+
+# Royal spouse inspires the army
+monarchy_events.10 = {
+	type = country_event
+	title = "monarchy_events.10.t"
+	desc = "monarchy_events.10.desc"
+	picture = persia_marching
+	
+	left_portrait = scope:royal_spouse
+	
+	trigger = {
+		is_monarchy = yes
+		current_ruler = {
+			is_married = yes
+		}
+		consort = {
+			is_alive = yes
+		}
+		war = yes
+	}
+	
+	immediate = {
+		current_ruler = {
+			spouse = {
+				save_scope_as = royal_spouse
+			}
+		}
+	}
+	
+	option = {
+		trigger = {
+			NOT = {
+				scope:royal_spouse = {
+					martial >= 8
+					charisma >= 8
+				}
+			}
+		}
+		name = "monarchy_events.10.a"
+		scope:royal_spouse = {
+			add_popularity = popularity_medium
+		}
+		add_country_modifier = {
+			name = "spouse_inspires_the_army"
+			duration = 1825
+		}
+	}
+	
+	option = {
+		trigger = {
+			scope:royal_spouse = {
+				martial >= 8
+				charisma >= 8
+			}
+		}
+		name = "monarchy_events.10.a"
+		add_country_modifier = {
+			name = "spouse_inspires_the_army_better"
+			duration = 1825
+		}
+	}
+}
+
+# Spouse supports their child against another pretender
+monarchy_events.11 = {
+	type = country_event
+	title = "monarchy_events.11.t"
+	desc = "monarchy_events.11.desc"
+	picture = greek_court
+	
+	# portraits
+	left_portrait = scope:spouse_scope
+	right_portrait = scope:non_spouse_child_pretender
+	
+	trigger = {
+		is_monarchy = yes
+		current_ruler = {
+			is_married = yes
+			exists = spouse
+		}
+		any_character = {
+			is_pretender = yes
+			is_child_of = root.current_ruler
+			is_child_of = root.current_ruler.spouse
+		}
+		any_character = {
+			is_primary_heir = yes
+			is_child_of = root.current_ruler
+			NOT = { is_child_of = root.current_ruler.spouse }
+		}
+	}
+	
+	immediate = {
+		current_ruler = {
+			spouse = {
+				save_scope_as = spouse_scope
+			}
+		}
+		random_character = {
+			limit = {
+				is_pretender = yes
+				is_child_of = root.current_ruler
+				is_child_of = scope:spouse_scope
+			}
+			save_scope_as = spouse_child_pretender
+		}
+		random_character = {
+			limit = {
+				is_primary_heir = yes
+				is_child_of = root.current_ruler
+				NOT = { is_child_of = scope:spouse_scope }
+			}
+			save_scope_as = non_spouse_child_pretender
+		}
+	}
+	
+	option = { # imprison spouse 
+		name = "monarchy_events.11.a"
+		imprison = { target = scope:spouse_scope }
+		scope:spouse_scope = {
+			add_rival = scope:non_spouse_child_pretender
+		}
+		scope:non_spouse_child_pretender = {
+			add_loyalty = loyalty_heir_imprison
+		}
+	}
+	
+	option = { # persuade spouse to abandon plot
+		name = "monarchy_events.11.b"
+		trigger = {
+			OR = {
+				root.current_ruler.charisma > scope:spouse_scope.charisma
+				scope:spouse_scope = {
+					is_friend = root.current_ruler
+				}
+			}
+		}
+		add_legitimacy = -10
+	}
+	
+	option = { # don't interfere
+		name = "monarchy_events.11.c"
+		scope:non_spouse_child_pretender = {
+			death = {
+				death_reason = death_murder
+			}
+		}
+	}
+}
+
+# Patronize the arts
+# Pay money for legitimacy or don't
+monarchy_events.12 = {
+	type = country_event
+	title = "monarchy_events.12.t"
+	desc = "monarchy_events.12.desc"
+	picture = quarry
+	
+	left_portrait = root.current_ruler
+	
+	trigger = {
+		is_monarchy = yes
+		NOT = {
+			has_country_modifier = patronage_of_the_arts_modifier
+		}
+	}
+	
+	option = {
+		name = "monarchy_events.12.a"
+		add_country_modifier = {
+			name = patronage_of_the_arts_modifier
+			duration = 1825
+		}
+		add_treasury = {
+			value = 0
+			subtract = root.has_monthly_income
+			multiply = 4
+		}
+	}
+	
+	option = {
+		name = "monarchy_events.12.b"
+		add_legitimacy = subtract_legitimacy_small
+	}
+}
+
+# spouse intercedes on behalf of a prisoner
+monarchy_events.13 = {
+	type = country_event
+	title = "monarchy_events.13.t"
+	desc = "monarchy_events.13.desc"
+	picture = greek_court
+	
+	left_portrait = current_ruler
+	right_portrait = scope:spouse_scope
+	right_portrait = scope:imprisoned_friend
+	
+	trigger = {
+		is_monarchy = yes
+		current_ruler = {
+			is_married = yes
+		}
+		any_character = {
+			prisoner = yes
+			is_friend = root.current_ruler.spouse
+			NOT = { has_variable = spousal_intercession }
+		}
+	}
+	
+	immediate = {
+		current_ruler = {
+			spouse = {
+				save_scope_as = spouse_scope
+			}
+		}
+		random_character = {
+			limit = {
+				prisoner = yes
+				is_friend = scope:spouse_scope
+				NOT = { has_variable = spousal_intercession }
+			}
+			save_scope_as = imprisoned_friend
+			set_variable = {
+				name = spousal_intercession
+				days = 1825
+			}
+		}
+	}
+	
+	option = {
+		name = "monarchy_events.13.a"
+		add_tyranny = subtract_tyranny_small
+		release_prisoner = {
+			target = scope:imprisoned_friend
+		}
+		if = {
+			limit = {
+				scope:imprisoned_friend = {
+					NOT = { is_rival = root.current_ruler }
+				}
+			}
+			scope:imprisoned_friend = {
+				add_loyalty = loyalty_released_prison
+			}
+		}
+	}
+	
+	option = {
+		name = "monarchy_events.13.b"
+		scope:spouse_scope = {
+			add_loyalty = loyalty_refused_request
+		}
+		scope:imprisoned_friend = {
+			add_loyalty = loyalty_unreleased_prison
+		}
+	}
+}
+
+# Popular consort
+monarchy_events.14 = {
+	type = country_event
+	title = "monarchy_events.14.t"
+	desc = "monarchy_events.14.desc"
+	picture = greek_court
+	
+	left_portrait = scope:spouse_scope
+	
+	trigger = {
+		is_monarchy = yes
+		current_ruler = {
+			exists = spouse
+			spouse = {
+				is_alive = yes
+				popularity > 80
+			}
+		}
+	}
+	
+	immediate = {
+		current_ruler = {
+			spouse = {
+				save_scope_as = spouse_scope
+			}
+		}
+	}
+	
+	option = {
+		name = "monarchy_events.14.a"
+		add_stability_effect = yes
+		scope:spouse_scope = {
+			add_prominence = prominence_large
+		}
+	}
+}
+
+# The tyranny of [monarch]
+monarchy_events.15 = {
+	type = country_event
+	title = "monarchy_events.15.t"
+	desc = "monarchy_events.15.desc"
+	picture = revolt
+	
+	left_portrait = root.current_ruler
+	
+	trigger = {
+		is_monarchy = yes
+		tyranny > 40
+	}
+	
+	option = { # embrace the reputation
+		name = "monarchy_events.15.a"
+		add_political_influence = subtract_influence_medium
+	}
+	
+	option = { # execute the troublemakers
+		name = "monarchy_events.15.b"
+		remove_stability_effect = yes
+	}
+}
+
+# Powerful rival pretender seeks religious support
+monarchy_events.16 = {
+	type = minor_country_event
+	title = "monarchy_events.16.t"
+	desc = "monarchy_events.16.desc"
+	picture = hellenic_temple
+	
+	left_portrait = scope:powerful_pretender_monarchy
+	#right_portrait = scope:suggestible_priest
+	
+	interface_lock = no
+	
+	trigger = {
+		is_monarchy = yes
+		any_character = {
+			is_rival = root.current_ruler
+			is_pretender = yes
+			prominence > 50
+			NOT = {
+				has_office = office_high_priest_monarchy
+			}
+			NOT = {
+				has_variable = powerful_pretender_monarchy_var
+			}
+		}
+		any_character = {
+			has_office = office_high_priest_monarchy
+			NOT = { is_friend = root.current_ruler }
+		}
+	}
+	
+	immediate = {
+		random_character = {
+			limit = {
+				is_rival = root.current_ruler
+				is_pretender = yes
+				prominence > 50
+				NOT = {
+					has_office = office_high_priest_monarchy
+				}
+				NOT = {
+					has_variable = powerful_pretender_monarchy_var
+				}
+			}
+			save_scope_as = powerful_pretender_monarchy
+			set_variable = {
+				name = powerful_pretender_monarchy_var
+			}
+		}
+		random_character = {
+			limit = {
+				has_office = office_high_priest_monarchy
+				NOT = { is_friend = root.current_ruler }
+			}
+			save_scope_as = suggestible_priest
+		}
+	}
+	
+	option = { # can't risk upsetting the high priest
+		name = "monarchy_events.16.a"
+		scope:powerful_pretender_monarchy = {
+			add_popularity = popularity_medium
+			add_friend = scope:suggestible_priest
+		}
+	}
+	
+	option = { # give the high priest a stern talking to
+		name = "monarchy_events.16.b"
+		remove_stability_effect = yes
+		scope:suggestible_priest = {
+			add_loyalty = loyalty_scolded_priest
+		}
+	}
+}
+
+# Heir wants more responsibility
+monarchy_events.17 = {
+	type = country_event
+	title = "monarchy_events.17.t"
+	desc = "monarchy_events.17.desc"
+	picture = successors
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:responsible_heir
+	
+	trigger = {
+		any_character = {
+			is_primary_heir = yes
+			is_child_of = root.current_ruler
+			age > 16
+			age < 30
+			NOT = {
+				has_variable = heir_groomed_for_rule
+			}
+		}
+		current_ruler = {
+			age > 30
+		}
+	}
+	
+	immediate = {
+		random_character = {
+			limit = {
+				is_primary_heir = yes
+				is_child_of = root.current_ruler
+				age > 16
+				age < 30
+				NOT = {
+					has_variable = heir_groomed_for_rule
+				}
+			}
+			set_variable = {
+				name = heir_groomed_for_rule
+			}
+			save_scope_as = responsible_heir
+		}
+	}
+	
+	option = { # give heir more responsibility
+		name = "monarchy_events.17.a"
+		scope:responsible_heir = {
+			add_prominence = prominence_small
+		}
+		hidden_effect = {
+			random_list = {
+				50 = {
+					trigger_event = {
+						id = monarchy_events.18
+						days = { 60  120 }
+					}
+				}
+				50 = {
+					trigger_event = {
+						id = monarchy_events.19
+						days = { 60  120 }
+					}
+				}
+			}
+		}
+	}
+	
+	option = { # heir is not ready
+		name = "monarchy_events.17.b"
+		scope:responsible_heir = {
+			add_loyalty = loyalty_refused_responsibility
+		}
+	}
+}
+
+# Heir adapts well to responsibility
+monarchy_events.18 = {
+	type = country_event
+	title = "monarchy_events.18.t"
+	desc = "monarchy_events.18.desc"
+	picture = senator_conversing
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:responsible_heir
+	
+	trigger = {
+		scope:responsible_heir = {
+			is_primary_heir = yes
+		}
+	}
+	
+	option = { # this reflects well on both ruler and heir
+		trigger = {
+			scope:responsible_heir  = {
+				25 >= total_stats_svalue
+			}
+		}
+		name = "monarchy_events.18.a"
+		add_legitimacy = legitimacy_medium
+		scope:responsible_heir = {
+			add_popularity = popularity_small
+			add_prominence = prominence_medium
+		}
+	}
+	
+	option = { # heir has done exceptionally well
+		trigger = {
+			scope:responsible_heir  = {
+				25 < total_stats_svalue
+			}
+		}
+		name = "monarchy_events.18.a"
+		add_legitimacy = legitimacy_large
+		scope:responsible_heir = {
+			add_popularity = popularity_medium
+			add_prominence = prominence_large
+		}
+	}
+}
+
+# Heir adapts poorly to responsibility
+monarchy_events.19 = {
+	type = country_event
+	title = "monarchy_events.19.t"
+	desc = "monarchy_events.19.desc"
+	picture = greek_court
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:responsible_heir
+	
+	trigger = {
+		scope:responsible_heir = {
+			is_primary_heir = yes
+		}
+	}
+	
+	option = { # this reflects poorly on both ruler and heir
+		trigger = {
+			scope:responsible_heir = {
+				20 > total_stats_svalue
+			}
+		}
+		name = "monarchy_events.19.a"
+		add_legitimacy = subtract_legitimacy_medium
+		scope:responsible_heir = {
+			add_popularity = subtract_popularity_small
+			add_prominence = subtract_prominence_medium
+		}
+	}
+	
+	option = { # heir is talented but failures can be attributed to bad luck/circumstance
+		trigger = {
+			scope:responsible_heir = {
+				25 <= total_stats_svalue
+			}
+		}
+		name = "monarchy_events.19.b"
+		add_legitimacy = subtract_legitimacy_small
+		scope:responsible_heir = {
+			add_popularity = subtract_popularity_small
+			add_prominence = subtract_prominence_small
+		}
+	}
+	
+	option = { # heir fails harder due to corruption
+		trigger = {
+			scope:responsible_heir = {
+				corruption >= 20
+			}
+		}
+		name = "monarchy_events.19.c"
+		add_legitimacy = subtract_legitimacy_large
+		scope:responsible_heir = {
+			add_popularity = subtract_popularity_medium
+			add_prominence = subtract_prominence_large
+		}
+	}
+}
+
+# Present a suitor for an ally's heir
+monarchy_events.20 = {
+	type = country_event
+	title = "monarchy_events.20.t"
+	desc = "monarchy_events.20.desc"
+	picture = celtic_religious_festival
+	
+	left_portrait = scope:suitor_character
+	right_portrait = scope:allied_heir_character
+
+	goto_location = scope:allied_heir_country.capital_scope
+	
+	trigger = {
+		is_monarchy = yes
+		any_character = {
+			is_pretender = no
+			is_governor = no
+			is_female = yes
+			is_married = no
+			age < 30
+			age > 16
+		}
+		any_neighbour_country = { # check
+			is_monarchy = yes
+			alliance_with = ROOT
+			any_character = {
+				is_primary_heir = yes
+				is_female = no
+				is_married = no
+				age < 30
+				age > 16
+				is_governor = no
+			}
+		}
+	}
+	
+	immediate = {
+		random_character = {
+			limit = {
+				is_pretender = no
+				is_governor = no
+				is_female = yes
+				is_married = no
+				age < 30
+				age > 16
+			}
+			save_scope_as = suitor_character
+		}
+		random_neighbour_country = {
+			limit = {
+				is_monarchy = yes
+				alliance_with = ROOT
+				any_character = {
+					is_primary_heir = yes
+					is_female = no
+					is_married = no
+					age < 30
+					age > 16
+					is_governor = no
+				}
+			}
+			save_scope_as = allied_heir_country
+			random_character = {
+				limit = {
+					is_primary_heir = yes
+					is_female = no
+					is_married = no
+					age < 30
+					age > 16
+					is_governor = no
+				}
+				save_scope_as = allied_heir_character
+			}
+		}
+	}
+	
+	option = {
+		name = "monarchy_events.20.a"
+		save_scope_as = suitor_country
+		trigger_event = {
+			id = monarchy_events.21
+			days = { 3 7 }
+		}
+	}
+	
+	option = {
+		name = "monarchy_events.20.b"
+		scope:allied_heir_country = {
+			add_opinion = { 
+				target = root
+				modifier = minor_foreign_gift
+			}
+		}
+	}
+}
+
+# Ally presents suitor to unmarried heir
+monarchy_events.21 = {
+	type = country_event
+	title = "monarchy_events.21.t"
+	desc = "monarchy_events.21.desc"
+	picture = celtic_religious_festival
+	
+	right_portrait = scope:suitor_character
+	left_portrait = scope:allied_heir_character
+	
+	goto_location = scope:allied_heir_country
+	
+	trigger = {
+		scope:allied_heir_character = {
+			is_primary_heir = yes
+			is_married = no
+		}
+	}
+	
+	option = { # yes
+		name = "monarchy_events.21.a"
+		if = {
+			limit = {
+				NOT = {
+					scope:suitor_country = root
+				}
+			}
+			scope:suitor_country = {
+				add_opinion = {
+					target = root
+					modifier = opinion_royal_marriage
+				}
+			}
+		}
+		scope:suitor_character = {
+			move_country = ROOT
+			set_as_minor_character = this
+		}
+		scope:allied_heir_character = {
+			marry_character = scope:suitor_character
+		}
+		save_scope_as = monarchy_events_22_country
+		scope:suitor_country = {
+			trigger_event = {
+				id = monarchy_events.22
+				days = { 3 7 }
+			}
+		}
+	}
+	
+	option = { # no
+		name = "monarchy_events.21.b"
+		scope:suitor_country = {
+			trigger_event = {
+				id = monarchy_events.23
+				days = { 3 7 }
+			}
+		}
+		if = {
+			limit = {
+				NOT = {
+					scope:suitor_country = root
+				}
+			}
+			show_as_tooltip = {
+				scope:suitor_country = {
+					add_opinion = {
+						target = root
+						modifier = opinion_royal_marriage_refused
+					}
+				}
+			}
+		}
+	}
+}
+
+# Proposal accepted
+monarchy_events.22 = {
+	type = country_event
+	title = "monarchy_events.22.t"
+	desc = "monarchy_events.22.desc"
+	picture = religious_rite
+	
+	left_portrait = scope:suitor_character
+	right_portrait = scope:allied_heir_character
+	
+	goto_location = scope:allied_heir_country
+	
+	option = { # wish them well
+		name = "monarchy_events.22.a"
+		if = {
+			limit = {
+				NOT = {
+					scope:monarchy_events_22_country = root
+				}
+			}
+			scope:monarchy_events_22_country = {
+				add_opinion = {
+					target = root
+					modifier = opinion_royal_marriage
+				}
+			}
+		}
+		custom_tooltip = "suitor_left_court_tooltip"
+	}
+}
+
+# Proposal refused
+monarchy_events.23 = {
+	type = country_event
+	title = "monarchy_events.23.t"
+	desc = "monarchy_events.23.desc"
+	picture = successors
+	
+	left_portrait = scope:suitor_character
+	right_portrait = scope:allied_heir_character
+	
+	option = { # oh well
+		name = "monarchy_events.23.a"
+		add_opinion = {
+			target = scope:allied_heir_country
+			modifier = opinion_royal_marriage_refused
+		}
+	}
+}
+
+# The Cult of [your dead father]
+monarchy_events.24 = {
+	type = country_event
+	title = "monarchy_events.24.t"
+	desc = "monarchy_events.24.desc"
+	picture = throneroom
+	
+	left_portrait = current_ruler
+	right_portrait = scope:deified_father_scope
+	
+	trigger = {
+		government = theocratic_monarchy
+		NOT = {
+			OR = {
+				religion = judaism
+				religion = zoroaster
+				religion = hindu
+			}
+		}
+		current_ruler = {
+			OR = {
+				AND = {
+					exists = father
+					prominence >= 95
+					father = {
+						is_alive = no
+						is_previous_ruler = yes
+					}
+				}
+				AND = {
+					exists = mother
+					is_previous_ruler = yes
+					prominence >= 95
+					mother = {
+						is_alive = no
+						is_previous_ruler = yes
+					}
+				}
+			}
+			family = {
+				prestige = 400
+			}
+			NOT = { has_variable = father_deification_flag }
+		}
+	}
+	immediate = {
+		current_ruler = {
+			set_variable = father_deification_flag
+			if = {
+				limit = {
+					exists = mother
+					employer = {
+						gender_equality = yes
+					}
+					prominence >= 95
+					mother = {
+						is_alive = no
+						is_previous_ruler = yes
+					}
+				}
+				mother = {
+					save_scope_as = deified_father_scope
+				}
+			}
+			else = {
+				father = {
+					save_scope_as = deified_father_scope
+				}
+			}
+		}
+	}
+	option = {
+		name = "monarchy_events.24.a"
+		add_legitimacy = legitimacy_large
+	}
+	option = {
+		name = "monarchy_events.24.b"
+		add_legitimacy = legitimacy_medium
+		current_ruler = {
+			family = {
+				add_prestige = 50
+			}
+		}
+	}
+}
+
+# Deification of the current monarch
+monarchy_events.25 = {
+	type = country_event
+	title = "monarchy_events.25.t"
+	desc = "monarchy_events.25.desc"
+	picture = throneroom
+	
+	left_portrait = current_ruler
+	
+	trigger = {
+		is_monarchy = yes
+		NOT = {
+			OR = {
+				religion = judaism
+				religion = zoroaster
+				religion = hindu
+			}
+		}
+		NOT = { government = imperial_cult }
+		OR = {
+			government = theocratic_monarchy
+			current_ruler = {
+				has_trait = proud
+			}
+		}
+		current_ruler = {
+			prominence >= 95
+			NOT = { has_variable = deification_flag }
+			NOT = { has_trait = humble }
+			NOT = { has_trait = wise }
+			has_variable = father_deification_flag
+		}
+		stability > 1
+	}
+	
+	immediate = {
+		current_ruler = {
+			set_variable = {
+				name = deification_flag
+			}
+		}
+	}
+	
+	option = { # i am a god!
+		name = "monarchy_events.25.a"
+		add_stability_effect = yes
+		add_political_influence = influence_medium
+		add_legitimacy = subtract_legitimacy_large
+		current_ruler = {
+			add_character_modifier = {
+				name = "self_proclaimed_deity"
+				duration = -1
+			}
+			if = {
+				limit = {
+					NOT = {
+						has_trait = proud
+					}
+				}
+				add_trait = proud
+			}
+		}
+	}
+	option = { # this is going too far
+		name = "monarchy_events.25.b"
+		add_legitimacy = legitimacy_small
+	}
+}
+
+
+## Disloyal Heir Event Chain ###
+# Start
+monarchy_events.27 = {
+	type = country_event
+	title = "monarchy_events.27.t"
+	desc = "monarchy_events.27.desc"
+	picture = successors
+	
+	left_portrait = current_ruler
+	right_portrait = scope:primary_heir
+
+	trigger = {
+		is_monarchy = yes
+		any_character = {
+			is_primary_heir = yes
+			loyalty < 50
+			is_adult = yes
+			prisoner = no
+		}
+		NOT = { has_variable = monarchy_events_27_cooldown }
+	}
+
+	immediate = {
+		random_character = {
+			limit = {
+				is_primary_heir = yes
+			}
+			save_scope_as = primary_heir
+		}
+		hidden_effect = {
+			set_variable = {
+				name = monarchy_events_27_cooldown
+				days = 3650
+			}
+		}
+	}
+
+	option = { # Inspire Loyalty in the heir
+		name = "monarchy_events.27.a"
+		custom_tooltip = "monarchy_events.27.a.custom"
+		trigger_event = {
+			id = "monarchy_events.28"
+			days = { 10 15 }
+		}
+	}
+
+	option = { # Try to undermine the heir
+		name = "monarchy_events.27.b"
+		custom_tooltip = "monarchy_events.27.b.custom"
+		trigger_event = {
+			id = "monarchy_events.33"
+			days = { 10 15 }
+		}
+	}
+
+	option = { # Who even cares about the heir though ... ?
+		name = "monarchy_events.27.c"
+		custom_tooltip = "no_effect_tooltip"
+	}
+}
+
+# Inspire loyalty in heir
+monarchy_events.28 = {
+	type = country_event
+	title = "monarchy_events.28.t"
+	desc = "monarchy_events.28.desc"
+	picture = war_chest
+	
+	left_portrait = current_ruler
+	right_portrait = scope:primary_heir
+
+	trigger = {
+		is_monarchy = yes
+		scope:primary_heir = { is_primary_heir = yes }
+	}
+
+	immediate = {
+
+	}
+
+	option = { # Spend treasury to impress heir
+		name = "monarchy_events.28.a"
+		custom_tooltip = "monarchy_events.28.a.tt"
+		add_treasury = {
+			subtract = root.has_monthly_income
+			multiply = 6
+		}
+		hidden_effect = {
+			random_list = {
+				10 = {
+					modifier = {
+						factor = 2
+						trigger = {
+							scope:primary_heir = {
+								char_is_decent_trigger = yes
+							}
+						}
+					}
+					trigger_event = {
+						id = "monarchy_events.29"
+						days = { 5 10 }
+					}
+				}
+				6 = {
+					modifier = {
+						factor = 2
+						trigger = {
+							scope:primary_heir = {
+								char_is_bad_leader_trigger = yes
+							}
+						}
+					}
+					trigger_event = {
+						id = "monarchy_events.30"
+						days = { 5 10 }
+					}
+				}
+			}
+		}
+	}
+
+	option = { # Spend prominence to make heir more popular
+		name = "monarchy_events.28.b"
+		custom_tooltip = "monarchy_events.28.b.tt"
+		current_ruler = {
+			add_popularity = subtract_popularity_medium
+		}
+		hidden_effect = {
+			random_list = {
+				10 = {
+					modifier = {
+						factor = 2
+						trigger = {
+							scope:primary_heir = {
+								char_is_good_leader_trigger = yes
+							}
+						}
+					}
+					trigger_event = { 
+						id = "monarchy_events.31"
+						days = { 5 10 }
+					}
+				}
+				6 = {
+					modifier = {
+						factor = 2
+						trigger = {
+							scope:primary_heir = {
+								char_is_bad_leader_trigger = yes
+							}
+						}
+					}
+					trigger_event = {
+						id = "monarchy_events.32"
+						days = { 5 10 }
+					}
+				}
+			}
+		}
+	}
+}
+
+# Spend Treasury to impress heir outcome 1 - Positive
+monarchy_events.29 = {
+	type = country_event
+	title = "monarchy_events.29.t"
+	desc = "monarchy_events.29.desc"
+	picture = war_chest
+	
+	left_portrait = current_ruler
+	right_portrait = scope:primary_heir
+
+	trigger = {
+		is_monarchy = yes
+		scope:primary_heir = { is_primary_heir = yes }
+	}
+
+	immediate = {
+
+	}
+
+	option = {
+		name = "monarchy_events.29.a"
+		scope:primary_heir = {
+			add_loyalty = loyalty_grateful_heir
+			add_prominence = prominence_large
+		}
+	}
+}
+
+# Spend Treasury to impress heir outcome 2 - Negative
+monarchy_events.30 = {
+	type = country_event
+	title = "monarchy_events.30.t"
+	desc = "monarchy_events.30.desc"
+	picture = war_chest
+	
+	left_portrait = current_ruler
+	right_portrait = scope:primary_heir
+
+	trigger = {
+		is_monarchy = yes
+		scope:primary_heir = { is_primary_heir = yes }
+	}
+
+	immediate = {
+		hidden_effect = {
+			scope:primary_heir = {
+				add_gold = {
+					subtract = root.has_monthly_income 
+					multiply = 6
+				}
+			}
+		}
+	}
+
+	option = {
+		name = "monarchy_events.30.a"
+		scope:primary_heir = {
+			add_loyalty = loyalty_ungrateful_heir
+			add_prominence = subtract_prominence_large
+		}
+	}
+}
+
+# Spend prominence to impress and popularize heir outcome 1 - Positive
+monarchy_events.31 = {
+	type = country_event
+	title = "monarchy_events.31.t"
+	desc = "monarchy_events.31.desc"
+	picture = greek_philosophers
+	
+	left_portrait = current_ruler
+	right_portrait = scope:primary_heir
+
+	trigger = {
+		is_monarchy = yes
+		scope:primary_heir = { is_primary_heir = yes }
+	}
+
+	option = {
+		name = "monarchy_events.31.a"
+		current_ruler = { add_popularity = popularity_small }
+		scope:primary_heir = {
+			add_loyalty = loyalty_grateful_heir
+			add_prominence = prominence_large
+		}
+	}
+}
+
+# Spend prominence to impress and popularize heir outcome 2 - Negative
+monarchy_events.32 = {
+	type = country_event
+	title = "monarchy_events.32.t"
+	desc = "monarchy_events.32.desc"
+	picture = senator_conversing
+	
+	left_portrait = current_ruler
+	right_portrait = scope:primary_heir
+
+	trigger = {
+		is_monarchy = yes
+		scope:primary_heir = { is_primary_heir = yes }
+	}
+
+	option = {
+		name = "monarchy_events.32.a"
+		current_ruler = { add_prominence = subtract_prominence_small }
+		scope:primary_heir = {
+			add_loyalty = loyalty_incompetent_heir
+			add_prominence = subtract_prominence_huge
+		}
+	}
+}
+
+# Try to undermine the heir
+monarchy_events.33 = {
+	type = country_event
+	title = "monarchy_events.33.t"
+	desc = "monarchy_events.33.desc"
+	picture = senator_conversing
+	
+	left_portrait = current_ruler
+	right_portrait = scope:primary_heir
+	left_portrait = scope:other_heir
+
+	trigger = {
+		is_monarchy = yes
+		scope:primary_heir = { is_primary_heir = yes }
+	}
+
+	immediate = {
+		random_character = {
+			limit = {
+				is_pretender = yes
+				NOT = { THIS = scope:primary_heir }
+			}
+			save_scope_as = other_heir
+		}
+	}
+
+	option = { # Make the heir more unpopular, and blame it on someone else
+		name = "monarchy_events.33.a"
+		custom_tooltip = "monarchy_events.33.a.tt"
+		add_political_influence = subtract_influence_large
+		hidden_effect = {
+			random_list = {
+				10 = {
+					modifier = {
+						factor = 2
+						scope:primary_heir = {
+							char_is_bad_leader_trigger = yes
+						}
+					}
+					trigger_event = { 
+						id = "monarchy_events.34"
+						days = { 5 10 }
+					}
+				}
+				8 = {
+					modifier = {
+						factor = 2
+						scope:primary_heir = {
+							char_is_paranoid_trigger = yes
+						}
+					}
+					trigger_event = {
+						id = "monarchy_events.35"
+						days = { 5 10 }
+					}
+				}
+			}
+		}
+	}
+
+	option = { # Find another potential heir to groom
+		name = "monarchy_events.33.b"
+		trigger = {
+			any_character = {
+				THIS = scope:other_heir
+			}
+		}
+		add_treasury = {
+			subtract = root.has_monthly_income
+			multiply = 12
+		}
+		scope:primary_heir = {
+			add_rival = scope:other_heir
+		}
+		scope:other_heir = {
+			add_loyalty = loyalty_favored_heir
+			add_popularity = popularity_medium
+			add_prominence = prominence_huge
+		}
+		
+	}
+
+	option = { # Regret, and do neither
+		name = "monarchy_events.33.c"
+		custom_tooltip = "no_effect_tooltip"
+	}
+}
+
+# Depopularize the heir outcome 1 - Positive
+monarchy_events.34 = {
+	type = country_event
+	title = "monarchy_events.34.t"
+	desc = "monarchy_events.34.desc"
+	picture = dagger_behind_back
+	
+	left_portrait = current_ruler
+	right_portrait = scope:primary_heir
+
+	trigger = {
+		is_monarchy = yes
+		scope:primary_heir = { is_primary_heir = yes }
+	}
+
+	option = {
+		name = "monarchy_events.34.a"
+		scope:primary_heir = {
+			add_loyalty = loyalty_shamed_heir
+			add_prominence = subtract_prominence_huge
+		}
+	}
+}
+
+# Depopularize the heir outcome 2 - Negative
+monarchy_events.35 = {
+	type = country_event
+	title = "monarchy_events.35.t"
+	desc = "monarchy_events.35.desc"
+	picture = greek_court
+	
+	left_portrait = current_ruler
+	right_portrait = scope:primary_heir
+
+	trigger = {
+		is_monarchy = yes
+		scope:primary_heir = { is_primary_heir = yes }
+	}
+
+	option = {
+		name = "monarchy_events.35.a"
+		root.current_ruler = {
+			add_popularity = subtract_popularity_small
+			add_prominence = subtract_prominence_huge
+		}
+		scope:primary_heir = {
+			add_prominence = prominence_medium
+			add_loyalty = loyalty_shamed_heir
+		}
+	}
+}
+## End of Event Chain##
+
+# Spouse asking to change succession law for daughter
+monarchy_events.38 = {
+	type = country_event
+	title = "monarchy_events.38.t"
+	desc = "monarchy_events.38.desc"
+	picture = greek_court
+	
+	left_portrait = current_ruler
+	right_portrait = scope:ruler_spouse
+
+	trigger = {
+		is_monarchy = yes
+		NOR = { 
+			has_law = cognatic_succession_law
+			has_law = egyption_succession_law
+		}
+		current_ruler = {
+			NOT = {
+				any_child = {
+					is_female = no
+				}
+			}
+			is_married = yes
+			spouse = {
+				is_alive = yes
+				any_child = {
+					is_female = yes
+					father = root.current_ruler
+				}
+			}
+		}
+		NOT = { has_variable = monarchy_events_38_cooldown }
+	}
+
+	immediate = {
+		current_ruler = {
+			spouse = {
+				save_scope_as = ruler_spouse
+			}
+		}
+		hidden_effect = {
+			set_variable = {
+				name = monarchy_events_38_cooldown
+				days = 7300
+			}
+		}
+	}
+
+	option = {
+		name = "monarchy_events.38.a"
+		change_law = cognatic_succession_law
+		add_political_influence = subtract_influence_large
+		current_ruler = {
+			add_prominence = subtract_prominence_huge
+		}
+		scope:ruler_spouse = {
+			add_loyalty = loyalty_female_heir_approved
+		}
+	}
+
+	option = {
+		name = "monarchy_events.38.b"
+		scope:ruler_spouse = {
+			add_loyalty = loyalty_female_heir_rejected
+			add_prominence = subtract_prominence_medium
+		}
+	}
+}
+
+# Damn pirates!
+monarchy_events.39 = {
+	type = country_event
+	title = "monarchy_events.39.t"
+	desc = "monarchy_events.39.desc"
+	picture = naval_battle
+	
+	left_portrait = current_ruler
+	right_portrait = scope:character_marshal
+
+	goto_location = scope:random_port_province
+	
+	trigger = {
+		is_monarchy = yes
+		num_of_ports >= 1
+		num_of_ships >= 30
+		NOT = { has_law = antipiracy_edict }
+		NOT = { has_variable = monarchy_events_39_cooldown }
+		any_character = {
+			has_office = office_marshal
+		}
+	}
+
+	immediate = {
+		random_character = {
+			limit = {
+				has_office = office_marshal
+			}
+			save_scope_as = character_marshal
+		}
+		random_owned_province = {
+			limit = {
+				is_port = yes
+			}
+			save_scope_as = random_port_province
+		}
+		hidden_effect = {
+			set_variable = {
+				name = monarchy_events_39_cooldown
+				days = 1825
+			}
+		}
+	}
+
+	option = { # Change law
+		name = "monarchy_events.39.a"
+		change_law = antipiracy_edict
+		scope:character_marshal = { add_loyalty = loyalty_pirates_outlawed }
+		add_political_influence = subtract_influence_huge
+	}
+
+	option = { # Military power solution
+		name = "monarchy_events.39.b"
+		scope:character_marshal = { 
+			add_popularity = popularity_huge
+		}
+		subtract_manpower_effect_10 = yes
+	}
+
+	option = { # Let them run amok 
+		name = "monarchy_events.39.c"
+		scope:character_marshal = { add_loyalty = loyalty_pirates_tolerated }
+		scope:random_port_province = {
+			add_province_modifier = {
+				name = province_unrest_pirate
+				duration = 5475
+			}
+		}
+	}
+}
+
+# Unreliable Master of the Guard
+monarchy_events.40 = {
+	type = country_event
+	title = "monarchy_events.40.t"
+	desc = "monarchy_events.40.desc"
+	picture = roman_trial
+	
+	left_portrait = current_ruler
+	right_portrait = scope:character_master_guard
+
+	trigger = {
+		is_monarchy = yes
+		any_character = {
+			has_office = office_master_of_the_guard
+			loyalty < 50
+		}
+	}
+
+	immediate = {
+		random_character = {
+			limit = {
+				has_office = office_master_of_the_guard
+				loyalty < 50
+			}
+			save_scope_as = character_master_guard
+		}
+	}
+
+	option = { # Remove him from office
+		name = "monarchy_events.40.a"
+		scope:character_master_guard = {
+			remove_office = office_master_of_the_guard
+			add_loyalty = loyalty_removed_office
+			add_prominence = subtract_prominence_medium
+		}
+	}
+
+	option = { # Appease him/her with gold
+		name = "monarchy_events.40.b"
+		add_treasury = {
+			subtract = root.has_monthly_income
+			multiply = 6
+		}
+		scope:character_master_guard = {
+			if = {
+				limit = {
+					char_is_bad_leader_trigger = yes
+				}
+				add_loyalty = loyalty_gift_bribe_2
+			}
+			else = {
+				add_loyalty = loyalty_gift_bribe_1
+			}
+		}
+		hidden_effect = {
+			scope:character_master_guard = {
+				add_gold = {
+					value = root.has_monthly_income
+					multiply = 6
+				}
+			}
+		}
+	}
+
+	option = { # Let him / her stay as guard
+		name = "monarchy_events.40.c"
+		root.current_ruler = { add_popularity = subtract_popularity_medium }
+	}
+}
+
+# Citizens travels to allied country - Original Country - Start
+monarchy_events.41 = {
+	type = country_event
+	title = "monarchy_events.41.t"
+	desc = "monarchy_events.41.desc"
+	picture = hellenic_marketplace
+	
+	left_portrait = current_ruler
+	right_portrait = scope:allied_neighbor.current_ruler
+
+	goto_location = scope:randomized_country_province
+	
+	trigger = {
+		is_monarchy = yes
+		NOT = { has_variable = monarchy_events_41_cooldown }
+		any_owned_province = {
+			any_neighbor_province = {
+				exists = owner
+				owner = {
+					alliance_with = root
+				}
+			}
+			any_pops_in_province = {
+				pop_type = citizen
+			}
+		}
+	}
+
+	immediate = {
+		random_owned_province = { # Find owned province for citizens to travel from
+			limit = {
+				any_neighbor_province = {
+					exists = owner
+					owner = {
+						alliance_with = root
+					}
+				}
+				any_pops_in_province = {
+					pop_type = citizen
+				}
+			}
+			save_scope_as = randomized_country_province
+			random_neighbor_province = { # Find neighbor province for citizens to travel to
+				limit = {
+					exists = owner
+					owner = {
+						alliance_with = root
+					}
+				}
+				save_scope_as = randomized_neighbor_province
+				owner = {
+					save_scope_as = allied_neighbor
+				}
+			}
+		}
+		root = {
+			save_scope_as = original_country
+		}
+		hidden_effect = {
+			set_variable = {
+				name = monarchy_events_41_cooldown
+				days = 3650
+			}
+		}
+	}
+
+	option = { # Let citizens go to allied country
+		name = "monarchy_events.41.a"
+		scope:randomized_country_province = {
+			random_pops_in_province = {
+				limit = {
+					pop_type = citizen
+				}
+				weight = {
+					modifier = {
+						factor = 3
+						pop_religion = root.religion
+					}
+					modifier = {
+						factor = 3
+						pop_culture = root.culture
+					}
+				}
+				move_pop = scope:randomized_neighbor_province
+			}
+		}
+		scope:allied_neighbor = {
+			add_opinion = {
+				modifier = opinion_close_allies
+				target = root
+			}
+		}
+		hidden_effect = {
+			scope:allied_neighbor = {
+				trigger_event = {
+					id = "monarchy_events.42"
+					days = { 5 10 }
+				}
+			}
+		}
+	}
+
+	option = { # Make sure the citizens stick around in ROOT country by military force
+		name = "monarchy_events.41.b"
+		add_tyranny = tyranny_small
+	}
+
+	option = { # Build up province they travel from, to make them refrain from traveling
+		name = "monarchy_events.41.c"
+		add_treasury = {
+			subtract = root.has_monthly_income
+			multiply = 4
+		}
+		scope:randomized_country_province = {
+			add_province_modifier = {
+				name = province_improvements_monarchy
+				duration = 3650	
+			}
+		}
+	}
+}
+
+# Citizens travels to allied country P.2 - Allied Country - Receive citizens
+monarchy_events.42 = {
+	type = country_event
+	title = "monarchy_events.42.t"
+	desc = "monarchy_events.42.desc"
+	picture = hellenic_marketplace
+
+	left_portrait = current_ruler
+	right_portrait = scope:original_country.current_ruler
+
+	option = { # Send a recompensation gift
+		name = "monarchy_events.42.a"
+		add_treasury = {
+			subtract = root.has_monthly_income
+			multiply = 4
+		}
+		scope:original_country = {
+			add_opinion = {
+				modifier = opinion_close_allies
+				target = root
+			}
+		}
+		hidden_effect = {
+			scope:original_country = {
+				trigger_event = {
+					id = "monarchy_events.43"
+					days = { 5 10 }
+				}
+			}
+		}
+	}
+
+	option = { # Accept the citizens and move on with your life
+		name = "monarchy_events.42.b"
+	}
+}
+
+# Citizens travels to allied country P.3 - Original Country - Receive gold compensation
+monarchy_events.43 = {
+	type = country_event
+	title = "monarchy_events.43.t"
+	desc = "monarchy_events.43.desc"
+	picture = war_chest
+
+	left_portrait = current_ruler
+	right_portrait = scope:allied_neighbor.current_ruler
+
+	option = {
+		name = "monarchy_events.43.a"
+		add_treasury = {
+			value = scope:allied_neighbor.has_monthly_income
+			multiply = 10
+		}
+	}
+}
+
+# The great statue
+monarchy_events.44 = {
+	type = country_event
+	title = "monarchy_events.44.t"
+	desc = "monarchy_events.44.desc"
+	picture = quarry
+	
+	left_portrait = current_ruler
+
+	goto_location = scope:randomized_country_province
+	
+	trigger = {
+		is_monarchy = yes
+		current_ruler = {
+			is_female = no
+		}
+		any_owned_province = {
+			province_unrest <= 0
+			has_city_status = yes
+			NOR = {
+				has_province_modifier = province_improvement_statue
+				has_province_modifier = province_diminishment_statue
+			}
+		}
+	}
+
+	immediate = {
+		random_owned_province = {
+			limit = {
+				province_unrest = 0
+				has_city_status = yes
+				NOR = {
+					has_province_modifier = province_improvement_statue
+					has_province_modifier = province_diminishment_statue
+				}
+			}
+			save_scope_as = randomized_country_province
+		}
+	}
+
+	option = {
+		name = "monarchy_events.44.a"
+		current_ruler = {
+			add_popularity = subtract_popularity_medium
+		}
+		scope:randomized_country_province = {
+			add_province_modifier = {
+				name = province_improvement_statue
+				duration = 3650
+			}
+		}
+	}
+
+	option = {
+		name = "monarchy_events.44.b"
+		scope:randomized_country_province = {
+			add_province_modifier = {
+				name = province_diminishment_statue
+				duration = 3650
+			}
+		}
+	}
+}
+
+# The inspirational speech of a Diadochi
+monarchy_events.45 = {
+	type = country_event
+	title = "monarchy_events.45.t"
+	desc = "monarchy_events.45.desc"
+	picture = throneroom
+	
+	left_portrait = current_ruler
+
+	trigger = {
+		current_ruler = {
+			prisoner = no
+			is_adult = yes
+		}
+		is_monarchy = yes
+		NOT = { has_variable = monarchy_events_45_cooldown }
+		OR = {
+			tag = EGY
+			tag = SEL
+			tag = MAC
+			tag = TRE
+			tag = PRY
+		}
+	}
+
+	immediate = {
+		hidden_effect = {
+			set_variable = {
+				name = monarchy_events_45_cooldown
+				days = 7300
+			}
+		}
+	}
+
+	option = { # Military Power
+		name = "monarchy_events.45.a"
+		add_manpower = 10
+	}
+
+	option = { # Civic Power 
+		name = "monarchy_events.45.b"
+		add_treasury = {
+			value = has_monthly_income
+			multiply = 3
+		}
+	}
+
+	option = { # Oratory Power
+		name = "monarchy_events.45.c"
+		add_political_influence = influence_medium
+	}
+
+	option = { # Religious Power
+		name = "monarchy_events.45.d"
+		add_stability_effect = yes
+	}
+}
+
+
+# legion law
+monarchy_events.100 = {
+	type = country_event
+	hidden = yes
+
+	trigger = {
+		always = no
+		is_ai = yes
+		has_land = yes
+		is_monarchy = yes
+		NOT = { has_law = standing_army_law }
+		NOT = { has_law = work_for_the_best }
+		rank >= regional_power
+	}
+
+	immediate = {
+		pay_price = enact_law
+		change_law = work_for_the_best
+	}
+}
+
+# legion law
+monarchy_events.101 = {
+	type = country_event
+	hidden = yes
+
+	trigger = {
+		always = no
+		is_ai = yes
+		has_land = yes
+		is_monarchy = yes
+		NOT = { has_law = standing_army_law }
+		invention = discipline_inv_5
+	}
+
+	immediate = {
+		pay_price = enact_law
+		change_law = standing_army_law
+	}
+}
+
+#Supported successors
+monarchy_events.102 = {
+	type = country_event
+	hidden = yes
+
+	trigger = {	
+		is_monarchy = yes
+		has_civil_war = no
+		NOT = {
+			has_variable = someone_was_supported
+		}
+		any_neighbour_country = {
+			rank >= regional_power
+			war = no
+			has_civil_war = no
+			is_antagonist = yes
+			is_ai = yes
+			NOT = {
+				has_variable = supporting_someone
+			}
+		}
+		any_character = {
+			is_adult = yes
+			is_ruler = no
+			is_pretender = yes
+			is_primary_heir = no
+			loyalty <= 50
+		}
+		NOT = {
+			any_character = {
+				has_variable = successor_support_ci
+			}
+		}
+	}
+
+	immediate = {
+		set_variable = {
+			name = someone_was_supported
+			days = 7300
+		}
+		random_neighbour_country = {
+			limit = {
+				rank >= regional_power
+				war = no
+				has_civil_war = no
+				is_antagonist = yes
+				is_ai = yes
+				NOT = {
+					has_variable = supporting_someone
+				}
+			}
+			set_variable = {
+				name = supporting_someone
+				days = 3650
+			}
+			save_scope_as = supporting_country
+		}
+		random_character = {
+			limit = {
+				is_adult = yes
+				is_ruler = no
+				is_pretender = yes
+				is_primary_heir = no
+				loyalty <= 50
+			}
+			save_scope_as = supported_pretender
+			add_loyalty = loyalty_pretender_support_ci 
+			set_variable = {
+				name = successor_support_ci
+				value = scope:supporting_country
+				days = 1850
+			}
+		}
+		trigger_event = {
+			id = monarchy_events.103
+		}
+	}
+}
+
+#Foreign pretender support!
+monarchy_events.103 = {
+	type = country_event
+	title = "monarchy_events.103.t"
+	desc = "monarchy_events.103.desc"
+	picture = throneroom
+	
+	left_portrait = current_ruler
+	right_portrait = scope:supporting_country.current_ruler
+	right_portrait = scope:supported_pretender
+	
+	option = {
+		name = "monarchy_events.103.a"
+		add_legitimacy = -5
+	}
+	
+}

@@ -1,10 +1,15 @@
-﻿# Note that all triggers here check if character is a rival of the ruler, as they are banned from loyalty fixing
-ai_fix_character_loyalty = {
+﻿# ----------------------------------------------------------------------------------------------------------------------
+# Note that all triggers here check if character is a rival of the ruler, as they are banned from loyalty fixing, except # for very hard AI dificulty.
+# ----------------------------------------------------------------------------------------------------------------------
+
+# No urgency so fix loyalty conservatively
+ai_fix_character_loyalty_normal = {
     if = {
         limit = {
             is_ai = yes
             exists = current_ruler
             has_civil_war = no
+            towards_civil_war = no
         }
 
         # Required by character interaction triggers and effects
@@ -16,131 +21,43 @@ ai_fix_character_loyalty = {
             value = 0
         }
 
-        # Urgently needs to fix loyalty
-        if = {
+        # Bribe important disloyal eligible character with highest power base
+        ordered_character = {
             limit = {
-                # Try to prevent civil war from happening
-                towards_civil_war = yes
+                # Required by character interaction triggers
+                save_temporary_scope_as = target
+                # Check eligibility for the interaction
+                character_is_eligible_for_bribing_or_persuation = yes
+                # Additional conditions we want to match
+                character_is_disloyal = yes
+                character_is_important = yes
+                character_is_rival_of_ruler = no
             }
-
-            # Bribe up to 3 disloyal eligible characters with high power base
-            ordered_character = {
-                limit = {
-                    # Required by character interaction triggers
-                    save_temporary_scope_as = target
-                    # Check eligibility for the interaction
-                    character_is_eligible_for_bribing_or_persuation = yes
-                    # Additional conditions we want to match
-                    character_is_disloyal = yes
-                    character_is_powerful = yes
-                    character_is_rival_of_ruler = no
-                }
-                # Results in 3 highest by power base
-                order_by = power_base
-                min = 0
-                max = 3
-                # Don't print errors if there are less characters
-                check_range_bounds = no
-                # Required by character interaction effects
-                save_scope_as = target
-                # Perform interaction
-                if = {
-                    limit = {
-                        # Re-check cause we are bribing multiple people so we could run out of PI and gold midway
-                        character_is_eligible_for_bribing_or_persuation = yes
-                    }
-                    bribe_or_persuade_character = yes
-                    change_local_variable = {
-                        name = loyalty_fixes_done
-                        add = 1
-                    }
-                }
-                # Garbage collection
-                clear_saved_scope = target
+            # Highest character by power base
+            order_by = power_base
+            position = 0
+            # Don't print error if there is no such character
+            check_range_bounds = no
+            # Required by character interaction effects
+            save_scope_as = target
+            # Perform interaction
+            bribe_or_persuade_character = yes
+            change_local_variable = {
+                name = loyalty_fixes_done
+                add = 1
             }
-
-            # If couldn't bribe 3 characters, give free hands to eligible character with highest power base
-            if = {
-                limit = {
-                    local_var:loyalty_fixes_done < 3
-                }
-                ordered_character = {
-                    limit = {
-                        # Required by character interaction triggers
-                        save_temporary_scope_as = target
-                        # Check eligibility for the interaction
-                        character_is_eligible_for_giving_free_hands = yes
-                        # Additional conditions we want to match
-                        character_is_disloyal = yes
-                        character_is_powerful = yes
-                        character_is_rival_of_ruler = no
-                        trigger_if = {
-                            limit = {
-                                is_governor = yes
-                            }
-                            corruption <= 10 # Governors can't be highly corrupt or else provinces will lose loyalty
-                        }
-                        trigger_else = {
-                            corruption <= 40
-                        }
-                    }
-                    # Highest character by power base
-                    order_by = power_base
-                    position = 0
-                    # Don't print error if there is no such character
-                    check_range_bounds = no
-                    # Required by character interaction effects
-                    save_scope_as = target
-                    # Perform interaction
-                    free_hands_effect = yes
-                    change_local_variable = {
-                        name = loyalty_fixes_done
-                        add = 1
-                    }
-                    # Garbage collection
-                    clear_saved_scope = target
-                }
-            }
-
-            # If couldn't fix anyone's loyalty at all, give stipends to eligible character with highest power base
-            if = {
-                limit = {
-                    local_var:loyalty_fixes_done = 0
-                }
-                ordered_character = {
-                    limit = {
-                        # Required by character interaction triggers
-                        save_temporary_scope_as = target
-                        # Check eligibility for the interaction
-                        character_is_eligible_for_giving_subsidies = yes
-                        # Additional conditions we want to match
-                        character_is_disloyal = yes
-                        character_is_powerful = yes
-                        character_is_rival_of_ruler = no
-                    }
-                    # Highest character by power base
-                    order_by = power_base
-                    position = 0
-                    # Don't print error if there is no such character
-                    check_range_bounds = no
-                    # Required by character interaction effects
-                    save_scope_as = target
-                    # Perform interaction
-                    grant_stipends_effect = yes
-                    change_local_variable = {
-                        name = loyalty_fixes_done
-                        add = 1
-                    }
-                    # Garbage collection
-                    clear_saved_scope = target
-                }
-            }
+            # Garbage collection
+            clear_saved_scope = target
         }
 
-        # No urgency so fix loyalty more conservatively
-        else = {
+        # If no bribing happened and we have some stored political influence
+        if = {
+            limit = {
+                local_var:loyalty_fixes_done = 0
+                political_influence >= 55 # Sacrifice + bribe price
+            }
 
-            # Bribe important disloyal eligible character with highest power base
+            # Bribe important close to disloyal eligible character with highest power base
             ordered_character = {
                 limit = {
                     # Required by character interaction triggers
@@ -148,7 +65,7 @@ ai_fix_character_loyalty = {
                     # Check eligibility for the interaction
                     character_is_eligible_for_bribing_or_persuation = yes
                     # Additional conditions we want to match
-                    character_is_disloyal = yes
+                    character_is_close_to_disloyal = yes
                     character_is_important = yes
                     character_is_rival_of_ruler = no
                 }
@@ -168,42 +85,143 @@ ai_fix_character_loyalty = {
                 # Garbage collection
                 clear_saved_scope = target
             }
+        }
 
-            # If no bribing happened and we have some stored political influence
+        # Garbage collection
+        clear_saved_scope = actor
+        remove_local_variable = loyalty_fixes_done
+    }
+}
+
+# Try to prevent civil war from happening
+ai_fix_character_loyalty_urgent = {
+    if = {
+        limit = {
+            is_ai = yes
+            exists = current_ruler
+            has_civil_war = no
+            towards_civil_war = yes
+        }
+
+        # Required by character interaction triggers and effects
+        save_scope_as = actor
+
+        # Track how much loyalty fixing we have already performed
+        set_local_variable = {
+            name = loyalty_fixes_done
+            value = 0
+        }
+
+        # Bribe up to 3 disloyal eligible characters with high power base
+        ordered_character = {
+            limit = {
+                # Required by character interaction triggers
+                save_temporary_scope_as = target
+                # Check eligibility for the interaction
+                character_is_eligible_for_bribing_or_persuation = yes
+                # Additional conditions we want to match
+                character_is_disloyal = yes
+                character_is_powerful = yes
+                character_is_rival_of_ruler = no
+            }
+            # Results in 3 highest by power base
+            order_by = power_base
+            min = 0
+            max = 3
+            # Don't print errors if there are less characters
+            check_range_bounds = no
+            # Required by character interaction effects
+            save_scope_as = target
+            # Perform interaction
             if = {
                 limit = {
-                    local_var:loyalty_fixes_done = 0
-                    political_influence >= 55 # Sacrifice + bribe price
+                    # Re-check cause we are bribing multiple people so we could run out of PI and gold midway
+                    character_is_eligible_for_bribing_or_persuation = yes
                 }
+                bribe_or_persuade_character = yes
+                change_local_variable = {
+                    name = loyalty_fixes_done
+                    add = 1
+                }
+            }
+            # Garbage collection
+            clear_saved_scope = target
+        }
 
-                # Bribe important close to disloyal eligible character with highest power base
-                ordered_character = {
-                    limit = {
-                        # Required by character interaction triggers
-                        save_temporary_scope_as = target
-                        # Check eligibility for the interaction
-                        character_is_eligible_for_bribing_or_persuation = yes
-                        # Additional conditions we want to match
-                        character_is_close_to_disloyal = yes
-                        character_is_important = yes
-                        character_is_rival_of_ruler = no
+        # If couldn't bribe 3 characters, give free hands to eligible character with highest power base
+        if = {
+            limit = {
+                local_var:loyalty_fixes_done < 3
+            }
+            ordered_character = {
+                limit = {
+                    # Required by character interaction triggers
+                    save_temporary_scope_as = target
+                    # Check eligibility for the interaction
+                    character_is_eligible_for_giving_free_hands = yes
+                    # Additional conditions we want to match
+                    character_is_disloyal = yes
+                    character_is_powerful = yes
+                    character_is_rival_of_ruler = no
+                    trigger_if = {
+                        limit = {
+                            is_governor = yes
+                        }
+                        corruption <= 10 # Governors can't be highly corrupt or else provinces will lose loyalty
                     }
-                    # Highest character by power base
-                    order_by = power_base
-                    position = 0
-                    # Don't print error if there is no such character
-                    check_range_bounds = no
-                    # Required by character interaction effects
-                    save_scope_as = target
-                    # Perform interaction
-                    bribe_or_persuade_character = yes
-                    change_local_variable = {
-                        name = loyalty_fixes_done
-                        add = 1
+                    trigger_else = {
+                        corruption <= 40
                     }
-                    # Garbage collection
-                    clear_saved_scope = target
                 }
+                # Highest character by power base
+                order_by = power_base
+                position = 0
+                # Don't print error if there is no such character
+                check_range_bounds = no
+                # Required by character interaction effects
+                save_scope_as = target
+                # Perform interaction
+                free_hands_effect = yes
+                change_local_variable = {
+                    name = loyalty_fixes_done
+                    add = 1
+                }
+                # Garbage collection
+                clear_saved_scope = target
+            }
+        }
+
+        # If couldn't fix anyone's loyalty at all, give stipends to eligible character with highest power base
+        if = {
+            limit = {
+                local_var:loyalty_fixes_done = 0
+            }
+            ordered_character = {
+                limit = {
+                    # Required by character interaction triggers
+                    save_temporary_scope_as = target
+                    # Check eligibility for the interaction
+                    character_is_eligible_for_giving_subsidies = yes
+                    # Additional conditions we want to match
+                    character_is_disloyal = yes
+                    character_is_powerful = yes
+                    character_is_rival_of_ruler = no
+                }
+                # Highest character by power base
+                order_by = power_base
+                position = 0
+                # Don't print error if there is no such character
+                check_range_bounds = no
+                # Required by character interaction effects
+                save_scope_as = target
+                # Perform interaction
+                grant_stipends_effect = yes
+                change_local_variable = {
+                    name = loyalty_fixes_done
+                    add = 1
+                }
+                # Garbage collection
+                clear_saved_scope = target
             }
         }
 

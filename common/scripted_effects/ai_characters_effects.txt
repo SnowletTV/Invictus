@@ -148,15 +148,7 @@ ai_fix_character_loyalty = {
                     # Check eligibility for the interaction
                     character_is_eligible_for_bribing_or_persuation = yes
                     # Additional conditions we want to match
-                    OR = {
-                        character_is_disloyal = yes
-                        AND = {
-                            scope:actor = {
-                                political_influence >= 55 # Sacrifice + bribe price
-                            }
-                            character_is_close_to_disloyal = yes
-                        }
-                    }
+                    character_is_disloyal = yes
                     character_is_important = yes
                     character_is_rival_of_ruler = no
                 }
@@ -175,6 +167,43 @@ ai_fix_character_loyalty = {
                 }
                 # Garbage collection
                 clear_saved_scope = target
+            }
+
+            # If no bribing happened and we have some stored political influence
+            if = {
+                limit = {
+                    local_var:loyalty_fixes_done = 0
+                    political_influence >= 55 # Sacrifice + bribe price
+                }
+
+                # Bribe important close to disloyal eligible character with highest power base
+                ordered_character = {
+                    limit = {
+                        # Required by character interaction triggers
+                        save_temporary_scope_as = target
+                        # Check eligibility for the interaction
+                        character_is_eligible_for_bribing_or_persuation = yes
+                        # Additional conditions we want to match
+                        character_is_close_to_disloyal = yes
+                        character_is_important = yes
+                        character_is_rival_of_ruler = no
+                    }
+                    # Highest character by power base
+                    order_by = power_base
+                    position = 0
+                    # Don't print error if there is no such character
+                    check_range_bounds = no
+                    # Required by character interaction effects
+                    save_scope_as = target
+                    # Perform interaction
+                    bribe_or_persuade_character = yes
+                    change_local_variable = {
+                        name = loyalty_fixes_done
+                        add = 1
+                    }
+                    # Garbage collection
+                    clear_saved_scope = target
+                }
             }
         }
 

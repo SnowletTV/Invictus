@@ -550,36 +550,37 @@ me_parthia.7 = {
 			name = number_pops_steppe
 			value = 0
 		}
-		while = {
-			random_owned_province = {
-				limit = {
-					OR = {
-						is_in_region = sakia_region
-						province_id = 5423						
-						province_id = 5424
-						province_id = 5425
-						province_id = 5426
-						province_id = 5427
-						province_id = 5428			
-					}
-				}
-				random_pops_in_province = {
+		hidden_effect = {
+			while = {
+				count = 1000
+				random_owned_province = {
 					limit = {
 						OR = {
-							pop_culture = derbiccan
-							pop_culture = parthian
-						}
-						NOT = { has_variable = to_resettle }
-					}
-					set_variable = to_resettle
-					ROOT = {
-						change_variable = {
-							name = number_pops_steppe
-							add = 0.55
+							is_in_region = sakia_region
+							province_id = 5423						
+							province_id = 5424
+							province_id = 5425
+							province_id = 5426
+							province_id = 5427
+							province_id = 5428			
 						}
 					}
-				}
-			}			
+					random_pops_in_province = {
+						limit = {
+							OR = {
+								pop_culture = derbiccan
+								pop_culture = parthian
+							}
+						}
+						ROOT = {
+							change_variable = {
+								name = number_pops_steppe
+								add = 0.55
+							}
+						}
+					}
+				}			
+			}
 		}
 	}
 	
@@ -629,7 +630,7 @@ me_parthia.7 = {
 							OR = {
 								pop_culture = derbiccan
 								pop_culture = parthian
-							} 
+							}
 						}
 						move_pop = scope:parthia_settling_target 
 					}
@@ -1599,10 +1600,6 @@ me_parthia.1900 = { #SEL response event
 	option = {	
 		name = "me_parthia.19.a"
 		ai_chance = { factor = 100 }
-		trigger_event = {
-			id = me_parthia.9902
-			days = 1
-		}
 		add_stability = 25
 		every_current_war = {
 			limit = {
@@ -1672,6 +1669,10 @@ me_parthia.1900 = { #SEL response event
 			add_country_modifier = {
 				name = parthian_appeasing_stance
 				duration = 3650
+			}
+			trigger_event = {
+				id = me_parthia.9900
+				days = 1
 			}
 		}
 		hidden_effect = {
@@ -2778,6 +2779,11 @@ me_parthia.3303 = {
 	}
 }
 
+me_parthia.34 = {
+	type = country_event
+
+}
+
 me_parthia.9900 = { #Choose what region to hold directly - 1st step
     type = country_event 
 	title = "me_parthia.9900.t"
@@ -3549,104 +3555,11 @@ me_parthia.9902 = { #spawn a march in an illegal region
     hidden = yes 
 
     immediate = {
-		parthia_march_border_cleanup_eff = yes
-		ordered_owned_province = {
-			order_by = total_population
-			limit = {
-				NOT = {
-					has_variable = allowed_province					
-				}			
-			}
-			save_scope_as = capital_scope
-		}
-		scope:capital_scope = {
-			create_country = {
-				save_scope_as = spawn_scope
-			}
-		}
-		ROOT = {
-			make_subject = {
-				target = scope:spawn_scope
-				type = march
-			} 						
-		}
-		scope:capital_scope.region = {
-			every_region_province = {
-				limit = {
-					owner = ROOT
-					NOT = {
-						has_variable = allowed_province
-					}
-				}
-				set_owned_by = scope:spawn_scope
-			}
-		}
-		hidden_effect = {
-			scope:spawn_scope = {
-				new_march_colour_effect = yes
-				parthia_rename_march_effect = yes
-				parthian_change_culture_march_effect = yes
-			}		
-		}
-		if = {
-			limit = {
-				any_subject = {
-					is_subject_type = march
-					capital_scope.region = scope:spawn_scope.capital_scope.region
-					NOT = { THIS = scope:spawn_scope }
-					NOT = { has_variable = pth_excepted_var }
-				}
-			}
-			random_subject = {
-				limit = {
-					is_subject_type = march
-					capital_scope.region = scope:spawn_scope.capital_scope.region
-					NOT = { THIS = scope:spawn_scope }
-					NOT = { has_variable = pth_excepted_var }
-				}
-				save_scope_as = previous_march
-			}
-			scope:spawn_scope = {
-				every_owned_province = {
-					set_owned_by = scope:previous_march
-				}
-				every_character = {
-					death = {
-						death_reason = death_obscurity
-					}
-				}
-				every_country_treasure = { transfer_treasure_to_country = scope:previous_march }
-			}
-			scope:previous_march = {
-				new_march_colour_effect = yes
-				parthia_rename_march_effect = yes
-				parthian_change_culture_march_effect = yes
-				ordered_owned_province = {
-					order_by = total_population
-					save_scope_as = new_capital
-				}
-				set_capital = scope:new_capital
-				if = {
-					limit = {
-						any_owned_province = {
-							has_variable = allowed_province
-						}
-					}
-					every_owned_province = {
-						limit = {
-							has_variable = allowed_province
-						}
-						set_owned_by = ROOT
-					}
-				}				
-			}
-		}
-		if = { #debugging CAR and PES provinces, TODO maybe more elegant and universal solution
+		if = { #debugging CAR provinces
 			limit = {
 				any_subject = {
 					THIS = c:CAM
 					is_subject_type = march
-					capital_scope.region = scope:spawn_scope.capital_scope.region
 				}
 			}
 			c:CAM = {
@@ -3661,17 +3574,105 @@ me_parthia.9902 = { #spawn a march in an illegal region
 				every_country_treasure = { transfer_treasure_to_country = ROOT }
 			}
 		}
-		if = {
-			limit = {
-				any_owned_province = {
+		while = {
+			parthia_march_border_cleanup_eff = yes
+			limit = { 
+				any_owned_province = {				
 					NOT = {
-						has_variable = allowed_province
-					}
+						has_variable = allowed_province					
+					}	
 				}
 			}
-			trigger_event = {
-				id = me_parthia.9902
-				days = 1
+			ordered_owned_province = {
+				order_by = total_population
+				limit = {
+					NOT = {
+						has_variable = allowed_province					
+					}			
+				}
+				save_scope_as = capital_scope
+			}
+			scope:capital_scope = {
+				create_country = {
+					save_scope_as = spawn_scope
+				}
+			}
+			ROOT = {
+				make_subject = {
+					target = scope:spawn_scope
+					type = march
+				} 						
+			}
+			scope:capital_scope.region = {
+				every_region_province = {
+					limit = {
+						owner = ROOT
+						NOT = {
+							has_variable = allowed_province
+						}
+					}
+					set_owned_by = scope:spawn_scope
+				}
+			}
+			hidden_effect = {
+				scope:spawn_scope = {
+					new_march_colour_effect = yes
+					parthia_rename_march_effect = yes
+					parthian_change_culture_march_effect = yes
+				}		
+			}
+			if = {
+				limit = {
+					any_subject = {
+						is_subject_type = march
+						capital_scope.region = scope:spawn_scope.capital_scope.region
+						NOT = { THIS = scope:spawn_scope }
+						NOT = { has_variable = pth_excepted_var }
+					}
+				}
+				random_subject = {
+					limit = {
+						is_subject_type = march
+						capital_scope.region = scope:spawn_scope.capital_scope.region
+						NOT = { THIS = scope:spawn_scope }
+						NOT = { has_variable = pth_excepted_var }
+					}
+					save_scope_as = previous_march
+				}
+				scope:spawn_scope = {
+					every_owned_province = {
+						set_owned_by = scope:previous_march
+					}
+					every_character = {
+						death = {
+							death_reason = death_obscurity
+						}
+					}
+					every_country_treasure = { transfer_treasure_to_country = scope:previous_march }
+				}
+				scope:previous_march = {
+					new_march_colour_effect = yes
+					parthia_rename_march_effect = yes
+					parthian_change_culture_march_effect = yes
+					ordered_owned_province = {
+						order_by = total_population
+						save_scope_as = new_capital
+					}
+					set_capital = scope:new_capital
+					if = {
+						limit = {
+							any_owned_province = {
+								has_variable = allowed_province
+							}
+						}
+						every_owned_province = {
+							limit = {
+								has_variable = allowed_province
+							}
+							set_owned_by = ROOT
+						}
+					}				
+				}
 			}
 		}
     }
@@ -3748,32 +3749,8 @@ me_parthia.9903 = { # change held region - once every 20 years
 				order_by = parthia_region_pop_svalue
 				save_scope_as = parthia_region_3
 			}
-		}
-#		if = { #TODO, maybe?
-#			limit = {
-#				any_region = {
-#					count >= 4
-#					any_region_province = {
-#						has_variable = allowed_province					
-#					}
-#				}
-#			}
-#			ordered_region = {
-#				limit = {
-#					NOR = { 
-#						this = scope:parthia_region_1
-#						this = scope:parthia_region_2
-#						this = scope:parthia_region_3
-#					}
-#					any_region_province = {
-#						has_variable = allowed_province					
-#					}				
-#				}
-#				order_by = parthia_region_pop_svalue
-#				save_scope_as = parthia_region_4
-#			}
-#		}
-#	}
+		} #TODO 4th one?
+	}
 	
 	option = { #Remove region 1; annex
 		name = me_parthia.9903.a
@@ -3906,50 +3883,6 @@ me_parthia.9903 = { # change held region - once every 20 years
 			}
 		}
 		pth_change_region_eff = { WHICH = 3 }
-	}
-	option = { #4
-		name = me_parthia.9903.d
-		trigger = {
-			exists = scope:parthia_region_4
-		}
-		set_variable = {
-			name = pth_region_cooldown
-			days = 7300
-		}
-		if = {
-			limit = { 
-				scope:parthia_region_4 = region:parthia_region
-			}
-			custom_tooltip = me_parthia.9903.aa.tt
-		}
-		custom_tooltip = me_parthia.9903.d.tt
-		scope:march_scope.capital_scope.region = {
-			every_region_province = {
-				set_variable = allowed_province			
-			}
-		}
-		scope:march_scope = {
-			hidden_effect = {
-				every_owned_province = {
-					set_owned_by = ROOT
-				}
-				ROOT = {
-					random_country_culture = {
-						limit = { THIS.culture = scope:march_scope.culture } 
-						ROOT = { 
-							integrate_country_culture = PREV 
-						}
-					}					
-				}
-				every_character = {
-					death = {
-						death_reason = death_obscurity
-					}
-				}
-				every_country_treasure = { transfer_treasure_to_country = ROOT }
-			}
-		}
-		pth_change_region_eff = { WHICH = 4 }
 	}
 	option = { # Don't
 		name = me_parthia.9903.e
@@ -4210,7 +4143,8 @@ me_parthia.9912 = { #Build in march - choose building
 		trigger = {
 			treasury >= building_T2_cost
 			scope:build_in_scope = {
-				free_building_slots > 0 
+				free_building_slots > 0
+				has_construction = no				
 			}
 		}
 		scope:build_in_scope = {
@@ -4229,6 +4163,8 @@ me_parthia.9912 = { #Build in march - choose building
 			invention = centralised_production_inv
 			scope:build_in_scope = {
 				free_building_slots > 0 
+				num_of_foundry_building < 1
+				has_construction = no
 			}
 		}
 		scope:build_in_scope = {
@@ -4246,6 +4182,7 @@ me_parthia.9912 = { #Build in march - choose building
 			treasury >= building_T2_cost
 			scope:build_in_scope = {
 				free_building_slots > 0 
+				has_construction = no
 			}
 		}
 		scope:build_in_scope = {
@@ -4264,6 +4201,8 @@ me_parthia.9912 = { #Build in march - choose building
 			invention = global_unrest_inv_2
 			scope:build_in_scope = {
 				free_building_slots > 0 
+				num_of_temple_building < 1
+				has_construction = no
 			}
 		}
 		scope:build_in_scope = {
@@ -4281,7 +4220,9 @@ me_parthia.9912 = { #Build in march - choose building
 			treasury >= building_T3_cost
 			invention = agressive_expansion_monthly_decay_inv_3
 			scope:build_in_scope = {
-				free_building_slots > 0 
+				free_building_slots > 0
+				num_of_theathre_building < 1
+				has_construction = no			
 			}
 		}
 		scope:build_in_scope = {
@@ -4299,6 +4240,8 @@ me_parthia.9912 = { #Build in march - choose building
 			treasury >= building_T2_cost
 			scope:build_in_scope = {
 				free_building_slots > 0 
+				num_of_academy_building < 3
+				has_construction = no
 			}
 		}
 		scope:build_in_scope = {
@@ -4316,6 +4259,8 @@ me_parthia.9912 = { #Build in march - choose building
 			treasury >= building_T2_cost
 			scope:build_in_scope = {
 				free_building_slots > 0 
+				num_of_forum_building < 3
+				has_construction = no				
 			}
 		}
 		scope:build_in_scope = {
@@ -4333,6 +4278,8 @@ me_parthia.9912 = { #Build in march - choose building
 			treasury >= building_T2_cost
 			scope:build_in_scope = {
 				free_building_slots > 0 
+				num_of_workshop_building < 3
+				has_construction = no
 			}
 		}
 		scope:build_in_scope = {
@@ -5064,7 +5011,8 @@ me_parthia.9915 = { #Build in march - settlement - choose building
 		trigger = {
 			treasury >= building_T2_cost
 			scope:build_in_scope = {
-				free_building_slots > 0 
+				free_building_slots > 0
+				has_construction = no 
 			}
 		}
 		scope:build_in_scope = {
@@ -5081,7 +5029,8 @@ me_parthia.9915 = { #Build in march - settlement - choose building
 		trigger = {
 			treasury >= building_T2_cost
 			scope:build_in_scope = {
-				free_building_slots > 0 
+				free_building_slots > 0
+				has_construction = no 
 			}
 		}
 		scope:build_in_scope = {
@@ -5099,7 +5048,8 @@ me_parthia.9915 = { #Build in march - settlement - choose building
 			treasury >= building_T2_cost
 			scope:build_in_scope = {
 				free_building_slots > 0
-				has_minable_trade_good_trigger = yes				
+				has_minable_trade_good_trigger = yes
+				has_construction = no				
 			}
 		}
 		scope:build_in_scope = {
@@ -5118,6 +5068,7 @@ me_parthia.9915 = { #Build in march - settlement - choose building
 			scope:build_in_scope = {
 				free_building_slots > 0
 				has_food_trade_good_trigger = yes
+				has_construction = no
 			}
 		}
 		scope:build_in_scope = {
@@ -5154,7 +5105,10 @@ me_parthia.9920 = { #Swap dynasty
 	title = "me_parthia.9920.t"
 	desc = "me_parthia.9920.desc"
 	picture = event_horses_escaping
-	left_portrait = current_ruler
+	left_portrait = scope:choose_10
+	left_portrait = scope:choose_11
+	right_portrait = scope:choose_12
+	right_portrait = scope:choose_13
 	
 	immediate = {
 		current_ruler.family = {
@@ -5193,77 +5147,149 @@ me_parthia.9920 = { #Swap dynasty
 			}
 			save_scope_as = choose_13
 		}
-		random_in_list = {
-			list = choose_from_ruler
-			NOR = { 
-				THIS = scope:choose_10
-				THIS = scope:choose_11 
-				THIS = scope:choose_12
-				THIS = scope:choose_13
-			}
-			save_scope_as = choose_14
-		}
 	}
 	
 	option = {
 		name = me_parthia.9920.a
 		trigger = { exists = scope:choose_10 }
-		scope:choose_10 = {
-			move_country = scope:march_scope
-			set_home_country = scope:march_scope
-			remove_character_modifier = foreign_citizen		
+		hidden_effect = {
+			scope:choose_10 = {
+				move_country = scope:march_scope
+				set_home_country = scope:march_scope
+				remove_character_modifier = foreign_citizen		
+			}
 		}
 		scope:march_scope = {
 			set_as_ruler = scope:choose_10
 			set_variable = pth_march_dynasty
-            while = {
-                count = 3
-                create_character = {
-                    culture = parthian
-                    religion = root.religion
-                    while = {
-                        count = 3
-                        random_list = {
-                            25 = { add_zeal = 1 }
-                            25 = { add_charisma = 1 }
-                            25 = { add_finesse = 1 }
-                            25 = { add_martial = 1 }
-                        }
-                    }
-                    set_family = scope:choose_10.family
-                }
-            }	
+			hidden_effect = {
+				while = {
+					count = 3
+					create_character = {
+						culture = parthian
+						religion = root.religion
+						family_name = "Arsacid"
+						while = {
+							count = 3
+							random_list = {
+								25 = { add_zeal = 1 }
+								25 = { add_charisma = 1 }
+								25 = { add_finesse = 1 }
+								25 = { add_martial = 1 }
+							}
+						}
+						set_family = scope:choose_10.family
+					}
+				}
+			}
 		}
 	}
 	
 	option = {
 		name = me_parthia.9920.b
 		trigger = { exists = scope:choose_11 }
-		scope:choose_11 = {
-			move_country = scope:march_scope
-			set_home_country = scope:march_scope
-			remove_character_modifier = foreign_citizen				
+		hidden_effect = {
+			scope:choose_11 = {
+				move_country = scope:march_scope
+				set_home_country = scope:march_scope
+				remove_character_modifier = foreign_citizen				
+			}
 		}
 		scope:march_scope = {
 			set_as_ruler = scope:choose_11
 			set_variable = pth_march_dynasty
-            while = {
-                count = 3
-                create_character = {
-                    culture = parthian
-                    religion = root.religion
-                    while = {
-                        count = 3
-                        random_list = {
-                            25 = { add_zeal = 1 }
-                            25 = { add_charisma = 1 }
-                            25 = { add_finesse = 1 }
-                            25 = { add_martial = 1 }
-                        }
-                    }
-                    set_family = scope:choose_11.family
-                }
-            }	
+			hidden_effect = {
+				while = {
+					count = 3
+					create_character = {
+						culture = parthian
+						religion = root.religion
+						family_name = "Arsacid"
+						while = {
+							count = 3
+							random_list = {
+								25 = { add_zeal = 1 }
+								25 = { add_charisma = 1 }
+								25 = { add_finesse = 1 }
+								25 = { add_martial = 1 }
+							}
+						}
+						set_family = scope:choose_11.family
+					}
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = me_parthia.9920.c
+		trigger = { exists = scope:choose_12 }
+		hidden_effect = {
+			scope:choose_12 = {
+				move_country = scope:march_scope
+				set_home_country = scope:march_scope
+				remove_character_modifier = foreign_citizen		
+			}
+		}
+		scope:march_scope = {
+			set_as_ruler = scope:choose_12
+			set_variable = pth_march_dynasty
+			hidden_effect = {
+				while = {
+					count = 3
+					create_character = {
+						culture = parthian
+						religion = root.religion
+						family_name = "Arsacid"
+						while = {
+							count = 3
+							random_list = {
+								25 = { add_zeal = 1 }
+								25 = { add_charisma = 1 }
+								25 = { add_finesse = 1 }
+								25 = { add_martial = 1 }
+							}
+						}
+						set_family = scope:choose_12.family
+					}
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = me_parthia.9920.d
+		trigger = { exists = scope:choose_13 }
+		hidden_effect = {
+			scope:choose_13 = {
+				move_country = scope:march_scope
+				set_home_country = scope:march_scope
+				remove_character_modifier = foreign_citizen				
+			}
+		}
+		scope:march_scope = {
+			set_as_ruler = scope:choose_13
+			set_variable = pth_march_dynasty
+			hidden_effect = {
+				while = {
+					count = 3
+					create_character = {
+						culture = parthian
+						religion = root.religion
+						family_name = "Arsacid"
+						while = {
+							count = 3
+							random_list = {
+								25 = { add_zeal = 1 }
+								25 = { add_charisma = 1 }
+								25 = { add_finesse = 1 }
+								25 = { add_martial = 1 }
+							}
+						}
+						set_family = scope:choose_13.family
+					}
+				}
+			}
 		}
 	}
 	

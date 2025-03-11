@@ -2779,9 +2779,406 @@ me_parthia.3303 = {
 	}
 }
 
-me_parthia.34 = {
+me_parthia.34 = { #TODO all potential religions
 	type = country_event
+	hidden = yes
+	
+	immediate = {
+		if = {
+			limit = {
+				root.overlord = {
+					religion = mithra_religion
+				}
+			}
+			set_country_religion = mithra_religion
+		}
+		if = {
+			limit = {
+				root.overlord = {
+					religion = zoroaster
+				}
+			}
+			set_country_religion = zoroaster
+		}
+		if = {
+			limit = {
+				root.overlord = {
+					religion = buddhism
+				}
+			}
+			set_country_religion = buddhism
+		}
+		if = {
+			limit = {
+				root.overlord = {
+					religion = mesopotamian_religion
+				}
+			}
+			set_country_religion = mesopotamian_religion
+		}
+		if = {
+			limit = {
+				root.overlord = {
+					religion = roman_pantheon
+				}
+			}
+			set_country_religion = roman_pantheon
+		}		
+	}
+}
 
+me_parthia.3400 = { #TODO DELETE
+	type = country_event
+	hidden = yes
+	
+	immediate = {
+		set_country_religion = mithra_religion
+	}
+
+}
+
+me_parthia.35 = {
+	type = country_event
+	hidden = yes
+	
+	immediate = {
+		capital_scope = {
+			limit = {
+				any_pops_in_province = {
+					NOT = { pop_culture = parthian }
+				}
+			}
+			hidden_effect = {
+				ordered_pops_in_province = {
+					limit = {
+						NOT = { pop_culture = parthian }
+					}
+					order_by = pop_hapiness
+					max = 10
+					set_pop_culture = parthian
+				}
+			}
+		}		
+		if = {
+			limit = {
+				NOT = {
+					primary_culture = parthian
+				}
+			}
+			set_primary_culture_cleanup_effect = {
+				NEW_PRIMARY_CULTURE = parthian
+				MAKE_OLD_CULTURE_INTEGRATED = yes
+			}
+		}
+	}
+}
+
+me_parthia.36 = { #civil war or nah
+	type = country_event
+	title = me_parthia.36.t
+	desc = me_parthia.36.desc
+	picture = dagger_behind_back
+	left_portrait = current_ruler
+	right_portrait = scope:resistance_leader
+
+	immediate = {
+		if = {
+			limit = {
+				any_successor = {
+					is_adult = yes
+					is_primary_heir = no
+				}
+			}
+			ordered_successor = {
+				limit = {
+					is_adult = yes
+					is_primary_heir = no
+				}
+				check_range_bounds = no
+				order_by = power_base
+				save_scope_as = resistance_leader
+				max = 1
+			}
+		}
+		else = {
+			ordered_character = {
+				limit = {
+					is_ruler = no
+					is_successor = no
+					is_adult = yes
+					is_primary_heir = no
+				}
+				max = 1
+				check_range_bounds = no
+				order_by = power_base
+				save_scope_as = resistance_leader
+			}
+		}
+		if = {
+			limit = {exists = scope:resistance_leader}
+			hidden_effect = {
+				scope:resistance_leader = {
+					add_health = 50 #so he doesn't die from old age OR any natural sources immediatly
+				}
+			}
+			set_variable = {
+				name = traditionnalist_leader 
+				value = scope:resistance_leader
+			}
+		}
+	}
+
+	option = {#We will crush him and his family
+		name = me_parthia.36.a
+		custom_tooltip = AIO_Traditionnalist_civil_war_incomming #TODO
+		custom_tooltip = AIO_Traditionnalist_lose_loyalty #TODO
+		scope:resistance_leader = {
+			if = {
+				limit = {
+					is_friend = ROOT.current_ruler
+				}
+					remove_friend = ROOT.current_ruler
+			}
+
+			if = {
+				limit = {
+					not = { is_rival = ROOT.current_ruler}
+				}
+					add_rival = ROOT.current_ruler
+			}
+		}
+		hidden_effect = {
+			every_character = {
+				limit = {
+					is_ruler = no
+					has_same_family = scope:resistance_leader
+				}
+				add_loyalty = AIO_traditionnalist_upset
+			}
+		}
+		trigger_event = me_parthia.37
+	}
+
+	option = {#TODO
+		name = me_parthia.36.b
+		add_country_modifier = {
+			name = albion_mod_67 
+			duration = 7300 #20 years	
+		}
+		add_political_influence = -100
+		add_military_experience = -25
+		custom_tooltip = AIO_civil_war_prevent
+		set_variable = {
+			name = PTH_traditionnalist_appeased
+		}
+		remove_variable = traditionnalist_leader
+	}
+}
+
+me_parthia.37 = { #Centralisation civil war
+    type = country_event
+    title = me_parthia.37.t
+    desc = me_parthia.37.desc
+    picture = diadochi_seleucus_elephant
+    left_portrait = current_ruler
+    right_portrait = scope:resistance_leader
+	goto_location = capital_scope
+	
+	immediate = {
+		hidden_effect = {
+			ordered_governorships = {
+				limit = {
+					NOT = {
+						any_governorship_state = {
+							is_capital_state = yes
+						}
+					}
+				}
+				max = 1
+				order_by = {
+					every_governorship_state = {
+						every_state_province = {
+							add = total_population
+						}
+					}
+				}
+				save_scope_as = center_of_resistance
+			}
+			if = {
+				limit = {
+					scope:resistance_leader = {
+						is_governor = no
+					}
+				}
+				scope:center_of_resistance = {
+					random_governorship_state = {
+						random_state_province = {
+							set_as_governor = scope:resistance_leader
+						}
+					}
+				}
+			}
+			every_subject = {
+				limit = {
+					is_subject_type = march
+				}
+				every_owned_province = {
+					set_owned_by = ROOT
+				}
+				every_character = {
+					death = {
+						death_reason = death_obscurity
+					}
+				}
+				every_country_treasure = { transfer_treasure_to_country = ROOT }
+			}
+			start_civil_war = scope:resistance_leader
+			scope:resistance_leader.location = {
+				save_scope_as = civil_war_capital
+			}
+			scope:civil_war_capital.owner = { #TODO everything
+				change_country_name = "parthia_revolter_name"
+				change_country_adjective = "parthia_revolter_adjective"
+				change_country_color = roman_country_color
+				change_country_flag = ARGEAD_REVOLTER_FLAG
+				change_government = imperium
+				add_military_experience = 200
+				add_stability = 25
+				add_political_influence = 200
+				add_country_modifier = {
+					duration = 3650
+					name = civil_war_buff_ai				
+				}
+				save_scope_as = parthia_revolt_country
+			}
+			ordered_governorships = {
+				limit = {
+					NOT = {
+						any_governorship_state = {
+							is_capital_state = yes
+						}
+					}
+					trigger_if = {
+						limit = {
+							exists = governor
+						}
+						governor = {
+							OR = {
+								from_ruler_family = no
+								loyalty < 60
+							}
+						}
+					}
+				}
+				max = {
+					ROOT = {
+						every_governorships = {
+							add = 1
+						}
+					}
+					divide = 3
+					min = 1
+				}
+				order_by = {
+					every_governorship_state = {
+						every_state_province = {
+							limit = {
+								dominant_province_culture = root.culture
+							}
+							add = total_population
+						}
+					}
+				}
+				every_governorship_state = {
+					every_state_province = {
+						set_owned_by = scope:parthia_revolt_country
+						add_claim = root
+					}
+				}
+			}
+			scope:parthia_revolt_country = {
+				while = {
+					count = 4
+					random_country_culture = {
+						limit = { 
+							is_integrated = no
+							country_culture_pop_count > 130
+						}
+						scope:parthia_revolt_country = { integrate_country_culture = PREV }
+					}
+				}
+			}
+			every_subject = {
+				limit = {
+					OR = {
+						is_subject_type = feudatory
+						is_subject_type = satrapy
+						is_subject_type = client_state
+					}
+					has_subject_loyalty < 60
+				}
+				switch = { #Must remain the same type of subject
+					trigger = is_subject_type
+					feudatory = {
+						random_list = {
+							50 = {
+								ROOT = { release_subject = THIS }
+								save_scope_as = released_subject 
+								scope:parthia_revolt_country = {
+									make_subject = { 
+										target = scope:released_subject
+										type = feudatory 
+									}
+								}
+							}
+							50 = { }
+						}
+					}
+					satrapy = {
+						random_list = {
+							50 = {
+								ROOT = { release_subject = THIS }
+								scope:parthia_revolt_country = {
+									make_subject = { 
+										target = scope:released_subject
+										type = satrapy 
+									}
+								}
+							}
+							50 = { }
+						}
+					}
+					client_state = {
+						random_list = {
+							50 = {
+								ROOT = { release_subject = THIS }
+								scope:parthia_revolt_country = {
+									make_subject = { 
+										target = scope:released_subject
+										type = client_state 
+									}
+								}
+							}
+							50 = { }
+						}
+					}
+				}
+			}
+			every_owned_province = {
+				add_claim = scope:parthia_revolt_country
+			}
+			every_character = {
+				limit = { loyalty < 66 }
+				move_country = scope:parthia_revolt_country
+			}
+		}
+	}
+
+    option = {      
+		name = me_parthia.36.a #Come and Get me!
+		show_as_tooltip = { start_civil_war = scope:resistance_leader }
+		add_stability = 15
+	}
 }
 
 me_parthia.9900 = { #Choose what region to hold directly - 1st step

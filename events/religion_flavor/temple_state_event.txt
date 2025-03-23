@@ -1,0 +1,285 @@
+﻿namespace = temple_state_event
+
+temple_state_event.1 = {
+	type = country_event
+	title = temple_state_event.1.t
+	desc = temple_state_event.1.desc
+	picture = throneroom
+	left_portrait = current_ruler
+	right_portrait = scope:new_temple_state.current_ruler
+	goto_location = scope:temple_estate_province
+
+	immediate = {
+		show_as_tooltip = { make_subject = { target = scope:new_temple_state type = temple_state } }
+		scope:temple_estate_province = {
+			if = {
+				limit = {
+					NOT = { 
+						has_province_modifier = temple_state_modifier 
+					}
+				}
+				add_permanent_province_modifier = {
+					name = temple_state_modifier
+					duration = -1
+				}
+			}	
+		}
+
+        scope:temple_estate_province = {
+	        random_neighbor_province = {
+	            limit = {
+	                owner = root
+	                NOT = { THIS = scope:temple_estate_province }
+	            }
+	            save_scope_as = temple_estate_neighbor_province
+	        }
+    	}
+	}
+
+	option = {
+		name = temple_state_event.1.a
+		ai_chance = { factor = 30 }
+	}
+	option = {
+		name = temple_state_event.1.b
+		trigger = { exists = scope:temple_estate_neighbor_province }
+		add_treasury = 50
+        scope:temple_estate_province = {
+			create_3_slaves_effect = yes
+		}
+		scope:temple_estate_neighbor_province = { set_owned_by = scope:new_temple_state }
+		ai_chance = { factor = 50 }
+	}
+
+	option = {
+		name = temple_state_event.1.c
+		trigger = {
+	        scope:temple_estate_province = {
+		        any_neighbor_province = {
+		            limit = {
+		                owner = root
+		                NOT = { scope:temple_estate_neighbor_province }
+		            }
+		        }
+	    	}
+		}
+		add_treasury = 100
+        scope:temple_estate_province = {
+			create_3_slaves_effect = yes
+		}
+        scope:temple_estate_province = {
+	        every_neighbor_province = {
+	            limit = {
+	                owner = root
+	            }
+	            set_owned_by = scope:new_temple_state
+		        every_neighbor_province = {
+		            limit = {
+		                owner = root
+		                is_coastal = yes
+		            }
+		            set_owned_by = scope:new_temple_state
+		        }
+	        }
+    	}
+		ai_chance = { factor = 20 }
+	}
+}
+
+
+temple_state_event.2 = {
+	type = country_event
+	title = temple_state_event.2.t
+	desc = temple_state_event.2.desc
+	picture = throneroom
+
+	left_portrait = current_ruler
+	right_portrait = scope:temple_state_high_priest
+	goto_location = scope:temple_estate_province
+
+	trigger = {
+		can_make_temple_state = yes
+#		NOT = {
+#			has_variable = temple_state_event_cooldown
+#		}
+		any_owned_province = {
+			is_capital = no
+			OR = {
+				is_holy_site = yes
+				own_religious_center_province_trigger = yes
+				has_province_modifier = temple_state_modifier 
+			}
+		}
+	}
+
+	immediate = {
+		set_variable = {#can make variable longer to prevent AI spam if that is an issue
+			name = make_temple_state_cooldown
+			days = 9125
+		}
+		hidden_effect = {
+			if = {
+				limit = { 
+					any_owned_province = {
+						has_province_modifier = temple_state_modifier 
+						}
+					}
+					random_owned_province = {
+						limit = {
+							has_province_modifier = temple_state_modifier 
+						}
+						save_scope_as = temple_estate_province
+					}
+				}
+
+			else = {
+				random_owned_province = {
+					limit = {
+						is_capital = no
+						OR = {
+							is_holy_site = yes
+							own_religious_center_province_trigger = yes
+							has_province_modifier = temple_state_modifier 
+						}
+					}
+					save_scope_as = temple_estate_province
+				}
+			}
+			create_character = {
+				culture = scope:temple_estate_province.dominant_province_culture
+				religion = scope:temple_estate_province.dominant_province_religion
+				age = 30
+				good_zeal_trait_effect = yes
+				add_zeal = 3
+				save_scope_as = temple_state_high_priest
+			}
+		}
+	}
+
+	option = {
+		name = temple_state_event.2.a
+		add_treasury = {
+			add = root.has_monthly_income
+			multiply = -6
+		}
+        scope:temple_estate_province = {
+			create_3_slaves_effect = yes
+			if = {
+				limit = {
+					NOT = { 
+						has_province_modifier = temple_state_modifier 
+					}
+				}
+				add_permanent_province_modifier = {
+					name = temple_state_modifier
+					duration = -1
+				}
+			}	
+            add_province_modifier = {
+                name = temple_state_placated_modifier
+                duration = 3650
+            }
+        }
+		ai_chance = { factor = 20 }
+	}
+	option = {
+		name = temple_state_event.2.b
+		trigger = {
+			OR = {
+				scope:temple_estate_province = { has_province_modifier = temple_state_modifier }
+				NOT = {
+					any_subject = {
+						is_subject_type = temple_state
+						capital_scope = { 
+							is_in_region = scope:temple_estate_province.region
+						}
+					}
+				}
+			}
+		}
+		custom_tooltip = temple_state_event.2.bt		
+        current_ruler = {
+            add_trait = pious
+        }
+		hidden_effect = {
+			scope:temple_estate_province = {
+				create_country = {
+					set_country_heritage = religious_enclave_heritage
+					add_manpower = 5
+					add_stability_effect = yes
+					add_treasury = 600
+					ROOT = { make_subject = { target = PREV type = temple_state } }
+					save_scope_as = temple_estate_country
+					set_as_ruler = scope:temple_state_high_priest					
+					capital_scope = {
+						create_3_slaves_effect = yes
+						create_2_nobles_effect = yes
+						if = {
+							limit = {
+								NOT = { 
+									has_province_modifier = temple_state_modifier 
+								}
+							}
+							add_permanent_province_modifier = {
+								name = temple_state_modifier
+								duration = -1
+							}
+						}
+					}				
+				}
+			} 
+			ROOT = {
+				if = {
+					limit = {
+						is_republic = yes
+					}
+					scope:temple_estate_country = {
+						change_government = theocratic_republic
+					}
+				}
+				else = {
+					scope:temple_estate_country = {
+						change_government = theocratic_monarchy
+					}
+				}
+			}				
+		}
+		ai_chance = { factor = 10 }
+	}
+
+	option = {
+		name = temple_state_event.2.c
+		scope:temple_state_high_priest = {
+			add_character_modifier = {
+				name = house_arrest_charmod
+				duration = -1
+			}
+		}		
+		add_political_influence = -25
+		add_tyranny = 5
+		ai_chance = { factor = 20 }
+	}
+
+	option = {
+		name = temple_state_event.2.d
+		add_treasury = {
+			add = root.has_monthly_income
+			multiply = 12
+		}
+		add_tyranny = 15
+        scope:temple_estate_province = {
+			if = {
+				limit = {
+					has_province_modifier = temple_state_modifier 
+				}
+				remove_province_modifier = temple_state_modifier
+			}
+            add_province_modifier = {
+                name = temple_state_unrest_modifier
+                duration = 3650
+            }
+        }
+		ai_chance = { factor = 0 }
+	}
+
+}

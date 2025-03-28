@@ -1,6 +1,6 @@
 paropamisadae_missions_1_independence = {
-    header = "mission_image_general"
-    icon = "general_1"
+    header = "mission_image_seleukid"
+    icon = "persia_3"
 
     repeatable = no
     chance = 1000
@@ -23,34 +23,23 @@ paropamisadae_missions_1_independence = {
     }
     on_completion = {}
     paropamisadae_missions_1_independence_task_1 = { # Secure Succession
-        icon = "task_political"
+        icon = "task_happiness"
+        requires = { paropamisadae_missions_1_independence_task_4 }
         allow = {
-            OR = {
-                AND = {
-                    exists = current_ruler.spouse
-                    current_ruler.spouse = { is_pregnant = yes }
-                }
-                AND = {
-                    has_primary_heir = yes
-                    primary_heir = {
-                        has_trait = oxyartid
-                    }
-                }
-            }
+            diplomatic_stance = trading_stance
         }
         on_completion = {
             trigger_event = me_paropamisadae_independence.1
             show_as_tooltip = {
-                add_stability = 5
                 add_country_modifier = {
-                    name = oxyartid_dynasty
-                    duration = 3650
+                    name = open_for_trade
+                    duration = -1
                 }
             }
         }
     }
     paropamisadae_missions_1_independence_task_2 = { # Training the Next Generation
-        icon = "task_political"
+        icon = "task_religion"
         requires = { paropamisadae_missions_1_independence_task_3 }
         allow = {
             treasury >= 100
@@ -134,15 +123,6 @@ paropamisadae_missions_1_independence = {
                     }
                 }
                 custom_tooltip = "we_get_kids_smart_tt"
-                random_character = {
-                    random_child = {
-                        limit = { age < 13 }
-                        add_zeal = 2
-                        add_martial = 2
-                        add_charisma = 2
-                        add_finesse = 2
-                    }
-                }
             }
         }
     }
@@ -155,6 +135,7 @@ paropamisadae_missions_1_independence = {
                     province_id = 6611
                     province_id = 6614
                     province_id = 6642
+                    province_id = 6625
                 }
             }
         }
@@ -185,37 +166,62 @@ paropamisadae_missions_1_independence = {
             trigger_event = me_paropamisadae_independence.3
             show_as_tooltip = {
                 custom_tooltip = "fit_for_a_king_ct"
+                add_2_free_province_investments = yes
             }
         }
     }
     paropamisadae_missions_1_independence_task_4 = { # A Strong Dynasty
         icon = "task_political"
         allow = {
-            political_influence >= 25
+            OR = {
+                custom_tooltip = {
+                    any_character = {
+                        is_primary_heir = yes
+                        has_trait = oxyartid
+                        hidden:is_alive = yes
+                    }
+                    text = any_heir_oxyartid
+                }
+                custom_tooltip = {
+                    AND = {
+                        current_ruler = char:291
+                        has_variable = healthy_oxyartes
+                    }
+                    text = healthy_oxyartes_ct
+                }
+            }
         }
         requires = { paropamisadae_missions_1_independence_task_3 }
+        bypass = {
+            current_ruler = {
+                NOT = { has_trait = oxyartid }
+            }
+        }
         on_completion = {
             trigger_event = me_paropamisadae_independence.4
             show_as_tooltip = {
-                add_political_influence = -25
-                if = {
-                    limit = {
-                        any_character = {
-                            is_child_of = char:291
-                            has_trait = oxyartid
-                            is_alive = yes
-                        }
-                    }
-                    add_prominence = 200
-                    add_popularity = 20
+                add_stability = 5
+                add_country_modifier = {
+                    name = oxyartid_dynasty
+                    duration = 3650
                 }
             }
         }
     }
     paropamisadae_missions_1_independence_task_5 = { # Distant Diadochi
         icon = "task_political"
-        allow = {}
+        allow = {
+            political_influence >= 50
+        }
         requires = { paropamisadae_missions_1_independence_task_4 }
+        highlight = {
+            scope:province = {
+                AND = {
+                    is_in_area = aria_area
+                    owner = ROOT
+                }
+            }
+        }
         on_completion = {
             trigger_event = me_paropamisadae_independence.5
             show_as_tooltip = {
@@ -223,20 +229,39 @@ paropamisadae_missions_1_independence = {
                     limit = {
                         is_subject_of = c:SEL
                     }
-                    c:SEL = { release_subject = ROOT }
+                    add_political_influence = -50
+                    c:SEL = {
+                        release_subject = ROOT
+                        add_opinion = {
+                            target = ROOT
+                            modifier = unruly_satrapy
+                        }
+                    }
+                    area:aria_area = {
+                        every_area_province = {
+                            limit = {
+                                owner = ROOT
+                            }
+                            add_claim = c:SEL
+                        }
+                    }
                 }
             }
         }
     }
     paropamisadae_missions_1_independence_task_6 = { # Eastern Trade
         icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_4 }
+        requires = { paropamisadae_missions_1_independence_task_1 }
+        highlight = {
+            scope:province = {
+                trade_goods = silk
+            }
+        }
         allow = {
-            any_province = {
-                owner = ROOT
-                OR = {
-                    is_importing_trade_good = jade
-                    is_importing_trade_good = silk
+            hidden:capital_scope.state = {
+                trade_good_surplus = {
+                    target = silk
+                    value >= 3
                 }
             }
         }
@@ -249,12 +274,23 @@ paropamisadae_missions_1_independence = {
     }
     paropamisadae_missions_1_independence_task_7 = { # Southern Trade
         icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_4 }
+        requires = { paropamisadae_missions_1_independence_task_1 }
+        highlight = {
+            scope:province = {
+                OR = {
+                    trade_goods = papyrus
+                    trade_goods = sugar
+                    trade_goods = spices
+                    trade_goods = elephants
+                    trade_goods = dye
+                }
+            }
+        }
         allow = {
-            any_area_province = {
+            capital_scope = {
                 calc_true_if = {
-                    amount >= 3
-                    is_importing_trade_good = grain
+                    amount >= 2
+                    is_importing_trade_good = papyrus
                     is_importing_trade_good = sugar
                     is_importing_trade_good = spices
                     is_importing_trade_good = elephants
@@ -271,21 +307,43 @@ paropamisadae_missions_1_independence = {
     }
     paropamisadae_missions_1_independence_task_8 = { # Western Trade
         icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_4 }
+        requires = { paropamisadae_missions_1_independence_task_1 }
+        highlight = {
+            scope:province = {
+                OR = {
+                    is_in_region = persis_region
+                    is_in_region = ariana_region
+                    is_in_region = parthia_region
+                    is_in_region = mesopotamia_region
+                }
+                is_state_capital = yes
+            }
+        }
         allow = {
-            any_area_province = {
-                calc_true_if = {
-                    amount >= 4
-                    is_importing_trade_good = camel
-                    is_importing_trade_good = steppe_horses
-                    is_importing_trade_good = horses
-                    is_importing_trade_good = lapis
-                    is_importing_trade_good = amber
-                    is_importing_trade_good = silphium
-                    is_importing_trade_good = cinnabar
-                    is_importing_trade_good = incense
-                    is_importing_trade_good = dates
-                    is_importing_trade_good = papyrus
+            OR = {
+                trigger_if = {
+                    limit = { any_country = { tag = SEL }}
+                    exports_to = SEL
+                }
+                trigger_if = {
+                    limit = { any_country = { tag = ARS }}
+                    exports_to = ARS
+                }
+                trigger_if = {
+                    limit = { any_country = { tag = CAM }}
+                    exports_to = CAM
+                }
+                trigger_if = {
+                    limit = { any_country = { tag = PES }}
+                    exports_to = PES
+                }
+                trigger_if = {
+                    limit = { any_country = { tag = PAR }}
+                    exports_to = PAR
+                }
+                trigger_if = {
+                    limit = { any_country = { tag = PTH }}
+                    exports_to = PTH
                 }
             }
         }
@@ -298,7 +356,7 @@ paropamisadae_missions_1_independence = {
     }
     paropamisadae_missions_1_independence_task_9 = { # The Next Step
         icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_8 }
+        requires = { paropamisadae_missions_1_independence_task_5 }
         allow = {}
         on_completion = {
             trigger_event = me_paropamisadae_independence.9
@@ -307,11 +365,20 @@ paropamisadae_missions_1_independence = {
             }
             set_variable = prm_macedon_missions_unlocked
         }
+        final = yes
     }
     paropamisadae_missions_1_independence_task_10 = {
         icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_8 }
-        allow = {}
+        requires = { paropamisadae_missions_1_independence_task_2 }
+        allow = {
+            calc_true_if = {
+                amount >= 4
+                p:6631 = { num_goods_produced >= 2 }
+                p:6628 = { num_goods_produced >= 2 }
+                p:6621 = { num_goods_produced >= 2 }
+                p:6625 = { num_goods_produced >= 2 }
+            }
+        }
         on_completion = {
             trigger_event = me_paropamisadae_independence.10
             show_as_tooltip = {
@@ -321,7 +388,7 @@ paropamisadae_missions_1_independence = {
     }
     paropamisadae_missions_1_independence_task_11 = {
         icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_8 }
+        requires = { paropamisadae_missions_1_independence_task_10 paropamisadae_missions_1_independence_task_13 }
         allow = {}
         on_completion = {
             trigger_event = me_paropamisadae_independence.11
@@ -332,7 +399,7 @@ paropamisadae_missions_1_independence = {
     }
     paropamisadae_missions_1_independence_task_12 = {
         icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_11 }
+        requires = { paropamisadae_missions_1_independence_task_2 }
         allow = {}
         on_completion = {
             trigger_event = me_paropamisadae_independence.12
@@ -343,7 +410,7 @@ paropamisadae_missions_1_independence = {
     }
     paropamisadae_missions_1_independence_task_13 = {
         icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_11 }
+        requires = { paropamisadae_missions_1_independence_task_2 }
         allow = {}
         on_completion = {
             trigger_event = me_paropamisadae_independence.13
@@ -354,80 +421,13 @@ paropamisadae_missions_1_independence = {
     }
     paropamisadae_missions_1_independence_task_14 = {
         icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_11 }
+        requires = { paropamisadae_missions_1_independence_task_6 paropamisadae_missions_1_independence_task_7 paropamisadae_missions_1_independence_task_8 }
         allow = {}
         on_completion = {
-            trigger_event = me_paropamisadae_independence.14
+            trigger_event = me_paropamisadae_independence.13
             show_as_tooltip = {
 
             }
         }
-    }
-    paropamisadae_missions_1_independence_task_15 = {
-        icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_14 }
-        allow = {}
-        on_completion = {
-            trigger_event = me_paropamisadae_independence.15
-            show_as_tooltip = {
-
-            }
-        }
-    }
-    paropamisadae_missions_1_independence_task_16 = {
-        icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_14 }
-        allow = {}
-        on_completion = {
-            trigger_event = me_paropamisadae_independence.16
-            show_as_tooltip = {
-
-            }
-        }
-    }
-    paropamisadae_missions_1_independence_task_17 = {
-        icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_14 }
-        allow = {}
-        on_completion = {
-            trigger_event = me_paropamisadae_independence.17
-            show_as_tooltip = {
-
-            }
-        }
-    }
-    paropamisadae_missions_1_independence_task_18 = {
-        icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_14 }
-        allow = {}
-        on_completion = {
-            trigger_event = me_paropamisadae_independence.18
-            show_as_tooltip = {
-
-            }
-        }
-    }
-    paropamisadae_missions_1_independence_task_19 = {
-        icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_14 }
-        allow = {}
-        on_completion = {
-            trigger_event = me_paropamisadae_independence.19
-            show_as_tooltip = {
-
-            }
-        }
-    }
-    paropamisadae_missions_1_independence_task_20 = {
-        icon = "task_political"
-        requires = { paropamisadae_missions_1_independence_task_19 }
-        allow = {}
-        on_completion = {
-            trigger_event = me_paropamisadae_independence.20
-            show_as_tooltip = {
-
-            }
-        }
-        final = yes
     }
 }

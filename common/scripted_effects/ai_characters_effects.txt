@@ -1,22 +1,18 @@
-﻿# ----------------------------------------------------------------------------------------------------------------------
-# Note that all triggers here check if character is a rival of the ruler, as they are banned from loyalty fixing
-# ----------------------------------------------------------------------------------------------------------------------
-
-ai_fix_character_loyalty = {
+﻿ai_fix_character_loyalty = {
     if = {
         limit = {
             is_ai = yes
             exists = current_ruler
-            has_civil_war = no
         }
 
         # Required by character interaction triggers and effects
         save_scope_as = actor
 
-        # No urgency so fix loyalty conservatively
+        # Normal: fix loyalty conservatively
         if = {
             limit = {
                 towards_civil_war = no
+                has_civil_war = no
             }
             # Bribe important disloyal eligible character with highest power base
             ordered_character = {
@@ -32,7 +28,7 @@ ai_fix_character_loyalty = {
                         }
                     }
                     character_is_important = yes
-                    character_is_rival_of_ruler = no
+                    character_is_eligible_for_normal_loyalty_fixing = yes
                     # Required by character interaction triggers
                     save_temporary_scope_as = target
                     # Check eligibility for the interaction
@@ -52,7 +48,7 @@ ai_fix_character_loyalty = {
             }
         }
 
-        # Try to prevent civil war from happening
+        # Urgent: deal with brewing and ongoing civil wars
         else = {
 
             # Track how much loyalty fixing we have already performed
@@ -67,7 +63,7 @@ ai_fix_character_loyalty = {
                     # Character conditions we want to match
                     character_is_disloyal = yes
                     character_is_powerful = yes
-                    character_is_rival_of_ruler = no
+                    character_is_eligible_for_urgent_loyalty_fixing = yes
                     # Required by character interaction triggers
                     save_temporary_scope_as = target
                     # Check eligibility for the interaction
@@ -107,7 +103,7 @@ ai_fix_character_loyalty = {
                         # Character conditions we want to match
                         character_is_disloyal = yes
                         character_is_powerful = yes
-                        character_is_rival_of_ruler = no
+                        character_is_eligible_for_urgent_loyalty_fixing = yes
                         trigger_if = {
                             limit = {
                                 is_governor = yes
@@ -150,27 +146,35 @@ ai_fix_character_loyalty = {
                         # Character conditions we want to match
                         character_is_disloyal = yes
                         character_is_powerful = yes
-                        character_is_rival_of_ruler = no
-                        # Required by character interaction triggers
-                        save_temporary_scope_as = target
+                        character_is_eligible_for_urgent_loyalty_fixing = yes
                         # Check eligibility for the interaction
-                        character_is_eligible_for_giving_subsidies = yes
+                        exists = family
+                        family = {
+                            exists = head_of_family
+                            head_of_family = {
+                                # Required by character interaction triggers
+                                save_temporary_scope_as = target
+                                character_is_eligible_for_giving_subsidies = yes
+                            }
+                        }
                     }
                     # Highest character by power base
                     order_by = power_base
                     position = 0
                     # Don't print error if there is no such character
                     check_range_bounds = no
-                    # Required by character interaction effects
-                    save_scope_as = target
-                    # Perform interaction
-                    grant_stipends_effect = yes
-                    change_local_variable = {
-                        name = loyalty_fixes_done
-                        add = 1
+                    family.head_of_family = {
+                        # Required by character interaction effects
+                        save_scope_as = target
+                        # Perform interaction
+                        grant_stipends_effect = yes
+                        change_local_variable = {
+                            name = loyalty_fixes_done
+                            add = 1
+                        }
+                        # Garbage collection
+                        clear_saved_scope = target
                     }
-                    # Garbage collection
-                    clear_saved_scope = target
                 }
             }
 
@@ -186,7 +190,9 @@ ai_fix_character_loyalty = {
 bribe_or_persuade_character = {
     if = {
         limit = {
-            country_uses_persuation_instead_of_bribing = yes
+            scope:actor = {
+                country_uses_persuation_instead_of_bribing = yes
+            }
         }
         orator_bribe_character_effect = yes
     }

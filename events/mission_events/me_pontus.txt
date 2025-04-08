@@ -152,6 +152,7 @@ pontus_startup.2 = {
 
     option = {      
         name = pontus_startup.2.c
+        highlight = yes
         custom_tooltip = pontus_startup.2.ct
         add_political_influence = 75
         c:PRY = {
@@ -245,6 +246,7 @@ pontus_startup.3 = {
 
     option = {      
         name = pontus_startup.3.c
+        highlight = yes
         custom_tooltip = pontus_startup.3.ct
         trigger_event = {
             id = pontus_startup.6
@@ -391,6 +393,7 @@ pontus_startup.6 = {
             }
         }
         set_variable = mithratates_executed
+        set_variable = split_inheritance_execution
         save_scope_as = mission_country
         p:213.owner = { save_scope_as = paphlagonian_country }
         every_owned_province = {
@@ -435,6 +438,19 @@ pontus_startup.6 = {
         }
         custom_tooltip = pontus_kimista_move_effect_tt
         hidden_effect = {
+            if = {
+                limit = {
+                    any_navy = {
+                        unit_size > 0
+                    }
+                }
+                every_navy = {
+                    limit = {
+                        unit_size > 0
+                    }
+                    destroy_unit = yes
+                }
+            }
             ordered_owned_province = {
                 limit = {
                     OR = {
@@ -534,7 +550,267 @@ pontus_startup.7 = {
     }
 }
 
+pontus_startup.8 = {
+    type = country_event
+    title = pontus_startup.8.t
+    desc = pontus_startup.8.desc
+    picture = successors
+    left_portrait = scope:former_ruler
+    left_portrait = current_ruler
+    right_portrait = scope:mariandynia_heir
+    right_portrait = c:BIT.current_ruler
+    fire_only_once = yes
 
+    trigger = {
+        capital_scope = {
+            NOR = {
+                is_in_area = heracleotis_area
+                is_in_area = bithynia_superior_area
+            }
+        }
+        OR = {
+            num_of_cities >= 15
+            is_ai = no
+        }
+        any_owned_province = {
+            count >= 5
+            OR = {
+                is_in_area = heracleotis_area
+                is_in_area = bithynia_superior_area
+            }
+        }
+    }
+
+    immediate = {
+        remove_variable = split_inheritance_execution
+        hidden_effect = {
+            create_character = {
+                family = root.current_ruler.family
+                culture = root.current_ruler.culture
+                religion = root.current_ruler.religion
+                force_add_trait="mithridates"
+                force_add_trait="pharnabazid"
+                age = 35
+                female = no
+                save_scope_as = mariandynia_heir
+            }
+            if = {
+                limit = {
+                    any_owned_province = {
+                        OR = {
+                            is_in_area = heracleotis_area
+                            is_in_area = bithynia_superior_area
+                        }
+                    }
+                }
+                ordered_owned_province = {
+                    limit = {
+                        OR = {
+                            is_in_area = heracleotis_area
+                            is_in_area = bithynia_superior_area
+                        }
+                    }
+                    order_by = total_population
+                    max = 1
+                    check_range_bounds = no
+                    save_scope_as = mariandynia_capital
+                }
+            }
+            if = {
+                limit = {
+                    p:224 = {
+                        owner = ROOT
+                        NOT = { THIS = scope:mariandynia_capital }
+                    }
+                }
+                p:224 = { save_scope_as = gordioukome_capital }
+            }
+        }
+    }
+
+    option = {      
+        name = pontus_startup.8.a
+        add_manpower = 4
+        if = {
+            limit = {
+                exists = scope:gordioukome_capital
+            }
+            custom_tooltip = pontus_startup.8.gordioukome_tribal
+            hidden_effect = {
+                scope:gordioukome_capital = {
+                    create_country = {
+                        change_government = tribal_chiefdom
+                        save_scope_as = gordioukome_country
+                    }
+                }
+                every_owned_province = {
+                    limit = {
+                        OR = {
+                            province_id = 225
+                            province_id = 221
+                            province_id = 329
+                            province_id = 325
+                            province_id = 7765
+                            province_id = 327
+                        }
+                    }
+                    set_owned_by = scope:gordioukome_country
+                }
+                make_subject = {
+                    type = vassal_tribe
+                    target = scope:gordioukome_country
+                }
+            }
+        }
+        if = {
+            limit = {
+                scope:mariandynia_capital.owner = { THIS = root }
+            }
+            custom_tooltip = pontus_startup.8.mariandynia_tribal
+            hidden_effect = {
+                scope:mariandynia_capital = {
+                    create_country = {
+                        if = {
+                            limit = {
+                                NOT = {
+                                    primary_culture = mariandynian
+                                }
+                            }
+                            set_primary_culture_cleanup_effect = {
+                                NEW_PRIMARY_CULTURE = mariandynian
+                                MAKE_OLD_CULTURE_INTEGRATED = yes
+                            }
+                        }
+                        change_government =  tribal_chiefdom
+                        change_country_name = MYD
+                        change_country_adjective = MYD_ADJ       
+                        change_country_flag = MYD
+                        set_country_heritage = mariandynia_heritage
+                        change_country_color = mariandynia_color
+                        save_scope_as = mariandynia_country
+                    }
+                }
+                every_owned_province = {
+                    limit = {
+                        OR = {
+                            is_in_area = heracleotis_area
+                            is_in_area = bithynia_superior_area
+                        }
+                    }
+                    set_owned_by = scope:mariandynia_country
+                }
+                make_subject = {
+                    type = vassal_tribe
+                    target = scope:mariandynia_country
+                }
+            }
+        }
+        ai_chance = { factor = 75 }
+    }
+
+    option = {      
+        name = pontus_startup.8.b
+        add_manpower = -4
+        custom_tooltip = pontus_startup.8.bt
+        hidden_effect = {
+            scope:mariandynia_capital = {
+                add_building_level = fortress_building
+                define_pop = {
+                    type = nobles
+                    religion = root.religion
+                    culture = root.culture
+                }
+                define_pop = {
+                    type = citizen
+                    religion = root.religion
+                    culture = root.culture
+                }
+                define_pop = {
+                    type = citizen
+                    religion = root.religion
+                    culture = root.culture
+                }  
+                create_country = {
+                    if = {
+                        limit = {
+                            NOT = {
+                                primary_culture =  root.culture
+                            }
+                        }
+                        set_primary_culture_cleanup_effect = {
+                            NEW_PRIMARY_CULTURE =  root.culture
+                            MAKE_OLD_CULTURE_INTEGRATED = yes
+                        }
+                    }
+                    change_government =  tribal_chiefdom
+                    change_country_name = MYD
+                    change_country_adjective = MYD_ADJ       
+                    change_country_flag = MYD
+                    set_country_heritage = mariandynia_heritage
+                    change_country_color = mariandynia_color
+                    save_scope_as = mariandynia_country
+                }
+            }
+            scope:mariandynia_heir = {
+                hidden_effect = {
+                    remove_all_positions = yes
+                    move_country = scope:mariandynia_country
+                    remove_character_modifier = foreign_citizen
+                    set_home_country = scope:mariandynia_country
+                }
+            }
+            scope:mariandynia_country = {
+                set_as_ruler = scope:mariandynia_heir
+            }
+            every_owned_province = {
+                limit = {
+                    OR = {
+                        is_in_area = heracleotis_area
+                        is_in_area = bithynia_superior_area
+                    }
+                }
+                set_owned_by = scope:mariandynia_country
+            }
+            make_subject = {
+                type = satrapy
+                target = scope:mariandynia_country
+            }
+        }
+        ai_chance = { factor = 50 }
+    }
+
+    option = {      
+        name = pontus_startup.8.c
+        trigger = { exists = c:BIT }
+        custom_tooltip = pontus_startup.8.ct
+        if = {
+            limit = { NOT = { alliance_with = c:BIT } }
+            add_alliance = c:BIT
+            add_truce = {
+                target = c:BIT
+                duration = 1825 # 5 years
+            }
+        }
+        hidden_effect = {
+            every_owned_province = {
+                limit = {
+                    OR = {
+                        is_in_area = heracleotis_area
+                        is_in_area = bithynia_superior_area
+                    }
+                }
+                set_owned_by = c:BIT
+            }
+        }
+        ai_chance = { factor = 75 }
+    }
+
+    option = {      
+        name = pontus_startup.8.d
+        add_manpower = -2
+        ai_chance = { factor = 50 }
+    }
+}
 
 
 me_pontus_kingdom.1 = {#Capturing Kimista
@@ -792,12 +1068,14 @@ me_pontus_kingdom.2223 = {
     option = {
         name = "me_pontus_kingdom_2223.a"
         custom_tooltip = me_pontus_kingdom_2223_tooltip
-        every_current_war = {
-            limit = {
-                is_war_leader = ROOT
-                is_war_leader = c:PAP
-            }
-            force_white_peace = THIS
+        hidden_effect = {
+            every_current_war = {
+                limit = {
+                    is_war_leader = ROOT
+                    is_war_leader = c:PAP
+                }
+                force_white_peace = THIS
+            } 
         }
         make_subject = {
             type = tributary
@@ -1258,6 +1536,13 @@ me_pontus_kingdom.1401 = {
                     }
                 }
             }
+            if = {
+                limit = {
+                    is_ai = yes
+                    owns = 1819
+                }
+                set_capital = p:1819 
+            }
         }
     }
     option = {
@@ -1294,6 +1579,7 @@ me_pontus_kingdom.15 = {
         custom_tooltip = me_pontus_kingdom_15.at
         change_country_name = "PONTUS_NAME"
         add_political_influence = 50
+        set_variable = pontic_eagle
         hidden_effect = {
             change_country_adjective = "PONTUS_ADJECTIVE"
             change_country_tag = PTU
@@ -1308,10 +1594,17 @@ me_pontus_kingdom.15 = {
         custom_tooltip = me_pontus_kingdom_15.bt
         change_country_name = "PONTUS_NAME"
         add_political_influence = 50
+        set_variable = pontic_eagle
         hidden_effect = {
             change_country_adjective = "PONTUS_ADJECTIVE"
             change_country_tag = PTU
             if = {
+                limit = {
+                    has_variable = mithridates_red_variable
+                }
+                change_country_flag = MITHRIDATES_PONTUS_RED_FLAG
+            }
+            else_if = {
                 limit = {
                     has_variable = mithridates_purple_variable
                 }
@@ -1520,48 +1813,125 @@ me_pontus_kingdom.19 = {
     }
 }
 
-
-
-me_pontus_kingdom.20 = {#cappadocia_mission_inv_23C_task
+me_pontus_kingdom.20 = {
     type = country_event
 
     title = me_pontus_kingdom_20_title
     desc = me_pontus_kingdom_20_desc
-    picture = interesting_histories_greek_city_man
+    picture = diadochi_greek_royal_wedding
+    left_portrait = current_ruler
+    right_portrait = primary_heir
 
     immediate = {
         custom_tooltip = me_pontus_kingdom_20_tooltip  
+        current_ruler = {
+            add_bloodline_effect = { BLOODLINE = achaemenid }
+        }
     }
 
     option = {
         name = "me_pontus_kingdom_20.a"
-        make_subject = {
-            target = c:ZEL
-            type = temple_state
+        custom_tooltip = me_pontus_kingdom_20.at
+        set_variable = mithridates_red_variable
+        hidden_effect = {
+            change_country_color = mithridatid_red
+            if = {
+                limit = {
+                    has_variable = pontic_eagle
+                }
+                change_country_flag = MITHRIDATES_PONTUS_RED_FLAG
+            }
+            else = {
+                change_country_flag = MITHRIDATIC_KINGDOM_RED_FLAG
+            }
         }
-        add_political_influence = -50 
+        ai_chance = { factor = 40 }
+    }
+
+    option = {
+        name = "me_pontus_kingdom_20.b"
+        ai_chance = { factor = 60 }
     }
 }
 
-
-me_pontus_kingdom.21 = {
+me_pontus_kingdom.21 = {# Flaming Lotus
     type = country_event
 
     title = me_pontus_kingdom_21_title
     desc = me_pontus_kingdom_21_desc
     picture = interesting_histories_greek_city_man
+    left_portrait = current_ruler
+    right_portrait = c:ZEL.current_ruler
+    goto_location = c:ZEL.capital_scope
+    fire_only_once = yes
 
     immediate = {
         custom_tooltip = me_pontus_kingdom_21_tooltip  
+        hidden_effect = {
+            if = {
+                limit = {
+                    c:ZEL = { is_subject = yes }
+                }
+                c:ZEL.overlord = {
+                    release_subject = c:ZEL
+                }   
+            }
+        }   
     }
 
     option = {
-        name = "me_pontus_kingdom_16.a"
+        name = "me_pontus_kingdom_21.a"
+        make_subject = {
+            target = c:ZEL
+            type = temple_state
+        }
+        if = {
+            limit = {
+                is_ai = no
+            }
+            add_political_influence = -50
+        }
+    }
+}
+
+
+me_pontus_kingdom.22 = { # Little Corinth
+    type = country_event
+
+    title = me_pontus_kingdom_22_title
+    desc = me_pontus_kingdom_22_desc
+    picture = interesting_histories_greek_city_man
+    left_portrait = current_ruler
+    right_portrait = c:KOM.current_ruler
+    goto_location = c:KOM.capital_scope
+    fire_only_once = yes
+
+    immediate = {
+        custom_tooltip = me_pontus_kingdom_22_tooltip  
+        hidden_effect = {
+            if = {
+                limit = {
+                    c:KOM = { is_subject = yes }
+                }
+                c:KOM.overlord = {
+                    release_subject = c:KOM
+                }   
+            }
+        }   
+    }
+
+    option = {
+        name = "me_pontus_kingdom_22.a"
         make_subject = {
             target = c:KOM
             type = temple_state
         }
-        add_political_influence = -50 
+        if = {
+            limit = {
+                is_ai = no
+            }
+            add_political_influence = -50
+        }  
     }
 }
 #

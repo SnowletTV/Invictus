@@ -63,7 +63,7 @@ flavor_cyprus.1 = {                   # Cypriot Kings
             p:331 = { #Salamis
                 create_country = {
                     save_scope_as = cyprus_country
-                    change_government = despotic_monarchy
+                    change_government = stratocratic_monarchy
                 }
             }
             scope:menelaos_lagid = {
@@ -92,9 +92,10 @@ flavor_cyprus.1 = {                   # Cypriot Kings
             p:333 = {
                 create_country = {
                     save_scope_as = soloi_country
-                    change_government = despotic_monarchy
+                    change_government = aristocratic_monarchy
                 }
             }
+            p:6431 = { set_owned_by = scope:soloi_country }
             scope:eunostos_of_soloi = {
                 move_country_with_entire_family_effect = { COUNTRY = scope:soloi_country }
             }
@@ -103,7 +104,7 @@ flavor_cyprus.1 = {                   # Cypriot Kings
                 change_country_name = SOLOI_NAME
                 change_country_adjective = SOLOI_ADJECTIVE
                 change_country_flag = SOLOI_FLAG
-                change_country_color = paphos_color      
+                change_country_color = soloi_color      
             }           
         }
         make_subject = {
@@ -132,7 +133,7 @@ flavor_cyprus.1 = {                   # Cypriot Kings
             p:333 = {
                 create_country = {
                     save_scope_as = soloi_country
-                    change_government = despotic_monarchy
+                    change_government = aristocratic_monarchy
                 }
             }
             scope:eunostos_of_soloi = {
@@ -144,7 +145,7 @@ flavor_cyprus.1 = {                   # Cypriot Kings
                     change_country_name = SOLOI_NAME
                     change_country_adjective = SOLOI_ADJECTIVE
                     change_country_flag = SOLOI_FLAG
-                    change_country_color = paphos_color   
+                    change_country_color = soloi_color   
                     p:6431 = { add_to_list = soloi_cyprus_list }
                     p:333 = { add_to_list = soloi_cyprus_list }
                     p:334 = { add_to_list = soloi_cyprus_list }
@@ -194,11 +195,12 @@ flavor_cyprus.1 = {                   # Cypriot Kings
             }  
         }
         scope:cyprus_country = {
+            change_government = aristocratic_monarchy
             set_as_ruler = scope:eunostos_of_soloi  
             set_capital = p:333
             hidden_effect = {
-                change_country_flag = CYPRUS_BLUE
-                change_country_color = paphos_color     
+                change_country_flag = CYPRUS_SOLOI
+                change_country_color = soloi_color     
             }
         }   
         make_subject = {
@@ -261,11 +263,49 @@ flavor_cyprus.1 = {                   # Cypriot Kings
                     has_land = yes
                 }
             }
+            scope:cyprus_country = {
+                hidden_effect = {
+                    if = {
+                        limit = {
+                            NOT = {
+                                primary_culture = cypriot
+                            }
+                        }
+                        set_primary_culture_cleanup_effect = {
+                            NEW_PRIMARY_CULTURE = cypriot
+                            MAKE_OLD_CULTURE_INTEGRATED = yes
+                        }
+                    }
+                    create_character = {
+                        female = no
+                        family_name = "Teucrid"                    
+                        #family_name = "Pnytagorid"
+                        culture = cypriot
+                        religion = roman_pantheon
+                        add_trait = teucer
+                        save_scope_as = salamis_guy
+                    }
+                    create_character = {
+                        female = no
+                        family_name = "Poumyathonid"
+                        culture = phoenician
+                        religion = carthaginian_pantheon
+                        save_scope_as = kition_guy
+                    }
+                    new_family_generation_effect = { FAMILY_CANDIDATE = kition_guy } #Scripted Effect that passes on the saved scope.
+                    new_family_generation_effect = { FAMILY_CANDIDATE = salamis_guy } #Scripted Effect that passes on the saved scope.
+                    scope:kition_guy.family = {
+                        add_prestige = 100
+                    }
+                    scope:salamis_guy.family = {
+                        add_prestige = 100
+                    }
+                }
+            }
             every_country = {
                 limit = {
                     OR = {
                         primary_culture = macedonian
-                        PREV.overlord = { primary_culture = macedonian }
                         capital_scope = {
                             OR = {
                                 is_in_region = cilicia_region
@@ -279,10 +319,15 @@ flavor_cyprus.1 = {                   # Cypriot Kings
                 }
                 trigger_event = {
                     id = flavor_cyprus.2
-                    days = { 5 180 }
+                    days = { 180 360 }
                 }
             }
-
+            scope:cyprus_country = {
+                trigger_event = {
+                    id = flavor_cyprus.9
+                    days = { 361 400 }
+                }
+            }
         }
 
     }
@@ -323,7 +368,12 @@ flavor_cyprus.2 = {                   # Cyprus Tag Switch
         hidden_effect = {
             set_player_country = scope:cyprus_country
         }
-
+        scope:cyprus_country = {
+            trigger_event = {
+                id = flavor_cyprus.9
+                days = { 5 15 }
+            }
+        }
         ai_chance = { factor = 0 } 
     }  
 }
@@ -383,7 +433,13 @@ flavor_cyprus.3 = {                 # Sidon
                 move_country_with_close_family_effect = { COUNTRY = c:SID }
             }
         }
-        c:SID = { set_as_ruler = scope:philokles_baalshillemi }
+        c:SID = {
+            add_country_modifier = { #Diadochi Deal
+                name = ant_01_3_sid_cmod
+                duration = 7300 # 20 years
+            }
+            set_as_ruler = scope:philokles_baalshillemi
+        }
         if = {
             limit = {
                 c:SID = {
@@ -400,7 +456,7 @@ flavor_cyprus.3 = {                 # Sidon
     option = {
         name = "flavor_cyprus.3.a" # Long may he reign
         add_country_modifier = {
-            name = ant_01_3_egy_cmod
+            name = ant_01_3_ant_cmod #Worse version (reason to give land)
             duration = 7300 # 20 years
         }        
         ai_chance = { factor = 1 } 
@@ -410,21 +466,12 @@ flavor_cyprus.3 = {                 # Sidon
         name = "flavor_cyprus.3.b" # Ancestral holdings in the plain of sharron shall be restored
         highlight = yes
         trigger = {
-            OR = { 
+            OR = {
                 owns = 663
                 owns = 664 
                 owns = 665 
                 owns = 667
                 owns = 668 
-            }
-            c:SID = {
-                not = { 
-                    owns = 663
-                    owns = 664 
-                    owns = 665 
-                    owns = 667
-                    owns = 668 
-                }
             }
         }
         c:SID = {
@@ -455,6 +502,9 @@ flavor_cyprus.3 = {                 # Sidon
                         province_id = 667
                         province_id = 668
                     }
+                    NOT = {
+                        owner = c:SID
+                    }
                 }
                 set_owned_by = c:SID
                 hidden_effect = {
@@ -479,6 +529,10 @@ flavor_cyprus.3 = {                 # Sidon
     } 
 
     after = {
+        trigger_event = {
+            id = flavor_cyprus.12
+            days = { 1825 7300 }
+        }
         c:SID = {
             trigger_event = {
                 id = flavor_cyprus.8
@@ -506,9 +560,11 @@ flavor_cyprus.4 = {                  # Antigonid Ping
         hidden_effect = {
             create_character = {
                 female = no
-                family_name = "Pnytagorid"
+                family_name = "Teucrid"                    
+                #family_name = "Pnytagorid"
                 culture = cypriot
                 religion = roman_pantheon
+                add_trait = teucer
                 save_scope_as = salamis_guy
             }
             create_character = {
@@ -555,7 +611,7 @@ flavor_cyprus.4 = {                  # Antigonid Ping
     option = {
         name = "flavor_cyprus.4.b"
         highlight = yes
-        custom_tooltip = flavor_cyprus.4.b1t
+        #custom_tooltip = flavor_cyprus.4.b1t
         custom_tooltip = flavor_cyprus.4.b2t
         hidden_effect = {
             scope:salamis_guy = { add_loyalty = scorned_claimant_loyalty }
@@ -621,7 +677,7 @@ flavor_cyprus.5 = {                   # Antigonid Event
         hidden_effect = {
             p:331 = {#    Salamis
                 create_country = {
-                    change_government = despotic_monarchy
+                    change_government = aristocratic_monarchy
                     change_country_name = SALAMIS_CYPRUS_NAME
                     change_country_adjective = SALAMIS_CYPRUS_ADJECTIVE       
                     change_country_flag = CYPRUS_RUST
@@ -632,11 +688,11 @@ flavor_cyprus.5 = {                   # Antigonid Event
             p:330 = { set_owned_by = scope:salamis_country }     
             p:335 = {# Lapethos
                 create_country = {
-                    change_government = despotic_monarchy
+                    change_government = plutocratic_monarchy
                     change_country_name = LAPETHOS_NAME
-                    change_country_adjective = CYPRUS_ADJECTIVE       
+                    change_country_adjective = LAPETHOS_ADJECTIVE       
                     change_country_flag = LAPETHOS_FLAG
-                    change_country_color = lapethos_blue   
+                    change_country_color = lapethos_blue
                     save_scope_as = lapethos_country                
                 }
                 change_province_name = "Lafeth"
@@ -644,9 +700,9 @@ flavor_cyprus.5 = {                   # Antigonid Event
             p:6433 = { set_owned_by = scope:lapethos_country } 
             p:332 = {# Kition 
                 create_country = {
-                    change_government = despotic_monarchy
+                    change_government = plutocratic_monarchy
                     change_country_name = KITION_NAME
-                    change_country_adjective = CYPRUS_ADJECTIVE       
+                    change_country_adjective = KITION_ADJECTIVE       
                     change_country_flag = ALASHIYA
                     change_country_color = alashiya_color    
                     save_scope_as = kition_country                 
@@ -656,9 +712,9 @@ flavor_cyprus.5 = {                   # Antigonid Event
             p:336 = { set_owned_by = scope:kition_country } 
             p:334 = {# Paphos 
                 create_country = {
-                    change_government = despotic_monarchy
+                    change_government = theocratic_monarchy
                     change_country_name = PAPHOS_NAME
-                    change_country_adjective = CYPRUS_ADJECTIVE       
+                    change_country_adjective = PAPHOS_ADJECTIVE       
                     change_country_flag = PAPHOS_FLAG
                     change_country_color = paphos_color    
                     save_scope_as = paphos_country                
@@ -668,9 +724,9 @@ flavor_cyprus.5 = {                   # Antigonid Event
             p:338 = { set_owned_by = scope:paphos_country } 
             p:6431 = {# Marion
                 create_country = {
-                    change_government = despotic_monarchy
+                    change_government = aristocratic_monarchy
                     change_country_name = MARION_NAME
-                    change_country_adjective = CYPRUS_ADJECTIVE       
+                    change_country_adjective = MARION_ADJECTIVE       
                     change_country_flag = MARION_FLAG
                     change_country_color = marion_color    
                     save_scope_as = marion_country                
@@ -720,6 +776,25 @@ flavor_cyprus.5 = {                   # Antigonid Event
             scope:marion_guy = {
                 move_country = scope:marion_country
             }
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_area = cyprus_area
+                    }
+                }
+                if = {
+                    limit = {
+                        capital_scope = { fort_level < 1 }
+                    }
+                    capital_scope = { add_building_level = fortress_building }
+                }
+                add_military_access = scope:salamis_country
+                add_military_access = scope:paphos_country                
+                add_military_access = scope:marion_country                
+                add_military_access = scope:kition_country                
+                add_military_access = scope:lapethos_country          
+            }
+            scope:kition_country = { add_alliance = scope:lapethos_country }
             scope:salamis_country = { set_as_ruler = scope:salamis_guy }
             scope:paphos_country = { set_as_ruler = scope:paphos_guy }
             scope:marion_country = { set_as_ruler = scope:marion_guy }
@@ -798,7 +873,7 @@ flavor_cyprus.5 = {                   # Antigonid Event
             p:334 = { #paphos
                 create_country = {
                     save_scope_as = cyprus_country
-                    change_government = despotic_monarchy
+                    change_government = aristocratic_monarchy
                 }
             }
             scope:salamis_guy = {
@@ -841,7 +916,10 @@ flavor_cyprus.5 = {                   # Antigonid Event
             limit = {
                 OR = {
                     primary_culture = macedonian
-                    PREV.overlord = { primary_culture = macedonian }
+                    trigger_if = {
+                        limit = { is_subject = yes }
+                        overlord = { primary_culture = macedonian }
+                    }
                     capital_scope = {
                         OR = {
                             is_in_region = cilicia_region
@@ -876,7 +954,7 @@ flavor_cyprus.5 = {                   # Antigonid Event
     option = {
         name = "flavor_cyprus.5.c"
         highlight = yes
-        custom_tooltip = flavor_cyprus.5.ct
+        #custom_tooltip = flavor_cyprus.5.ct
         scope:salamis_guy = { add_loyalty = scorned_claimant_loyalty }
         scope:lapethos_guy = { add_loyalty = scorned_claimant_loyalty }
         scope:kition_guy = { add_loyalty = scorned_claimant_loyalty }
@@ -916,7 +994,7 @@ flavor_cyprus.6 = {                # Cypriot Independence War
         hidden_effect = {
             p:331 = {#    Salamis
                 create_country = {
-                    change_government = despotic_monarchy
+                    change_government = aristocratic_monarchy
                     change_country_name = SALAMIS_CYPRUS_NAME
                     change_country_adjective = SALAMIS_CYPRUS_ADJECTIVE       
                     change_country_flag = CYPRUS_RUST
@@ -934,14 +1012,14 @@ flavor_cyprus.6 = {                # Cypriot Independence War
             p:330 = { set_owned_by = scope:salamis_country }     
             p:335 = {# Lapethos
                 create_country = {
-                    change_government = despotic_monarchy
+                    change_government = plutocratic_monarchy
                     change_country_name = LAPETHOS_NAME
-                    change_country_adjective = CYPRUS_ADJECTIVE       
+                    change_country_adjective = LAPETHOS_ADJECTIVE       
                     change_country_flag = LAPETHOS_FLAG
                     change_country_color = lapethos_blue   
                     save_scope_as = lapethos_country                
                 }
-                change_province_name = "Lafeth"                
+                #change_province_name = "Lafeth"                
                 if = {
                     limit = {
                         has_city_status = no
@@ -953,9 +1031,9 @@ flavor_cyprus.6 = {                # Cypriot Independence War
             p:6433 = { set_owned_by = scope:lapethos_country } 
             p:332 = {# Kition 
                 create_country = {
-                    change_government = despotic_monarchy
+                    change_government = plutocratic_monarchy
                     change_country_name = KITION_NAME
-                    change_country_adjective = CYPRUS_ADJECTIVE       
+                    change_country_adjective = KITION_ADJECTIVE       
                     change_country_flag = ALASHIYA
                     change_country_color = alashiya_color    
                     save_scope_as = kition_country                 
@@ -972,9 +1050,9 @@ flavor_cyprus.6 = {                # Cypriot Independence War
             p:336 = { set_owned_by = scope:kition_country } 
             p:334 = {# Paphos 
                 create_country = {
-                    change_government = despotic_monarchy
+                    change_government = theocratic_monarchy
                     change_country_name = PAPHOS_NAME
-                    change_country_adjective = CYPRUS_ADJECTIVE       
+                    change_country_adjective = PAPHOS_ADJECTIVE       
                     change_country_flag = PAPHOS_FLAG
                     change_country_color = paphos_color    
                     save_scope_as = paphos_country                
@@ -991,9 +1069,9 @@ flavor_cyprus.6 = {                # Cypriot Independence War
             p:338 = { set_owned_by = scope:paphos_country } 
             p:6431 = {# Marion
                 create_country = {
-                    change_government = despotic_monarchy
+                    change_government = aristocratic_monarchy
                     change_country_name = MARION_NAME
-                    change_country_adjective = CYPRUS_ADJECTIVE       
+                    change_country_adjective = MARION_ADJECTIVE       
                     change_country_flag = MARION_FLAG
                     change_country_color = marion_color    
                     save_scope_as = marion_country                
@@ -1122,22 +1200,37 @@ flavor_cyprus.6 = {                # Cypriot Independence War
     option = {
         name = "flavor_cyprus.6.b"
         custom_tooltip = flavor_cyprus.6.bt
+        add_legitimacy = 10
+        add_stability = 10 
         hidden_effect = {
-            random_country = {
-                limit = {
-                    capital_scope = { is_in_area = cyprus_area }
-                }           
+            scope:salamis_country = {
                 declare_war_with_wargoal = {
                     war_goal = independence_wargoal
-                    province = c:PRY.capital_scope
+                    province = scope:salamis_country.capital_scope
                     target = c:PRY
                 }
-                add_military_access = scope:salamis_country
-                add_military_access = scope:paphos_country                
-                add_military_access = scope:marion_country                
-                add_military_access = scope:kition_country                
-                add_military_access = scope:lapethos_country  
-            }   
+            }
+            random_current_war = {
+                limit = {
+                    any_war_participant = {
+                        this = scope:paphos_country
+                    }
+                }
+                save_scope_as = cyprus_rebellion_scope
+            }
+            every_country = {
+                limit = {
+                    NOT = { THIS = scope:paphos_country }
+                    capital_scope = {
+                        is_in_area = cyprus_area
+                    }
+                }
+                add_to_war = {
+                    target = scope:cyprus_rebellion_scope
+                    attacker = yes
+                    leader = no
+                }
+            }
         }
         ai_chance = { factor = 10 } 
     }
@@ -1177,7 +1270,12 @@ flavor_cyprus.7 = {                   # Cyprus Tag Switch
         hidden_effect = {
             set_player_country = scope:cyprus_country
         }
-
+        scope:cyprus_country = {
+            trigger_event = {
+                id = flavor_cyprus.9
+                days = { 5 15 }
+            }
+        }
         ai_chance = { factor = 0 } 
     }  
 }
@@ -1207,10 +1305,30 @@ flavor_cyprus.8 = {                   #A New King
     option = {
         name = "flavor_cyprus.8.a" # 
         show_as_tooltip = {
+            add_country_modifier = {
+                name = ant_01_3_sid_cmod
+                duration = 7300 # 20 years
+            }
             set_as_ruler = scope:philokles_baalshillemi
             if = {
                 limit = {
                     has_variable = sharron_restored
+                }
+                ordered_owned_province = {
+                    limit = {
+                        OR = {
+                            province_id = 663
+                            province_id = 664
+                            province_id = 665
+                            province_id = 667
+                            province_id = 668
+                        }
+                    }
+                    order_by = total_population
+                    add_permanent_province_modifier = {
+                        name = land_of_dagon
+                        duration = -1
+                    }
                 }
                 every_owned_province = {
                     limit = {
@@ -1227,4 +1345,1135 @@ flavor_cyprus.8 = {                   #A New King
             }
         }
     }
+}
+
+flavor_cyprus.9 = {                   # Cypriot Elite
+    type = country_event
+    title = "flavor_cyprus.9.t"
+    desc = "flavor_cyprus.9.desc"
+    picture = throneroom
+    left_portrait = current_ruler
+    right_portrait = scope:kition_guy
+    right_portrait = scope:salamis_guy
+
+    goto_location = capital_scope
+    fire_only_once = yes  
+
+    immediate = {
+        hidden_effect = {
+            scope:salamis_guy = {
+                if = {
+                    limit = {
+                        num_of_children > 0
+                        any_child = {
+                            is_alive = yes
+                            NOT = { has_trait = teucer }
+                        }
+                    }
+                    every_child = {
+                        limit = {
+                            is_alive = yes
+                            NOT = { has_trait = teucer }
+                        }
+                        add_trait = teucer
+                        if = {
+                            limit = {
+                                num_of_children > 0
+                                any_child = {
+                                    is_alive = yes
+                                    NOT = { has_trait = teucer }
+                                }
+                            }
+                            every_child = { 
+                                limit = {
+                                    is_alive = yes
+                                    NOT = { has_trait = teucer }
+                                }
+                                add_trait = teucer
+                            }
+                        }
+                    }
+                }
+            }    
+            scope:kition_guy.family = {
+                add_prestige = 75
+            }
+            scope:salamis_guy.family = {
+                add_prestige = 75
+            }
+            create_character = {
+                culture = root.culture
+                religion = root.religion
+                family = root.current_ruler.family
+                age = 16
+                female = yes
+                save_scope_as = kition_wife
+            }
+            create_character = {
+                culture = root.culture
+                religion = root.religion
+                family = root.current_ruler.family
+                age = 16
+                female = yes
+                save_scope_as = salamis_wife
+            }
+        }
+    }
+
+    option = {
+        name = "flavor_cyprus.9.a"
+        custom_tooltip = flavor_cyprus.9.at
+        add_stability = 10
+        hidden_effect = {
+            scope:kition_guy = {
+                if = {
+                    limit = { is_married = yes }
+                        divorce_character = spouse
+                    }
+                marry_character = scope:kition_wife
+            } 
+            scope:salamis_guy = {
+                if = {
+                    limit = { is_married = yes }
+                        divorce_character = spouse
+                }
+                marry_character = scope:salamis_wife
+            }                
+        }
+        ai_chance = { factor = 100 } 
+    }
+
+    option = {
+        name = "flavor_cyprus.9.b" # 
+        add_stability = -5
+        add_political_influence = 150
+        scope:kition_guy = { add_loyalty = scorned_claimant_loyalty }
+        scope:salamis_guy = { add_loyalty = scorned_claimant_loyalty }
+        ai_chance = { factor = 0 } 
+    }  
+}
+
+flavor_cyprus.10 = {                   # the Cypriot Question
+    type = country_event
+    title = "flavor_cyprus.10.t"
+    desc = "flavor_cyprus.10.desc"
+    picture = throneroom
+    left_portrait = current_ruler
+    left_portrait = scope:eunostos_of_soloi
+    left_portrait = scope:menelaos_lagid
+    right_portrait = scope:kition_guy 
+    right_portrait = scope:lapethos_guy
+    right_portrait = scope:paphos_guy
+    goto_location = scope:salamis_country.capital_scope
+    fire_only_once = yes
+
+
+    immediate = {
+        set_variable = cypriot_kings_variable_egy #No more decision
+        hidden_effect = {
+            if = {#Eunostos
+                limit = {
+                    char:430 = {
+                        is_alive = yes 
+                    }
+                }
+                char:430 = { save_scope_as = eunostos_of_soloi }
+            }
+            else = {#Eunostos backup
+                create_character = {
+                    female = no
+                    family_name = "Pasikratid"
+                    culture = cypriot
+                    religion = roman_pantheon
+                    no_stats = yes
+                    good_martial_effect = yes
+                    average_charisma_effect = yes
+                    good_finesse_effect = yes
+                    average_zeal_effect = yes
+                    save_scope_as = eunostos_of_soloi
+                }
+            }
+            if = {#Menelaos
+                limit = {
+                    char:47 = {
+                        is_alive = yes 
+                    }
+                }
+                char:47 = { save_scope_as = menelaos_lagid }
+            }
+            else = {#Menelaos backup
+                create_character = {
+                    female = no
+                    family = c:EGY.fam:Lagid
+                    father=char:47                    
+                    culture = cypriot
+                    religion = roman_pantheon
+                    force_add_trait="lagids"
+                    no_stats = yes
+                    average_martial_effect = yes
+                    average_charisma_effect = yes
+                    good_finesse_effect = yes
+                    good_zeal_effect = yes
+                    save_scope_as = menelaos_lagid
+                }
+            }
+
+            create_character = {
+                female = no
+                family_name = "Sidqmelekid"
+                culture = phoenician
+                religion = carthaginian_pantheon
+                save_scope_as = lapethos_guy
+            }
+            create_character = {
+                female = no
+                family_name = "Poumyathonid"
+                culture = phoenician
+                religion = carthaginian_pantheon
+                save_scope_as = kition_guy
+            }
+            create_character = {
+                female = no
+                family_name = "Nikoklid"
+                culture = cypriot
+                religion = roman_pantheon
+                save_scope_as = paphos_guy
+            }
+
+            p:331 = {#    Salamis
+                create_country = {
+                    change_government = aristocratic_monarchy
+                    change_country_name = SALAMIS_CYPRUS_NAME
+                    change_country_adjective = SALAMIS_CYPRUS_ADJECTIVE       
+                    change_country_flag = CYPRUS_RUST
+                    change_country_color = spartan_rust
+                    save_scope_as = salamis_country
+                }
+            }
+            p:330 = { set_owned_by = scope:salamis_country }     
+            p:335 = {# Lapethos
+                add_building_level = fortress_building
+                create_country = {
+                    change_government = plutocratic_monarchy
+                    change_country_name = LAPETHOS_NAME
+                    change_country_adjective = LAPETHOS_ADJECTIVE       
+                    change_country_flag = LAPETHOS_FLAG
+                    change_country_color = lapethos_blue   
+                    save_scope_as = lapethos_country                
+                }
+            }
+            p:6433 = { set_owned_by = scope:lapethos_country } 
+            p:332 = {# Kition 
+                create_country = {
+                    change_government = plutocratic_monarchy
+                    change_country_name = KITION_NAME
+                    change_country_adjective = KITION_ADJECTIVE       
+                    change_country_flag = ALASHIYA
+                    change_country_color = alashiya_color    
+                    save_scope_as = kition_country                 
+                }
+            }
+            p:7991 = { set_owned_by = scope:kition_country }          
+            p:336 = { set_owned_by = scope:kition_country } 
+            p:334 = {# Paphos 
+                create_country = {
+                    change_government = theocratic_monarchy
+                    change_country_name = PAPHOS_NAME
+                    change_country_adjective = PAPHOS_ADJECTIVE       
+                    change_country_flag = PAPHOS_FLAG
+                    change_country_color = paphos_color    
+                    save_scope_as = paphos_country                
+                }
+            }
+            p:7990 = { set_owned_by = scope:paphos_country }          
+            p:338 = { set_owned_by = scope:paphos_country } 
+            p:333 = {# Soloi
+                create_country = {
+                    change_government = aristocratic_monarchy
+                    change_country_name = SOLOI_NAME
+                    change_country_adjective = SOLOI_ADJECTIVE
+                    change_country_flag = SOLOI_FLAG
+                    change_country_color = soloi_color    
+                    save_scope_as = soloi_country                
+                }
+                if = {
+                    limit = {
+                        has_city_status = no
+                        NOT = { has_province_modifier = founding_city_in_progress }
+                    }
+                    found_city_effect = yes
+                }
+            }
+            p:6431 = { set_owned_by = scope:soloi_country }
+
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_area = cyprus_area
+                    }
+                }
+                if = {
+                    limit = {
+                        capital_scope = { fort_level < 1 }
+                    }
+                    capital_scope = { add_building_level = fortress_building }
+                }
+            }
+
+            scope:menelaos_lagid = {
+                move_country_with_close_family_effect = { COUNTRY = scope:salamis_country }
+            }
+            scope:salamis_country = { set_as_ruler = scope:menelaos_lagid }
+
+            scope:eunostos_of_soloi = {
+                move_country_with_entire_family_effect = { COUNTRY = scope:soloi_country }
+            }
+            scope:soloi_country = { set_as_ruler = scope:eunostos_of_soloi }
+
+            scope:paphos_guy = {
+                move_country = scope:paphos_country
+            }
+            scope:paphos_country = { set_as_ruler = scope:paphos_guy }
+
+            scope:kition_guy = {
+                move_country = scope:kition_country
+            }
+            scope:kition_country = { 
+                set_as_ruler = scope:kition_guy
+                if = {
+                    limit = {
+                        NOT = {
+                            primary_culture = phoenician
+                        }
+                    }
+                    set_primary_culture_cleanup_effect = {
+                        NEW_PRIMARY_CULTURE = phoenician
+                        MAKE_OLD_CULTURE_INTEGRATED = yes
+                    }
+                }
+                set_country_religion = carthaginian_pantheon     
+                every_character = {
+                    limit = {
+                        from_ruler_family = yes
+                    }
+                    set_culture = phoenician
+                    set_character_religion = carthaginian_pantheon
+                }
+            }
+            scope:lapethos_guy = {
+                move_country = scope:lapethos_country
+            }
+            scope:lapethos_country = { 
+                set_as_ruler = scope:lapethos_guy
+                if = {
+                    limit = {
+                        NOT = {
+                            primary_culture = phoenician
+                        }
+                    }
+                    set_primary_culture_cleanup_effect = {
+                        NEW_PRIMARY_CULTURE = phoenician
+                        MAKE_OLD_CULTURE_INTEGRATED = yes
+                    }
+                }
+                set_country_religion = carthaginian_pantheon     
+                every_character = {
+                    limit = {
+                        from_ruler_family = yes
+                    }
+                    set_culture = phoenician
+                    set_character_religion = carthaginian_pantheon
+                }
+            }
+            every_country = {
+                limit = {
+                    capital_scope = {
+                        is_in_area = cyprus_area
+                    }
+                }
+                if = {
+                    limit = {
+                        capital_scope = { fort_level < 1 }
+                    }
+                    capital_scope = { add_building_level = fortress_building }
+                }
+            }
+        }
+        hidden_effect = {
+            make_subject = {
+                target = scope:salamis_country
+                type = feudatory
+            }
+            make_subject = {
+                target = scope:soloi_country
+                type = feudatory
+            }
+        }
+        custom_tooltip = flavor_cyprus_salamis_feudatory.tt
+        custom_tooltip = flavor_cyprus_soloi_feudatory.tt
+    }
+
+    option = {
+        name = "flavor_cyprus.10.a"
+        set_global_variable = { name = cypriot_kings_variable_pry } 
+        make_subject = {
+            target = scope:paphos_country
+            type = feudatory
+        }
+        make_subject = {
+            target = scope:kition_country
+            type = tributary
+        }
+        make_subject = {
+            target = scope:lapethos_country
+            type = tributary
+        }
+        ai_chance = { factor = 15 } 
+    }   
+
+    option = {
+        name = "flavor_cyprus.10.b"
+        set_global_variable = { name = cypriot_kings_variable_pry } 
+        add_political_influence = -50
+        make_subject = {
+            target = scope:paphos_country
+            type = feudatory
+        }
+        scope:paphos_country = {
+            add_country_modifier = {
+                name = cypriot_hostages_modifier
+                duration = 7300 # 20 years
+            }
+        }
+        make_subject = {
+            target = scope:kition_country
+            type = tributary
+        }
+        scope:kition_country = {
+            add_country_modifier = {
+                name = cypriot_hostages_modifier
+                duration = 7300 # 20 years
+            }
+        }
+        make_subject = {
+            target = scope:lapethos_country
+            type = tributary
+        }
+        scope:lapethos_country = {
+            add_country_modifier = {
+                name = cypriot_hostages_modifier
+                duration = 7300 # 20 years
+            }
+        }
+        ai_chance = { factor = 15 } 
+    }   
+
+    option = {
+        name = "flavor_cyprus.10.c"
+        set_global_variable = { name = cypriot_kings_variable_pry } 
+        custom_tooltip = flavor_cyprus.10.ct
+        add_political_influence = 50
+        set_variable = {
+            name = fate_of_cyprus_var
+            days = 700
+        }
+        hidden_effect = {
+            scope:paphos_country = {
+                declare_war_with_wargoal = {
+                    war_goal = independence_wargoal
+                    province = prev.capital_scope
+                    target = c:EGY
+                }
+            }
+            random_current_war = {
+                limit = {
+                    any_war_participant = {
+                        this = scope:paphos_country
+                    }
+                }
+                save_scope_as = cyprus_rebellion_scope
+            }
+            if = {
+                limit = {
+                    exists = scope:cyprus_rebellion_scope
+                }
+                every_country = {
+                    limit = {
+                        NOR = {
+                            THIS = scope:paphos_country
+                            THIS = scope:salamis_country
+                            THIS = scope:soloi_country
+                            is_subject_of = root
+                        }
+                        capital_scope = {
+                            is_in_area = cyprus_area
+                        }
+                    }
+                    add_to_war = {
+                        target = scope:cyprus_rebellion_scope
+                        attacker = yes
+                        leader = no
+                    }
+                }
+            }
+            trigger_event = {
+                id = flavor_cyprus.1000
+                days = 60
+            }
+        }
+        ai_chance = { factor = 15 } 
+    } 
+}
+
+# Recursive event for Fate of Cyprus
+flavor_cyprus.1000 = {#Two years
+    type = country_event
+    hidden = yes
+    trigger = {
+        has_variable = fate_of_cyprus_var
+    }
+
+    immediate = {
+        if = {
+            limit = {
+                owns_or_subject_owns_area = cyprus_area
+            }
+            trigger_event = flavor_cyprus.11
+        }
+        else = {
+            trigger_event = {
+                id = flavor_cyprus.1000
+                days = 60
+            }
+        }
+    }
+}
+
+flavor_cyprus.11 = {                   # The Fate of Cyprus
+    type = country_event
+    title = "flavor_cyprus.11.t"
+    desc = "flavor_cyprus.11.desc"
+    picture = throneroom
+    left_portrait = current_ruler
+    right_portrait = scope:menelaos_lagid
+    right_portrait = scope:eunostos_of_soloi
+    
+    goto_location = p:331
+
+    immediate = {
+        hidden_effect = {
+            if = {
+                limit = {
+                    NOT = { exists = scope:soloi_country }
+                }
+                p:333 = {# Soloi
+                    create_country = {
+                        change_government = aristocratic_monarchy
+                        change_country_name = SOLOI_NAME
+                        change_country_adjective = SOLOI_ADJECTIVE
+                        change_country_flag = SOLOI_FLAG
+                        change_country_color = soloi_color    
+                        save_scope_as = soloi_country                
+                    }
+                    if = {
+                        limit = {
+                            has_city_status = no
+                            NOT = { has_province_modifier = founding_city_in_progress }
+                        }
+                        found_city_effect = yes
+                    }
+                }
+                p:6431 = { set_owned_by = scope:soloi_country }
+                scope:soloi_country = {
+                    create_character = {
+                        female = no
+                        family_name = "Pasikratid"
+                        culture = cypriot
+                        religion = roman_pantheon
+                        no_stats = yes
+                        good_martial_effect = yes
+                        average_charisma_effect = yes
+                        good_finesse_effect = yes
+                        average_zeal_effect = yes
+                        save_scope_as = eunostos_of_soloi
+                    }
+                }
+                 set_as_ruler = scope:eunostos_of_soloi 
+            }
+            scope:soloi_country.current_ruler = { save_scope_as = eunostos_of_soloi }
+            every_owned_province = {
+                limit = {
+                    is_in_area = cyprus_area
+                    NOT = { owner = scope:salamis_country }
+                    is_capital = no
+                    OR = {
+                        province_id = 6431
+                        province_id = 333
+                        province_id = 334
+                        province_id = 7990
+                        province_id = 338
+                    }
+                }
+                set_conquered_by = scope:soloi_country
+            }
+            if = {
+                limit = {
+                    NOT = { exists = scope:salamis_country }
+                }
+                p:331 = {#    Salamis
+                    create_country = {
+                        change_government = aristocratic_monarchy
+                        change_country_name = SALAMIS_CYPRUS_NAME
+                        change_country_adjective = SALAMIS_CYPRUS_ADJECTIVE       
+                        change_country_flag = CYPRUS_RUST
+                        change_country_color = spartan_rust
+                        save_scope_as = salamis_country
+                    }
+                }
+                p:330 = { set_owned_by = scope:salamis_country }   
+                scope:salamis_country = {
+                    create_character = {
+                        female = no
+                        family = c:EGY.fam:Lagid
+                        father=char:47                    
+                        culture = cypriot
+                        religion = roman_pantheon
+                        force_add_trait="lagids"
+                        no_stats = yes
+                        average_martial_effect = yes
+                        average_charisma_effect = yes
+                        good_finesse_effect = yes
+                        good_zeal_effect = yes
+                        save_scope_as = menelaos_lagid
+                    }
+                  set_as_ruler = scope:menelaos_lagid 
+                }
+            }
+            scope:salamis_country.current_ruler = { save_scope_as = menelaos_lagid }
+            every_owned_province = {
+                limit = {
+                    is_in_area = cyprus_area
+                    NOT = { owner = scope:soloi_country }
+                    is_capital = no
+                }
+                set_conquered_by = scope:salamis_country
+            }
+        }
+    }
+
+
+    option = {#The island shall remain divided.
+        name = "flavor_cyprus.11.a"
+        custom_tooltip = flavor_cyprus.11.at
+        ai_chance = { factor = 45 }
+    }
+
+
+    option = {#[menelaos_lagid.GetName] will be granted control over all territories in Cyprus not held by [eunostos_of_soloi.GetName]
+        name = "flavor_cyprus.11.b"
+        custom_tooltip = flavor_cyprus.11.bt
+        scope:salamis_country = { save_scope_as = cyprus_country}
+        scope:cyprus_country = {
+            change_country_name = CYP
+            hidden_effect = {
+                change_country_adjective = CYP_ADJ
+                change_country_tag = CYP
+                change_country_flag = CYPRUS_RUST
+                change_country_color = spartan_rust  
+                scope:cyprus_country.overlord = { release_subject =scope:cyprus_country }
+            }            
+             make_subject = {
+                target = scope:cyprus_country
+                type = satrapy
+            }
+            add_country_modifier = {
+                name = cyprus_satrapy_modifier
+                duration = -1
+            }
+        }
+        hidden_effect = {
+            every_province = {
+                limit = {
+                    is_in_area = cyprus_area
+                    NOR = {
+                        province_id = 6431
+                        province_id = 333
+                    }
+                }
+                set_conquered_by = scope:cyprus_country
+            }
+        }
+        scope:eunostos_of_soloi = { add_loyalty = scorned_claimant_loyalty }
+        ai_chance = { factor = 20 } 
+    }
+
+    option = {
+        name = "flavor_cyprus.1.c" #Let [eunostos_of_soloi.GetPraenomen] hold Cyprus, [menelaos_lagid.GetPraenomen] is needed for more important matters.
+        custom_tooltip = flavor_cyprus.11.ct
+        hidden_effect = {
+            scope:menelaos_lagid = {
+                move_country_with_close_family_effect = { COUNTRY = ROOT }
+                remove_character_modifier = foreign_citizen
+                set_home_country = ROOT
+            }
+        }
+        scope:soloi_country = { save_scope_as = cyprus_country}
+        scope:cyprus_country = {
+            change_country_name = CYP
+            hidden_effect = {
+                change_country_adjective = CYP_ADJ
+                change_country_tag = CYP
+                change_country_flag = CYPRUS_SOLOI
+                change_country_color = soloi_color
+                scope:cyprus_country.overlord = { release_subject =scope:cyprus_country }
+            }            
+             make_subject = {
+                target = scope:cyprus_country
+                type = satrapy
+            }
+            add_country_modifier = {
+                name = cyprus_satrapy_modifier
+                duration = -1
+            }
+        }
+        hidden_effect = {
+            every_province = {
+                limit = {
+                    is_in_area = cyprus_area
+                }
+                set_conquered_by = scope:cyprus_country
+            }
+        }
+        scope:menelaos_lagid = { add_loyalty = scorned_claimant_loyalty }
+        ai_chance = { factor = 20 } 
+    }   
+
+    option = {
+        name = "flavor_cyprus.11.d" # The kingdoms must be abolished once more.
+        highlight = yes
+        custom_tooltip = flavor_cyprus.11.dt
+        add_tyranny = 20
+        add_political_influence = -50
+        hidden_effect = { 
+            scope:menelaos_lagid = {
+                move_country_with_close_family_effect = { COUNTRY = ROOT }
+            }
+            scope:eunostos_of_soloi = {
+                move_country_with_close_family_effect = { COUNTRY = ROOT }
+            }
+            scope:cyprus_country = {
+                every_owned_province = {
+                    limit = { is_in_area = cyprus_area }
+                    set_conquered_by = ROOT
+                }
+            }    
+        }    
+        scope:menelaos_lagid = { add_loyalty = scorned_claimant_loyalty }
+        scope:eunostos_of_soloi = { add_loyalty = scorned_claimant_loyalty }
+        ai_chance = { factor = 0 } 
+    } 
+
+    after = {
+        if = {
+            limit = {
+                scope:cyprus_country = {
+                    has_land = yes
+                }
+            }
+            scope:cyprus_country = {
+                hidden_effect = {
+                    if = {
+                        limit = {
+                            NOT = {
+                                primary_culture = cypriot
+                            }
+                        }
+                        set_primary_culture_cleanup_effect = {
+                            NEW_PRIMARY_CULTURE = cypriot
+                            MAKE_OLD_CULTURE_INTEGRATED = yes
+                        }
+                    }
+                    create_character = {
+                        female = no
+                        family_name = "Teucrid"                    
+                        #family_name = "Pnytagorid"
+                        culture = cypriot
+                        religion = roman_pantheon
+                        add_trait = teucer
+                        save_scope_as = salamis_guy
+                    }
+                    create_character = {
+                        female = no
+                        family_name = "Poumyathonid"
+                        culture = phoenician
+                        religion = carthaginian_pantheon
+                        save_scope_as = kition_guy
+                    }
+                    new_family_generation_effect = { FAMILY_CANDIDATE = kition_guy } #Scripted Effect that passes on the saved scope.
+                    new_family_generation_effect = { FAMILY_CANDIDATE = salamis_guy } #Scripted Effect that passes on the saved scope.
+                    scope:kition_guy.family = {
+                        add_prestige = 100
+                    }
+                    scope:salamis_guy.family = {
+                        add_prestige = 100
+                    }
+                }
+            }
+            every_country = {
+                limit = {
+                    OR = {
+                        primary_culture = macedonian
+                        capital_scope = {
+                            OR = {
+                                is_in_region = cilicia_region
+                                is_in_region = asia_region
+                                is_in_region = greece_region
+                                is_in_region = macedonia_region
+                                is_in_region = syria_region
+                            }
+                        }
+                    }
+                }
+                trigger_event = {
+                    id = flavor_cyprus.2
+                    days = { 180 360 }
+                }
+            }
+            scope:cyprus_country = {
+                trigger_event = {
+                    id = flavor_cyprus.9
+                    days = { 361 400 }
+                }
+            }
+        }
+
+    }
+}
+
+
+
+flavor_cyprus.12 = {                 # The Future of Phoenicia EGY
+    type = country_event
+    title = "flavor_cyprus.12.t"
+    desc = "flavor_cyprus.12.desc"
+    picture = tyre_city
+    left_portrait = current_ruler
+    right_portrait = scope:sidon_king
+    right_portrait = c:TYE.current_ruler
+    goto_location = p:743
+
+    trigger = {
+        exists = c:SID
+        NOT = {
+            c:SID = {
+                is_ai = NO
+            }
+            c:TYE = {
+                is_ai = NO
+            }
+        }
+        owns_or_subject_owns = 743
+        owns_or_subject_owns = 744
+        owns_or_subject_owns = 670
+        c:SID = {
+            OR = {
+                is_ai = no
+                is_subject_of = root
+            }
+        }
+    }
+
+    immediate = {
+        hidden_effect = {
+            save_scope_as = overlord
+            c:SID.current_ruler = { save_scope_as = sidon_king }
+            
+            if = {#Azemilk
+                limit = {
+                    exists = c:TYE
+                }
+                c:TYE.current_ruler = { save_scope_as = tyre_king }
+            }
+            else = {#Azemilk backup
+                create_character = {
+                    female = no
+                    family_name = "Azemilki"
+                    culture = phoenician
+                    religion = carthaginian_pantheon
+                    no_stats = yes
+                    good_martial_effect = yes
+                    average_charisma_effect = yes
+                    good_finesse_effect = yes
+                    average_zeal_effect = yes
+                    save_scope_as = tyre_king
+                }
+            }
+        }
+    }
+ 
+
+    option = {
+        name = "flavor_cyprus.12.a" # Leave things as they are
+        c:SID = { add_stability = 5 }
+        c:TYE = { add_stability = 5 }
+        ai_chance = { factor = 40 } 
+    }
+
+   option = {
+        name = "flavor_cyprus.12.b" #[sidon_king.GetPraenomen] becomes the king of Tyre\nTyre annexes Sidon
+        custom_tooltip = flavor_cyprus.12.bt
+        c:SID = {
+            add_opinion = {
+                target = ROOT
+                modifier = king_of_sidonians_mod
+            }
+        }
+        add_country_modifier = {
+            name = ant_01_3_ant_cmod #Worse version (reason to give land)
+            duration = 7300 # 20 years
+        }        
+        if = {
+            limit = {
+                exists = c:TYE
+                c:TYE = {
+                    is_ai = no
+                }
+            }
+            c:TYE = {
+                trigger_event = {
+                    id = flavor_cyprus.13
+                }
+            }
+        }
+        else = {
+            c:SID = {
+                trigger_event = {
+                    id = flavor_cyprus.14
+                }
+            }
+        }
+        ai_chance = { factor = 20 }            
+    } 
+
+   option = {
+        name = "flavor_cyprus.12.c" #[sidon_king.GetPraenomen] will be more than a king of coasts.
+        trigger = {
+            any_owned_province = {
+                OR = {
+                    is_in_area = galilee_area
+                    is_in_area = south_phoenicia_area
+                }
+                NOR = {
+                    province_id = 743
+                    province_id = 744
+                    province_id = 670
+                }
+            }
+        }
+        custom_tooltip = flavor_cyprus.12.ct
+        set_variable = big_sidonian_tyre
+        c:SID = {
+            add_opinion = {
+                target = ROOT
+                modifier = king_of_sidonians_mod
+            }
+        }
+        add_country_modifier = {
+            name = ant_01_3_egy_cmod
+            duration = 14600 # 40 years
+        }
+        if = {
+            limit = {
+                exists = c:TYE
+                c:TYE = {
+                    is_ai = no
+                }
+            }
+            c:TYE = {
+                trigger_event = {
+                    id = flavor_cyprus.13
+                }
+            }
+        }
+        else = {
+            c:SID = {
+                trigger_event = {
+                    id = flavor_cyprus.14
+                }
+            }
+        }
+        ai_chance = { factor = 40 }            
+    } 
+}
+
+flavor_cyprus.13 = {                 # A Sidonian King for Tyre? TYE
+    type = country_event
+    title = "flavor_cyprus.13.t"
+    desc = "flavor_cyprus.13.desc"
+    picture = tyre_city
+    left_portrait = current_ruler
+    right_portrait = scope:sidon_king
+    right_portrait = scope:overlord.current_ruler
+    goto_location = p:743
+
+    option = {
+        name = "flavor_cyprus.13.a" # Hail King [sidon_king.GetPraenomen]!
+        if = {
+            limit = {
+                scope:overlord = {
+                    has_variable = big_sidonian_tyre
+                }
+                custom_tooltip = flavor_cyprus.13.at2
+            }
+            hidden_effect = {
+                scope:overlord = {    
+                    every_owned_province = {
+                        limit = {
+                            OR = {
+                                is_in_area = galilee_area
+                                is_in_area = south_phoenicia_area
+                            }
+                        }
+                        set_owned_by = root
+                    }
+                }
+            }
+        }
+        else = {
+            custom_tooltip = flavor_cyprus.13.at1
+        }
+        hidden_effect = {
+            scope:sidon_king = {
+                move_country_with_close_family_effect = { COUNTRY = root }
+            }
+            new_family_generation_effect = { FAMILY_CANDIDATE = sidon_king } #Scripted Effect that passes on the saved scope.
+            scope:sidon_king.family = {
+                add_prestige = 100
+            }
+            set_as_ruler = scope:sidon_king 
+            c:SID = {
+                every_owned_province = {
+                    set_owned_by = root
+                }
+           }
+        } 
+        custom_tooltip = flavor_cyprus.13.at3
+        set_variable = hellenizing_bypass
+        add_stability = -5
+        trigger_event = {
+            id = me_phoenicia.21
+            days = { 30 60 }
+        }
+        trigger_event = {
+            id = me_phoenicia.21
+            days = { 60 90 }
+        }
+        trigger_event = {
+            id = me_phoenicia.21
+            days = { 90 180 }
+        }            
+        ai_chance = { factor = 60 }
+    }
+
+   option = {
+        name = "flavor_cyprus.13.b" #We must preserve our independence
+        c:SID = {
+            add_opinion = {
+                target = ROOT
+                modifier = refused_king_of_sidonians_mod
+            }
+        }
+        c:TYE = { add_stability = 5 }        
+        ai_chance = { factor = 0 }
+    } 
+}
+
+flavor_cyprus.14 = {                 # A Sidonian King for Tyre? SID
+    type = country_event
+    title = "flavor_cyprus.14.t"
+    desc = "flavor_cyprus.14.desc"
+    picture = tyre_city
+    left_portrait = current_ruler
+    right_portrait = scope:tyre_king
+    right_portrait = scope:overlord.current_ruler
+    goto_location = p:747
+
+    option = {
+        name = "flavor_cyprus.14.a" # A fine proposal!
+        show_as_tooltip = { set_capital = p:743 }
+        p:743 = { set_owned_by = c:SID }                
+        p:744 = { set_owned_by = c:SID }                
+        p:670 = { set_owned_by = c:SID }
+        if = {
+            limit = {
+                scope:overlord = {
+                    has_variable = big_sidonian_tyre
+                }
+                custom_tooltip = flavor_cyprus.14.at2
+            }
+            hidden_effect = {
+                scope:overlord = {    
+                    every_owned_province = {
+                        limit = {
+                            OR = {
+                                is_in_area = galilee_area
+                                is_in_area = south_phoenicia_area
+                            }
+                        }
+                        set_owned_by = root
+                    }
+                }
+            }
+        }
+        else = {
+            custom_tooltip = flavor_cyprus.14.at1
+        }
+        change_country_name = TYE
+        hidden_effect = {
+            change_country_adjective = "TYE_ADJ"
+            change_country_color =  "tyrian_purple"
+            change_country_flag = TYE
+            scope:tyre_king = {
+                move_country_with_close_family_effect = { COUNTRY = root }
+            }
+            new_family_generation_effect = { FAMILY_CANDIDATE = tyre_king } #Scripted Effect that passes on the saved scope.
+            scope:tyre_king.family = {
+                add_prestige = 100
+            }
+            c:TYE = {
+                every_owned_province = {
+                    set_owned_by = root
+                }
+           }
+            set_capital = p:743  #Tyre
+        } 
+        custom_tooltip = flavor_cyprus.14.at3
+        set_variable = hellenizing_bypass
+        add_stability = -5
+        trigger_event = {
+            id = me_phoenicia.21
+            days = { 30 60 }
+        }
+        trigger_event = {
+            id = me_phoenicia.21
+            days = { 60 90 }
+        }
+        trigger_event = {
+            id = me_phoenicia.21
+            days = { 90 180 }
+        }            
+        ai_chance = { factor = 60 }
+    }
+
+   option = {
+        name = "flavor_cyprus.14.b" #Sidon is not yet ready for widespread Hellenization.
+        c:EGY = {
+            add_opinion = {
+                target = ROOT
+                modifier = refused_king_of_sidonians_mod
+            }
+        }
+        c:SID = { add_stability = 5 }        
+         ai_chance = { factor = 0 }
+    } 
 }

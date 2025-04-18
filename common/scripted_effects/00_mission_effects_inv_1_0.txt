@@ -97,13 +97,13 @@ gm_1_list_effect = {
 	}
 }
 
-gm_5_colony_scope_effect = {
-	save_scope_as = gm_5_colony_target_scope
-	trigger_event = { 
-		id = me_greek_5_pontus.71
-		days = { 5 10 }
-	}
-}
+#gm_5_colony_scope_effect = { # UNUSED
+#	save_scope_as = gm_5_colony_target_scope
+#	trigger_event = { 
+#		id = me_greek_5_pontus.71
+#		days = { 5 10 }
+#	}
+#}
 
 gm_5_colony_option_effect = {
 	custom_tooltip = me_greek_5_pontus.7.tt
@@ -203,15 +203,15 @@ gm_5_barter_territory_effect = {
 	}
 }
 
-gm_5_barter_territory_scope_effect = {
-	save_scope_as = gm_5_barter_target_territory
-	owner = { 
-		trigger_event = { 
-			id = me_greek_5_pontus.122 
-			days = { 5 10 }
-		}
-	}
-}
+#gm_5_barter_territory_scope_effect = { # UNUSED
+#	save_scope_as = gm_5_barter_target_territory
+#	owner = { 
+#		trigger_event = { 
+#			id = me_greek_5_pontus.122 
+#			days = { 5 10 }
+#		}
+#	}
+#}
 
 kushite_colony_specialization_effect = {
 	hidden_effect = {
@@ -478,7 +478,7 @@ samnium_separate_peace_effect = {
 			}
 		}
 	}
-	set_local_variable = {
+	set_global_variable = {
 		name = samnium_war_rep_var
 		value = 0
 	}
@@ -493,7 +493,7 @@ samnium_separate_peace_effect = {
 		custom_tooltip = samnium_war_rep_tt
 		add_treasury = 25
 		add_political_influence = 50
-		change_local_variable = {
+		change_global_variable = {
 			name = samnium_war_rep_var
 			add = 1
 		}
@@ -501,7 +501,7 @@ samnium_separate_peace_effect = {
 	c:SAM = {
 		add_treasury = {
 			value = -25
-			multiply = local_var:samnium_war_rep_var
+			multiply = global_var:samnium_war_rep_var
 		}
 		add_political_influence = -100 # not doing multiply bcs 50 pi each.... could be -200 or so
 		add_stability = -10 # just lost a war
@@ -719,6 +719,18 @@ turdetanian_mission_02_heirs_tartessia_inv_variable_cleanup_effect = {
 		}
 		remove_variable = olisipo_territory_variable
 	}
+	if = {
+		limit = {
+			has_variable = phokaia_territory_variable
+		}
+		remove_variable = phokaia_territory_variable
+	}
+	if = {
+		limit = {
+			has_variable = cancho_roano_progress
+		}
+		remove_variable = cancho_roano_progress
+	}
 }
 
 turdetanian_mission_03_conquerors_inv_variable_cleanup_effect = {
@@ -894,6 +906,97 @@ igk_select_country_with_mp_bias_effect = {
 			}
 		}
 }
+
+change_religion_effect_igk = { #Same as change_religion_effect, but only with -25 PI instead of -200
+	custom_tooltip = religion_conversion_tooltip
+	custom_tooltip = religion_conversion_family_tooltip
+	if = {
+		limit = { 
+			is_republic = yes
+			has_party_type = traditionalist_party
+		}
+		add_party_approval = {
+			party_type = traditionalist_party
+			value = -10
+		}
+	}
+	if = {
+		limit = { 
+			is_republic = yes
+			has_party_type = boni_party
+		}
+		add_party_approval = {
+			party_type = boni_party
+			value = -10
+		}
+	}
+	if = {
+		limit = {
+			# Set this variable in events so costs can be handled outside of this effect
+			NOT = { has_variable = free_religion_conversion }
+		}
+		add_political_influence = -25
+		add_stability = -30
+	}
+	add_country_modifier = {
+		name = "recent_convert_modifier"
+		duration = 3650
+	}
+	set_country_religion = $RELIGION$
+	current_ruler = {
+		if = {
+			limit = {
+				NOT = { has_religion = $RELIGION$ }
+			}
+			set_character_religion = $RELIGION$
+		}
+	}
+	hidden_effect = {
+		every_character = {
+			limit = { NOT = { has_same_religion_as = employer.current_ruler } }
+			add_loyalty = national_conversion_l
+		}
+		current_ruler.family = {
+			every_family_member = {
+				limit = {
+					employer = ROOT
+					loyalty >= 60
+					NOT = { has_religion = $RELIGION$ }
+				}
+				set_character_religion = $RELIGION$
+			}
+		}
+	}
+	ordered_character = {
+		limit = {
+			loyalty >= 60
+			NOT = { has_religion = $RELIGION$ }
+			is_ruler = no
+			from_ruler_family = no
+		}
+		max = 6
+		order_by = prominence
+		check_range_bounds = no
+		set_character_religion = $RELIGION$
+	}
+	if = {
+		limit = {
+			has_senate_approval < 60
+			is_republic = yes
+			NOT = { has_variable = dictatorship_enabled }
+		}
+		add_tyranny = {
+			# Calculates the percentage of disapproval
+			value = 0.6 # -- SENATE_REQUIRED_APPROVAL_WITHOUT_PENALTIES
+			subtract = has_senate_approval
+			divide = 0.3 # -- SENATE_REQUIRED_APPROVAL
+			
+			# This is the real value that you want for 100% of the effect
+			multiply = 20
+		}
+	}
+}
+
 # Armenian Culture Points
 persian_culture_point_effect = {
 	custom_tooltip = add_persian_points_tt

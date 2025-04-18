@@ -1,0 +1,2522 @@
+﻿namespace = flavor_egy
+
+#The Serapis Cult
+flavor_egy.1 = {
+	type = country_event
+	title = "flavor_egy.1.t"
+	desc = "flavor_egy.1.desc"
+	picture = religious_rite
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:serapis_cult_instigator
+	
+	trigger = {						
+		tag = EGY
+		num_of_cities >= 1
+		primary_culture = macedonian
+		religion = roman_pantheon
+		current_date > 455.1.1
+		NOT = {
+			has_dlc = "Heirs of Alexander"
+		}
+	}
+	
+	immediate = {
+		if = {
+			limit = { exists = char:74 }
+			char:74 = {
+				save_scope_as = serapis_cult_instigator
+			}
+		}
+		else = {
+			job_holder:office_high_priest_monarchy = { save_scope_as = serapis_cult_instigator }
+		}
+	}
+	
+	fire_only_once = yes
+	
+	option = {
+		name = flavor_egy.1.a #Embrace the Serapis Cult
+		ai_chance = {
+			factor = 100
+		}
+		add_legitimacy = -50 #One time big cost to legitimacy
+		set_country_religion = egyptian_pantheon
+		add_country_modifier = {
+			name = "royal_serapis_cult"
+			duration = -1
+		}
+		scope:serapis_cult_instigator = {
+			add_character_modifier = {
+				name = "serapis_priest"
+				duration = -1
+			}
+		}
+	}
+	option = {
+		name = flavor_egy.1.b #Stick with traditional hellenic gods.
+		ai_chance = { factor = 0 }
+		add_country_modifier = {
+			name = "egypt_hellenic_non_syncretic"
+			duration = -1
+		}
+		scope:serapis_cult_instigator = {
+			remove_all_offices = yes
+		}
+	}
+	
+	option = {
+		name = flavor_egy.1.c #Embrace Egyptian Religion
+		ai_chance = { factor = 0 }
+		set_primary_culture_cleanup_effect = {
+			NEW_PRIMARY_CULTURE = egyptian
+			MAKE_OLD_CULTURE_INTEGRATED = yes
+		}
+		set_country_religion = egyptian_pantheon
+		add_legitimacy = -50
+		every_country_culture = {
+			limit = {
+				OR = {
+					is_culture = macedonian
+					is_culture = cyrenaican
+				}
+			}
+			add_country_culture_modifier = {
+				name = "disenfranchised_greeks"
+				duration = 3650
+			}
+		}
+	}
+}
+
+flavor_egy.2 = {					# Kyrene Flavor #1 - The Kyreneian Problem
+	type = country_event
+	title = "flavor_egy.2.t"
+	desc = {
+		first_valid = {
+			triggered_desc = {		# Fallback
+				trigger = {
+					NOT = {
+						scope:flavor_egy_2_magas_scope = { this = char:46 } # Magas
+					}
+				}
+				desc = "flavor_egy.2.desc_1"
+			}
+			triggered_desc = {		# Magas
+				trigger = {
+					always = yes
+				}
+				desc = "flavor_egy.2.desc_2"
+			}
+		}
+	}
+	picture = throneroom
+	left_portrait = root.current_ruler
+	left_portrait = scope:flavor_egy_2_magas_scope 
+	right_portrait = scope:flav_egy_2_cyr_ruler
+	
+	fire_only_once = yes
+	
+	goto_location = c:CYR.capital_scope
+	
+	trigger = { 								
+		NOT = {
+			has_dlc = "Heirs of Alexander"
+		}
+		tag = EGY
+		num_of_cities >= 1
+		primary_culture = macedonian
+		religion = roman_pantheon
+		current_date > 452.1.1
+		current_ruler = {
+			OR = {
+				this = char:42 # Ptolemy I
+				has_same_family = char:42 # Ptolemy I
+			}
+		}
+		c:CYR = {
+			num_of_cities >= 1
+			current_ruler = {
+				NOR = {
+					has_same_family = root.current_ruler
+					has_same_family = char:46 # Magas
+					has_same_family = char:42 # Ptolemy I
+				}
+			}
+		}
+		any_neighbour_country = { this = c:CYR }
+		OR = {
+			char:46 = { # Magas
+				is_alive = yes
+				is_ruler = no
+				employer = root
+				prisoner = no
+			}
+			any_character = {
+				is_ruler = no
+				age >= 18
+				OR = {
+					is_child_of = root.current_ruler
+					is_child_of = root.consort
+				}
+				employer = root
+				prisoner = no
+				NOR = { 
+					has_same_family = root.current_ruler 
+					is_primary_heir = yes
+					is_rival = root.current_ruler
+				}
+			}
+		}
+		NOR = { 
+			current_ruler = char:46 # Magas
+			alliance_with = c:CYR
+			opinion = { target = c:CYR value >= 100  }
+		}
+	}
+	
+	immediate = {
+		if = {
+			limit = {
+				char:46 = { # Magas
+					is_alive = yes
+					is_ruler = no
+					employer = root
+					prisoner = no
+				}
+			}
+			char:46 = { save_scope_as = flavor_egy_2_magas_scope } # Magas
+		}
+		else = {
+			random_character = {
+				limit = {
+					trigger_if = {
+						limit = {
+							employer = { gender_equality = no }
+						}
+						is_male = yes
+					}
+					is_ruler = no
+					age >= 18
+					OR = {
+						is_child_of = root.consort
+						is_child_of = root.current_ruler
+					}
+					employer = root
+					prisoner = no
+					NOR = { 
+						is_primary_heir = yes
+						is_rival = root.current_ruler
+						has_character_modifier = foreign_citizen
+						has_variable = came_from
+					}
+				}
+				weight = {
+					modifier = {
+						factor = 50
+						is_child_of = root.consort
+						NOT = { is_child_of = root.current_ruler }
+					}
+				}
+				save_scope_as = flavor_egy_2_magas_scope
+			}
+		}
+		c:CYR = {
+			current_ruler = { save_scope_as = flav_egy_2_cyr_ruler }
+		}
+		c:EGY = {
+			current_ruler = { save_scope_as = flav_egy_2_egy_ruler }
+		}
+	}
+	
+	option = {					# Send Magas to Kyrene
+		name = flavor_egy.2.a
+		ai_chance = { factor = 70 }
+		if = {
+			limit = {
+				exists = scope:flavor_egy_2_magas_scope.mother
+				scope:flavor_egy_2_magas_scope.mother = {
+					is_alive = yes
+					is_ruler = no
+					employer = root
+				}
+			}
+			scope:flavor_egy_2_magas_scope.mother = { add_loyalty = loyalty_favored_child }
+		}
+		if = {
+			limit = {
+				exists = scope:flavor_egy_2_magas_scope.father
+				scope:flavor_egy_2_magas_scope.father = {
+					is_alive = yes
+					is_ruler = no
+					employer = root
+				}
+			}
+			scope:flavor_egy_2_magas_scope.father = { add_loyalty = loyalty_favored_child }
+		}
+		scope:flavor_egy_2_magas_scope = { set_variable = flavor_egy_5_civil_war_magas_flag }
+		add_manpower = -10
+		c:CYR = {
+			trigger_event = { 
+				id = flavor_egy.5 
+				days = { 10 15 }
+			}
+		}
+		custom_tooltip = flavor_egy.2.at
+	}
+	
+	option = {					# Woo Kyrene
+		name = flavor_egy.2.b
+		ai_chance = { factor = 20 }
+		scope:flavor_egy_2_magas_scope = { add_loyalty = loyalty_opportunity_quashed }
+		custom_tooltip = flavor_egy.2.bt1
+		show_as_tooltip = {
+			add_treasury = {
+				value = has_monthly_income
+				multiply = -3.5
+			}
+		}
+		c:CYR = {
+			trigger_event = { 
+				id = flavor_egy.3 
+				days = { 10 15 }
+			}
+		}
+		custom_tooltip = flavor_egy.2.bt2
+	}
+	
+	option = {					# Just claims
+		name = flavor_egy.2.c
+		ai_chance = { factor = 10 }
+		hidden_effect = {
+			c:CYR = {
+				every_owned_province = { add_claim = c:EGY }
+			}
+		}
+		scope:flavor_egy_2_magas_scope = { add_loyalty = loyalty_opportunity_quashed }
+		custom_tooltip = flavor_egy.2.ct
+	}
+}
+
+flavor_egy.3 = {					# Kyrene Flavor #2 - Offer from Egypt
+	type = country_event
+	title = "flavor_egy.3.t"
+	desc = "flavor_egy.3.desc"
+	picture = council_country
+	
+	left_portrait = current_ruler
+	right_portrait = c:EGY.current_ruler
+	
+	trigger = {
+		tag = CYR
+		num_of_cities >= 1
+		any_neighbour_country = { this = c:EGY }
+		current_ruler = {
+			NOT = {
+				has_same_family = c:EGY.current_ruler
+			}
+		}
+		NOT = {
+			alliance_with = c:EGY
+			war_with = c:EGY
+		}
+	}
+	
+	option = {					# Accept bribe
+		name = flavor_egy.3.a
+		ai_chance = { 
+			factor = 10
+			modifier = {
+				factor = 20
+				current_ruler = { is_friend = c:EGY.current_ruler }
+			}
+			modifier = {
+				factor = 20
+				opinion = { target = EGY value >= 50 }
+			}
+			modifier = {
+				factor = 20
+				opinion = { target = EGY value >= 100 }
+			}
+			modifier = {
+				factor = 20
+				current_ruler = {
+					OR = {
+						has_trait = corrupt
+						has_trait = miserly
+						corruption >= 10 
+					}
+				}
+			}
+		}
+		trigger = {
+			current_ruler = {
+				NOT = { has_trait = corrupt }
+			}
+		}
+		current_ruler = {
+			add_corruption = corruption_huge
+			add_popularity = subtract_popularity_large
+			add_gold = {
+				value = c:EGY.has_monthly_income
+				multiply = 2.0
+			}
+		}
+		add_treasury = {
+			value = c:EGY.has_monthly_income
+			multiply = 1.5
+		}
+		add_legitimacy = subtract_legitimacy_large
+		show_as_tooltip = { 
+			c:EGY = {
+				make_subject = {
+					target = c:CYR
+					type = tributary
+				}
+			}
+			reverse_add_opinion = { modifier = flavor_egy_3_bribe_op_mod target = c:EGY }
+		}
+		c:EGY = {
+			trigger_event = { id = flavor_egy.4 }
+		}
+	}
+	
+	option = {					# Reject bribe
+		name = flavor_egy.3.b
+		ai_chance = { 
+			factor = 70 
+			modifier = {
+				factor = 20
+				current_ruler = { is_rival = c:EGY.current_ruler }
+			}
+			modifier = {
+				factor = 20
+				opinion = { target = EGY value <= 50 }
+			}
+			modifier = {
+				factor = 20
+				opinion = { target = EGY value <= 100 }
+			}
+		}
+		trigger = {
+			current_ruler = {
+				NOT = { has_trait = corrupt }
+			}
+		}
+		current_ruler = { add_popularity = popularity_large	}
+		show_as_tooltip = { 
+			reverse_add_opinion = { modifier = flavor_egy_3_rejected_op_mod target = c:EGY }
+		}
+		custom_tooltip = flavor_egy.3.bt
+		c:EGY = {
+			set_variable = {  name = flav_egy_3_rejected_flag }
+			trigger_event = { id = flavor_egy.4 }
+		}
+	}
+}
+
+flavor_egy.4 = {					# Kyrene Flavor #3 - Response from Kyrene
+	type = country_event
+	title = "flavor_egy.4.t"
+	desc = {
+		first_valid = {
+			triggered_desc = {		# Kyrene accepts
+				trigger = {
+					NOT = { has_variable = flav_egy_3_rejected_flag }
+				}
+				desc = "flavor_egy.4.desc_1"
+			}
+			triggered_desc = {		# Kyrene rejects
+				trigger = {
+					always = yes
+				}
+				desc = "flavor_egy.4.desc_2"
+			}
+		}
+	}
+	picture = throneroom
+	
+	left_portrait = root.current_ruler
+	right_portrait = c:CYR.current_ruler
+	
+	trigger = {
+		tag = EGY
+		num_of_cities >= 1
+		primary_culture = macedonian
+		religion = roman_pantheon
+		current_ruler = {
+			OR = {
+				this = char:42 # Ptolemy I
+				has_same_family = char:42 # Ptolemy I
+			}
+		}
+		c:CYR = {
+			num_of_cities >= 1
+			current_ruler = {
+				NOR = {
+					has_same_family = root.current_ruler
+					has_same_family = scope:flavor_egy_2_magas_scope
+				}
+			}
+		}
+		any_neighbour_country = { this = c:CYR }
+	}
+	
+	immediate = {
+		if = {
+			limit = {
+				NOT = { has_variable = flav_egy_3_rejected_flag }
+			}
+			add_treasury = {
+				value = has_monthly_income
+				multiply = -3.5
+			}
+		}
+	}
+	
+	option = {					# Accepted bribe
+		name = flavor_egy.4.a
+		trigger = {
+			NOT = {
+				has_variable = flav_egy_3_rejected_flag
+			}
+		}
+		if = {
+			limit = {
+				has_dlc = "Heirs of Alexander"
+			}
+			c:EGY = {
+				set_variable = {				
+					name = "egypt_woo_subject_cyrene_flag"
+					days = -1
+				}
+			}
+		}
+		else = {
+			c:EGY = {				
+				make_subject = {
+					target = c:CYR
+					type = tributary
+				}
+			}	
+		}
+		add_opinion = { modifier = flavor_egy_3_accepted_op_mod target = c:CYR }
+	}
+	
+	option = {					# Rejected bribe
+		name = flavor_egy.4.b
+		trigger = { has_variable = flav_egy_3_rejected_flag }
+		add_opinion = { modifier = flavor_egy_3_rejected_op_mod target = c:CYR }
+		if = {
+			limit = {
+				NOT = {
+					has_dlc = "Heirs of Alexander"
+				}
+			}
+			hidden_effect = {					
+				c:CYR = {
+					every_owned_province = { add_claim = c:EGY }
+				}
+			}
+			custom_tooltip = flavor_egy.4.bt
+		}
+		if = {
+			limit = {
+				NOT = {
+					has_dlc = "Heirs of Alexander"
+				}
+			}
+			remove_variable = flav_egy_3_rejected_flag
+		}			
+	}
+}
+
+flavor_egy.5 = {					# Kyrene Flavor #4 - Magas Arrives
+	type = country_event
+	title = "flavor_egy.5.t"
+	desc = "flavor_egy.5.desc"
+	picture = greeks_marching
+	
+	left_portrait = current_ruler
+	right_portrait = scope:flavor_egy_2_magas_scope
+	right_portrait = c:EGY.current_ruler
+	
+	immediate = {
+		current_ruler = { save_scope_as = flav_egy_5_old_ruler }
+		c:EGY = {
+			set_variable = {
+				name = cyrene_old_ruler_var
+				value = scope:flav_egy_5_old_ruler
+			}
+		}
+	}
+	
+	option = {					# Give in to Ptolemaic demands
+		name = flavor_egy.5.a
+		ai_chance = { factor = 65 }
+		hidden_effect = {
+			scope:flavor_egy_2_magas_scope = {
+				remove_all_positions = yes
+				move_country = c:CYR
+				set_home_country = c:CYR
+				remove_character_modifier = foreign_citizen
+			}
+			if = {
+				limit = {
+					scope:flavor_egy_2_magas_scope = {
+						has_character_modifier = indisposed_charmod
+					}
+				}
+				scope:flavor_egy_2_magas_scope = {
+					remove_character_modifier = indisposed_charmod
+				}
+			}		
+		}
+		set_as_ruler = scope:flavor_egy_2_magas_scope
+		set_variable = {
+			name = cyrenaica_dropper_flag
+			days = 60
+		}
+		hidden_effect = { 
+			create_family = scope:flavor_egy_2_magas_scope
+			scope:flavor_egy_2_magas_scope = { add_popularity = subtract_popularity_large }
+		}
+		imprison = { target = scope:flav_egy_5_old_ruler }
+		c:EGY = {
+			make_subject = {
+				target = c:CYR
+				type = client_state
+			}
+			add_opinion = { modifier = flavor_egy_5_success_op_mod target = c:CYR }
+		}
+		add_country_modifier = {
+			name = magas_imposed_cmod
+			duration = 3650 # 10 years
+		}
+		if = {
+			limit = {
+				has_dlc = "Heirs of Alexander"
+			}
+			c:EGY = {
+				set_variable = egypt_cyrene_give_in_magas
+			}
+		}
+	}
+	
+	option = {					# Start civil war with Magas
+		name = flavor_egy.5.b
+		ai_chance = { factor = 35 }
+		hidden_effect = {
+			scope:flavor_egy_2_magas_scope = {
+				remove_all_positions = yes
+				move_country = c:CYR
+				remove_character_modifier = foreign_citizen
+			}
+			if = {
+				limit = {
+					scope:flavor_egy_2_magas_scope = {
+						has_character_modifier = indisposed_charmod
+					}
+				}
+				scope:flavor_egy_2_magas_scope = {
+					remove_character_modifier = indisposed_charmod
+				}
+			}		
+			create_family = scope:flavor_egy_2_magas_scope
+			add_truce = {
+				target = c:EGY
+				duration = 1825 # 5 years
+			}
+		}
+		current_ruler = { add_popularity = popularity_huge }
+		set_variable = flavor_egy_5_civil_war_cyrenaica_flag
+		start_civil_war = scope:flavor_egy_2_magas_scope
+		hidden_effect = {
+			scope:flavor_egy_2_magas_scope = {
+				employer = {
+					add_treasury = 200
+					change_country_name = "CYRENAICAN_OPPOSITION"
+					change_country_flag = CYR_OPPOSITION
+					change_country_color =  "bone_white"
+					add_truce = { # Deter Egyptian intervention
+						target = EGY
+						duration = 1825 # 5 years
+					}
+					reverse_add_opinion = { modifier = flavor_egy_5_friendly_op_mod target = c:EGY }
+					every_owned_province = { # East Cyrenaica kept by CYR
+						limit = {
+							NOR = {
+								is_in_area = marmarica_occidentalis_area
+								province_id = 3366
+								province_id = 3365
+								province_id = 3363
+								province_id = 3364
+							}
+						}
+						set_conquered_by = c:CYR
+					}
+				}
+				add_gold = 600
+			}
+			c:CYR = { # East Cyrenaica to Magas
+				every_owned_province = {
+					limit = {
+						OR = {
+							is_in_area = marmarica_occidentalis_area
+							province_id = 3366
+							province_id = 3365
+							province_id = 3363
+							province_id = 3364
+						}
+					}
+					set_conquered_by = scope:flavor_egy_2_magas_scope.employer
+				}
+			}
+			scope:flavor_egy_2_magas_scope.employer = {
+				set_capital = 3366
+				if = {
+					limit = {
+						NOR = {
+							has_law = republican_recruitment_2 # legions capital
+							has_law = republican_recruitment_4 # legions enabled
+						}
+					}
+					change_law = republican_recruitment_2 # capital
+				}
+				create_character = {
+					culture = macedonian
+					religion = roman_pantheon
+					age = 34
+					female = no
+					no_stats = yes
+					no_traits = yes
+	        		hidden_effect = {
+	        			good_martial_effect = yes
+	        			good_charisma_effect = yes
+	        			average_finesse_effect = yes
+	        			bad_zeal_effect = yes
+	        			add_trait = brave
+	        		}
+	        		save_scope_as = cyrenaica_general
+				}
+				capital_scope.governorship = {
+					raise_legion = {
+						save_scope_as = magas_legion
+						create_unit = {
+							location = p:3366 # Paliouros
+							save_scope_as = magas_unit
+							every_sub_unit = { set_personal_loyalty = scope:flavor_egy_2_magas_scope }
+							add_loyal_subunit = heavy_infantry
+							add_loyal_subunit = heavy_infantry
+							add_loyal_subunit = light_infantry
+							add_loyal_subunit = light_cavalry
+							add_loyal_subunit = light_cavalry
+							add_loyal_subunit = archers
+							add_loyal_subunit = archers
+						}
+					}
+				}
+			}
+			scope:magas_legion = {
+				add_commander = scope:cyrenaica_general
+			}
+			scope:magas_unit = {
+				set_as_commander = scope:cyrenaica_general
+			}
+			p:3366 = { # Magas capital fort 
+				state = { set_state_capital = p:3366 }
+				if = {
+					limit = { can_build_building = fortress_building }
+					add_building_level = fortress_building
+					p:3367 = {
+						if = {
+							limit = { has_building = fortress_building }
+							remove_building_level = fortress_building
+						}
+					}
+				}
+			}
+		}
+		c:EGY = {
+			set_variable = flavor_egy_5_civil_war_infomercial_flag
+			set_variable = flav_egy_5_civil_war
+			hidden_effect = {
+				add_truce = {
+					target = scope:flavor_egy_2_magas_scope.employer
+					duration = 1825 # 5 years
+				}
+				add_truce = {
+					target = c:CYR
+					duration = 1825 # 5 years
+				}
+			}
+		}
+	}
+	
+	after = {				
+		if = {
+			limit = {
+				NOT = {
+					has_dlc = "Heirs of Alexander"
+				}
+			}
+			c:EGY = {
+				trigger_event = { 
+					id = flavor_egy.6
+					days = 5
+				}
+			}
+		}
+		every_country = {
+			limit = {
+				has_land = yes
+				OR = {
+					tag = SYR
+					tag = PRY
+					tag = SEl
+					tag = TRE
+					tag = MAC
+					AND = {
+						capital_scope = {
+							is_in_region = greece_region 
+						}
+						country_culture_group = hellenic
+					}
+				}
+				NOR = { 
+					tag = EGY
+					has_variable = flavor_egy_5_civil_war_infomercial_flag
+				}
+			}
+			trigger_event = { #Trigger infomercial
+				id = flavor_egy.18
+				days = 10
+			}
+		}
+		every_neighbour_country = {
+			limit = {
+				NOR = {
+					tag = SYR
+					tag = PRY
+					tag = SEl
+					tag = TRE
+					tag = MAC
+					tag = CYR
+					tag = EGY
+					current_ruler = { has_variable = flavor_egy_5_civil_war_magas_flag }
+					AND = {
+						capital_scope = {
+							is_in_region = greece_region 
+						}
+						country_culture_group = hellenic
+					}
+					has_variable = flavor_egy_5_civil_war_infomercial_flag
+				}
+			}
+			trigger_event = { #Trigger infomercial
+				id = flavor_egy.18
+				days = 10
+			}
+		}
+	}
+}
+
+flavor_egy.6 = {					# Kyrene Flavor #5 - News of Magas
+	type = country_event
+	title = "flavor_egy.6.t"
+	desc = {
+		first_valid = {
+			triggered_desc = {		# Kyrene folds
+				trigger = {
+					NOT = { has_variable = flav_egy_5_civil_war }
+				}
+				desc = "flavor_egy.6.desc_1"
+			}
+			triggered_desc = {		# Civil war
+				trigger = { always = yes }
+				desc = "flavor_egy.6.desc_2"
+			}
+		}
+	}
+	picture = throneroom
+	left_portrait = root.current_ruler
+	right_portrait = scope:flavor_egy_2_magas_scope
+	right_portrait = scope:flav_egy_5_old_ruler
+	fire_only_once = yes
+	goto_location = scope:flavor_egy_2_magas_scope.location
+	
+	trigger = {
+		trigger_if = {
+			limit = {
+				NOT = {
+					has_dlc = "Heirs of Alexander"
+				}
+			}
+			tag = EGY
+			num_of_cities >= 1
+			primary_culture = macedonian
+			religion = roman_pantheon
+			current_ruler = {
+				OR = {
+					this = char:42 # Ptolemy I
+					has_same_family = char:42 # Ptolemy I
+				}
+			}
+		}
+	}
+
+	immediate = {
+		if = {
+			limit = {
+				NOT = { has_variable = flav_egy_5_civil_war }
+			}
+			flavor_egy_move_magids_effect = yes
+		}
+	}
+	
+	option = {					# Kyrene folds - accept new status quo
+		name = flavor_egy.6.a
+		trigger = {
+			NOT = { has_variable = flav_egy_5_civil_war }
+		}
+		ai_chance = { factor = 80 }
+		current_ruler = { add_popularity = popularity_medium }
+		if = {
+			limit = {
+				NOT = {
+					has_dlc = "Heirs of Alexander"
+				}
+			}
+			make_subject = {								
+				target = scope:flavor_egy_2_magas_scope.employer
+				type = tributary
+			}
+		}
+		add_opinion = { modifier = flavor_egy_5_success_op_mod target = c:CYR }
+		if = {
+			limit = {
+				has_dlc = "Heirs of Alexander"
+			}
+			set_variable = {			
+				name = egypt_cyrene_give_in_magas
+				days = 90
+			}
+		}
+	}
+	
+	option = {					# Kyrene folds - attempt to seize Cyrenaica
+		name = flavor_egy.6.b
+		trigger = {
+			NOT = { has_variable = flav_egy_5_civil_war }
+			scope:flavor_egy_2_magas_scope.employer = { is_ai = yes }
+		}
+		random_list = {
+			20 = {
+				make_subject = {
+					target = scope:flavor_egy_2_magas_scope.employer
+					type = client_state
+				}
+				if = {
+					limit = {
+						has_dlc = "Heirs of Alexander"
+					}
+					set_variable = {			
+						name = egypt_cyrene_give_in_magas
+						days = 90
+					}
+				}
+			}
+			80 = {
+				reverse_add_opinion = { modifier = flavor_egy_6_subjection_op_mod target = c:CYR }
+				hidden_effect = {
+					scope:flavor_egy_2_magas_scope.employer = {
+						every_owned_province = { add_claim = root }
+					}
+					if = {
+						limit = {
+							has_dlc = "Heirs of Alexander"
+						}
+						set_variable = {			
+							name = flav_egy_3_rejected_flag
+							days = 90
+						}
+					}
+				}
+				custom_tooltip = flavor_egy.6.bt
+			}
+		}
+		ai_chance = { factor = 20 }
+	}
+	
+	option = {					# Civil war - send more help
+		name = flavor_egy.6.c
+		trigger = { has_variable = flav_egy_5_civil_war }
+		ai_chance = { 
+			factor = 50 
+			modifier = {
+				factor = 50
+				scope:flavor_egy_2_magas_scope.employer.num_of_cohorts < c:CYR.num_of_cohorts
+			}
+		}
+		add_manpower = -6
+		add_treasury = {
+			value = c:EGY.has_monthly_income
+			multiply = -1.5
+		}
+		custom_tooltip = flavor_egy.6.ct
+		scope:flavor_egy_2_magas_scope.employer = {
+			trigger_event = { id = flavor_egy.9 }
+		}
+		remove_variable = flav_egy_5_civil_war
+	}
+	
+	option = {					# Civil war - no help
+		name = flavor_egy.6.d
+		trigger = { has_variable = flav_egy_5_civil_war }
+		ai_chance = { factor = 50 }
+		custom_tooltip = no_effect_tooltip
+		remove_variable = flav_egy_5_civil_war
+	}
+}
+
+flavor_egy.7 = {					# Kyrene Flavor #6 - News of Magas - Civil War Outcome
+	type = country_event
+	title = "flavor_egy.7.t"
+	desc = {
+		first_valid = {
+			triggered_desc = {		# Magas defeat
+				trigger = {
+					NOR = { 
+						has_variable = flavor_egy_7_civil_war_victory_flag
+						has_variable = egy_10_crucified_flag
+					}
+				}
+				desc = "flavor_egy.7.desc_1"
+			}
+			triggered_desc = {		# Magas defeat & crucified
+				trigger = {
+					NOT = { has_variable = flavor_egy_7_civil_war_victory_flag }
+					has_variable = egy_10_crucified_flag
+				}
+				desc = "flavor_egy.7.desc_2"
+			}
+			triggered_desc = {		# Magas victory
+				trigger = {
+					always = yes
+				}
+				desc = "flavor_egy.7.desc_3"
+			}
+		}
+	}
+	picture = throneroom
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:flavor_egy_2_magas_scope
+	right_portrait = scope:flav_egy_2_cyr_ruler
+	
+	fire_only_once = yes
+	
+	trigger = {
+		has_variable = flavor_egy_5_civil_war_infomercial_flag
+	}
+	
+	immediate = {
+		remove_variable = flavor_egy_5_civil_war_infomercial_flag 
+		if = {
+			limit = { has_variable = flav_egy_5_civil_war }
+			remove_variable = flav_egy_5_civil_war
+		}
+		if = {
+			limit = {
+				any_neighbour_country = {
+					current_ruler = { has_variable = flavor_egy_5_civil_war_magas_flag }		
+				}
+			}
+			set_variable = flavor_egy_7_civil_war_victory_flag
+			random_neighbour_country = {
+				limit = {
+					current_ruler = { has_variable = flavor_egy_5_civil_war_magas_flag }
+				}
+				current_ruler = { save_scope_as = flavor_egy_2_magas_scope }
+			}
+			flavor_egy_move_magids_effect = yes
+		}
+		else = {
+			c:CYR = {
+				if = {
+					limit = {
+						any_character = { has_variable = flavor_egy_5_civil_war_magas_flag }
+					}
+					random_character = {
+						limit = { has_variable = flavor_egy_5_civil_war_magas_flag }
+						save_scope_as = flavor_egy_2_magas_scope
+					}
+				}
+			}
+		}
+		current_ruler = { save_scope_as = flav_egy_2_egy_ruler }		
+	}
+	
+	option = {						# Magas won
+		name = flavor_egy.7.a
+		trigger = { has_variable = flavor_egy_7_civil_war_victory_flag }
+		current_ruler = { add_popularity = popularity_medium }
+		if = {
+			limit = {
+				NOT = {
+					has_dlc = "Heirs of Alexander"
+				}
+			}
+			root = {					
+				make_subject = {
+					target = scope:flavor_egy_2_magas_scope.employer
+					type = client_state
+				}
+			}
+		}
+		else = {
+			set_variable = {				
+				name = egypt_cyrene_give_in_magas
+				days = 180
+			}
+		}
+		add_opinion = { modifier = flavor_egy_5_success_op_mod target = scope:flavor_egy_2_magas_scope.employer }
+		remove_variable = flavor_egy_7_civil_war_victory_flag 
+	}
+	
+	option = {					# Kyrene folds - attempt to seize Cyrenaica
+		name = flavor_egy.7.b
+		trigger = { has_variable = flavor_egy_7_civil_war_victory_flag }
+		ai_chance = { factor = 20 }
+		random_list = {
+			20 = {
+				if = {
+					limit = {
+						NOR = {
+							has_dlc = "Heirs of Alexander"
+							has_completed_mission_task = egypt_mission_3_empire_task_7
+						}
+					}
+					root = {				
+						make_subject = {
+							target = scope:flavor_egy_2_magas_scope.employer
+							type = client_state
+						}
+					}
+				}
+				if = {
+					limit = {
+						has_dlc = "Heirs of Alexander"
+					}
+					set_variable = {				
+						name = egypt_cyrene_give_in_magas
+						days = 180
+					}
+				}
+			}
+			80 = {
+				reverse_add_opinion = { modifier = flavor_egy_6_subjection_op_mod target = scope:flavor_egy_2_magas_scope.employer }
+				if = {
+					limit = {
+						NOR = {
+							has_dlc = "Heirs of Alexander"
+							has_completed_mission_task = egypt_mission_3_empire_task_7
+						}
+					}
+					hidden_effect = {			
+						scope:flavor_egy_2_magas_scope.employer = {
+							every_owned_province = { add_claim = root }
+						}
+					}
+					custom_tooltip = flavor_egy.7.bt
+				}
+				if = {
+					limit = {
+						has_dlc = "Heirs of Alexander"
+					}
+					set_variable = {			
+						name = flav_egy_3_rejected_flag
+						days = 180
+					}
+				}
+			}
+		}
+		remove_variable = flavor_egy_7_civil_war_victory_flag
+	}
+	
+	option = {						# Magas lost
+		name = flavor_egy.7.c
+		trigger = {
+			NOT = {	has_variable = flavor_egy_7_civil_war_victory_flag }
+		}
+		if = {
+			limit = { has_variable = egy_10_crucified_flag }
+			add_opinion = { modifier = flavor_egy_10_crucified_op_mod target = c:CYR }
+			remove_variable = egy_10_crucified_flag
+		}
+		else = {
+			add_opinion = { modifier = flavor_egy_5_defeat_op_mod target = c:CYR }
+		}
+		if = {
+			limit = {
+				NOR = {
+					has_dlc = "Heirs of Alexander"
+					has_completed_mission_task = egypt_mission_3_empire_task_7
+				}
+			}
+			hidden_effect = {				
+				c:CYR = {
+					every_owned_province = { add_claim = c:EGY }
+				}
+			}
+			custom_tooltip = flavor_egy.7.ct 
+		}
+		if = {
+			limit = {
+				has_dlc = "Heirs of Alexander"
+			}
+			set_variable = {			#if has DLC
+				name = flav_egy_3_rejected_flag
+				days = 180
+			}
+		}		
+	}
+}
+
+flavor_egy.8 = {					# Kyrene Flavor #7 - flavor_egy.2 startup delayed trigger
+	type = country_event
+	hidden = yes
+	
+	trigger = {
+		NOT = {
+			has_dlc = "Heirs of Alexander"
+		}				
+		tag = EGY
+		current_ruler = {
+			OR = { 
+				this = char:42 # Ptolemy I
+				this = char:43 # Keraunos
+				this = char:79 # Meleager
+				this = char:45 # Ptolemy II
+			}
+		}
+		NOR = { 
+			current_ruler = char:46 # Magas
+			alliance_with = c:CYR
+			war_with = c:CYR
+			opinion = { target = c:CYR value >= 100 }
+		}
+	}
+
+	immediate = {
+		if = {
+			limit = {
+				any_character = {
+					age >= 18
+					is_ruler = no
+					OR = {
+						is_child_of = root.current_ruler
+						is_child_of = root.consort
+					}
+					employer = root
+					prisoner = no
+					NOR = { 
+						is_primary_heir = yes
+						is_rival = root.current_ruler
+					}
+				}
+			}
+			c:EGY = {
+				trigger_event = {
+					id = flavor_egy.2
+					days = { 730 1460 } # 2-4 years
+				}
+			}
+		}
+		else = {
+			c:EGY = {
+				trigger_event = {
+					id = flavor_egy.8
+					days = { 730 1460 } # 2-4 years
+				}
+			}
+		} 
+	}
+}
+
+flavor_egy.9 = {					# Kyrene Flavor #8 - Extra civil war help from Egypt
+	type = country_event
+	title = "flavor_egy.9.t"
+	desc = "flavor_egy.9.desc"
+	picture = greeks_marching
+	
+	left_portrait = root.current_ruler
+	right_portrait = c:EGY.current_ruler
+
+	immediate = { save_scope_as = flavor_egy_9_scope }
+
+	option = {						# Excellent
+		name = flavor_egy.9.a
+		hidden_effect = {
+			scope:flavor_egy_2_magas_scope = {
+				ordered_character_unit = {
+					order_by = unit_size
+					add_subunit = light_infantry
+					add_subunit = light_infantry
+					add_subunit = light_infantry
+					add_subunit = light_infantry
+					add_subunit = light_cavalry
+					add_subunit = light_cavalry
+				}
+			}
+		}
+		add_treasury = {
+			value = c:EGY.has_monthly_income
+			multiply = 1
+		}
+		custom_tooltip = flavor_egy.9.at
+	}
+}
+
+flavor_egy.10 = {					# Kyrene Flavor #9 - Victory event for Cyrenaica
+	type = country_event
+	title = "flavor_egy.10.t"
+	desc = "flavor_egy.10.desc"
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:target
+	
+	picture = city_siege
+	
+	trigger = { has_variable = flavor_egy_5_civil_war_cyrenaica_flag }
+	
+	immediate = {
+		remove_variable = flavor_egy_5_civil_war_cyrenaica_flag
+		current_ruler = { save_scope_as = flav_egy_2_cyr_ruler }
+		scope:target = { save_scope_as = flavor_egy_2_magas_scope }
+		hidden_effect = {
+			scope:civil_war_target = {
+				every_character = {
+					limit = {
+						NOR = { 
+							this = scope:target
+							this = scope:target.spouse
+							has_same_family = scope:target
+							is_child_of = scope:target
+						}
+					}
+					death = { 
+						killer = root.current_ruler 
+						death_reason = death_crucified 
+					}
+				}
+			}
+			if = {
+				limit = {
+					exists = scope:target.spouse
+					scope:target.spouse = { employer = scope:civil_war_target }
+				}
+				scope:target.spouse = {
+					remove_all_positions = yes
+					move_country = c:EGY
+					remove_character_modifier = foreign_citizen
+				}
+			}
+			if = {
+				limit = {
+					scope:target = {
+						any_child = {
+							exists = yes
+							employer = scope:civil_war_target
+						}
+					}
+				}
+				scope:target = {
+					every_child = {
+						limit = {
+							employer = scope:civil_war_target
+						}
+						remove_all_positions = yes
+						move_country = c:EGY
+						remove_character_modifier = foreign_citizen
+					}
+				}
+			}
+			scope:flavor_egy_2_magas_scope = { add_loyalty = loyalty_defeated_cil_war }
+		}
+		custom_tooltip = flavor_egy_10_kill_all
+	}
+	
+	option = {
+		name = "flavor_egy.10.a"
+		current_ruler = { add_popularity = popularity_large }
+		if = {
+			limit = {
+				scope:target = { is_alive = yes }
+			}
+			scope:target = {
+				death = { 
+					killer = root.current_ruler 
+					death_reason = death_crucified 
+				}
+			}
+		} 
+		if = {
+			limit = {
+				scope:target = {
+					OR = {
+						this = char:46 # Magas
+						OR = {
+							is_child_of = c:EGY.consort
+							is_child_of = c:EGY.current_ruler
+							has_same_family = char:42 # Ptolemy I
+							has_same_family = char:18 # Berenike
+						}
+					}
+				}
+			}
+			show_as_tooltip = {
+				reverse_add_opinion = { modifier = flavor_egy_10_crucified_op_mod target = c:EGY }
+			}
+		}
+		c:EGY = { set_variable = egy_10_crucified_flag }
+	}
+	
+	option = {
+		name = "flavor_egy.10.b"
+		current_ruler = { add_popularity = popularity_medium }
+		if = {
+			limit = {
+				scope:target = { is_alive = yes }
+			}
+			hidden_effect = {
+				scope:target = { 
+					remove_all_positions = yes
+					move_country = root
+					remove_character_modifier = foreign_citizen
+				}
+			}
+			imprison = { target = scope:target }
+		}
+		show_as_tooltip = {
+			reverse_add_opinion = { modifier = flavor_egy_5_defeat_op_mod target = c:EGY }
+		}
+	}
+	
+	after = {
+		c:EGY = {
+			trigger_event = { #Trigger infomercial
+				id = flavor_egy.7
+				days = 5
+			}
+		}
+	}
+}
+
+flavor_egy.11 = {					# Kyrene Flavor #9 - Victory event for Magas
+	type = country_event
+	title = "flavor_egy.11.t"
+	desc = "flavor_egy.11.desc"
+	
+	left_portrait = root.current_ruler
+	right_portrait = scope:target
+	
+	picture = city_siege
+	
+	trigger = {
+		current_ruler = { has_variable = flavor_egy_5_civil_war_magas_flag }
+	}
+	
+	immediate = {
+		scope:target = { save_scope_as = flav_egy_2_cyr_ruler }
+		current_ruler = { save_scope_as = flavor_egy_2_magas_scope }
+		set_variable = {
+			name = cyrenaica_dropper_flag
+			days = 60
+		}
+		hidden_effect = {
+			change_country_tag = CYR
+			scope:target = {
+				remove_all_positions = yes
+				move_country = root
+				remove_character_modifier = foreign_citizen
+			}
+			scope:target.family = {
+				every_family_member = {
+					limit = { 
+						prisoner = no
+						NOT = { this = scope:target }
+					}
+					remove_all_positions = yes
+					move_country = root
+					remove_character_modifier = foreign_citizen
+				}
+				move_family = root
+			}
+			scope:civil_war_target = {
+				every_character = {
+					limit = {
+						NOR = { 
+							this = scope:target
+							this = scope:target.spouse
+							has_same_family = scope:target
+							is_child_of = scope:target
+						}
+					}
+					death = { 
+						killer = root.current_ruler 
+						death_reason = death_crucified 
+					}
+				}
+			}
+		}
+		custom_tooltip = flavor_egy_10_kill_all
+		hidden_effect = {
+			if = {
+				limit = { owns = 3360 }
+				set_capital = 3360
+				p:3360.state = { set_state_capital = p:3360 }
+			}
+		}
+	}
+	
+	option = {
+		name = "flavor_egy.11.a"
+		current_ruler = { add_popularity = popularity_large }
+		scope:target = {
+			if = {
+				limit = { is_alive = yes }
+				death = { 
+					killer = root.current_ruler 
+					death_reason = death_crucified 
+				}
+			}
+		} 
+	}
+	
+	option = {
+		name = "flavor_egy.11.b"
+		current_ruler = { add_popularity = popularity_medium }
+		if = {
+			limit = {
+				scope:target = { is_alive = yes }
+			}
+			imprison = { target = scope:target }
+		}
+	}	
+
+	after = {
+		c:EGY = {
+			trigger_event = { #Trigger infomercial
+				id = flavor_egy.7
+				days = 5
+			}
+		}
+		if = {
+			limit = {
+				has_dlc = "Heirs of Alexander"
+			}
+			c:CYR = {				
+				trigger_event = {
+					id = flavor_egy.12
+					days = 120
+				}
+			}
+		}
+	}
+}
+
+flavor_egy.12 = {					# Kyrene Flavor #10 - Cyrenaican Ambition
+	type = country_event
+	title = "flavor_egy.12.t"
+	desc = {
+		first_valid = {
+			triggered_desc = {		
+				trigger = {
+					has_dlc = "Heirs of Alexander"
+				}
+				desc = "flavor_egy.12.desc.2"
+			}
+			triggered_desc = {		
+				trigger = {
+					always = yes
+				}
+				desc = "flavor_egy.12.desc"
+			}
+		}
+	}
+	left_portrait = root.current_ruler
+	right_portrait = c:EGY.current_ruler
+	
+	picture = throneroom
+	
+	trigger = {			
+		tag = CYR
+		C:EGY = {
+			has_land = yes
+			is_subject = no
+		}
+		current_ruler = { has_variable = flavor_egy_5_civil_war_magas_flag }
+		c:EGY.current_ruler = {
+			NOT = { this = char:42 }
+		}
+		is_subject = yes
+		is_subject_of = c:EGY
+		is_subject_type = tributary
+	}
+	
+	immediate = {
+		current_ruler = { save_scope_as = flavor_egy_12_magas_scope }
+		c:EGY.current_ruler = { save_scope_as = flavor_egy_12_egy_ruler_scope }
+	}
+	
+	option = {							# Independence
+		name = "flavor_egy.12.a"
+		current_ruler = { add_popularity = popularity_huge }
+		show_as_tooltip = {
+			c:EGY = { release_subject = root }
+			reverse_add_opinion = { modifier = flavor_egy_12_broke_away_egy_op_mod target = c:EGY }
+		}
+		hidden_effect = {
+			if = {
+				limit = {
+					c:PRY = { 
+						has_land = yes
+						current_ruler = {
+							NOT = { has_same_family = c:EGY.current_ruler }
+						}
+						opinion = { target = c:EGY value <= 50 }
+						NOT = { alliance_with = c:EGY }
+					}
+				}
+				reverse_add_opinion = { modifier = flavor_egy_12_broke_away_op_mod target = c:PRY }
+			}
+			if = {
+				limit = {
+					c:SEL = { 
+						has_land = yes
+						current_ruler = {
+							NOT = { has_same_family = c:EGY.current_ruler }
+						}
+						opinion = { target = c:EGY value <= 50 }
+						NOT = { alliance_with = c:EGY }
+					}
+				}
+				reverse_add_opinion = { modifier = flavor_egy_12_broke_away_op_mod target = c:SEL }
+			}
+			if = {
+				limit = {
+					c:MAC = { 
+						has_land = yes
+						current_ruler = {
+							NOT = { has_same_family = c:EGY.current_ruler }
+						}
+						opinion = { target = c:EGY value <= 50 }
+						NOT = { alliance_with = c:EGY }
+					}
+				}
+				reverse_add_opinion = { modifier = flavor_egy_12_broke_away_op_mod target = c:MAC }
+			}
+			if = {
+				limit = {
+					c:TRE = { 
+						has_land = yes
+						current_ruler = {
+							NOT = { has_same_family = c:EGY.current_ruler }
+						}
+						opinion = { target = c:EGY value <= 50 }
+						NOT = { alliance_with = c:EGY }
+					}
+				}
+				reverse_add_opinion = { modifier = flavor_egy_12_broke_away_op_mod target = c:TRE }
+			}
+		}
+		c:EGY = {
+			trigger_event = { id = flavor_egy.13 }
+		}
+		custom_tooltip = flavor_egy.12.at
+		every_country = {
+			limit = {
+				has_land = yes
+				OR = {
+					tag = SYR
+					tag = PRY
+					tag = SEl
+					tag = TRE
+					tag = MAC
+					AND = {
+						capital_scope = {
+							is_in_region = greece_region 
+						}
+						country_culture_group = hellenic
+					}
+				}
+			}
+			trigger_event = { #Trigger infomercial
+				id = flavor_egy.19
+				days = { 2 10 }
+			}
+		}
+		every_neighbour_country = {
+			limit = {
+				NOR = {
+					tag = SYR
+					tag = PRY
+					tag = SEl
+					tag = TRE
+					tag = MAC
+					tag = EGY
+					AND = {
+						capital_scope = {
+							is_in_region = greece_region 
+						}
+						country_culture_group = hellenic
+					}
+				}
+			}
+			trigger_event = { #Trigger infomercial
+				id = flavor_egy.19
+				days = { 2 10 }
+			}
+		}
+	}
+	
+	option = {							# Status quo	
+		name = "flavor_egy.12.b"
+		custom_tooltip = no_effect_tooltip
+		trigger = {
+			OR = {
+				is_ai = no
+				NOT = { has_dlc = "Heirs of Alexander" }
+			}
+		}	
+	}
+}
+
+flavor_egy.13 = {					# Kyrene Flavor #11 - Magas Breaking Away
+	type = country_event
+	title = "flavor_egy.13.t"
+	desc = {
+		first_valid = {
+			triggered_desc = {		
+				trigger = {
+					has_dlc = "Heirs of Alexander"
+				}
+				desc = "flavor_egy.13.desc.2"
+			}
+			triggered_desc = {		
+				trigger = {
+					always = yes
+				}
+				desc = "flavor_egy.13.desc"
+			}
+		}
+	}
+	left_portrait = scope:flavor_egy_12_egy_ruler_scope
+	right_portrait = scope:flavor_egy_12_magas_scope
+	
+	picture = throneroom
+	
+	option = {							# 
+		name = "flavor_egy.13.a"
+		release_subject = c:CYR
+		add_opinion = { modifier = flavor_egy_12_broke_away_egy_op_mod target = c:CYR }
+		hidden_effect = {
+			c:CYR = {
+				every_owned_province = { add_claim = root }
+			}
+		}
+		set_variable = {
+			name = egypt_magas_rebellion_flag
+			days = -1
+		}
+		custom_tooltip = flavor_egy.13.claims_tt
+	}
+}
+
+flavor_egy.14 = {					# Kyrene Flavor #12 - Magid family moves to Cyrenaica
+    type = country_event
+    title = flavor_egy.14.t
+    desc = flavor_egy.14.desc
+    picture = council_country
+    left_portrait = current_ruler
+    right_portrait = char:18
+
+    immediate = {
+    	ordered_character = {
+    		limit = { has_variable = moving_magid_flag }
+    		order_by = age
+    		save_scope_as = magid_mover
+    	}
+    	every_character = {
+    		limit = { has_variable = moving_magid_flag }
+    		remove_variable = moving_magid_flag
+    	}
+    }
+
+    option = {      
+        name = flavor_egy.14.a
+    	custom_tooltip = flavor_egy_magid_move_tt
+    }
+}
+
+flavor_egy.15 = {					# Kyrene Flavor #13 - Remove Cyrenaican family
+    type = country_event
+    title = flavor_egy.15.t
+    desc = flavor_egy.15.desc
+    picture = council_country
+    left_portrait = current_ruler
+    right_portrait = scope:cyrenaica_family_dropper_1
+    right_portrait = scope:cyrenaica_family_dropper_2
+    right_portrait = scope:cyrenaica_family_dropper_3
+
+    trigger = { 
+    	has_variable = cyrenaica_dropper_flag 
+    	NOT = { 
+			has_variable = "rising_from_obscurity_cooldown" 
+		}
+		has_land = yes
+		num_of_families > num_allowed_families
+		war = no #Wait until peace. 
+		is_tribal = no
+		has_civil_war = no #Wait until after any ongoing civil wars.
+		any_family = {
+			OR = {
+				NOT = { any_family_member = { is_ruler = yes } }
+				ROOT = { is_republic = yes }
+			}
+		}
+    }
+
+    immediate = {
+    	set_variable = {
+		    name = "rising_from_obscurity_cooldown"
+		    days = 120
+		}
+    	hidden_effect = {
+    		while = {
+    			count = 3
+    			ordered_family = {
+    				limit = { 	
+    					head_of_family = {
+    						NOR = {
+    							this = root.current_ruler
+    							family = root.current_ruler.family
+    							AND = {
+    								exists = scope:cyrenaica_family_dropper_1
+    								this = scope:cyrenaica_family_dropper_1
+    							}
+    							AND = {
+    								exists = scope:cyrenaica_family_dropper_2
+    								this = scope:cyrenaica_family_dropper_2
+    							}
+    							AND = {
+    								exists = scope:cyrenaica_family_dropper_3
+    								this = scope:cyrenaica_family_dropper_3
+    							}
+    						}
+    					}
+    				}
+    				order_by = {
+    					value = 0
+    					subtract = prestige
+    				}
+    				head_of_family = {
+    					if = {
+    						limit = {
+    							NOT = { exists = scope:cyrenaica_family_dropper_1 }
+    						}
+    						save_scope_as = cyrenaica_family_dropper_1
+    					}
+    					else_if = {
+    						limit = {
+    							exists = scope:cyrenaica_family_dropper_1
+    							NOT = { exists = scope:cyrenaica_family_dropper_2 }
+    						}
+    						save_scope_as = cyrenaica_family_dropper_2
+    					}
+    					else_if = {
+    						limit = {
+    							exists = scope:cyrenaica_family_dropper_1
+    							exists = scope:cyrenaica_family_dropper_2
+    							NOT = { exists = scope:cyrenaica_family_dropper_3 }
+    						}
+    						save_scope_as = cyrenaica_family_dropper_3
+    					}
+    				}
+    			}
+    		}
+    	}
+    }
+
+    option = {      
+        name = flavor_egy.15.a
+        trigger = { exists = scope:cyrenaica_family_dropper_1 }
+        scope:cyrenaica_family_dropper_1 = {
+        	if = {
+    			limit = {
+    				root.current_ruler = { can_get_rivals = yes }
+    				can_get_rivals = yes
+    				NOT = { is_rival = root.current_ruler }
+    			}
+    			add_rival = root.current_ruler
+    		}
+        }
+    	hidden_effect = { 
+	    	scope:cyrenaica_family_dropper_1.family = {
+				every_family_member = { set_as_minor_character = THIS }
+				remove_family = ROOT
+			}
+		}
+		custom_tooltip = flavor_egy.15.tt
+    }
+
+    option = {      
+        name = flavor_egy.15.b
+        trigger = { exists = scope:cyrenaica_family_dropper_2 }
+        scope:cyrenaica_family_dropper_2 = {
+        	if = {
+    			limit = {
+    				root.current_ruler = { can_get_rivals = yes }
+    				can_get_rivals = yes
+    				NOT = { is_rival = root.current_ruler }
+    			}
+    			add_rival = root.current_ruler
+    		}
+        }
+    	hidden_effect = { 
+	    	scope:cyrenaica_family_dropper_2.family = {
+				every_family_member = { set_as_minor_character = THIS }
+				remove_family = ROOT
+			}
+		}
+		custom_tooltip = flavor_egy.15.tt
+    }
+
+    option = {      
+        name = flavor_egy.15.c
+        trigger = { exists = scope:cyrenaica_family_dropper_3 }
+        scope:cyrenaica_family_dropper_3 = {
+        	if = {
+    			limit = {
+    				root.current_ruler = { can_get_rivals = yes }
+    				can_get_rivals = yes
+    				NOT = { is_rival = root.current_ruler }
+    			}
+    			add_rival = root.current_ruler
+    		}
+        }
+    	hidden_effect = { 
+	    	scope:cyrenaica_family_dropper_3.family = {
+				every_family_member = { set_as_minor_character = THIS }
+				remove_family = ROOT
+			}
+		}
+		custom_tooltip = flavor_egy.15.tt
+    }
+
+    after = {
+		hidden_effect = {
+			remove_variable = "rising_from_obscurity_cooldown"
+			remove_variable = cyrenaica_dropper_flag
+		}
+	}
+}
+
+flavor_egy.16 = { 					# Cyrenaica victory infomercial
+	type = country_event
+	title = "flavor_egy.16.t"
+	picture = revolt
+	desc = {
+		desc = "flavor_egy.16.desc_1"
+		random_valid = {
+			desc = civil_war.2.descSIEGE
+			desc = civil_war.2.descSIEGE2 
+			desc = civil_war.2.descBATTLE
+			desc = civil_war.2.descBATTLE2
+		}
+		desc = "flavor_egy.16.desc_2"
+	}
+	
+	left_portrait = scope:victorious_side.current_ruler
+	right_portrait = c:EGY.current_ruler
+	
+	option = {
+		name = "flavor_egy.16.a"
+	}
+}
+
+flavor_egy.17 = { 					# Magas victory infomercial
+	type = country_event
+	title = "flavor_egy.17.t"
+	picture = revolt
+	desc = {
+		desc = "flavor_egy.17.desc_1"
+		random_valid = {
+			desc = civil_war.4.descSIEGE
+			desc = civil_war.4.descSIEGE2
+			desc = civil_war.4.descBATTLE
+			desc = civil_war.4.descBATTLE2
+		}
+		desc = "flavor_egy.17.desc_2"
+	}
+	
+	left_portrait = scope:victorious_side.current_ruler
+	left_portrait = c:EGY.current_ruler
+	
+	option = {
+		name = "flavor_egy.17.a"
+	}
+}
+
+flavor_egy.18 = { 					# Magas arrives infomercial
+	type = country_event
+	title = "flavor_egy.18.t"
+	picture = revolt
+	desc = {
+		desc = flavor_egy.18.desc
+		first_valid = {
+			triggered_desc = {
+				desc = flavor_egy.18.desc_1
+				trigger = {
+					c:CYR = { has_civil_war = yes }
+				}
+			}
+			triggered_desc = {
+				desc = flavor_egy.18.desc_2
+				trigger = {
+					c:CYR.current_ruler = scope:flavor_egy_2_magas_scope
+					c:CYR = { is_subject_of = c:EGY }
+				}
+			}
+			triggered_desc = {
+				desc = flavor_egy.18.desc_3
+				trigger = {
+					c:CYR.current_ruler = scope:flavor_egy_2_magas_scope
+					NOT = {
+						c:CYR = { is_subject_of = c:EGY }
+					}
+				}
+			}
+		}
+	}
+	
+	left_portrait = scope:flavor_egy_2_magas_scope
+	left_portrait = c:EGY.current_ruler
+	right_portrait = scope:flav_egy_2_cyr_ruler
+	
+	immediate = {
+		
+	}
+	
+	option = {
+		name = "flavor_egy.18.a"
+		if = {
+			limit = {
+				c:CYR = { has_civil_war = yes }
+			}
+			custom_tooltip = flavor_egy.18.at1
+		}
+		else_if = {
+			limit = {
+				c:CYR.current_ruler = scope:flavor_egy_2_magas_scope
+				c:CYR = { is_subject_of = c:EGY }
+			}
+			custom_tooltip = flavor_egy.18.at2
+		}
+		else_if = {
+			limit = {
+				c:CYR.current_ruler = scope:flavor_egy_2_magas_scope
+				NOT = {
+					c:CYR = { is_subject_of = c:EGY }
+				}
+			}
+			custom_tooltip = flavor_egy.18.at3
+		}
+	}
+}
+
+flavor_egy.19 = { 					# Magas breaking away infomercial
+	type = country_event
+	title = "flavor_egy.19.t"
+	desc = "flavor_egy.19.desc"
+	picture = successors
+
+	left_portrait = scope:flavor_egy_12_magas_scope
+	right_portrait = scope:flavor_egy_12_egy_ruler_scope
+	
+	option = {
+		name = "flavor_egy.19.a"
+		custom_tooltip = flavor_egy.19.at
+	}
+}
+
+flavor_egy.20 = {					# Ptolemy son of Phillip
+    type = country_event
+    title = flavor_egy.20.t
+    desc = {
+    	desc = flavor_egy.20.desc
+    	desc = {
+			first_valid = {
+				triggered_desc = {		# Not already Argead line
+					trigger = {
+						current_ruler = { 
+							NOT = { has_trait = argeads }
+						}
+					}
+					desc = "flavor_egy.20.desc_1"
+				}
+				triggered_desc = {		# Already Argead line
+					trigger = {
+						current_ruler = { has_trait = argeads }
+					}
+					desc = "flavor_egy.20.desc_2"
+				}
+			}
+		}
+	}
+    picture = successors
+    left_portrait = current_ruler
+    left_portrait = scope:dead_ptolemy_scope
+    left_portrait = char:23
+    right_portrait = char:39
+    right_portrait = char:35
+
+    trigger = {
+    	tag = EGY
+    	current_ruler = { has_same_family = char:42 }
+    	OR = { # Ruler is Ptolemy, Ptolemy's kid, or Ptolemy's grandkid
+    		current_ruler = char:42 
+    		char:42 = {
+    			any_child = { this = c:EGY.current_ruler }
+    		}
+    		char:42 = {
+    			any_child = {
+    				any_child = { this = c:EGY.current_ruler }
+    			}
+    		}
+    	}
+    }
+
+    immediate = {
+    	if = {
+    		limit = {
+    			char:42 = { is_alive = no }
+    		}
+    		char:42 = { save_scope_as = dead_ptolemy_scope }
+    	}
+    	current_ruler = { save_scope_as = arg_ptomely_scope }
+    }
+
+    option = {      
+        name = flavor_egy.20.a
+        current_ruler = {
+        	add_popularity = popularity_huge
+	        family = { add_prestige = 200 }
+	    }
+	    ai_chance = {
+        	factor = 4
+        }
+    }
+
+    option = {      
+        name = flavor_egy.20.b
+        add_legitimacy = legitimacy_huge
+        current_ruler = {
+        	family = { add_prestige = 75 }
+        }
+        add_treasury = {
+    		value = root.has_monthly_income
+    		multiply = -3
+    	}
+        if = {
+        	limit = {
+        		OR = {
+        			c:MAC = { has_land = yes }
+        			c:SEL = { has_land = yes }
+        			c:PRY = { has_land = yes }
+        			c:TRE = { has_land = yes }
+        		}
+        	}
+        	custom_tooltip = flavor_egy_20_dia_tt2
+        	every_country = {
+	        	limit = {
+	        		OR = {
+	        			tag = MAC
+	        			tag = SEL
+	        			tag = PRY
+	        			tag = TRE
+	        		}
+	        	}
+	        	trigger_event = {
+	        		id = flavor_egy.21
+	        		days = 5
+	        	}
+        	}
+        }
+        ai_chance = {
+        	factor = 4
+        }
+    }
+
+    option = {      
+        name = flavor_egy.20.c
+	    current_ruler = { 
+	    	if = {
+	    		limit = {
+	    			NOT = { has_trait = argeads }
+	    		}
+	    		add_trait = argeads # Ruler trait
+	    		hidden_effect = {
+		    		if = {
+		    			limit = {
+		    				num_of_children > 0
+		    				any_child = {
+		    					is_alive = yes
+		    					NOT = { has_trait = argeads }
+		    				}
+		    			}
+		    			every_child = { # Children of ruler
+		    				limit = {
+		    					is_alive = yes
+		    					NOT = { has_trait = argeads }
+		    				}
+		    				add_trait = argeads
+		    				if = {
+			        			limit = {
+			        				num_of_children > 0
+			        				any_child = {
+			        					is_alive = yes
+			        					NOT = { has_trait = argeads }
+			        				}
+			        			}
+			        			every_child = { # Children of ruler's children
+			        				limit = {
+			        					is_alive = yes
+			        					NOT = { has_trait = argeads }
+			        				}
+			        				add_trait = argeads
+			        			}
+			        		}
+		    			}
+		    		}
+		    		if = { # Other children of Ptolemy's relatives
+		    			limit = {
+		    				any_sibling = {
+		    					NOT = { has_trait = argeads }
+		    					OR = {
+		    						is_child_of = char:42
+		    						any_parent = { is_child_of = char:42 }
+		    						any_parent = {
+		    							any_parent = { is_child_of = char:42 }
+		    						}
+		    						father = ROOT.current_ruler.father
+		    					}
+		    				}
+		    			}
+	    				every_sibling = {
+	    					limit = {
+	    						OR = {
+	        						is_child_of = char:42
+	        						any_parent = { is_child_of = char:42 }
+	        						any_parent = {
+	        							any_parent = { is_child_of = char:42 }
+	        						}
+	        						father = ROOT.current_ruler.father
+	        					}
+	    					}
+	    					add_trait = argeads
+	    					if = {
+			        			limit = {
+			        				num_of_children > 0
+			        				any_child = {
+			        					is_alive = yes
+			        					NOT = { has_trait = argeads }
+			        				}
+			        			}
+			        			every_child = { # And their children
+			        				limit = {
+			        					is_alive = yes
+			        					NOT = { has_trait = argeads }
+			        				}
+			        				add_trait = argeads
+			        				if = {
+					        			limit = {
+					        				num_of_children > 0
+					        				any_child = {
+					        					is_alive = yes
+					        					NOT = { has_trait = argeads }
+					        				}
+					        			}
+					        			every_child = { # And their children's children
+					        				limit = {
+					        					is_alive = yes
+					        					NOT = { has_trait = argeads }
+					        				}
+					        				add_trait = argeads
+					        			}
+					        		}
+			        			}
+			        		}
+		    			}
+	    			}
+		    		if = { # Other just in case
+		    			limit = {
+		    				employer = {
+			    				any_character = {
+			    					NOR = {
+			    						has_trait = argeads
+			    						is_child_of = root.current_ruler
+			    						is_sibling_of = root.current_ruler
+			    					}
+			    					OR = {
+			    						is_child_of = char:42
+			    						any_parent = { is_child_of = char:42 }
+			    						any_parent = {
+			    							any_parent = { is_child_of = char:42 }
+			    						}
+			    					}
+			    				}
+			    			}
+			    		}
+	    				employer = {
+		    				every_character = { 
+		    					limit = {
+		    						OR = {
+		        						is_child_of = char:42
+		        						any_parent = { is_child_of = char:42 }
+		        						any_parent = {
+		        							any_parent = { is_child_of = char:42 }
+		        						}
+		        					}
+		    					}
+		    					add_trait = argeads
+		    					if = {
+				        			limit = {
+				        				num_of_children > 0
+				        				any_child = {
+				        					is_alive = yes
+				        					NOT = { has_trait = argeads }
+				        				}
+				        			}
+				        			every_child = { # And their children
+				        				limit = {
+				        					is_alive = yes
+				        					NOT = { has_trait = argeads }
+				        				}
+				        				add_trait = argeads
+				        				if = {
+						        			limit = {
+						        				num_of_children > 0
+						        				any_child = {
+						        					is_alive = yes
+						        					NOT = { has_trait = argeads }
+						        				}
+						        			}
+						        			every_child = { # And their children's children
+						        				limit = {
+						        					is_alive = yes
+						        					NOT = { has_trait = argeads }
+						        				}
+						        				add_trait = argeads
+						        			}
+						        		}
+				        			}
+				        		}
+		    				}
+		    			}
+		    		}
+		    	}
+	    	}
+	    	custom_tooltip = flavor_egy.20.ct
+	    	set_variable = {
+	    		name = flv_egy_argead_claim_flag
+	    		days = 30
+	    	}
+	    	family = { add_prestige = subtract_prestige_huge }
+   		}
+   		add_political_influence = -200
+       	add_treasury = {
+    		value = root.has_monthly_income
+    		multiply = -24
+    	}
+        add_legitimacy = subtract_legitimacy_huge
+        if = {
+        	limit = {
+        		OR = {
+        			c:MAC = { has_land = yes }
+        			c:SEL = { has_land = yes }
+        			c:PRY = { has_land = yes }
+        			c:TRE = { has_land = yes }
+        		}
+        	}
+        	custom_tooltip = flavor_egy_20_dia_tt1
+        	every_country = {
+	        	limit = {
+	        		OR = {
+	        			tag = MAC
+	        			tag = SEL
+	        			tag = PRY
+	        			tag = TRE
+	        		}
+	        	}
+	        	trigger_event = {
+	        		id = flavor_egy.21
+	        		days = 5
+	        	}
+        	}
+        }
+        ai_chance = {
+        	factor = 1
+        }
+    }
+}
+
+flavor_egy.21 = {					# Ptolemy son of Phillip Diadochi Ping
+    type = country_event
+    title = flavor_egy.21.t
+    desc = {
+    	desc = flavor_egy.21.desc
+    	desc = {
+			first_valid = {
+				triggered_desc = {		# Not already Argead line
+					trigger = {
+						c:EGY.current_ruler = { 
+							NOT = { has_variable = flv_egy_argead_claim_flag }
+						}
+					}
+					desc = "flavor_egy.21.desc_1"
+				}
+				triggered_desc = {		# Already Argead line
+					trigger = {
+						c:EGY.current_ruler = { has_variable = flv_egy_argead_claim_flag }
+					}
+					desc = "flavor_egy.21.desc_2"
+				}
+			}
+		}
+	}
+    picture = successors
+    left_portrait = char:35
+    left_portrait = char:39
+    right_portrait = c:EGY.current_ruler
+    right_portrait = scope:dead_ptolemy_scope
+    right_portrait = char:23
+
+    trigger = { has_land = yes }
+
+    immediate = {
+    	if = {
+    		limit = {
+    			c:EGY.current_ruler = { 
+					NOT = { has_variable = flv_egy_argead_claim_flag }
+				}
+    		}
+    		hidden_effect = {
+    			add_opinion = { target = c:EGY modifier = flv_egy_arg_1 }
+    		}
+    		custom_tooltip = flavor_egy_20_dia_tt2
+    	}
+    	else = {
+    		hidden_effect = {
+    			add_opinion = { target = c:EGY modifier = flv_egy_arg_1 }
+    		}
+    		custom_tooltip = flavor_egy_20_dia_tt1
+    		custom_tooltip = flavor_egy.20.ct
+    	}
+    }
+
+    option = {      
+        name = flavor_egy.21.a
+        trigger = {
+        	c:EGY.current_ruler = { 
+				NOT = { has_variable = flv_egy_argead_claim_flag }
+			}
+        }
+    }
+
+    option = {      
+        name =  flavor_egy.21.b
+        trigger = {
+        	c:EGY.current_ruler = { has_variable = flv_egy_argead_claim_flag }
+        }
+    }
+}
+
+flavor_egy.22 = { 					# Eunostos event
+	type = country_event
+	title = "flavor_egy.22.t"
+	desc = "flavor_egy.22.desc"
+	picture = throneroom
+	left_portrait = current_ruler
+	right_portrait = scope:eunostos_of_soloi
+	
+	option = { # Give Soloi to Eunostos as Feudatory
+		name = "flavor_egy.22.a"
+		custom_tooltip = flavor_egy.22.at
+		hidden_effect = {
+			p:333 = {
+				create_country = {
+					save_scope_as = soloi_country
+					change_government = despotic_monarchy
+					change_country_name = SOLOI
+					change_country_adjective = SOLOI_ADJ
+				}
+			}
+			scope:eunostos_of_soloi = {
+				move_country_with_entire_family_effect = { COUNTRY = scope:soloi_country }
+			}
+			scope:soloi_country = { set_as_ruler = scope:eunostos_of_soloi }
+			make_subject = {
+				target = scope:soloi_country
+				type = feudatory
+			}
+		}
+		add_treasury = {
+			value = has_monthly_income
+			multiply = 2
+		}
+		ai_chance = { factor = 5 }
+	}
+
+	option = {
+		name = "flavor_egy.22.b" # Give all of Cyprus to Eunostos as Client State
+		custom_tooltip = flavor_egy.22.bt
+		hidden_effect = {
+			p:331 = {
+				create_country = {
+					save_scope_as = soloi_country
+					change_government = despotic_monarchy
+				}
+			}
+			scope:eunostos_of_soloi = {
+				move_country_with_entire_family_effect = { COUNTRY = scope:soloi_country }
+			}
+			scope:soloi_country = {
+				set_as_ruler = scope:eunostos_of_soloi 
+				change_country_name = CYP
+				change_country_adjective = CYP_ADJ
+				change_country_tag = CYP
+			}
+			every_owned_province = {
+				limit = { is_in_area = cyprus_area }
+				set_conquered_by = scope:soloi_country
+			}
+			make_subject = {
+				target = scope:soloi_country
+				type = client_state
+			}
+		}
+		add_treasury = {
+			value = has_monthly_income
+			multiply = 6
+		}
+		ai_chance = { factor = 10 }	
+	}
+
+	option = {
+		name = "flavor_egy.22.c"
+		scope:eunostos_of_soloi = { add_loyalty = loyalty_plot_appeal_insulted }
+		ai_chance = { factor = 0 }
+	}
+}

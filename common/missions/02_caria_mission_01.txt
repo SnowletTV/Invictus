@@ -1,0 +1,459 @@
+﻿caria_missions = {
+    icon = cde_indo_greek_port_city
+    header = mission_image_syracuse
+
+    repeatable = no
+    chance = {
+        factor = 100
+    }
+
+    potential = {
+        NOT = { has_variable = caria_missions_cooldown_var }
+        tag = CIA
+    }
+
+    abort = {
+        ai_mission_back_out_trigger = yes
+    }
+    on_start = {
+        start_mission_ai_effect = yes
+        save_scope_as = mission_country
+    }
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = caria_missions_cooldown_var
+            days = 7300
+        }
+    }
+    on_completion = {
+        add_3_free_province_investments = yes
+    }
+
+    caria_missions_task_1 = { # Strength in Service
+        icon = "task_diplomatic"
+        highlight = {
+            scope:province = {
+                is_capital = yes
+                owner = root
+            }
+        }        
+
+        potential = {
+            is_subject = yes
+        }
+
+        allow = { 
+            trigger_if = {
+                limit = {
+                    is_subject = yes
+                }
+                hidden:overlord = { 
+                    opinion = { 
+                        target = root 
+                        value >= 120
+                    } 
+                }
+            }
+            trigger_if = {
+                limit = {
+                    is_ai = no
+                }
+                hidden:current_ruler = { is_friend = root.overlord.current_ruler }
+            }
+        }
+
+        on_completion = {
+            trigger_event = {
+                id = me_caria.1
+            }
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = loyal_to_overlord
+                    duration = -1
+                }
+            }
+            
+        }
+    }
+
+
+    caria_missions_task_2 = { # Proving Our Worth
+        icon = "task_political"
+        requires = { caria_missions_task_1 }
+        highlight = {
+            scope:province = {
+                is_capital = yes
+                owner = root
+            }
+        }        
+
+        potential = {
+            is_subject = yes
+            NOT = { has_variable = proved_worth }
+        }
+
+        allow = { 
+            political_influence >= 115
+            stability > 50
+        }
+
+        on_completion = {
+            set_variable = proved_worth
+            root.overlord = {
+                trigger_event = {
+                    id = me_caria.2
+                }
+            }
+            show_as_tooltip = {
+                root.overlord = {  
+                    release_subject = root
+                }
+                add_alliance = root.overlord
+            }
+        }
+
+        bypass = {
+            is_ai = yes
+        }
+    }
+
+    caria_missions_task_3 = { # Naval Academy
+        icon = "task_battle"
+        duration = 365
+        allow = {
+            military_experience >= 40
+        }
+        on_completion = {
+            trigger_event = me_caria.3
+            show_as_tooltip = {
+                add_military_experience = -40
+                add_country_modifier = {
+                    name = maritime_training
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    caria_missions_task_4 = { # Royal Fleet
+        icon = "task_expansion"
+        requires = { caria_missions_task_3 }
+        allow = {
+            num_of_ships >= 30
+        }
+        on_completion = {
+            trigger_event = me_caria.4
+            show_as_tooltip = {
+                add_country_modifier = {
+                    name = caria_navy
+                    duration = 7000
+                }
+            }
+        }
+    }
+
+
+    caria_missions_task_5 = { # The Artemisia
+        icon = "task_conquest"
+        duration = 120
+        requires = { caria_missions_task_3 }
+        allow = {
+            treasury >= 100
+            political_influence >= 20
+        }
+        on_completion = {
+            trigger_event = me_caria.5
+            show_as_tooltip = {
+                add_treasury = -100
+                add_political_influence = -20
+                custom_tooltip = caria_missions_task_5_tt
+            }
+        }
+    }
+
+    caria_missions_task_6 = { # Donning the Diadem
+        icon = "task_happiness"
+        highlight = {
+            scope:province = {
+                owner = root
+                is_capital = yes
+            }
+        }
+        allow = {
+            is_subject = no
+            legitimacy >= 95
+            stability >= 75
+        }
+        on_completion = {
+            trigger_event = me_caria.6
+            show_as_tooltip = {
+                change_government = aristocratic_monarchy
+                add_political_influence = 100
+                add_country_modifier = {
+                    name = donned_diadem_mod
+                    duration = -1
+                } 
+                
+            }
+        }
+    }
+
+    caria_missions_task_7 = { # The Pleistarchid Kingdom"
+        icon = "task_battle"
+        requires = { caria_missions_task_6 }
+        highlight = {
+            scope:province = {
+                owner = root
+                is_capital = yes
+            }
+        }
+        allow = {
+            current_ruler = {
+                has_trait = antipatrid
+            }
+            num_of_cities >= 30
+        }
+        on_completion = {
+            trigger_event = me_caria.7
+            show_as_tooltip = {
+                change_country_name = PLEISTARCHID_KINGDOM
+                add_stability = 10
+                add_legitimacy = 25
+            }
+        }
+    }
+
+    caria_missions_task_8 = { # Correcting Chios
+        icon = "task_economical"
+        requires = { caria_missions_task_6 }
+        highlight = {
+            scope:province = {
+                province_id = 286
+            }
+        }
+        allow = {
+            is_subject = no
+            manpower >= 2
+            custom_tooltip = {
+                text = caria_missions_task_8_allow_tt
+                any_unit = {
+                    is_navy = yes
+                    OR = {
+                        unit_location = p:2671
+                        unit_location = p:2620
+                        unit_location = p:2609
+                        unit_location = p:2595
+                    }
+                    any_sub_unit = {
+                        count >= 30
+                    }
+                }
+            }
+        }
+        on_completion = {
+            trigger_event = me_caria.8
+            custom_tooltip = caria_missions_task_8_tt
+            show_as_tooltip = {
+                add_aggressive_expansion = 5
+                add_manpower = -2
+            }
+        }
+        bypass = {
+            p:286.owner = {
+                OR = {
+                    AND = {
+                        overlord = { is_ai = no }
+                        num_of_cities = 1
+                    }
+                    overlord = { this = root }
+                    THIS = root
+                    is_ai = no
+                }
+            }
+        }
+    }
+
+    caria_missions_task_9 = { # Prince of Priene
+        icon = "task_battle"
+        requires = { caria_missions_task_6 }
+        duration = 180
+        highlight = {
+            scope:province = {
+                province_id = 1972
+            }
+        }
+        allow = {
+            is_subject = no
+            manpower >= 4
+        }
+        on_completion = {
+            trigger_event = me_caria.9
+            custom_tooltip = caria_missions_task_9_tt
+            show_as_tooltip = {
+                add_aggressive_expansion = 10
+                add_manpower = -4
+            }
+        }
+        bypass = {
+            p:1972.owner = {
+                OR = {
+                    AND = {
+                        overlord = { is_ai = no }
+                        num_of_cities = 1
+                    }
+                    overlord = { this = root }
+                    THIS = root
+                    is_ai = no
+                }
+            }
+        }
+    }
+
+    caria_missions_task_10 = { # The Price of Peace   ####UNFINISHED####
+        icon = "task_political"
+        requires = { caria_missions_task_6 }
+        prevented_by = { caria_missions_task_14 caria_missions_task_15 caria_missions_task_17 }
+        duration = 180
+        highlight = {
+            scope:province = {
+                province_id = 
+            }
+        }
+        allow = {
+            owns = 1981 #halikarnasus
+            owns = 1989 #Kaunos
+        }
+        on_completion = {
+            trigger_event = me_caria.10
+            custom_tooltip = caria_missions_task_10_tt
+        }
+    }
+
+    caria_missions_task_11 = { # Under Eagle's Wings   ####UNFINISHED####
+        icon = "task_political"
+        requires = { caria_missions_task_10 }
+        prevented_by = { caria_missions_task_14 caria_missions_task_15 caria_missions_task_17 }
+        highlight = {
+            ###EGY #CAPITAL
+        }
+        allow = {
+            owns = 1981 #halikarnasus
+            owns = 1989 #Kaunos
+        }
+        on_completion = {
+            trigger_event = me_caria.11
+            custom_tooltip = caria_missions_task_11_tt
+        }
+    }
+
+    caria_missions_task_12 = { # In the Lion's Shadow   ####UNFINISHED####
+        icon = "task_political"
+        requires = { caria_missions_task_10 }
+        prevented_by = { caria_missions_task_14 caria_missions_task_15 caria_missions_task_17 }
+        highlight = {
+            ###TRE #CAPITAL
+        }
+        allow = {
+            owns = 1981 #halikarnasus
+            owns = 1989 #Kaunos
+        }
+        on_completion = {
+            trigger_event = me_caria.12
+            custom_tooltip = caria_missions_task_12_tt
+        }
+    }
+
+    caria_missions_task_13 = { # Beside the Elephant   ####UNFINISHED####
+        icon = "task_political"
+        requires = { caria_missions_task_10 }
+        prevented_by = { caria_missions_task_14 caria_missions_task_15 caria_missions_task_17 }
+        highlight = {
+            ###SEL #CAPITAL
+        }
+        allow = {
+            owns = 1981 #halikarnasus
+            owns = 1989 #Kaunos
+        }
+        on_completion = {
+            trigger_event = me_caria.13
+            custom_tooltip = caria_missions_task_13_tt
+        }
+    }
+
+
+    caria_missions_task_14 = { # Halikarnssus (republic)
+        icon = "task_battle"
+        requires = { caria_missions_task_7 caria_missions_task_4 }
+        highlight = {
+            scope:province = {
+                province_id = 1981
+            }
+        }
+        allow = {
+            owns = 1981 #halikarnasus
+            owns = 7935
+        }
+        on_completion = {
+            trigger_event = me_caria.14
+            custom_tooltip = caria_missions_task_14_tt
+
+        }
+    }
+
+    caria_missions_task_15 = { # Heirs of Hekatomnos
+        icon = "task_expansion"
+        requires = { caria_missions_task_7 caria_missions_task_4 }
+        prevented_by = { caria_missions_task_14 }
+        highlight = {
+            scope:province = {
+                province_id = 1981
+            }
+        }
+        allow = {
+            stability <= 40
+        }
+        on_completion = {
+            trigger_event = me_caria.15
+            custom_tooltip = caria_missions_task_15_tt
+        }
+    }
+
+    caria_missions_task_16 = { # 
+        icon = "task_battle"
+        requires = { caria_missions_task_15 }
+        highlight = {
+            scope:province = {
+                province_id = 1981
+            }
+        }
+        allow = {
+            stability <= 40
+
+        }
+        on_completion = {
+            trigger_event = me_caria.16
+            custom_tooltip = caria_missions_task_16_tt
+
+        }
+    }
+
+    caria_missions_task_17 = { # Kaunos
+        icon = "task_battle"
+        requires = { caria_missions_task_10 caria_missions_task_4 }
+        highlight = {
+            scope:province = {
+                province_id = 1989
+            }
+        }
+        allow = {
+
+        }
+        on_completion = {
+            trigger_event = me_caria.17
+            custom_tooltip = caria_missions_task_17_tt
+
+        }
+    }
+
+}

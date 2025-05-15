@@ -15,6 +15,12 @@
         start_mission_ai_effect = yes
         hidden_effect = {
             c:AED = {
+                add_truce = {
+                    target = root
+                    duration = 1825
+                }
+            }
+            c:AED = {
                 set_antagonist = yes
             }
         }
@@ -129,7 +135,7 @@
         allow = {
             has_law = increased_council_powers
             centralization >= 25
-            political_influence >= 75
+            political_influence >= 50
             owns_or_subject_owns_area = narbonensis_centralis_area
             owns_or_subject_owns_area = narbonensis_orientalis_area
         }
@@ -181,7 +187,7 @@
 
     01_arvernia_missions_task_6 = {
         icon = "task_conquest"
-        requires = {01_arvernia_missions_task_1}
+        requires = {01_arvernia_missions_task_1 01_arvernia_missions_task_15}
 
         highlight = {
             scope:province = {
@@ -345,7 +351,7 @@
     }
     01_arvernia_missions_task_10 = {
         icon = "task_atlas"
-        requires = {01_arvernia_missions_task_9} 
+        requires = {01_arvernia_missions_task_9 01_arvernia_missions_task_21} 
         final = yes
 
         allow = {
@@ -476,7 +482,9 @@
     }
 
     01_arvernia_missions_task_14 = {
-        icon = "task_political"
+        icon = "task_diplomatic"
+        requires = {01_arvernia_missions_task_2} 
+        duration = 30
 
         highlight = {
             scope:province = {
@@ -485,7 +493,7 @@
         }
 
         allow = {
-
+            political_influence >= 15
         }
 
         bypass = {
@@ -501,13 +509,32 @@
             current_ruler = {
                 add_rival = C:AED.current_ruler
             }
+            show_as_tooltip = {
+                add_political_influence = -15
+            }
             trigger_event = me_arvernia.14
         }
     }
 
     01_arvernia_missions_task_15 = {
-        icon = "task_political"
-        allow = {}
+        icon = "task_conquest"
+        requires = {01_arvernia_missions_task_14}
+
+        highlight = {
+            scope:province = {
+                owner = c:AED
+            }
+        }
+
+        allow = {
+            custom_tooltip = {
+                text = aeduia_must_not_exist_tt
+                c:AED = {
+                    has_land = no
+                }
+            }
+        }
+
         on_completion = {
             trigger_event = me_arvernia.15
             show_as_tooltip = {
@@ -517,40 +544,110 @@
     }
 
     01_arvernia_missions_task_16 = {
-        icon = "task_political"
-        allow = {}
+        icon = "task_conquest"
+        duration = 30
+
+        potential = {
+            c:ROM = {
+                has_completed_mission = roman_1_italia
+            }
+        }
+
+        allow = {
+            war = no
+            political_influence >= 15
+        }
+
         on_completion = {
             trigger_event = me_arvernia.16
             show_as_tooltip = {
-
+                add_political_influence = -15
             }
         }
     }
 
     01_arvernia_missions_task_17 = {
-        icon = "task_political"
-        allow = {}
+        icon = "task_calm"
+        requires = {01_arvernia_missions_task_16} 
+
+        highlight = {
+            scope:province = {
+                province_id = 3543
+            }
+        }
+
+        potential = {
+            c:ROM = {
+                has_completed_mission = roman_1_italia
+            }
+        }
+
+        allow = {
+            owns_or_subject_owns = 3543
+            p:3543 = {
+                free_building_slots >= 1
+                has_city_status = yes
+                num_of_fortress_building >= 2
+            }
+        }
+
         on_completion = {
             trigger_event = me_arvernia.17
             show_as_tooltip = {
-
+                p:3543 = {
+                    add_province_modifier = {
+                        name = arvernian_antipolis_mod
+                        duration = -1
+                    }
+                    add_building_level = fortress_ramparts_building
+                }
             }
         }
     }
 
     01_arvernia_missions_task_18 = {
-        icon = "task_political"
-        allow = {}
+        icon = "task_expansion"
+        requires = {01_arvernia_missions_task_16} 
+        duration = 180
+
+        potential = {
+            c:ROM = {
+                has_completed_mission = roman_1_italia
+            }
+        }
+
+        allow = {
+            num_of_ships >= 30
+            military_experience >= 40
+            custom_tooltip = {
+                text = befriend_governor_of_carthage_tt
+                p:3256.state.governor_or_ruler = {
+                    is_friend = root.current_ruler
+                }
+            }
+            custom_tooltip = {
+                text = send_dem_carthaginians_a_gift_cuh
+                p:3256.owner = {
+                    has_opinion = {
+                        modifier = opinion_gift 
+                        target = c:AVN
+                    }
+                }
+            }
+        }
+
         on_completion = {
             trigger_event = me_arvernia.18
             show_as_tooltip = {
-
+                add_military_experience = -40
+                unlock_invention = pirate_spawn_chance_inv_1
+                unlock_invention = liburnian_invention_2
             }
         }
     }
 
     01_arvernia_missions_task_19 = {
-        icon = "task_political"
+        icon = "task_zeus_cornucopia"
         requires = {01_arvernia_missions_task_8} 
 
         allow = {
@@ -573,13 +670,116 @@
     }
 
     01_arvernia_missions_task_20 = {
-        icon = "task_political"
-        allow = {}
-        final = yes
+        icon = "task_battle"
+        requires = {01_arvernia_missions_task_17 01_arvernia_missions_task_18} 
+
+        potential = {
+            c:ROM = {
+                has_completed_mission = roman_1_italia
+            }
+        }
+
+        allow = {
+            war = no
+            hidden:c:ROM = {
+                war = yes
+            }
+            NOT = {
+                has_truce_with = c:ROM
+            }
+            manpower >= 10
+        }
+
         on_completion = {
+            declare_war_with_wargoal = {
+                war_goal = conquer_wargoal
+                province = 1
+                target = p:1.owner
+            }
             trigger_event = me_arvernia.20
             show_as_tooltip = {
+                current_ruler = {
+                    add_martial = 3
+                }
+            }
+        }
+    }
 
+    01_arvernia_missions_task_21 = {
+        icon = "task_calm"
+        requires = {01_arvernia_missions_task_8} 
+
+        bypass = {
+            deity:omen_toutatis = {
+                exists = holy_site
+            }
+        }
+
+        highlight = {
+            scope:province = {
+                province_id = 2284
+            }
+        }
+
+        allow = {
+            treasury >= 200
+            hidden:deity:omen_toutatis = {
+                has_holy_site = no
+            }
+            has_deity_in_pantheon = deity:omen_toutatis
+            custom_tooltip = {
+                text = perform_divine_sacrifice_please_stab_the_pig
+                has_country_modifier = stability_investment
+            }
+        }
+
+        on_completion = {
+            add_treasury = -200
+            p:2284 = { set_province_deity = deity:omen_toutatis }
+            add_country_modifier = {
+                name = toutatis_omen_boost_mod
+                duration = 3650
+            }
+            trigger_event = me_arvernia.25
+            show_as_tooltip = {
+
+            }
+        }
+    }
+
+    01_arvernia_missions_task_22 = {
+        icon = "task_economical"
+        requires = {01_arvernia_missions_task_6} 
+
+        highlight = {
+            scope:province = {
+                has_owner = yes
+                owner = ROOT
+                is_capital = yes
+            }
+        }
+
+        allow = {
+            capital_scope = {
+                num_of_commerce_building >= 2
+            }
+            capital_scope.state = {state_improvement_oratory_trigger = yes}
+        }
+
+        on_completion = {
+            trigger_event = me_arvernia.26
+            show_as_tooltip = {
+                add_centralization = 5
+                add_country_modifier = {
+                    name = icenia_center_of_trade_mod
+                    duration = 3650
+                }
+                capital_scope = {
+                    add_province_modifier = {
+                        name = arvernian_market_mod
+                        duration = -1
+                    }
+                }
             }
         }
     }

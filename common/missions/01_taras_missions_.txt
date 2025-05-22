@@ -1,6 +1,6 @@
 ﻿taras_missions = {
     header = "mission_image_syracuse"
-    icon = "cde_greek_market_declaration"
+    icon = "tarentine_cavalry"
 
     repeatable = no
     chance = 1000
@@ -10,9 +10,12 @@
         tag = TAR
     }
 
-    abort = {}
+    abort = {
+        ai_mission_back_out_trigger = yes
+    }
     on_start = {
         start_mission_ai_effect = yes
+        trigger_event = me_taras.26
     }
     on_abort = {
         custom_tooltip = general_mission_cooldown_tt
@@ -39,7 +42,7 @@
         }
         allow = {
             custom_tooltip = {
-				text = samnium_doesn_fight_303_tt
+				text = taras_fight_303_tt
 				OR = {
 					has_global_variable = lucania_lost_war
 					has_global_variable = tarentum_lost_war
@@ -61,16 +64,18 @@
     taras_missions_task_2 = { # Ruins of Taras
         requires = { taras_missions_task_1 }
         icon = "task_political"
-        allow = {}
+        duration = 90 
+        allow = {
+            treasury >= 100 
+            political_influence >= 20
+        }
         on_completion = {
             trigger_event = me_taras.2
-            show_as_tooltip = {
-
-            }
+            custom_tooltip = taras_ruins_tt
         }
     }
     taras_missions_task_3 = { # War Against Metapontum
-        requires = { taras_missions_task_1 }
+        requires = { taras_missions_task_2 }
         icon = "task_political"
         allow = {}
         on_completion = {
@@ -80,33 +85,57 @@
             }
         }
     }
-    taras_missions_task_4 = { # A Temple For Poseidon
+    taras_missions_task_4 = { # A Temple For Taras
         requires = { taras_missions_task_2 }
         icon = "task_political"
         allow = {
+            invention = global_unrest_inv_2
         }
         on_completion = {
             trigger_event = me_taras.4
+            custom_tooltip = unlock_taras_tt
             show_as_tooltip = {
-
+            p:56 = {
+                add_building_level = temple_building
+                add_province_modifier = {
+                    name = taras_temple
+                    duration = 3650
+                }
+            }
             }
         }
     }
-    taras_missions_task_5 = { # Revitalizing the Marketplace
+    taras_missions_task_5 = { # Tarentine Academy
         icon = "task_political"
         requires = { taras_missions_task_2 }
-        allow = {}
+        duration = 365
+        allow = {
+            p:56 = {
+                has_building = academy_building
+            }
+        }
         on_completion = {
             trigger_event = me_taras.5
+            custom_tooltip = taras_academy_tt
             show_as_tooltip = {
-
+                p:56 = {
+                    add_province_modifier = {
+                        name = tarentine_academy
+                        duration = -1
+                    }
+                }
             }
         }
     }
-    taras_missions_task_6 = { # Patronizing the Arts
-        requires = { taras_missions_task_3 }
+    taras_missions_task_6 = { # Revitalizing the Marketplace
+        requires = { taras_missions_task_2 }
         icon = "task_political"
-        allow = {}
+        allow = {
+            p:56 = {
+                has_building = commerce_building
+                has_building = town_hall_building
+            }
+        }
         on_completion = {
             trigger_event = me_taras.6
             show_as_tooltip = {
@@ -116,7 +145,13 @@
     }
     taras_missions_task_7 = { # Horsemen of Taras
         icon = "task_political"
-        allow = {}
+        allow = {
+            p:56 = {
+                state = {
+                is_importing_trade_good = horses
+            }
+            }
+        }
         on_completion = {
             trigger_event = me_taras.7
             show_as_tooltip = {
@@ -201,14 +236,53 @@
             }
         }
     }
-    taras_missions_task_15 = {
-        requires = { taras_missions_task_4 taras_missions_task_5 taras_missions_task_6 taras_missions_task_21 } 
-        icon = "task_political"
-        allow = {}
+    taras_missions_task_15 = { 
+        requires = { taras_missions_task_3 taras_missions_task_4 taras_missions_task_5 taras_missions_task_6 taras_missions_task_21 } 
+        icon = "task_economical"
+        allow = {
+			custom_tooltip = {
+				text = taras_restored_allow_tt
+				p:56 = {
+					trigger_if = {
+						limit = {
+							ROOT = { is_ai = no }
+						}
+						has_city_status = yes
+						total_population >= 25
+						province_dominant_culture_group = hellenic
+						dominant_province_religion = roman_pantheon
+						free_building_slots < 1
+						has_construction = no
+						civilization_value >= 40
+						any_pops_in_province = {
+							percent <= 0.33
+							pop_type = slaves
+						}
+						any_pops_in_province = {
+							percent <= 0.33
+							pop_type = tribesmen
+						}
+					}
+					trigger_else = {
+						OR = {
+							has_city_status = yes
+							ROOT = { can_pay_price = price_found_city }
+						}
+					}
+				}
+			}
+		}
         on_completion = {
             trigger_event = me_taras.15
             show_as_tooltip = {
-
+                p:56 = {
+                    add_province_modifier = {
+                        name = taras_restored
+                        duration = -1
+                    }
+                    create_state_pop = citizen
+                    create_state_pop = citizen
+                }
             }
         }
     }
@@ -270,11 +344,22 @@
     taras_missions_task_21 = { # Hinterland Farms
         requires = { taras_missions_task_2 } 
         icon = "task_political"
-        allow = {}
+        allow = {
+            p:56 = {
+                has_building = population_building
+            }
+            treasury >= 50 
+        }
         on_completion = {
             trigger_event = me_taras.21
             show_as_tooltip = {
-
+            add_treasury = -50
+            p:56 = {
+                add_province_modifier = {
+                    name = expanded_farms
+                    duration = -1
+                }
+            }
             }
         }
     }

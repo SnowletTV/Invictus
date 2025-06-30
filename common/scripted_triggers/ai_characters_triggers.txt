@@ -1,0 +1,156 @@
+﻿country_uses_persuation_instead_of_bribing = {
+    exists = current_ruler
+    current_ruler = {
+        OR = {
+            has_trait = orator
+            has_trait = silver_tongued
+            has_trait = charming
+            has_trait = cultured
+        }
+    }
+}
+
+character_is_disloyal = {
+    loyalty <= 33 # Disloyal threshold
+}
+
+character_is_close_to_disloyal = {
+    loyalty <= 38 # Disloyal threshold + buffer of 5
+}
+
+character_is_powerful = {
+    relative_power_base >= 3.00 # 3% of country power base
+}
+
+character_is_important = {
+    OR = {
+        has_any_office = yes
+        is_governor = yes
+        is_general = yes
+        is_admiral = yes
+        is_clan_chief = yes
+        character_is_powerful = yes
+    }
+}
+
+character_is_eligible_for_bribing_or_persuation = {
+    trigger_if = {
+        limit = {
+            employer = {
+                country_uses_persuation_instead_of_bribing = yes
+            }
+        }
+        orator_bribe_character_potential_trigger = yes
+        orator_bribe_character_allowed_trigger = yes
+    }
+    trigger_else = {
+        bribe_character_potential_trigger = yes
+        bribe_character_allowed_trigger = yes
+    }
+}
+
+character_is_eligible_for_giving_free_hands = {
+    free_hands_potential_trigger = yes
+    free_hands_allowed_trigger = yes
+}
+
+character_is_eligible_for_tying_free_hands = {
+    tie_hands_potential_trigger = yes
+    tie_hands_allowed_trigger = yes
+}
+
+character_is_eligible_for_giving_subsidies = {
+    grant_stipends_potential_trigger = yes
+    grant_stipends_allowed_trigger = yes
+}
+
+character_is_eligible_for_normal_loyalty_fixing = {
+    OR = {
+        # Ruler rivals are banned from loyalty fixing...
+        character_is_rival_of_ruler = no
+        # ...unless it's a tribe that need loyalty fixing to make decisions towards reforming
+        AND = {
+            scope:actor = {
+                is_tribal = yes
+            }
+            OR = {
+                # Codify State Lands
+                AND = {
+                    scope:actor = {
+                        # Didn't take the decision yet
+                        NOT = {
+                            capital_scope = { has_province_modifier = tribal_civilization_pmod }
+                        }
+                        # Matches the requirements to take it
+                        tribal_civilization_allow = yes
+                        # Have enough political influence to bribe and take the decision
+                        political_influence >= 105
+                    }
+                    # Clan chief is blocking it by low loyalty
+                    is_clan_chief = yes
+                    loyalty < 50
+                    # Bribing will do the job
+                    loyalty >= 35
+                }
+                # Become monarchy or republic
+                AND = {
+                    scope:actor = {
+                        # Matches the requirements to reform
+			            ai_is_allowed_to_reform_tribe = yes
+                        OR = {
+                            has_law = absolute_authority
+                            has_law = increased_council_powers
+                        }
+                        # Have enough political influence to bribe and take the decision
+                        political_influence >= 105
+                    }
+                    # Clan chief is blocking it by low loyalty
+                    is_clan_chief = yes
+                    loyalty < 33
+                    # Bribing will do the job
+                    loyalty >= 18
+                }
+            }
+        }
+    }
+}
+
+character_is_eligible_for_urgent_loyalty_fixing = {
+    OR = {
+        # Ruler rivals are banned from loyalty fixing...
+        character_is_rival_of_ruler = no
+        # ...unless facing not only potential civil war, but also existential threat
+        scope:actor = {
+            ai_is_facing_existential_threat = yes
+        }
+    }
+}
+
+character_is_rival_of_ruler = {
+    exists = employer
+    employer = {
+        exists = current_ruler
+    }
+    is_rival = employer.current_ruler
+}
+
+ai_is_facing_existential_threat = {
+    war = yes
+    save_temporary_scope_as = country_at_war
+    OR = {
+        # Is at war with a player, which is always dangerous
+        any_countries_at_war_with = {
+            is_ai = no
+        }
+        # There's a war where...
+        any_current_war = {
+            OR = {
+                # ...enemy side is 1.(6) times larger than ally side. This is similar to a country having higher rank,
+                # as e.g. great power vs average major power is 500 to 300, which would be exactly 1.(6) times larger.
+                num_of_territories_of_enemy_side >= num_of_territories_of_ally_side_plus_two_thirds
+                # ...enemy side combined would be equal to a great power, so it must be an absolutely massive war.
+                num_of_territories_of_enemy_side >= 500
+            }
+        }
+    }
+}

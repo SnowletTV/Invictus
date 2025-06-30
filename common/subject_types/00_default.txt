@@ -1,12 +1,10 @@
-﻿
-
-
-vassal_tribe = { #Tribal Vassal
+﻿vassal_tribe = { #Tribal Vassal
 	subject_pays = subject_pays_vassal
 	
 	joins_overlord_in_war = no
 
 	allowed_to_declare_war_against_others = yes
+	can_build = no
 	
 	protected_when_attacked = yes
 	has_overlords_ruler = no
@@ -104,6 +102,7 @@ tributary = {
 	joins_overlord_in_war = no
 
 	allowed_to_declare_war_against_others = yes
+	can_build = no
 	
 	protected_when_attacked = yes
 	costs_diplomatic_slot = no
@@ -166,6 +165,7 @@ feudatory = { #Latin Allies
     subject_pays = subject_pays_feudatory
 
     joins_overlord_in_war = yes
+	can_build = yes
     
     protected_when_attacked = yes
     has_overlords_ruler = no
@@ -282,6 +282,7 @@ satrapy = {
 	subject_pays = subject_pays_satrapy
 	
 	joins_overlord_in_war = yes
+	can_build = yes
 	
 	protected_when_attacked = yes
 	has_overlords_ruler = no
@@ -342,6 +343,7 @@ client_state = {
 	subject_pays = subject_client_state_pays
 	
 	joins_overlord_in_war = yes
+	can_build = yes
 	
 	protected_when_attacked = yes
 	has_overlords_ruler = no
@@ -414,6 +416,7 @@ subject_colony = {
 	subject_pays = subject_colony_pays 
 	
 	joins_overlord_in_war = no
+	can_build = yes
 
 	allowed_to_declare_war_against_others = yes
 	
@@ -481,6 +484,7 @@ subject_mercenary_city_state = {
 	subject_pays = subject_merc_city_state
 	
 	joins_overlord_in_war = yes
+	can_build = yes
 	
 	protected_when_attacked = yes
 	has_overlords_ruler = no
@@ -495,7 +499,7 @@ subject_mercenary_city_state = {
 		mercenary_land_maintenance_cost = -0.03
 	}
 	subject_modifier = {
-		global_manpower = 0.125
+		global_manpower_modifier = 0.125
 		army_maintenance_cost = -0.2
 	}
 	
@@ -541,6 +545,7 @@ subject_league_city_state = {
 	subject_pays = subject_merc_city_state
 	
 	joins_overlord_in_war = no
+	can_build = yes
 	
 	protected_when_attacked = yes
 	has_overlords_ruler = no
@@ -603,6 +608,7 @@ kushite_client = {
 	subject_pays = subject_pays_satrapy
 	
 	joins_overlord_in_war = yes
+	can_build = yes
 	
 	protected_when_attacked = yes
 	has_overlords_ruler = no
@@ -662,6 +668,7 @@ indian_client = {
 	subject_pays = subject_pays_satrapy
 	
 	joins_overlord_in_war = yes
+	can_build = yes
 	
 	protected_when_attacked = yes
 	has_overlords_ruler = no
@@ -722,6 +729,7 @@ fiefdom = {
 	subject_pays = subject_pays_satrapy
 	
 	joins_overlord_in_war = yes
+	can_build = yes
 	
 	protected_when_attacked = yes
 	has_overlords_ruler = no
@@ -777,35 +785,99 @@ fiefdom = {
 	}
 }
 
-blemmye_clan = { # unique subject type for Blemmia Mission
-	joins_overlord_in_war = yes
+temple_state = {
+	#subject_pays = subject_temple_state
+	
+	joins_overlord_in_war = no
+	allowed_to_declare_war_against_others = yes	
 	
 	protected_when_attacked = yes
 	has_overlords_ruler = no
-	can_be_integrated = yes
+	can_be_integrated = no
 	costs_diplomatic_slot = no
 	subject_can_cancel = no
 	
-	has_limited_diplomacy = yes
-	only_trade_with_overlord =  no
+	has_limited_diplomacy = no
+	only_trade_with_overlord = no
 	
 	overlord_modifier = {
-		monthly_military_experience_modifier = 0.05
+        omen_power = 0.05
 	}
 	subject_modifier = {
-		discipline = 0.1
-		land_morale = 0.1
-		levy_size_multiplier = 0.25
-		loyalty_to_overlord = 30
-		global_manpower = 0.125
+		global_commerce_modifier = 0.05
+		happiness_for_same_religion_modifier = 0.1
 	}
 	
-	allow = {
-		always = no
+
+    allow = {
+    	OR = {
+			current_ruler = { has_trait = priest_king }
+			has_variable = valid_temple_state_var
+	    	AND = {
+		        scope:future_overlord = {
+		            is_subject = no
+		            is_tribal = no
+		            can_make_temple_state_diplo = yes
+		        }	
+				OR = {#subject
+					is_theocratic = yes
+					AND = {
+						num_of_cities <= 10
+						capital_scope = {
+							OR = {
+								own_religious_center_province_trigger = yes
+								has_province_modifier = temple_state_modifier 
+							}
+						}
+					}
+				}
+	    	}
+    	}
+    }
+    
+	on_enable = {
+		if = {
+			limit = {
+				NOT = { has_variable = valid_temple_state_var }
+			}
+			set_variable = valid_temple_state_var
+		}
+		if = {
+			limit = {
+				NOT = { primary_culture = hebrew }
+				NOT = { current_ruler = { has_trait = priest_king} }
+			}
+			current_ruler = {
+				force_add_trait = priest_king
+			}
+		}
+		capital_scope = {
+			if = {
+				limit = {
+					NOT = { 
+						has_province_modifier = temple_state_modifier 
+					}
+				}
+				add_permanent_province_modifier = {
+					name = temple_state_modifier
+					duration = -1
+				}
+			}
+		}
+		if = {
+			limit = {
+				is_republic = yes
+			}
+			change_government = theocratic_republic
+		}
+		else = {
+			change_government = theocratic_monarchy
+		}
 	}
-	
-	# on_enable = {}
-	# on_disable = {}
+
+	on_disable = {
+		
+	}
 	# on_monthly = {}
 	
 	diplo_chance = {
@@ -826,6 +898,67 @@ blemmye_clan = { # unique subject type for Blemmia Mission
 		}
 		border_distance = {
 			scale = 2
+		}
+		rank = {
+			scale = -10
+		}
+		junior_to = {
+			scale = -40
+		}
+	}
+}
+
+march = {
+	subject_pays = subject_pays_tributary
+	
+	joins_overlord_in_war = no
+	allowed_to_declare_war_against_others = yes
+	protected_when_attacked = yes
+	has_overlords_ruler = no
+	costs_diplomatic_slot = no
+	subject_can_cancel = no
+	has_limited_diplomacy = yes
+	can_be_integrated = no
+	can_build = yes
+	
+	overlord_modifier = {
+		monthly_military_experience = 0.04
+	}
+	subject_modifier = {
+		global_defensive = 0.15
+	}
+	
+	allow = { 
+		always = no
+	}
+	
+	# on_enable = {}
+	
+	on_disable = {
+		hidden_effect = {
+			former_march_colour_effect = yes
+			former_march_name_effect = yes
+		}
+	}
+
+	diplo_chance = {
+		base = {
+			offset = -130
+		}
+		in_debt = {
+			scale = -1
+		}
+		negative_stability = {
+			scale = 20
+		}
+		current_strength = {
+			scale = 0.25
+		}
+		potential_strength = {
+			scale = 0.25
+		}
+		border_distance = {
+			scale = 10
 		}
 		rank = {
 			scale = -10

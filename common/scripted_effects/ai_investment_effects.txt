@@ -1,0 +1,405 @@
+﻿ai_choose_and_make_investment = {
+    if = {
+        limit = {
+            is_ai = yes
+            war = no
+            OR = {
+                political_influence >= 125 # Political influence of 100 is often required in decisions + some buffer
+                AND = {
+                    has_variable = free_investments
+                    var:free_investments > 0
+                }
+            }
+        }
+
+        # Save to variable cause we may want to use it more than once
+        set_local_variable = {
+            name = any_state_is_below_limit
+            value = {
+                if = {
+                    limit = {
+                        any_country_state = {
+                            current_state_investments_plus_1 <= ai_investments_allowed_per_state
+                        }
+                    }
+                    value = 1
+                }
+                else = {
+                    value = 0
+                }
+            }
+        }
+
+        # Either there's a state below limit or we have free investments and we want to use them regardless
+        if = {
+            limit = {
+                OR = {
+                    local_var:any_state_is_below_limit = 1
+                    AND = {
+                        has_variable = free_investments
+                        var:free_investments > 0
+                    }
+                }
+            }
+
+            # Uses the same triggers and effects as buttons, which requires scope:player to function
+            save_scope_as = player
+
+            # To check if we already made an investment, we don't wanna make more than 1 at the time
+            set_local_variable = {
+                name = made_investment
+                value = 0
+            }
+
+            # Oratory investment in states dying of hunger
+            random_country_state = {
+                limit = {
+                    # Requirements fot the state
+                    ai_can_make_investment_in_this_state = yes
+                    # Requirements for the investment type
+                    ai_can_make_state_investment_oratory = yes
+                    # Food is very low
+                    has_state_food <= 50
+                    # It's caused by city population
+                    any_state_province = {
+                        has_city_status = yes
+                    }
+                }
+                weight = {
+                    base = 1
+                    modifier = {
+                        factor = ai_state_importance
+                    }
+                }
+                # Pressing effect from the investment button
+                invest_in_state_button_effect = {
+                    type = oratory
+                }
+                change_local_variable = {
+                    name = made_investment
+                    add = 1
+                }
+            }
+
+            # Military investment in states overloaded on fort limit
+            if = {
+                limit = {
+                    local_var:made_investment = 0
+                }
+                random_country_state = {
+                    limit = {
+                        # Requirements fot the state
+                        ai_can_make_investment_in_this_state = yes
+                        # Requirements for the investment type
+                        ai_can_make_state_investment_military = yes
+                        # Only if overloaded on fort limit
+                        state_fort_limit_used > state_fort_limit_svalue
+                    }
+                    weight = {
+                        base = 1
+                        modifier = {
+                            factor = ai_state_importance
+                        }
+                    }
+                    # Pressing effect from the investment button
+                    invest_in_state_button_effect = {
+                        type = military
+                    }
+                    change_local_variable = {
+                        name = made_investment
+                        add = 1
+                    }
+                }
+            }
+
+            # Sparta's unique DLC civic investment, this one is pretty OP
+            if = {
+                limit = {
+                    local_var:made_investment = 0
+                    # Must have DLC and be Sparta
+                    trigger_if = {
+                        limit = {
+                            has_dlc = "Magna Graecia"
+                        }
+                        OR = {
+                            tag = SPA
+                            has_variable = spa_unique_mech
+                        }
+                    }
+                    trigger_else = {
+                        always = no
+                    }
+                }
+                random_country_state = {
+                    limit = {
+                        # Requirements fot the state
+                        ai_can_make_investment_in_this_state = yes
+                        # Requirements for the investment type
+                        ai_can_make_state_investment_military_SPA = yes
+                    }
+                    weight = {
+                        base = 1
+                        modifier = {
+                            factor = ai_state_importance
+                        }
+                    }
+                    # Pressing effect from the investment button
+                    invest_in_state_button_effect = {
+                        type = military_SPA
+                    }
+                    change_local_variable = {
+                        name = made_investment
+                        add = 1
+                    }
+                }
+            }
+
+            # Religious investment in states with multiple built up cities
+            if = {
+                limit = {
+                    local_var:made_investment = 0
+                    # Either no DLC, or not Sparta
+                    trigger_if = {
+                        limit = {
+                            has_dlc = "Magna Graecia"
+                        }
+                        NOR = {
+                            tag = SPA
+                            has_variable = spa_unique_mech
+                        }
+                    }
+                    trigger_else = {
+                        always = yes
+                    }
+                }
+                random_country_state = {
+                    limit = {
+                        # Requirements fot the state
+                        ai_can_make_investment_in_this_state = yes
+                        # Requirements for the investment type
+                        ai_can_make_state_investment_religious = yes
+                        # Only if has multiple cities almost full on building slots
+                        any_state_province = {
+                            count >= 2
+                            has_city_status = yes
+                            free_building_slots <= 1
+                        }
+                    }
+                    weight = {
+                        base = 1
+                        modifier = {
+                            factor = ai_state_importance
+                        }
+                    }
+                    # Pressing effect from the investment button
+                    invest_in_state_button_effect = {
+                        type = religious
+                    }
+                    change_local_variable = {
+                        name = made_investment
+                        add = 1
+                    }
+                }
+            }
+
+            # Civic investment in states with a lot of territories near population cap
+            if = {
+                limit = {
+                    local_var:made_investment = 0
+                    # Either no DLC, or not Sparta
+                    trigger_if = {
+                        limit = {
+                            has_dlc = "Magna Graecia"
+                        }
+                        NOR = {
+                            tag = SPA
+                            has_variable = spa_unique_mech
+                        }
+                    }
+                    trigger_else = {
+                        always = yes
+                    }
+                }
+                random_country_state = {
+                    limit = {
+                        # Requirements fot the state
+                        ai_can_make_investment_in_this_state = yes
+                        # Requirements for the investment type
+                        ai_can_make_state_investment_civic = yes
+                    }
+                    weight = {
+                        base = 1
+                        modifier = {
+                            factor = ai_state_importance
+                        }
+                    }
+                    # Pressing effect from the investment button
+                    invest_in_state_button_effect = {
+                        type = civic
+                    }
+                    change_local_variable = {
+                        name = made_investment
+                        add = 1
+                    }
+                }
+            }
+
+            # Oratory investment as a base option if nothing else fits better
+            if = {
+                limit = {
+                    local_var:made_investment = 0
+                }
+                random_country_state = {
+                    limit = {
+                        # Requirements fot the state
+                        ai_can_make_investment_in_this_state = yes
+                        # Requirements for the investment type
+                        ai_can_make_state_investment_oratory = yes
+                    }
+                    weight = {
+                        base = 1
+                        modifier = {
+                            factor = ai_state_importance
+                        }
+                    }
+                    # Pressing effect from the investment button
+                    invest_in_state_button_effect = {
+                        type = oratory
+                    }
+                    change_local_variable = {
+                        name = made_investment
+                        add = 1
+                    }
+                }
+            }
+
+            # Religious investment as a fallback in states with one built up city
+            if = {
+                limit = {
+                    local_var:made_investment = 0
+                    # Either no DLC, or not Sparta
+                    trigger_if = {
+                        limit = {
+                            has_dlc = "Magna Graecia"
+                        }
+                        NOR = {
+                            tag = SPA
+                            has_variable = spa_unique_mech
+                        }
+                    }
+                    trigger_else = {
+                        always = yes
+                    }
+                }
+                random_country_state = {
+                    limit = {
+                        # Requirements fot the state
+                        ai_can_make_investment_in_this_state = yes
+                        # Requirements for the investment type
+                        ai_can_make_state_investment_religious = yes
+                        # Only if has at leeast one city almost full on building slots
+                        any_state_province = {
+                            count >= 1
+                            has_city_status = yes
+                            free_building_slots <= 1
+                        }
+                    }
+                    weight = {
+                        base = 1
+                        modifier = {
+                            factor = ai_state_importance
+                        }
+                    }
+                    # Pressing effect from the investment button
+                    invest_in_state_button_effect = {
+                        type = religious
+                    }
+                    change_local_variable = {
+                        name = made_investment
+                        add = 1
+                    }
+                }
+            }
+
+            # Military investment as fallback for tribals, who has more states without permanent trade routes
+            if = {
+                limit = {
+                    local_var:made_investment = 0
+                    is_tribal = yes
+                }
+                random_country_state = {
+                    limit = {
+                        # Requirements fot the state
+                        ai_can_make_investment_in_this_state = yes
+                        # Requirements for the investment type
+                        ai_can_make_state_investment_military = yes
+                    }
+                    weight = {
+                        base = 1
+                        modifier = {
+                            factor = ai_state_importance
+                        }
+                    }
+                    # Pressing effect from the investment button
+                    invest_in_state_button_effect = {
+                        type = military
+                    }
+                    change_local_variable = {
+                        name = made_investment
+                        add = 1
+                    }
+                }
+            }
+
+            # Sparta's unique DLC religious investment, not as useful so use only as fallback
+            # Commented out as actually it's better to just keep resources and limits for future opportunities
+            # if = {
+            #     limit = {
+            #         local_var:made_investment = 0
+            #         # Must have DLC and be Sparta
+            #         trigger_if = {
+            #             limit = {
+            #                 has_dlc = "Magna Graecia"
+            #             }
+            #             OR = {
+            #                 tag = SPA
+            #                 has_variable = spa_unique_mech
+            #             }
+            #         }
+            #         trigger_else = {
+            #             always = no
+            #         }
+            #     }
+            #     random_country_state = {
+            #         limit = {
+            #             # Requirements fot the state
+            #             ai_can_make_investment_in_this_state = yes
+            #             # Requirements for the investment type
+            #             ai_can_make_state_investment_religious_SPA = yes
+            #         }
+            #         weight = {
+            #             base = 1
+            #             modifier = {
+            #                 factor = ai_state_importance
+            #             }
+            #         }
+            #         # Pressing effect from the investment button
+            #         invest_in_state_button_effect = {
+            #             type = religious_SPA
+            #         }
+            #         change_local_variable = {
+            #             name = made_investment
+            #             add = 1
+            #         }
+            #     }
+            # }
+
+            # Garbage collection
+            clear_saved_scope = player
+            remove_local_variable = made_investment
+        }
+
+        # Garbage collection
+        remove_local_variable = any_state_is_below_limit
+    }
+}

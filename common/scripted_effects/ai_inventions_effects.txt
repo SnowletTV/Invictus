@@ -1,7 +1,110 @@
-﻿ai_cache_current_research_efficiency = {
+﻿# When levies are raised, a certain amount of output produced by governorship pops is subtracted. We don't know what is
+# the formula, and it's subtracted by directly replacing absolute output values on territory level. The problem is that
+# we need to know research points produced without levy impact, otherwise every war makes AI think it has low research
+# efficiency, leading to constructing building to raise it, leading to too much research once levy impact is removed.
+#
+# To counter this we are caching research points on per-governorship basis in the scope of the capital, so when levies
+# are raised, we temporarily use older values as a substitution.
+cache_non_levy_research_efficiency = {
+    set_local_variable = {
+        name = cached_non_levy_research_points
+        value = 0
+    }
+    save_temporary_scope_as = current_country
+
+    every_governorships = {
+        # Levies are not raised, updated cache and add it to cumulative points
+        if = {
+            limit = {
+                OR = {
+                    NOT = {
+                        exists = governor
+                    }
+                    NOT = {
+                        governor = {
+                            save_temporary_scope_as = current_governor
+                            employer = {
+                                any_commander = {
+                                    this = scope:current_governor
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            capital_scope = {
+                set_variable = {
+                    name = cached_non_levy_research_points
+                    value = governorship.governorship_research_points
+                    days = 1825
+                }
+                change_local_variable = {
+                    name = cached_non_levy_research_points
+                    add = var:cached_non_levy_research_points
+                }
+                set_variable = {
+                    name = cached_governorship_capital_owner
+                    value = owner
+                    days = 1825
+                }
+            }
+        }
+        # Levies are raised, but there's a cache we can use
+        else_if = {
+            limit = {
+                capital_scope = {
+                    has_variable = cached_non_levy_research_points
+                    has_variable = cached_governorship_capital_owner
+                }
+            }
+            # Governorship owner stayed the same, use the cache
+            if = {
+                limit = {
+                    capital_scope.var:cached_governorship_capital_owner = scope:current_country
+                }
+                change_local_variable = {
+                    name = cached_non_levy_research_points
+                    add = capital_scope.var:cached_non_levy_research_points
+                }
+            }
+            # Governorship owner has changed, delete the cache
+            else = {
+                capital_scope = {
+                    remove_variable = cached_non_levy_research_points
+                    remove_variable = cached_governorship_capital_owner
+                }
+                change_local_variable = {
+                    name = cached_non_levy_research_points
+                    add = governorship_research_points
+                }
+            }
+        }
+        # Levies are raised and there's no cache
+        else = {
+            change_local_variable = {
+                name = cached_non_levy_research_points
+                add = governorship_research_points
+            }
+        }
+    }
+
     set_variable = {
-        name = current_research_efficiency_cached
-        value = current_research_efficiency_svalue
+        name = cached_non_levy_research_efficiency
+        value = {
+            value = local_var:cached_non_levy_research_points
+            multiply = 12
+            divide = {
+                every_country_culture = {
+                    limit = {
+                        is_integrated = yes
+                    }
+                    add = country_culture_pop_count
+                }
+                min = 1
+            }
+        }
         days = 92
     }
+
+    remove_local_variable = cached_non_levy_research_points
 }

@@ -96,7 +96,6 @@ diadochi_liberation.2001 = {
 
 	trigger = {
 		exists = owner
-		is_capital = yes
 		owner = {
 			is_subject = yes
 			OR = {
@@ -106,6 +105,12 @@ diadochi_liberation.2001 = {
 			any_owned_province = {
 				count = all
 				controller = root.controller
+				filter = {
+					OR = {
+						is_state_capital = yes
+						num_of_fortress_building >= 1
+					}
+				}
 			}
 		}
 		owner.overlord = {
@@ -121,7 +126,6 @@ diadochi_liberation.2001 = {
     		save_scope_as = current_overlord
 		    trigger_event = {
 		        id = diadochi_liberation.2002
-		        #days = { 5 15 }
 		    }    		
 		}
     }
@@ -139,12 +143,12 @@ diadochi_liberation.2002 = {
 
 	goto_location = scope:flipping_subject.capital_scope
 
-	option = { # 60 - 180 days to relive it
+	option = { # 10 - 20 days to relive it
 		name = "diadochi_liberation.2002.a"
     	scope:flipping_subject = {
 		    trigger_event = {
 		        id = diadochi_liberation.2003
-		        days = { 60 180 }
+		        days = { 10 20 }
 		    }    		
 		}	
 	}
@@ -166,7 +170,12 @@ diadochi_liberation.2003 = {
 		NOT = {
 			any_owned_province = {
 				controller = root
-				any_neighbor_province = { THIS = capital_scope }
+				filter = {
+					OR = {
+						is_state_capital = yes
+						num_of_fortress_building >= 1
+					}
+				}
 			}
 		}
 		capital_scope = {
@@ -181,12 +190,17 @@ diadochi_liberation.2003 = {
 		custom_tooltip = diadochi_liberation.2003.at #joing war
 		scope:current_overlord = {
 			release_subject = scope:flipping_subject
+			end_truce = scope:flipping_subject
 		}
 		hidden_effect = {
             every_current_war = {
                 remove_from_war = root
             }
         }
+		scope:flipping_subject = {
+			end_truce = scope:current_overlord
+			end_truce = scope:subject_flipper  
+		}
 		scope:subject_flipper = {
 			if = {
 				limit = {
@@ -206,7 +220,7 @@ diadochi_liberation.2003 = {
 			hidden_effect = {
 				every_current_war = {
 		            limit = {
-		                any_war_attacker = { THIS = ROOT }
+		                any_war_attacker = { THIS = scope:subject_flipper }
 		            }
 		            scope:flipping_subject = {
 		                add_to_war = {
@@ -218,7 +232,7 @@ diadochi_liberation.2003 = {
 		        }
 		        every_current_war = {
 		            limit = {
-		                any_war_defender = { THIS = ROOT }
+		                any_war_defender = { THIS = scope:subject_flipper }
 		            }
 		            scope:flipping_subject = {
 		                add_to_war = {
@@ -228,6 +242,19 @@ diadochi_liberation.2003 = {
 		                }
 		            }
 		        }
+				add_aggressive_expansion = {
+					value = scope:flipping_subject.num_of_cities
+					multiply = 0.375
+					multiply = scope:subject_flipper.modifier:agressive_expansion_impact
+					add = {
+						value = scope:flipping_subject.num_of_cities
+						multiply = 0.375
+					}
+					min = {
+						value = scope:flipping_subject.num_of_cities
+						multiply = 0.0375
+					}
+				}
 			}
 		}
 		ai_chance = { factor = 200 }

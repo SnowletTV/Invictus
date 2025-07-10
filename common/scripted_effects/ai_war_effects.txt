@@ -1,0 +1,85 @@
+﻿ai_manage_wartime_fund = {
+    if = {
+        limit = {
+            is_ai = yes
+        }
+        if = {
+            limit = {
+                war = yes
+            }
+            if = {
+                limit = {
+                    # Guarantees that var:ai_wartime_fund exists and is positive
+                    ai_wartime_fund_withdraw > 0
+                }
+                # Cache due to treasury and fund values depending on each other
+                set_local_variable = {
+                    name = ai_wartime_fund_withdraw_cached
+                    value = ai_wartime_fund_withdraw
+                }
+                # Perform withdraw from the fund
+                add_treasury = local_var:ai_wartime_fund_withdraw_cached
+                change_variable = {
+                    name = ai_wartime_fund
+                    subtract = local_var:ai_wartime_fund_withdraw_cached
+                }
+                # Clear the cache
+                remove_local_variable = ai_wartime_fund_withdraw_cached
+            }
+            if = {
+                limit = {
+                    ai_wartime_fund_potential >= ai_wartime_fund_desired
+                    num_mercenaries_employed_svalue < modifier:max_mercenary_stacks
+                }
+            }
+        }
+        else_if = {
+            limit = {
+                # Deposit goes negative to make it easy with add_treasury
+                ai_wartime_fund_deposit < 0
+            }
+            if = {
+                limit = {
+                    NOT = {
+                        has_variable = ai_wartime_fund
+                    }
+                }
+                set_variable = {
+                    name = ai_wartime_fund
+                    value = 0
+                }
+            }
+            # Cache due to treasury and fund values depending on each other
+            set_local_variable = {
+                name = ai_wartime_fund_deposit_cached
+                value = ai_wartime_fund_deposit
+            }
+            # Perform deposit to the fund
+            add_treasury = local_var:ai_wartime_fund_deposit_cached
+            change_variable = {
+                name = ai_wartime_fund
+                add = {
+                    value = local_var:ai_wartime_fund_deposit_cached
+                    multiply = -1
+                }
+            }
+            # Clear the cache
+            remove_local_variable = ai_wartime_fund_deposit_cached
+        }
+        # Don't keep useless variables in memory
+        if = {
+            limit = {
+                has_variable = ai_wartime_fund
+                var:ai_wartime_fund <= 0
+            }
+            remove_variable = ai_wartime_fund
+        }
+    }
+    else_if = {
+        limit = {
+            ai_wartime_fund_current > 0
+        }
+        add_treasury = ai_wartime_fund_current
+        remove_variable = ai_wartime_fund
+    }
+}

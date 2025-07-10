@@ -1,11 +1,12 @@
 ﻿namespace = diadochi_liberation
 
 #Master List
-diadochi_liberation.1001 = {
+diadochi_liberation.1001 = {##NOT USED
     type = province_event
     hidden = yes
 
 	trigger = {
+		always = no
 		province_id = 418
 		exists = owner
 		owner = {
@@ -18,20 +19,20 @@ diadochi_liberation.1001 = {
 	}
 
     immediate = {
-		if = {
-			limit = {
-				province_id = 418
-				owner = { 
-					NOT = { tag = MAC } 
-				}
-			}
-			p:418.owner = {
-			    trigger_event = {
-			        id = diadochi_liberation.1 #Corinth
+#		if = {
+#			limit = {
+#				province_id = 418
+#				owner = { 
+#					NOT = { tag = MAC } 
+#				}
+#			}
+#			p:418.owner = {
+#			    trigger_event = {
+#			        id = diadochi_liberation.1 #Corinth
 #			        days = { 5 15 }
-			    }
-			}
-		}
+#			    }
+#			}
+#		}
 #		if = {
 #			limit = {
 #				province_id = 407
@@ -88,6 +89,276 @@ diadochi_liberation.1001 = {
 #		}
     }
 }
+
+diadochi_liberation.2001 = {
+    type = province_event
+    hidden = yes
+
+	trigger = {
+		exists = owner
+		owner = {
+			is_subject = yes
+			OR = {
+				is_subject_type = feudatory
+				is_subject_type = satrapy
+			}
+			any_owned_province = {
+				count = all
+				controller = root.controller
+				filter = {
+					OR = {
+						is_state_capital = yes
+						num_of_fortress_building >= 1
+					}
+				}
+			}
+		}
+		owner.overlord = {
+			primary_culture = macedonian
+			has_variable = war_of_the_diadochs
+		}
+	}
+
+    immediate = {
+    	owner = { save_scope_as = flipping_subject }
+    	controller = { save_scope_as = subject_flipper }
+    	owner.overlord = {
+    		save_scope_as = current_overlord
+		    trigger_event = {
+		        id = diadochi_liberation.2002
+		    }    		
+		}
+    }
+}
+
+diadochi_liberation.2002 = {
+    type = country_event
+	title = "diadochi_liberation.2002.t"
+	desc = "diadochi_liberation.2002.desc"
+	picture = greek_siege
+	
+	left_portrait = scope:current_overlord
+	right_portrait = scope:subject_flipper
+	right_portrait = scope:flipping_subject
+
+	goto_location = scope:flipping_subject.capital_scope
+
+	option = { # 10 - 20 days to relive it
+		name = "diadochi_liberation.2002.a"
+    	scope:flipping_subject = {
+		    trigger_event = {
+		        id = diadochi_liberation.2003
+		        days = { 10 20 }
+		    }    		
+		}	
+	}
+}
+
+diadochi_liberation.2003 = {
+    type = country_event
+	title = "diadochi_liberation.2003.t"
+	desc = "diadochi_liberation.2003.desc"
+	picture = greek_siege
+	
+	left_portrait = scope:current_overlord
+	right_portrait = scope:subject_flipper
+	right_portrait = scope:flipping_subject
+
+	goto_location = scope:flipping_subject.capital_scope
+
+	trigger = {
+		NOT = {
+			any_owned_province = {
+				controller = root
+				filter = {
+					OR = {
+						is_state_capital = yes
+						num_of_fortress_building >= 1
+					}
+				}
+			}
+		}
+		capital_scope = {
+			controller = scope:subject_flipper
+		}
+		is_subject = yes
+		overlord = { THIS = scope:current_overlord }
+	}
+
+	option = { # new overlord
+		name = "diadochi_liberation.2003.a"
+		custom_tooltip = diadochi_liberation.2003.at #joing war
+		scope:current_overlord = {
+			release_subject = scope:flipping_subject
+			end_truce = scope:flipping_subject
+		}
+		hidden_effect = {
+            every_current_war = {
+                remove_from_war = root
+            }
+        }
+		scope:flipping_subject = {
+			end_truce = scope:current_overlord
+			end_truce = scope:subject_flipper  
+		}
+		scope:subject_flipper = {
+			if = {
+				limit = {
+					scope:flipping_subject = { is_subject_type = feudatory }
+				}
+				make_subject = {
+					type = feudatory
+					target = scope:flipping_subject
+				}
+			}
+			else = {
+				make_subject = {
+					type = satrapy
+					target = scope:flipping_subject
+				}					
+			}
+			hidden_effect = {
+				every_current_war = {
+		            limit = {
+		                any_war_attacker = { THIS = scope:subject_flipper }
+		            }
+		            scope:flipping_subject = {
+		                add_to_war = {
+		                    target = PREV
+		                    attacker = yes
+		                    leader = no
+		                }
+		            }
+		        }
+		        every_current_war = {
+		            limit = {
+		                any_war_defender = { THIS = scope:subject_flipper }
+		            }
+		            scope:flipping_subject = {
+		                add_to_war = {
+		                    target = PREV
+		                    attacker = no
+		                    leader = no
+		                }
+		            }
+		        }
+				add_aggressive_expansion = {
+					value = scope:flipping_subject.num_of_cities
+					multiply = 0.375
+					multiply = scope:subject_flipper.modifier:agressive_expansion_impact
+					add = {
+						value = scope:flipping_subject.num_of_cities
+						multiply = 0.375
+					}
+					min = {
+						value = scope:flipping_subject.num_of_cities
+						multiply = 0.0375
+					}
+				}
+			}
+		}
+		ai_chance = { factor = 200 }
+	}
+
+
+	option = { # hold on a little longer
+	name = "diadochi_liberation.2003.b"
+	custom_tooltip = diadochi_liberation.2003.bt
+    	scope:flipping_subject = {
+		    trigger_event = {
+		        id = diadochi_liberation.2003
+		        days = { 60 180 }
+		    }    		
+		}
+		add_manpower = -1	
+		ai_chance = { factor = 0 }
+	}
+}
+
+diadochi_liberation.2004 = { #NEW OVERLORD
+    type = country_event
+    title = "diadochi_liberation.2004.t"
+    desc = "diadochi_liberation.2004.desc"
+    picture = greek_siege
+
+    left_portrait = scope:current_overlord
+    right_portrait = scope:subject_flipper
+    right_portrait = scope:flipping_subject
+
+    goto_location = scope:flipping_subject.capital_scope
+
+    option = { # new overlord
+        name = "diadochi_liberation.2004.a"
+        show_as_tooltip = {
+            scope:current_overlord = {
+                release_subject = scope:subject_flipper
+            }
+            scope:subject_flipper = {
+                if = {
+                    limit = {
+                        scope:flipping_subject = {
+                            is_subject_type = feudatory
+                        }
+                    }
+                    make_subject = {
+                        type = feudatory
+                        target = scope:flipping_subject
+                    }
+                }
+
+                else = {
+                    make_subject = {
+                        type = satrapy
+                        target = scope:flipping_subject
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+diadochi_liberation.2005 = {#OLD OVERLORD
+    type = country_event
+	title = "diadochi_liberation.2005.t"
+	desc = "diadochi_liberation.2005.desc"
+	picture = greek_siege
+	
+	left_portrait = scope:current_overlord
+	right_portrait = scope:subject_flipper
+	right_portrait = scope:flipping_subject
+
+	goto_location = scope:flipping_subject.capital_scope
+
+	option = { # new overlord
+	name = "diadochi_liberation.2005.a"
+	    show_as_tooltip = {
+	        scope:current_overlord = {
+	            release_subject = scope:subject_flipper
+	        }
+	        scope:subject_flipper = {
+	            if = {
+	                limit = {
+	                    scope:flipping_subject = {
+	                        is_subject_type = feudatory
+	                    }
+	                }
+	                make_subject = {
+	                    type = feudatory
+	                    target = scope:flipping_subject
+	                }
+	            }
+	            else = {
+	                make_subject = {
+	                    type = satrapy
+	                    target = scope:flipping_subject
+	                }
+	            }
+	        }
+    	}
+	}
+}
+
 
 diadochi_liberation.1002 = { #Join the war
     type = country_event
@@ -359,7 +630,7 @@ diadochi_liberation.2 = {
 					}
 					set_country_religion = roman_pantheon
 					change_government = oligarchic_republic
-					change_country_color = samnite_green
+					change_country_color = chalkis_color
 					change_country_flag = CHALCIS_FLAG
                     change_country_tag = CH2
                 }
@@ -417,7 +688,7 @@ diadochi_liberation.2 = {
 					}
 					set_country_religion = roman_pantheon
 					change_government = oligarchic_republic
-					change_country_color = samnite_green
+					change_country_color = chalkis_color
 					change_country_flag = CHALCIS_FLAG
                     change_country_tag = CH2
                 }
@@ -461,8 +732,8 @@ diadochi_liberation.2 = {
 					}
 					set_country_religion = roman_pantheon
 					change_government = oligarchic_republic
-					change_country_color = samnite_green
-					change_country_flag = SALAMIS_FLAG
+					change_country_color = chalkis_color
+					change_country_flag = CHALCIS_FLAG
                     change_country_tag = CH2
                 }
             }

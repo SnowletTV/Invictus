@@ -153,7 +153,7 @@ brc_foundry = {
         multiply = brc_65
     }
     else = {
-        multiply = brc_40
+        multiply = brc_45
     }
 }
 
@@ -161,41 +161,47 @@ brc_aqueduct = {
     if = {
         limit = {
             OR = {
+                # Must be close to population cap
+                total_population < population_cap_minus_10
                 # Build more useful stuff first
 				num_of_used_building_slots < 5
                 has_any_city_ratio_building_maxed_out = no
-                # Not too big
-				total_population >= 80
-                # Must be somewhat close to population cap
-                total_population < population_cap_minus_10
+                # Not too big to avoid starvation
+				total_population >= 80 # Just enough for metropolis
 			}
         }
         value = 0
     }
     else = {
         value = brc_territory_importance
+        # In perfect conditions we can't and shouldn't refuse to get some juicy aqueducts
         if = {
             limit = {
-                total_population >= population_cap
+                total_population >= population_cap_minus_2
             }
             multiply = brc_75
         }
-        else_if = {
-            limit = {
-                total_population >= population_cap_minus_3
-            }
+        else = {
+            # Capitals should prioritize aqueducts even with 10 pops before limit to increase their chances of becoming
+            # a metropolis, 10 before limit specifically means they are guaranteed to have a free building slot for it
             if = {
                 limit = {
                     is_capital = yes
                 }
                 multiply = brc_65
             }
+            # Regular cities are more dependent on slot luck to avoid world getting filled with metropolises eventually
             else = {
-                multiply = brc_40
+                if = {
+                    limit = {
+                        total_population >= population_cap_minus_5
+                    }
+                    multiply = brc_45
+                }
+                else = {
+                    multiply = 0
+                }
             }
-        }
-        else = {
-            multiply = brc_15
         }
     }
 }
@@ -206,10 +212,10 @@ brc_temple = {
         limit = {
             is_dominant_territory_religion_same_as_country = no
         }
-        multiply = brc_50
+        multiply = brc_50 # Shared with Forum
     }
     else = {
-        multiply = brc_30
+        multiply = brc_35
     }
 }
 
@@ -232,10 +238,11 @@ brc_theatre = {
         limit = {
             is_dominant_territory_culture_integrated = no
         }
-        multiply = brc_75
+        # Shared with Court of Law, but they are exclusive
+        multiply = brc_60
     }
     else = {
-        multiply = brc_30
+        multiply = brc_35
     }
 }
 
@@ -244,6 +251,9 @@ brc_library = {
         limit = {
             OR = {
                 brc_wants_any_ratio_building = yes
+                # No need for more libraries if we are reading enough already
+                brc_wants_more_research_modifier_buildings = no
+                # Don't build too much of the same, unless there's too much of everything
                 AND = {
                     territory_has_high_num_of_library_building = yes
                     territory_has_high_num_of_all_modifier_buildings = no
@@ -261,34 +271,64 @@ brc_library = {
                     territory_has_more_than_one_court_of_law = yes
                 }
             }
-            multiply = brc_35
+            multiply = brc_40
         }
         else = {
-            multiply = brc_25
+            multiply = brc_30
         }
     }
 }
 
 brc_academy = {
+    # Remove level 1 if there's some other level 2+ ratio building
     if = {
+        limit = {
+            # Capital should always have Academy
+            is_capital = no
+            territory_has_more_than_one_academy = no
+            OR = {
+                territory_has_more_than_one_court_of_law = yes
+                territory_has_more_than_one_forum = yes
+                territory_has_more_than_one_mill = yes
+            }
+        }
+        value = -1
+    }
+    else_if = {
         limit = {
             brc_wants_academy = yes
         }
         value = brc_territory_importance
-        multiply = brc_70
+        if = {
+            limit = {
+                is_capital = yes
+            }
+            multiply = brc_80
+        }
+        else = {
+            multiply = brc_70
+        }
+        multiply = {
+            value = 1.00
+            add = {
+                value = num_of_academy_building
+                multiply = brc_ratio_building_weight_per_level
+            }
+        }
     }
     else = {
         value = 0
     }
 }
 
-# If many nobles set to base value of its siblings, otherwise never build
+# Set to base value of its siblings if there are many nobles, otherwise never build
 brc_commerce = {
     if = {
         limit = {
             OR = {
                 brc_wants_any_ratio_building = yes
                 territory_has_more_than_one_academy = no
+                # Don't build too much of the same, unless there's too much of everything
                 AND = {
                     territory_has_high_num_of_commerce_building = yes
                     territory_has_high_num_of_all_modifier_buildings = no
@@ -299,17 +339,36 @@ brc_commerce = {
     }
     else = {
         value = brc_territory_importance
-        multiply = brc_25
+        multiply = brc_30
     }
 }
 
 brc_court = {
+    # Remove level 1 if there's some other level 2+ ratio building
     if = {
+        limit = {
+            territory_has_more_than_one_court_of_law = no
+            OR = {
+                territory_has_more_than_one_academy = yes
+                territory_has_more_than_one_forum = yes
+                territory_has_more_than_one_mill = yes
+            }
+        }
+        value = -1
+    }
+    else_if = {
         limit = {
             brc_wants_court_of_law = yes
         }
         value = brc_territory_importance
         multiply = brc_60
+        multiply = {
+            value = 1.00
+            add = {
+                value = num_of_court_building
+                multiply = brc_ratio_building_weight_per_level
+            }
+        }
     }
     else = {
         value = 0
@@ -321,6 +380,7 @@ brc_military = {
         limit = {
             OR = {
                 brc_wants_any_ratio_building = yes
+                # Don't build too much of the same, unless there's too much of everything
                 AND = {
                     territory_has_high_num_of_military_building = yes
                     territory_has_high_num_of_all_modifier_buildings = no
@@ -333,23 +393,45 @@ brc_military = {
         value = brc_territory_importance
         if = {
             limit = {
-                territory_has_more_than_one_forum = yes
+                OR = {
+                    territory_has_more_than_one_court_of_law = yes
+                    territory_has_more_than_one_forum = yes
+                }
             }
-            multiply = brc_35
+            multiply = brc_40
         }
         else = {
-            multiply = brc_25
+            multiply = brc_30
         }
     }
 }
 
 brc_forum = {
+    # Remove level 1 if there's some other level 2+ ratio building
     if = {
+        limit = {
+            territory_has_more_than_one_forum = no
+            OR = {
+                territory_has_more_than_one_academy = yes
+                territory_has_more_than_one_court_of_law = yes
+                territory_has_more_than_one_mill = yes
+            }
+        }
+        value = -1
+    }
+    else_if = {
         limit = {
             brc_wants_forum = yes
         }
         value = brc_territory_importance
-        multiply = brc_45
+        multiply = brc_50
+        multiply = {
+            value = 1.00
+            add = {
+                value = num_of_forum_building
+                multiply = brc_ratio_building_weight_per_level
+            }
+        }
     }
     else = {
         value = 0
@@ -361,6 +443,7 @@ brc_town_hall = {
         limit = {
             OR = {
                 brc_wants_any_ratio_building = yes
+                # Don't build too much of the same, unless there's too much of everything
                 AND = {
                     territory_has_high_num_of_town_hall_building = yes
                     territory_has_high_num_of_all_modifier_buildings = no
@@ -373,23 +456,45 @@ brc_town_hall = {
         value = brc_territory_importance
         if = {
             limit = {
-                territory_has_more_than_one_mill = yes
+                OR = {
+                    territory_has_more_than_one_forum = yes
+                    territory_has_more_than_one_mill = yes
+                }
             }
-            multiply = brc_35
+            multiply = brc_40
         }
         else = {
-            multiply = brc_25
+            multiply = brc_30
         }
     }
 }
 
 brc_workshop = {
+    # Remove level 1 if there's some other level 2+ ratio building
     if = {
+        limit = {
+            territory_has_more_than_one_mill = no
+            OR = {
+                territory_has_more_than_one_academy = yes
+                territory_has_more_than_one_court_of_law = yes
+                territory_has_more_than_one_forum = yes
+            }
+        }
+        value = -1
+    }
+    else_if = {
         limit = {
             brc_wants_mill = yes
         }
         value = brc_territory_importance
         multiply = brc_55
+        multiply = {
+            value = 1.00
+            add = {
+                value = num_of_workshop_building
+                multiply = brc_ratio_building_weight_per_level
+            }
+        }
     }
     else = {
         value = 0
@@ -424,7 +529,7 @@ brc_latifundia = {
     # Build
     else = {
         value = brc_territory_importance
-        multiply = brc_20
+        multiply = brc_25
     }
 }
 
@@ -457,9 +562,12 @@ brc_basic_settlement_infratructure = {
     value = brc_territory_importance
     if = {
         limit = {
-            root.state = {
-				has_state_food <= 50
-			}
+            OR = {
+                root.state = {
+                    has_state_food <= 50
+                }
+                percent_of_cities_in_same_state >= 0.3333
+            }
         }
         multiply = brc_100
     }
@@ -481,8 +589,14 @@ brc_basic_settlement_infratructure = {
         }
         multiply = brc_85
     }
+    else_if = {
+        limit = {
+            percent_of_cities_in_same_state >= 0.1666
+        }
+        multiply = brc_70
+    }
     else = {
-        multiply = brc_50
+        multiply = brc_45
     }
 }
 
@@ -532,6 +646,8 @@ brc_local_forum = {
 # SUPPORTING VALUES #
 # ----------------- #
 
+brc_ratio_building_weight_per_level = 0.25
+
 brc_territory_importance = {
     value = 1
     add = {
@@ -552,13 +668,17 @@ num_of_territories_in_same_state = {
     add = state.num_of_territories_in_state
 }
 
-population_cap_minus_3 = {
+population_cap_minus_2 = {
 	value = population_cap
-	subtract = 3
+	subtract = 1
+}
+population_cap_minus_5 = {
+	value = population_cap
+	subtract = 5
 }
 population_cap_minus_10 = {
 	value = population_cap
-	subtract = 10
+	subtract = 5
 }
 
 territory_port_level_including_construction = {
@@ -744,6 +864,27 @@ level_of_granary_wanted = {
     value = total_population
     divide = 30
     floor = yes
+}
+
+percent_of_cities_in_same_state = {
+    value = 0
+    state = {
+        every_state_province = {
+            limit = {
+                has_city_status = yes
+            }
+            add = 1
+        }
+    }
+    divide = {
+        value = 0
+        state = {
+            every_state_province = {
+                add = 1
+            }
+        }
+        min = 1
+    }
 }
 
 # ----------------------------------------------------------------------------------------------------------------------

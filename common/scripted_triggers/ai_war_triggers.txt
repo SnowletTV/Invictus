@@ -29,6 +29,78 @@ country_can_hire_mercenary = {
     }
 }
 
+# Scope is character
+# Country must be saved as scope:hiring_country
+country_should_hire_mercenary = {
+    NOT = {
+        any_character_unit = {
+            unit_size > scope:hiring_country.ai_max_mercenary_cohorts
+        }
+    }
+    location = {
+        # Country is present in mercenary region or its neighbours with exceptions
+        region = {
+            save_temporary_scope_as = mercenary_region
+            scope:hiring_country = {
+                any_governorships = {
+                    OR = {
+                        capital_scope.region = scope:mercenary_region
+                        AND = {
+                            # Not Britannia
+                            NOT = {
+                                scope:mercenary_region = p:2022.region
+                            }
+                            # Not Caledonia
+                            NOT = {
+                                scope:mercenary_region = p:2109.region
+                            }
+                            capital_scope.region = {
+                                any_neighbor_region = {
+                                    this = scope:mercenary_region
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        # If it's island territory, hiring country must be owner
+        trigger_if = {
+            limit = {
+                is_island_territory = yes
+            }
+            owner = scope:hiring_country
+        }
+        # If it's island area, hiring country must own non-island territory here
+        trigger_else_if = {
+            limit = {
+                area = {
+                    is_island_area = yes
+                }
+            }
+            area = {
+                any_area_province = {
+                    is_island_territory = no
+                    owner = scope:hiring_country
+                }
+            }
+        }
+        # It's on the land, now check if owner is present on non-island territories
+        trigger_else = {
+            save_temporary_scope_as = mercenary_province
+            scope:hiring_country = {
+                any_owned_province = {
+                    is_island_territory = no
+                    area = {
+                        is_island_area = no
+                    }
+                }
+            }
+        }
+    }
+}
+
 ai_is_facing_comparable_threat = {
     war = yes
     save_temporary_scope_as = country_at_war
@@ -66,6 +138,39 @@ ai_is_facing_existential_threat = {
                 num_of_territories_of_enemy_side >= num_of_territories_of_ally_side_plus_two_thirds
                 # ...enemy side combined would be equal to a great power, so it must be an absolutely massive war.
                 num_of_territories_of_enemy_side >= 500
+            }
+        }
+    }
+}
+
+is_island_territory = {
+    OR = {
+        # Isolated part of Cyclades
+        this = p:1915
+        this = p:263
+        this = p:375
+        this = p:387
+        # No neighbouring land territories
+        NOT = {
+            any_neighbor_province = {
+                is_sea = no
+            }
+        }
+    }
+}
+
+is_island_area = {
+    OR = {
+        # Corsica
+        this = p:3508.area
+        # Sardinia
+        this = p:3506.area
+        this = p:3483.area
+        # No neighbouring land areas
+        any_neighbor_area = {
+            count = 0
+            any_area_province = {
+                is_sea = no
             }
         }
     }

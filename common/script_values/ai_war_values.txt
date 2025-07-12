@@ -101,6 +101,11 @@ recruit_mercenary_cost_svalue = {
     }
 }
 
+num_free_mercenary_slots_svalue = {
+    value = modifier:max_mercenary_stacks
+    subtract = num_mercenaries_employed_svalue
+}
+
 num_mercenaries_employed_svalue = {
     value = 0
     every_character = {
@@ -178,9 +183,34 @@ mercenary_cohort_approximate_maintenance = {
     min = 0.01
 }
 
-character_distance_from_province = {
-    location = {
-        value = distance_from_province
+ai_mercenary_priority = {
+    # Bigger mercenaries are better
+    value = 0
+    every_character_unit = {
+        add = unit_size
+    }
+    multiply = {
+        value = 1.00
+        # For every X distance mercenary size matters 1% less, divide = X below
+        subtract = {
+            location = {
+                value = distance_from_province
+            }
+            # If can still hire multiple mercenaries, start with closer ones
+            if = {
+                limit = {
+                    num_free_mercenary_slots_svalue > 1
+                }
+                divide = 5 # 50% size at 0 distance = 100% size at 250 distance
+            }
+            # Otherwise heavily prefer the biggest one the country is allowed to hire
+            else = {
+                divide = 20 # 50% size at 0 distance = 100% size at 1000 distance
+            }
+            multiply = 0.01
+        }
+        # Let's avoid priority going into zero and below
+        min = 0.01
     }
 }
 

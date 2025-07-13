@@ -1,4 +1,3 @@
-
 let tradeGoods = [
   'grain',
   'salt',

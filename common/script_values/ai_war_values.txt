@@ -52,47 +52,6 @@ country_tax_income_svalue = {
     }
 }
 
-months_until_negative_treasury = {
-    if = {
-        limit = {
-            treasury < 0
-        }
-        value = 0
-    }
-    else_if = {
-        limit = {
-            has_monthly_balance >= 0
-        }
-        value = 999999
-    }
-    else = {
-        value = treasury
-        divide = {
-            value = 0
-            subtract = has_monthly_balance
-        }
-    }
-}
-
-months_of_income_in_treasury = {
-    if = {
-        limit = {
-            treasury <= 0
-        }
-        value = 0
-    }
-    else_if = {
-        limit = {
-            has_monthly_income <= 0
-        }
-        value = 999999
-    }
-    else = {
-        value = treasury
-        divide = has_monthly_income
-    }
-}
-
 recruit_mercenary_cost_svalue = {
     value = 100
     multiply = {
@@ -143,18 +102,19 @@ ai_max_mercenary_cohorts = {
             treasury >= recruit_mercenary_cost_svalue
         }
 
-        # Assuming we will keep mercs for 36 months, check how much gold per month we can spend
+        # Check how much gold per month we can support
         value = treasury
         subtract = recruit_mercenary_cost_svalue
-        divide = 36
+        multiply = 0.80 # Ready to spend 80% of treasury after recruit price
+        divide = 36 # Assume we'll keep mercs for 3 years
         add = has_monthly_balance
 
-        # Total maintenance of all country mercenaries shouldn't be higher than 275% of its tax income. This is kind of
+        # Total maintenance of all country mercenaries shouldn't be higher than 225% of its tax income. This is kind of
         # gatekeeping by pop size, but based on actual economy data, which fits much better here than arbitrary values.
         # Tax income is better than combined income, because commerce is very unstable in small countries during wars.
         max = {
             value = country_tax_income_svalue
-            multiply = 2.75
+            multiply = 2.25
             subtract = {
                 value = num_mercenary_cohorts_employed_svalue
                 multiply = mercenary_cohort_approximate_maintenance
@@ -175,20 +135,18 @@ mercenary_cohort_approximate_maintenance = {
     multiply = {
         value = 1.00
         add = modifier:army_maintenance_cost
-        # Always assume army maintenance economic policy will be set to high
+        # Always assume army maintenance economic policy will be set to default
         if = {
             limit = {
-                NOT = {
-                    has_high_economic_policy = expense_army
-                }
+                has_high_economic_policy = expense_army
+            }
+            subtract = 0.25
+        }
+        else_if = {
+            limit = {
+                has_low_economic_policy = expense_army
             }
             add = 0.25
-            if = {
-                limit = {
-                    has_low_economic_policy = expense_army
-                }
-                add = 0.25
-            }
         }
     }
     multiply = {

@@ -1,0 +1,159 @@
+﻿unit_recovery = {
+
+	duration = -1
+	enable = yes
+	toggle = yes
+	army_only = yes
+	
+	map = yes
+	
+	soundeffect ="event:/SFX/UI/Unit/sfx_ui_unit_reorganization"
+
+
+	allow = {
+		is_army = yes
+		in_combat = no
+		is_moving = no
+		is_exiled = no
+		hidden:unit_location = {
+			has_owner = yes
+			OR = {
+				controller = root.unit_owner
+				controller = {
+					alliance_with = root.unit_owner
+				}
+				controller = {
+					is_subject_of = root.unit_owner
+				}
+			}
+			OR = {
+				owner = root.unit_owner
+				owner = {
+					alliance_with = root.unit_owner
+				}
+				owner = {
+					is_subject_of = root.unit_owner
+				}
+			}
+		}
+		trigger_if = {
+			limit = {
+				exists = commander
+			}
+			commander = {
+				loyalty > 33
+			}
+		}
+	}
+	modifier = {
+		cohort_reinforcement_speed = 0.25
+		land_morale_recovery = 0.1
+		army_maintenance_cost = 1.0
+		army_movement_speed = -0.33
+	}
+	
+	
+	start_effect = {
+
+	}
+	
+	finished_when = {
+		unit_location = { 	
+			OR = {
+				NOT = {
+					exists = owner
+				}
+				NOR = {
+					root.unit_owner = controller
+					controller = {
+						alliance_with = root.unit_owner
+					}
+					controller = {
+						is_subject_of = root.unit_owner
+					}
+				}
+			}
+		} 
+	}
+	
+	ai_will_do = {
+		modifier = {
+			trigger = {
+				OR = {
+					NOT = {
+						exists = commander
+					}
+					commander = {
+						is_mercenary = no
+					}
+				}
+
+				unit_threat < 0.05
+				strength_percentage < 0.4
+				morale_percentage < 0.4
+				unit_size_rank <= 2
+				
+				unit_owner = {
+					treasury > 50
+					manpower > 20
+				}
+			}
+			add = {
+				value = 250
+				divide = unit_size_rank
+			}
+		}
+
+		modifier = {
+			trigger = {
+				exists = commander
+				commander = {
+					is_mercenary = yes
+				}
+
+				morale_percentage < 0.85
+				unit_owner = {
+					treasury >= 30
+				}
+			}
+			add = {
+				value = 250
+			}
+		}
+	}
+	
+	ai_will_revoke = {
+		trigger_if = {
+			limit = {
+				exists = commander
+				commander = {
+					is_mercenary = yes
+				}
+			}
+			OR = {
+				morale_percentage >= 0.85
+				unit_owner = {
+					treasury < 1
+				}
+			}
+		}
+		trigger_else = {
+			OR = {
+				AND = {
+					morale_percentage >= 1.0
+					strength_percentage >= 1.0
+				}
+				
+				unit_threat > 0.7
+				unit_owner = {
+					treasury < 1
+				}
+				unit_owner = {
+					manpower < 1
+				}
+			}
+		}
+	}
+	
+	idle_entity_state = recruiting
+}

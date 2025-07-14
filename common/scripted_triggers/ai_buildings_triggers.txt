@@ -283,7 +283,7 @@ has_trade_good_of_medium_priority = {
     }
 }
 
-is_territory_of_capital_province = {
+is_territory_of_capital_state = {
     state = owner.capital_scope.state
 }
 
@@ -423,11 +423,12 @@ is_best_territory_for_high_tier_port = {
 
     save_temporary_scope_as = territory
 
-    # Some capital province territory can build required port level, possibly including this one
+    # Some capital state territory (but not the capital itself) can build required port level, possibly the scoped one
     trigger_if = {
         limit = {
             owner.capital_scope.state = {
                 any_state_province = {
+                    is_capital = no
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
@@ -436,7 +437,9 @@ is_best_territory_for_high_tier_port = {
         }
 
         # Then it must be a territory of capital state
-        is_territory_of_capital_province = yes
+        is_territory_of_capital_state = yes
+        # But not the capital itself
+        is_capital = no
 
         # It should be territory with highest port level and free building slots out of eligible ones
         NOT = {
@@ -445,6 +448,7 @@ is_best_territory_for_high_tier_port = {
                     NOT = {
                         this = scope:territory
                     }
+                    is_capital = no
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
@@ -455,15 +459,15 @@ is_best_territory_for_high_tier_port = {
         }
     }
 
-    # Some capital region territory can build required port level, possibly including this one
+    # Some capital region territory (but not the capital itself) can build required port level, possibly the scoped one
     trigger_else_if = {
         limit = {
-            owner = {
-                capital_scope.state.region = {
-                    any_region_province = {
-                        is_eligible_for_building_high_tier_port = {
-                            tier = $tier$
-                        }
+            owner.capital_scope.state.region = {
+                any_region_province = {
+                    owner = scope:territory.owner
+                    is_capital = no
+                    is_eligible_for_building_high_tier_port = {
+                        tier = $tier$
                     }
                 }
             }
@@ -471,6 +475,8 @@ is_best_territory_for_high_tier_port = {
 
         # Then it must be a territory of capital region
         is_territory_of_capital_region = yes
+        # But not the capital itself
+        is_capital = no
 
         # It should be territory with highest port level and free building slots out of eligible ones
         NOT = {
@@ -479,6 +485,8 @@ is_best_territory_for_high_tier_port = {
                     NOT = {
                         this = scope:territory
                     }
+                    owner = scope:territory.owner
+                    is_capital = no
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
@@ -489,7 +497,19 @@ is_best_territory_for_high_tier_port = {
         }
     }
 
-    # Otherwise build just in any territory with highest port level and free building slots in the country
+    # If the capital is the only eligible territory in the capital region, build here - wanted to preserve its slots
+    trigger_else_if = {
+        limit = {
+            owner.capital_scope = {
+                is_eligible_for_building_high_tier_port = {
+                    tier = $tier$
+                }
+            }
+        }
+        is_capital = yes
+    }
+
+    # Otherwise build in any territory of the ones with highest port level and free building slots in the country
     trigger_else = {
         NOT = {
             owner = {

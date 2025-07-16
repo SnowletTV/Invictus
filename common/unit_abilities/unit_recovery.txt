@@ -79,19 +79,33 @@
 	ai_will_do = {
 		modifier = {
 			trigger = {
+				# Morale is low enough to be worth reinforcing
 				morale_percentage < 0.60
-
+				# Don't do it outside of war
+				unit_owner = {
+					war = yes
+				}
+				# For non-mercenaries we would like to have some manpower available
+				trigger_if = {
+					limit = {
+						is_mercenary_unit = no
+					}
+					unit_owner = {
+						manpower_percentage >= 0.10
+					}
+				}
+				trigger_else = {
+					always = yes
+				}
 				# For units with paid maintenance - only if treasury is big enough
 				trigger_if = {
 					limit = {
-						OR = {
-							is_legion_unit = yes
-							is_mercenary_unit = yes
-						}
+						unit_pays_maintenance = yes
 					}
-					unit_owner = {
-						treasury >= ai_treasury_for_unit_recovery
-					}
+					# Simpler check first for performance
+					unit_owner.treasury >= ai_treasury_for_unit_recovery_base
+					# Uses calculations of unit maintenance
+					unit_owner.treasury >= ai_treasury_for_unit_recovery
 				}
 				# Otherwise it's literally free
 				trigger_else = {
@@ -116,21 +130,15 @@
 	
 	ai_will_revoke = {
 		OR = {
+			# Recovering morale is the main factor
 			morale_percentage >= 0.85
 			# Don't do it outside of war
 			unit_owner = {
 				war = no
 			}
-			# For units with paid maintenance - only if treasury is big enough
-			AND = {
-				OR = {
-					is_legion_unit = yes
-					is_mercenary_unit = yes
-				}
-				unit_owner = {
-					treasury < ai_treasury_for_unit_recovery_active
-				}
-			}
+			# In case this won't get it canceled otherwise
+			in_combat = yes
+			is_exiled = yes
 		}
 	}
 	

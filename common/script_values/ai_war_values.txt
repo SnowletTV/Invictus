@@ -1,30 +1,10 @@
 ﻿ai_wartime_fund_desired = {
     value = modifier:max_mercenary_stacks
-    multiply = {
-        value = recruit_mercenary_cost_svalue
-        # Some money to pay mercenary wages
-        # if = {
-        #     limit = {
-        #         rank = great_power
-        #     }
-        #     add = 80
-        # }
-        # else_if = {
-        #     limit = {
-        #         rank = major_power
-        #     }
-        #     add = 70
-        # }
-        # else_if = {
-        #     limit = {
-        #         rank = regional_power
-        #     }
-        #     add = 60
-        # }
-        # else = {
-            add = 50
-        # }
-    }
+    multiply = recruit_mercenary_cost_svalue
+    
+    # Some money to pay mercenary wages
+    add = 50
+    add = has_monthly_income
 
     # Round to 2 digits
     multiply = 100
@@ -84,6 +64,7 @@ diplomatic_range_svalue = {
     min = 0
 }
 
+# Check how much gold per month a country can spend on mercenaries
 # Armies only
 ai_max_mercenary_maintenance = {
     if = {
@@ -91,12 +72,45 @@ ai_max_mercenary_maintenance = {
             treasury >= recruit_mercenary_cost_svalue
         }
 
-        # Check how much gold per month we can support
+        # Use treasury to offset temporary deficit, starting with wartime fund
         value = treasury
+        max = ai_wartime_fund_desired
+        # Everything above it can be used only partially
+        add = {
+            value = treasury
+            subtract = ai_wartime_fund_desired
+            min = 0
+            multiply = 0.3333
+            # No more than 1.5x or 2x of wartime fund is allowed in sum depending on threat
+            max = {
+                value = ai_wartime_fund_desired
+                if = {
+                    limit = {
+                        ai_is_facing_existential_threat = no
+                    }
+                    multiply = 0.50
+                }
+            }
+        }
         subtract = recruit_mercenary_cost_svalue
-        multiply = 0.80 # Ready to spend 80% of treasury after recruit price
         divide = 36 # Assume we'll keep mercs for 3 years
+
+        # Current treasury balance
         add = has_monthly_balance
+
+        # If navy is not at default economic policy, add delta between current policy and default
+        if = {
+            limit = {
+                OR = {
+                    has_high_economic_policy = expense_navy
+                    has_low_economic_policy = expense_navy
+                }
+            }
+            every_navy = {
+                add = unit_typical_maintenance
+                subtract = unit_typical_maintenance_at_default_policy
+            }
+        }
 
         # Total maintenance of all country mercenaries shouldn't be higher than 225% of its tax income. This is kind of
         # gatekeeping by pop size, but based on actual economy data, which fits much better here than arbitrary values.
@@ -1066,6 +1080,19 @@ unit_typical_maintenance_at_default_policy = {
                 multiply = {
                     value = 1.00
                     add = modifier:navy_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_navy
+                        }
+                        subtract = 0.50
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_navy
+                        }
+                        add = 0.50
+                    }
                 }
             }
         }
@@ -1074,6 +1101,19 @@ unit_typical_maintenance_at_default_policy = {
                 multiply = {
                     value = 1.00
                     add = modifier:navy_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_navy
+                        }
+                        subtract = 0.50
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_navy
+                        }
+                        add = 0.50
+                    }
                 }
             }
         }

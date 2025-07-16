@@ -79,79 +79,66 @@
 	ai_will_do = {
 		modifier = {
 			trigger = {
-				OR = {
-					NOT = {
-						exists = commander
+				# Morale is low enough to be worth reinforcing
+				morale_percentage < 0.60
+				# Don't do it outside of war
+				unit_owner = {
+					war = yes
+				}
+				# For non-mercenaries we would like to have some manpower available
+				trigger_if = {
+					limit = {
+						is_mercenary_unit = no
 					}
-					commander = {
-						is_mercenary = no
+					unit_owner = {
+						manpower_percentage >= 0.10
 					}
 				}
-
-				unit_threat < 0.05
-				strength_percentage < 0.4
-				morale_percentage < 0.4
-				unit_size_rank <= 2
-				
-				unit_owner = {
-					treasury > 50
-					manpower > 20
+				trigger_else = {
+					always = yes
+				}
+				# For units with paid maintenance - only if treasury is big enough
+				trigger_if = {
+					limit = {
+						unit_pays_maintenance = yes
+					}
+					# Simpler check first for performance
+					unit_owner.treasury >= ai_treasury_for_unit_recovery_base
+					# Uses calculations of unit maintenance
+					unit_owner.treasury >= ai_treasury_for_unit_recovery
+				}
+				# Otherwise it's literally free
+				trigger_else = {
+					always = yes
 				}
 			}
 			add = {
 				value = 250
-				divide = unit_size_rank
 			}
 		}
 
+		# Don't do it outside of war
 		modifier = {
 			trigger = {
-				exists = commander
-				commander = {
-					is_mercenary = yes
-				}
-
-				morale_percentage < 0.85
 				unit_owner = {
-					treasury >= 30
+					war = no
 				}
 			}
-			add = {
-				value = 250
-			}
+			factor = 0
 		}
 	}
 	
 	ai_will_revoke = {
-		trigger_if = {
-			limit = {
-				exists = commander
-				commander = {
-					is_mercenary = yes
-				}
+		OR = {
+			# Recovering morale is the main factor
+			morale_percentage >= 0.85
+			# Don't do it outside of war
+			unit_owner = {
+				war = no
 			}
-			OR = {
-				morale_percentage >= 0.85
-				unit_owner = {
-					treasury < 1
-				}
-			}
-		}
-		trigger_else = {
-			OR = {
-				AND = {
-					morale_percentage >= 1.0
-					strength_percentage >= 1.0
-				}
-				
-				unit_threat > 0.7
-				unit_owner = {
-					treasury < 1
-				}
-				unit_owner = {
-					manpower < 1
-				}
-			}
+			# In case this won't get it canceled otherwise
+			in_combat = yes
+			is_exiled = yes
 		}
 	}
 	

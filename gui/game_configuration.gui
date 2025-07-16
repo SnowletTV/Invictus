@@ -99,6 +99,16 @@ types GameConfiguration
 
 vbox = {
 	name = "game_configuration_window"
+
+	# These variables should be reset on every new lobby, otherwise it spams errors due to SGUI scope not existing etc.
+	# Previously they were cleared by the lobby back button, but this doesn't cover cases where you chose a country and
+	# loaded into the game, then returned to the main menu, then loaded into a new lobby, so clear them on lobby start.
+	state = {
+		name = _show
+		on_start = "[GetVariableSystem.Clear('game_rules')]"
+		on_start = "[GetVariableSystem.Clear('country_selection')]"
+		trigger_on_create = yes
+	}
 	
 	size = { 332 180 }
 	max_width = 332
@@ -163,10 +173,10 @@ vbox = {
 			# Advanced AI - placeholder before choosing a country
 			game_rule_small = {
 				# Simply a Not() of actual checkbox conditions
-				visible = "[Not(And(GetVariableSystem.Exists('country_selection'), Or(Not(GameIsMultiplayer), And(GameIsMultiplayer, PlayerIsHost))))]" 
+				visible = "[Not(And(GetVariableSystem.Exists('country_selection'), PlayerIsHost))]" 
 				enabled = "[EqualTo_int32('(int32)0', '(int32)1')]"
 				
-				tooltip = "IRONMAN_MODE" # Replace with something like select country first
+				tooltip = "select_country_first_tooltip"
 				
 				blockoverride "Text" {
 					text = "advanced_ai_name"
@@ -176,8 +186,7 @@ vbox = {
 			# Advanced AI - actual checkbox
 			game_rule_small = {
 				# Selected country is required to set global variables
-				# visible = "[LobbyView.HasSelectedPlayable]" # This seems to give true even if no country is selected
-				visible = "[And(GetVariableSystem.Exists('country_selection'), Or(Not(GameIsMultiplayer), And(GameIsMultiplayer, PlayerIsHost)))]"
+				visible = "[And(GetVariableSystem.Exists('country_selection'), PlayerIsHost)]"
 				
 				datacontext = "[GetScriptedGui('advanced_ai')]"
 				tooltip = "advanced_ai_desc"
@@ -196,6 +205,7 @@ vbox = {
 				}
 			}
 			
+			# Ironman Mode
 			game_rule_small = {
 				enabled = "[GameIsIronmanAvailable]"
 				tooltip = "[GameGetIronmanToolTip]"
@@ -205,8 +215,7 @@ vbox = {
 				blockoverride "rule_click" { onclick = "[GameConfigurationWindow.ToggleIronman]" }
 				blockoverride "On_click" { onclick = "[GameConfigurationWindow.ToggleIronman]" }
 				
-				blockoverride "Text"
-				{
+				blockoverride "Text" {
 					text = "IRONMAN_MODE"
 				}
 			}
@@ -214,16 +223,28 @@ vbox = {
 			widget = {
 				size = { 0 20 }
 			}
+
+			# Game Rules - placeholder before choosing a country
+			text_button_square = {
+				# Simply a Not() of actual button conditions
+				visible = "[Not(GetVariableSystem.Exists('country_selection'))]" 
+				enabled = "[EqualTo_int32('(int32)0', '(int32)1')]"
+
+				size = { 120 30 }
+				layoutpolicy_horizontal = expanding
+				blockoverride "Center_text" { text = "game_rules" }
+				tooltip = "select_country_first_tooltip"
+			}
+
+			# Game Rules - actual button
 			text_button_square = {
 				# Selected country is required to set global variables
-				# enabled = "[LobbyView.HasSelectedPlayable]" # This seems to give true even if no country is selected
-				enabled = "[GetVariableSystem.Exists('country_selection')]"
+				visible = "[GetVariableSystem.Exists('country_selection')]"
 
 				size = { 120 30 }
 				layoutpolicy_horizontal = expanding
 				blockoverride "On_click" { onclick = "[GetVariableSystem.Toggle('game_rules')]" }
 				blockoverride "Center_text" { text = "game_rules" }
-				tooltip = "select_country_first"
 			}
 		}
 	}

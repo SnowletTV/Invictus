@@ -1,36 +1,62 @@
 ﻿ai_recruit_mercenaries = {
     if = {
         limit = {
-            has_global_variable = game_rule_ai_custom_mercenary_recruitment
+            is_advanced_ai_enabled = yes
             is_ai = yes
             war = yes
-            ai_is_facing_comparable_threat = yes
-            num_free_mercenary_slots_svalue > 0
             exists = c:MER
-        }
-        save_scope_as = recruiting_country
-        scope:recruiting_country.capital_scope = {
-            save_scope_as = target_province
+            num_free_mercenary_slots_svalue > 0
+            ai_is_facing_comparable_threat = yes
         }
 
-        c:MER = {
-            ordered_character = {
+        # Not so trivial calculations that will be repeated many times if we cycle through mercenaries
+        set_local_variable = {
+            name = ai_max_mercenary_maintenance_cached
+            value = ai_max_mercenary_maintenance
+        }
+        set_local_variable = {
+            name = ai_current_mercenary_maintenance_cached
+            value = ai_current_mercenary_maintenance
+        }
+
+        if = {
+            limit = {
+                ai_free_mercenary_maintenance > 0
+            }
+            save_scope_as = recruiting_country
+            scope:recruiting_country.capital_scope = {
+                save_scope_as = target_province
+            }
+
+            # Fix startup error log about deprecated game rule global variable
+            if = {
                 limit = {
-                    country_can_recruit_mercenary = yes
-                    country_should_recruit_mercenary = yes
+                    always = no
                 }
-                order_by = ai_mercenary_priority
-                position = 0
-                check_range_bounds = no
+                set_global_variable = game_rule_ai_custom_mercenary_recruitment
+            }
 
-                change_mercenary_employer = scope:recruiting_country
-                scope:recruiting_country = {
-                    pay_price = recruit_mercenary
+            c:MER = {
+                ordered_character = {
+                    limit = {
+                        ai_can_recruit_mercenary = yes
+                    }
+                    order_by = ai_mercenary_priority
+                    position = 0
+                    check_range_bounds = no
+
+                    change_mercenary_employer = scope:recruiting_country
+                    scope:recruiting_country = {
+                        pay_price = recruit_mercenary
+                    }
                 }
             }
+
+            clear_saved_scope = target_province
+            clear_saved_scope = recruiting_country
         }
 
-        clear_saved_scope = target_province
-        clear_saved_scope = recruiting_country
+        remove_local_variable = ai_max_mercenary_maintenance_cached
+        remove_local_variable = ai_current_mercenary_maintenance_cached
     }
 }

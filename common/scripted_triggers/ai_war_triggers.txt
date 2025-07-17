@@ -1,13 +1,24 @@
-﻿# Scope is character
+﻿is_advanced_ai_enabled = {
+    OR = {
+        has_global_variable = game_rule_advanced_ai
+        # Deprecated since 1.10.1, keep it there for compatibility with 1.10 saves
+        has_global_variable = game_rule_ai_custom_mercenary_recruitment
+    }
+}
+
+# Scope is character
 # Country must be saved as scope:recruiting_country
-country_can_recruit_mercenary = {
+ai_can_recruit_mercenary = {
+    # Basic checks for mercenary to be eligible
     is_mercenary = yes
     exists = c:MER
     employer = c:MER
-    OR = {
-        is_general = yes
-        is_admiral = yes
-    }
+    # OR = {
+    #     is_general = yes
+    #     is_admiral = yes
+    # }
+    # Only armies for now
+    is_general = yes
     in_command = yes
     any_character_unit = {
         unit_size > 0
@@ -21,25 +32,10 @@ country_can_recruit_mercenary = {
             }
         }
     }
+    
+    # Check if mercenaries are in diplomatic range and are close enough so the AI can properly use them
     location = {
-        distance_from = {
-            province = scope:recruiting_country.capital_scope
-            value <= scope:recruiting_country.diplomatic_range_svalue
-        }
-    }
-}
-
-# Scope is character
-# Country must be saved as scope:recruiting_country
-country_should_recruit_mercenary = {
-    is_general = yes
-    NOT = {
-        any_character_unit = {
-            unit_size > scope:recruiting_country.ai_max_mercenary_cohorts
-        }
-    }
-    location = {
-        # Prevent  mercs in the enemy territory and spamming mercs on your own but occupied territories
+        # Prevent recruiting mercs in the enemy territory and spamming mercs on your own but occupied territories
         trigger_if = {
             limit = {
                 exists = controller
@@ -77,6 +73,96 @@ country_should_recruit_mercenary = {
                 }
                 trigger_else = {
                     always = no
+                }
+            }
+        }
+
+        # If we or our ally own Rhodope enclave, but our capital is not in it, Europa must have land path for mercs.
+        # Should remake this into generally applicable solution, but it's pathfinding territory so may be expensive.
+        trigger_if = {
+            limit = {
+                OR = {
+                    this = p:270
+                    this = p:297
+                    this = p:1774
+                }
+                exists = owner
+                owner = {
+                    OR = {
+                        this = scope:recruiting_country
+                        alliance_with = scope:recruiting_country
+                    }
+                }
+                scope:recruiting_country = {
+                    capital_scope = {
+                        NOR = {
+                            this = p:270
+                            this = p:297
+                            this = p:1774
+                        }
+                    }
+                }
+            }
+            p:349 = {
+                OR = {
+                    NOT = {
+                        exists = owner
+                    }
+                    owner = {
+                        OR = {
+                            this = scope:recruiting_country
+                            alliance_with = scope:recruiting_country
+                            war_with = scope:recruiting_country
+                        }
+                    }
+                }
+            }
+            area:europa_area = {
+                any_area_state = {
+                    owner = {
+                        OR = {
+                            this = scope:recruiting_country
+                            alliance_with = scope:recruiting_country
+                            war_with = scope:recruiting_country
+                        }
+                    }
+                }
+            }
+        }
+        trigger_else = {
+            always = yes
+        }
+
+        # Normally mercs are available by diplomatic range, but a proper check would be to compare distance from every
+        # province of the recruiting country, which is very expensive for such a frequently used trigger. Instead do a # series of simpler checks which should give us a good enough result, as mercs don't need a super precise one.
+        OR = {
+            # First check if we own the territory, which is the easiest scenario
+            AND = {
+                exists = owner
+                owner = scope:recruiting_country
+            }
+            AND = {
+                # If we don't, but there's still some owner, use fast native check if the owner is in range
+                OR = {
+                    NOT = {
+                        exists = owner
+                    }
+                    owner = {
+                        in_diplomatic_range = scope:recruiting_country
+                    }
+                }
+                # Then check territory distance from governorships capitals, good coverage but not as many checks
+                save_temporary_scope_as = mercenary_territory
+                scope:recruiting_country = {
+                    any_governorships = {
+                        exists = capital_scope
+                        capital_scope = {
+                            distance_from = {
+                                province = scope:mercenary_territory
+                                value <= scope:recruiting_country.diplomatic_range_svalue
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -158,6 +244,13 @@ country_should_recruit_mercenary = {
                     }
                 }
             }
+        }
+    }
+
+    # Not exceeding the maintenance the country can cover
+    NOT = {
+        any_character_unit = {
+            unit_typical_maintenance_at_default_policy > scope:recruiting_country.ai_free_mercenary_maintenance
         }
     }
 }
@@ -264,4 +357,25 @@ is_mercenary_unit = {
 
 is_legion_unit = {
     has_legion_trigger = yes
+}
+
+unit_pays_maintenance = {
+    trigger_if = {
+        limit = {
+            is_army = yes
+        }
+        OR = {
+            is_legion_unit = yes
+            is_mercenary_unit = yes
+        }
+    }
+    trigger_else_if = {
+        limit = {
+            is_navy = yes
+        }
+        always = yes
+    }
+    trigger_else = {
+        always = no
+    }
 }

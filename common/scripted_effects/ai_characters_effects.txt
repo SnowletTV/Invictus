@@ -51,6 +51,35 @@
         # Urgent: deal with brewing and ongoing civil wars
         else = {
 
+            # Remove powerful disloyal ruler rival if Advanced AI is on
+            if = {
+                limit = {
+                    is_advanced_ai_enabled = yes
+                    political_influence >= 30
+                }
+                current_ruler = {
+                    ordered_rival = {
+                        limit = {
+                            exists = employer
+                            employer = scope:actor
+                            # Character conditions we want to match
+                            character_is_disloyal = yes
+                            character_is_powerful = yes
+                        }
+                        # Highest character by power base
+                        order_by = power_base
+                        position = 0
+                        # Don't print error if there is no such character
+                        check_range_bounds = no
+                        # Perform interaction
+                        remove_rival = scope:actor.current_ruler
+                        scope:actor = {
+                            add_political_influence = -30
+                        }
+                    }
+                }
+            }
+
             # Track how much loyalty fixing we have already performed
             set_local_variable = {
                 name = loyalty_fixes_done
@@ -240,5 +269,125 @@ ai_revoke_free_hands = {
         
         # Garbage collection
         clear_saved_scope = actor
+    }
+}
+
+ai_enshrine_social_equity = {
+    if = {
+        limit = {
+            is_ai = yes
+            # Some player gained social equality for themselves at some point, so now we are allowed as well
+            has_global_variable = enshrine_social_equity_used
+            # Copied from enshrine_social_equity potential
+			num_of_cities >= 1
+			gender_equality = no
+			OR = {
+				gender_rules = yes
+				has_global_variable = game_rule_gender_rules
+			}
+        }
+		set_gender_equality = yes
+    }
+}
+
+# Manual 1:1 version of hold games button for Advanced AI tribes to boost ruler popularity for reforming
+ai_press_hold_games_button = {
+    if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            is_ai = yes
+            
+            # Ruler popularity is too low for reforming
+            exists = current_ruler
+            current_ruler = {
+                popularity < 80
+            }
+
+            # Validity requirements from hold_games_button
+            OR = {
+                is_monarchy = yes
+                is_tribal = yes
+            }
+            current_ruler = {
+                NOT = {
+                    has_character_modifier = hold_games_modifier
+                }
+            }
+            current_ruler = {
+                wealth >= hold_games_svalue
+            }
+            current_ruler = {
+                is_adult = yes
+            }
+            can_pay_price = hold_games_price
+
+            # Copied from potential block of reforming decisions
+            num_of_cities >= 1
+			OR = {
+				government = tribal_kingdom
+				government = tribal_federation
+			}
+
+            # Copied from ai_is_allowed_to_reform_tribe with unimportant parts commented out
+            # stability >= 40
+            stability >= 30 # Lowered stability requirements due to long term effect of popularity
+            centralization >= 60
+            capital_scope = {
+                civilization_value >= 40
+                has_city_status = yes
+            }
+            # exists = current_ruler
+            # current_ruler = {
+            #     popularity >= 80
+            # }
+            # political_influence >= 100
+            # Artificial limitations to reduce the amount of reforming tribes
+            rank >= regional_power
+            # OR = {
+            #     is_advanced_ai_enabled = yes
+            #     capital_scope = {
+            #         has_province_modifier = tribal_civilization_pmod # tribal_civilization (Codify State Lands) decision
+            #     }
+            # }
+        }
+        # Effect from hold_games_button
+        pay_price = hold_games_price
+		current_ruler = {
+			add_gold = {
+				value = 0
+				subtract = hold_games_svalue
+			}
+		}
+		current_ruler = {
+			add_character_modifier = {
+				name = hold_games_modifier
+				duration = 1825
+			}
+		}
+        current_ruler = {
+            random_list = {
+                5 = {
+                    if = {
+                        limit = {
+                            has_nickname = no
+                        }
+                        if = {
+                            limit = {
+                                has_culture_group = latin
+                            }
+                            add_nickname = NICKNAME_CATILINA
+                        }
+                        else = {
+                            add_nickname = NICKNAME_THE_BENEFICENT
+                        }
+                    }
+                }
+                95 = {}
+            }
+        }
+        trigger_event = {
+            id = games.2
+            days = { 10 30 }
+        }
     }
 }

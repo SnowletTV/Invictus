@@ -6,6 +6,83 @@
     }
 }
 
+# Same rules as found on Bribe button with some additions for the AI
+ai_can_bribe_mercenary = {
+    is_mercenary = yes
+    in_command = yes
+    # OR = {
+    #     is_general = yes
+    #     is_admiral = yes
+    # }
+    # Only armies for now
+    is_general = yes
+    any_character_unit = {
+        unit_size > 0
+        in_combat = no
+    }
+
+    employer = {
+        NOR = {
+            tag = MER
+            this = scope:recruiting_country
+        }
+        NOT = {
+            invention = recruit_mercenary_inv
+        }
+    }
+
+    scope:recruiting_country = {
+        war_with = prev.employer
+        treasury >= prev.ai_army_size_merc_estimation
+    }
+
+    # A Mercenary cannot be enticed more than once a year
+    NOT = {
+        has_variable = merc_buyoff_cooldown
+    }
+
+    OR = {
+        location = {
+            trigger_if = {
+                limit = {
+                    exists = controller
+                }
+                NOT = {
+                    controller = {
+                        war_with = scope:recruiting_country
+                    }
+                }
+            }
+            trigger_else_if = {
+                limit = {
+                    exists = owner
+                }
+                NOT = {
+                    owner = {
+                        war_with = scope:recruiting_country
+                    }
+                }
+            }
+            trigger_else = {
+                always = yes
+            }
+        }
+        NOT = {
+            any_character_unit = {
+                morale_percentage < 0.80
+            }
+        }
+    }
+
+    save_temporary_scope_as = mercenary_to_bribe
+    # Not exceeding the maintenance the country can cover
+    NOT = {
+        any_character_unit = {
+            unit_typical_maintenance_at_default_policy > scope:recruiting_country.ai_free_mercenary_maintenance
+        }
+    }
+}
+
 # Scope is character
 # Country must be saved as scope:recruiting_country
 ai_can_recruit_mercenary = {

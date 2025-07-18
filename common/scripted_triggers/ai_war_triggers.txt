@@ -21,6 +21,8 @@ ai_can_bribe_mercenary = {
         in_combat = no
     }
 
+    save_temporary_scope_as = mercenary_to_bribe
+
     employer = {
         NOR = {
             tag = MER
@@ -29,11 +31,25 @@ ai_can_bribe_mercenary = {
         NOT = {
             invention = recruit_mercenary_inv
         }
+        # Minor fog removal for AI. While not completely fair, we need to compensate somehow for it lacking intuition.
+        # If we don't, AI countries will just drain gold with no gain, making them easier targets for players - BAD!
+        trigger_if = {
+            limit = {
+                is_ai = yes
+            }
+            # Bribe AI mercs only if it's guaranteed to succeed
+            treasury < ai_treasury_for_counter_bribing
+        }
+        trigger_else = {
+            # Bribe player mercs only if AI's pockets are deeper
+            treasury < scope:recruiting_country.treasury
+        }
     }
 
     scope:recruiting_country = {
-        war_with = prev.employer
-        treasury >= prev.ai_army_size_merc_estimation
+        war_with = scope:mercenary_to_bribe.employer
+        treasury >= scope:mercenary_to_bribe.ai_army_size_merc_estimation
+        num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
     }
 
     # A Mercenary cannot be enticed more than once a year
@@ -73,8 +89,7 @@ ai_can_bribe_mercenary = {
             }
         }
     }
-
-    save_temporary_scope_as = mercenary_to_bribe
+    
     # Not exceeding the maintenance the country can cover
     NOT = {
         any_character_unit = {

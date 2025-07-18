@@ -127,30 +127,51 @@ ai_treasury_for_mercenaries = {
         value = treasury
         max = ai_wartime_fund_desired
         # Everything above it can be used only partially
-        add = {
-            value = treasury
-            subtract = ai_wartime_fund_desired
-            min = 0
-            if = {
-                limit = {
-                    ai_is_facing_existential_threat = yes
-                }
-                multiply = 0.50
+        if = {
+            limit = {
+                treasury > ai_wartime_fund_desired
             }
-            else = {
-                multiply = 0.25
-            }
-            # No more than 175% or 250% of wartime fund is allowed in sum depending on threat
-            max = {
-                value = ai_wartime_fund_desired
+            # Add part of the treasury at a decent rate, but with a rather harsh cap
+            add = {
+                value = treasury
+                subtract = ai_wartime_fund_desired
+                min = 0
                 if = {
                     limit = {
                         ai_is_facing_existential_threat = yes
                     }
-                    multiply = 1.50
+                    multiply = 0.40
                 }
                 else = {
-                    multiply = 0.75
+                    multiply = 0.20
+                }
+                # No more than 175% or 250% of wartime fund is allowed in sum depending on threat
+                max = {
+                    value = ai_wartime_fund_desired
+                    if = {
+                        limit = {
+                            ai_is_facing_existential_threat = yes
+                        }
+                        multiply = 1.50
+                    }
+                    else = {
+                        multiply = 0.75
+                    }
+                }
+            }
+            # Add part of the treasury at a low rate, but without a cap
+            add = {
+                value = treasury
+                subtract = ai_wartime_fund_desired
+                min = 0
+                if = {
+                    limit = {
+                        ai_is_facing_existential_threat = yes
+                    }
+                    multiply = 0.10
+                }
+                else = {
+                    multiply = 0.05
                 }
             }
         }
@@ -1254,7 +1275,26 @@ ai_treasury_for_unit_recovery = {
 
 # Used in the warfare.3 event when counter bribing mercenaries
 ai_treasury_for_counter_bribing = {
-    value = local_var:merc_payoff_value
+    # Some really minimal buffer to negative treasury, where mercs become disloyal
+    value = 10
+    add = {
+        value = has_monthly_income
+        divide = 2
+    }
+
+    # For the event, idk why it's in local variable but only in ai_chance, but whatever
+    if = {
+        limit = {
+            has_local_variable = merc_payoff_value
+        }
+        add = local_var:merc_payoff_value
+    }
+    # For checking it in the ai_can_bribe_mercenary trigger
+    else = {
+        add = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+    }
+    
+    # If balance is in the red, we must be able to hold out for a couple more months
     if = {
         limit = {
             has_monthly_balance < 0

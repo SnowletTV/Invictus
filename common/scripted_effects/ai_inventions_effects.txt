@@ -1,0 +1,90 @@
+﻿# When levies are raised, a certain amount of output produced by governorship pops is subtracted. We don't know what is
+# the formula, and it's subtracted by directly replacing absolute output values on territory level. The problem is that
+# we need to know research points produced without levy impact, otherwise every war makes AI think it has low research
+# efficiency, leading to constructing building to raise it, leading to too much research once levy impact is removed.
+#
+# To counter this we are caching research points on per-governorship basis in the scope of the capital, so when levies
+# are raised, we temporarily use older values as a substitution.
+cache_normalized_research_efficiency = {
+    if = {
+        limit = {
+            is_ai = yes
+        }
+        set_local_variable = {
+            name = cached_normalized_research_points
+            value = 0
+        }
+
+        every_governorships = {
+            limit = {
+                exists = capital_scope
+            }
+            # Levies are not raised, update cache and add it to cumulative points
+            if = {
+                limit = {
+                    OR = {
+                        NOT = {
+                            exists = governor
+                        }
+                        NOT = {
+                            governor = {
+                                in_command = yes
+                            }
+                        }
+                    }
+                }
+                save_temporary_scope_as = current_governorship
+                capital_scope = {
+                    set_variable = {
+                        name = cached_normalized_research_points
+                        value = scope:current_governorship.governorship_normalized_research_points
+                        days = 1825 # 5 years
+                    }
+                    change_local_variable = {
+                        name = cached_normalized_research_points
+                        add = var:cached_normalized_research_points
+                    }
+                }
+            }
+            # Levies are raised and there's a cache
+            else_if = {
+                limit = {
+                    capital_scope = {
+                        has_variable = cached_normalized_research_points
+                    }
+                }
+                change_local_variable = {
+                    name = cached_normalized_research_points
+                    add = capital_scope.var:cached_normalized_research_points
+                }
+            }
+            # Levies are raised and there's no cache
+            else = {
+                change_local_variable = {
+                    name = cached_normalized_research_points
+                    add = governorship_normalized_research_points
+                }
+            }
+        }
+
+        set_variable = {
+            name = cached_normalized_research_efficiency
+            value = {
+                value = local_var:cached_normalized_research_points
+                multiply = 12
+                divide = {
+                    every_country_culture = {
+                        limit = {
+                            is_integrated = yes
+                        }
+                        add = country_culture_pop_count
+                    }
+                    min = 1
+                }
+            }
+            days = 185
+        }
+
+        remove_local_variable = cached_normalized_research_points
+    }
+}

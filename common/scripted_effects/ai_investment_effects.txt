@@ -30,15 +30,18 @@
             }
         }
 
-        # Either there's a state below limit or we have free investments and we want to use them regardless
         if = {
             limit = {
                 OR = {
+                    # Either there's a state below limit
                     local_var:any_state_is_below_limit = 1
+                    # Or we have free investments and we want to use them regardless
                     AND = {
                         has_variable = free_investments
                         var:free_investments > 0
                     }
+                    # Or we have too much political influence and want to use it regardless
+                    political_influence >= 500
                 }
             }
 
@@ -154,7 +157,7 @@
                 }
             }
 
-            # Religious investment in states with multiple built up cities
+            # Religious investment in states with built up cities
             if = {
                 limit = {
                     local_var:made_investment = 0
@@ -178,11 +181,27 @@
                         ai_can_make_investment_in_this_state = yes
                         # Requirements for the investment type
                         ai_can_make_state_investment_religious = yes
-                        # Only if has multiple cities almost full on building slots
-                        any_state_province = {
-                            count >= 2
-                            has_city_status = yes
-                            free_building_slots <= 1
+                        # For non-tribal regional powers and up - only if multiple cities almost full on building slots
+                        trigger_if = {
+                            limit = {
+                                owner = {
+                                    is_tribal = no
+                                    rank >= regional_power
+                                }
+                            }
+                            any_state_province = {
+                                count >= 2
+                                has_city_status = yes
+                                free_building_slots <= 1
+                            }
+                        }
+                        # In tribes and small countries even one city has a significant impact
+                        trigger_else = {
+                            any_state_province = {
+                                count >= 1
+                                has_city_status = yes
+                                free_building_slots <= 1
+                            }
                         }
                     }
                     weight = {
@@ -297,7 +316,12 @@
                         ai_can_make_investment_in_this_state = yes
                         # Requirements for the investment type
                         ai_can_make_state_investment_religious = yes
-                        # Only if has at leeast one city almost full on building slots
+                        # Tribals and small countries only require one city even for regular religions investment
+                        owner = {
+                            is_tribal = no
+                            rank >= regional_power
+                        }
+                        # Only if has at least one city almost full on building slots
                         any_state_province = {
                             count >= 1
                             has_city_status = yes
@@ -322,34 +346,35 @@
             }
 
             # Military investment as fallback for tribals, who has more states without permanent trade routes
-            if = {
-                limit = {
-                    local_var:made_investment = 0
-                    is_tribal = yes
-                }
-                random_country_state = {
-                    limit = {
-                        # Requirements fot the state
-                        ai_can_make_investment_in_this_state = yes
-                        # Requirements for the investment type
-                        ai_can_make_state_investment_military = yes
-                    }
-                    weight = {
-                        base = 1
-                        modifier = {
-                            factor = ai_state_importance
-                        }
-                    }
-                    # Pressing effect from the investment button
-                    invest_in_state_button_effect = {
-                        type = military
-                    }
-                    change_local_variable = {
-                        name = made_investment
-                        add = 1
-                    }
-                }
-            }
+            # Well, actually it's useless and is just a waste of resources, better to do no investments at all
+            # if = {
+            #     limit = {
+            #         local_var:made_investment = 0
+            #         is_tribal = yes
+            #     }
+            #     random_country_state = {
+            #         limit = {
+            #             # Requirements fot the state
+            #             ai_can_make_investment_in_this_state = yes
+            #             # Requirements for the investment type
+            #             ai_can_make_state_investment_military = yes
+            #         }
+            #         weight = {
+            #             base = 1
+            #             modifier = {
+            #                 factor = ai_state_importance
+            #             }
+            #         }
+            #         # Pressing effect from the investment button
+            #         invest_in_state_button_effect = {
+            #             type = military
+            #         }
+            #         change_local_variable = {
+            #             name = made_investment
+            #             add = 1
+            #         }
+            #     }
+            # }
 
             # Sparta's unique DLC religious investment, not as useful so use only as fallback
             # Commented out as actually it's better to just keep resources and limits for future opportunities

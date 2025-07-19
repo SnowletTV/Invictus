@@ -1,0 +1,147 @@
+﻿ai_recruit_mercenaries = {
+    if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            is_ai = yes
+            war = yes
+            exists = c:MER
+            # Simple trigger to prevent broke countries from making performance impact
+            treasury >= recruit_mercenary_cost_svalue
+            # Bribing is allowed up until max stacks + 1
+            num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
+            ai_is_facing_comparable_threat = yes
+        }
+
+        # Not so trivial calculations that will be repeated many times if we cycle through mercenaries
+        set_local_variable = {
+            name = ai_treasury_for_mercenaries_cached
+            value = ai_treasury_for_mercenaries
+        }
+        set_local_variable = {
+            name = navy_maintenance_delta_at_default_policy_cached
+            value = navy_maintenance_delta_at_default_policy
+        }
+        set_local_variable = {
+            name = ai_current_mercenary_maintenance_cached
+            value = ai_current_mercenary_maintenance
+        }
+
+        if = {
+            limit = {
+                ai_free_mercenary_maintenance > 0
+            }
+            save_scope_as = recruiting_country
+            # Used in ai_mercenary_priority to check distance_from_province on capital
+            capital_scope = {
+                save_scope_as = target_province
+            }
+
+            set_local_variable = {
+                name = recruited_a_mercenary
+                value = 0
+            }
+            if = {
+                limit = {
+                    num_free_mercenary_slots_svalue > 0
+                }
+                c:MER = {
+                    ordered_character = {
+                        limit = {
+                            ai_can_recruit_mercenary = yes
+                        }
+                        order_by = ai_mercenary_priority
+                        position = 0
+                        check_range_bounds = no
+
+                        change_mercenary_employer = scope:recruiting_country
+                        scope:recruiting_country = {
+                            pay_price = recruit_mercenary
+                        }
+
+                        set_local_variable = {
+                            name = recruited_a_mercenary
+                            value = 1
+                        }
+                    }
+                }
+            }
+
+            if = {
+                limit = {
+                    local_var:recruited_a_mercenary = 0
+                }
+                every_countries_at_war_with = {
+                    every_character = {
+                        limit = {
+                            ai_can_bribe_mercenary = yes
+                        }
+                        add_to_local_variable_list = {
+                            name = mercenaries_to_bribe
+                            target = this
+                        }
+                    }
+                }
+                if = {
+                    limit = {
+                        has_local_variable_list = mercenaries_to_bribe
+                        local_variable_list_size = {
+                            name = mercenaries_to_bribe
+                            value > 0
+                        }
+                    }
+                    ordered_in_local_list = {
+                        variable = mercenaries_to_bribe
+                        order_by = ai_mercenary_priority
+                        position = 0
+                        check_range_bounds = no
+
+                        save_scope_as = mercenary_to_bribe
+
+                        scope:recruiting_country = {
+                            add_treasury = {
+                                value = 0
+                                subtract = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+                            }
+                        }
+                        set_variable = {
+                            name = merc_buyoff_cooldown
+                            days = 365
+                        }
+                        save_scope_as = target
+                        scope:recruiting_country = {
+                            save_scope_as = actor
+                        }
+                        employer = {
+                            set_local_variable = {
+                                name = merc_payoff_value
+                                value = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+                            }
+                            trigger_event = {
+                                id = warfare.3
+                            }
+                        }
+
+                        clear_saved_scope = mercenary_to_bribe
+                    }
+                    clear_local_variable_list = mercenaries_to_bribe
+                }
+            }
+
+            clear_saved_scope = target_province
+            remove_local_variable = recruited_a_mercenary
+            clear_saved_scope = recruiting_country
+        }
+
+        remove_local_variable = ai_treasury_for_mercenaries_cached
+        remove_local_variable = navy_maintenance_delta_at_default_policy_cached
+        remove_local_variable = ai_current_mercenary_maintenance_cached
+    }
+
+    # Fix startup error log about deprecated game rule global variable
+    if = {
+        limit = {
+            always = no
+        }
+        set_global_variable = game_rule_ai_custom_mercenary_recruitment
+    }
+}

@@ -29,7 +29,12 @@
 
 state_fort_limit_svalue = {
     value = define:NCountry|BASE_FORT_LIMIT_PER_STATE
-    # add modifiers in 2.0.5?
+    capital_scope = {
+        add = modifier:local_fort_limit
+    }
+    owner = {
+        add = modifier:fort_limit
+    }
 }
 
 state_fort_limit_used = {
@@ -47,56 +52,105 @@ state_fort_limit_used = {
 
 # Limit is compared against current number of investments + 1, so the end value truly won't be higher than the limit
 ai_investments_allowed_per_state = {
-    value = 0
-    every_state_province = {
-        add = total_population
+    if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            owner = {
+                is_tribal = no
+            }
+        }
+        value = 999999 # Unrestricted investments
     }
-    owner = {
-        if = {
-            limit = {
-                government = tribal_chiefdom
-            }
-            divide = 40
+    else = {
+        value = 0
+        every_state_province = {
+            add = total_population
         }
-        else_if = {
-            limit = {
-                government = tribal_federation
-            }
-            divide = 30
-        }
-        else_if = {
-            limit = {
-                is_tribal = yes
-            }
-            divide = 35
-        }
-        else = {
-            divide = 25
-        }
-    }
-    floor = yes
-    min = {
-        if = {
-            limit = {
-                is_capital_state = yes
-            }
+        owner = {
             if = {
                 limit = {
-                    owner = {
-                        OR = {
-                            is_tribal = no
-                            rank >= major_power
-                        }
-                    }
+                    government = tribal_chiefdom
                 }
-                value = 2
+                if = {
+                    limit = {
+                        is_advanced_ai_enabled = yes
+                    }
+                    divide = 30 # 1 per 30 pops
+                }
+                else = {
+                    divide = 40 # 1 per 40 pops
+                }
+            }
+            else_if = {
+                limit = {
+                    government = tribal_federation
+                }
+                if = {
+                    limit = {
+                        is_advanced_ai_enabled = yes
+                    }
+                    divide = 20 # 1 per 20 pops
+                }
+                else = {
+                    divide = 30 # 1 per 30 pops
+                }
+            }
+            else_if = {
+                limit = {
+                    is_tribal = yes
+                }
+                if = {
+                    limit = {
+                        is_advanced_ai_enabled = yes
+                    }
+                    divide = 25 # 1 per 25 pops
+                }
+                else = {
+                    divide = 35 # 1 per 35 pops
+                }
             }
             else = {
-                value = 1
+                divide = 25 # 1 per 25 pops
             }
         }
-        else = {
-            value = 0
+        floor = yes
+        min = {
+            if = {
+                limit = {
+                    is_capital_state = yes
+                }
+                if = {
+                    limit = {
+                        owner = {
+                            OR = {
+                                AND = {
+                                    is_tribal = no
+                                    rank >= regional_power
+                                }
+                                rank >= major_power
+                            }
+                        }
+                    }
+                    value = 3
+                }
+                else_if = {
+                    limit = {
+                        owner = {
+                            OR = {
+                                is_tribal = no
+                                rank >= regional_power
+                            }
+                        }
+                    }
+                    value = 2
+                }
+                else = {
+                    value = 1
+                }
+            }
+            else = {
+                value = 0
+            }
         }
     }
 }
@@ -110,6 +164,11 @@ current_state_investments_plus_1 = {
 		add = var:num_state_investments
 	}
     min = 0
+}
+
+ai_wartime_fund_plus_investment_gold_cost = {
+    value = owner.ai_wartime_fund_desired
+    add = calc_governor_investment_fee
 }
 
 population_cap_5_percent = {

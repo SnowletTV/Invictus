@@ -7,9 +7,24 @@
             exists = c:MER
             # Simple trigger to prevent broke countries from making performance impact
             treasury >= recruit_mercenary_cost_svalue
-            # Bribing is allowed up until max stacks + 1
-            num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
-            ai_is_facing_comparable_threat = yes
+            # For comparable threat only recruit mercs normally, without bribing, which requires free slots
+            trigger_if = {
+                limit = {
+                    ai_is_facing_comparable_threat = yes
+                }
+                num_free_mercenary_slots_svalue > 0
+            }
+            # For existential threat can also bribe mercs if needed, and bribing is allowed up until max stacks + 1
+            trigger_else_if = {
+                limit = {
+                    ai_is_facing_existential_threat = yes
+                }
+                num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
+            }
+            # If we are not feeling any threat, there's no point in spending a lot on money on mercs
+            trigger_else = {
+                always = no
+            }
         }
 
         # Not so trivial calculations that will be repeated many times if we cycle through mercenaries
@@ -26,12 +41,13 @@
             value = ai_current_mercenary_maintenance
         }
 
+        # Only recruit or bribe mercs if there's some monthly gold the country can spend on their maintenance
         if = {
             limit = {
                 ai_free_mercenary_maintenance > 0
             }
             save_scope_as = recruiting_country
-            # Used in ai_mercenary_priority to check distance_from_province on capital
+            # Used in ai_mercenary_priority to check distance_from_province between mercs and capital
             capital_scope = {
                 save_scope_as = target_province
             }
@@ -40,6 +56,7 @@
                 name = recruited_a_mercenary
                 value = 0
             }
+            # Entry trigger guaranteed to check only for limit + 1 as bribing requires, ensure we can recruit new mercs
             if = {
                 limit = {
                     num_free_mercenary_slots_svalue > 0
@@ -49,10 +66,12 @@
                         limit = {
                             ai_can_recruit_mercenary = yes
                         }
+                        # Get one mercs stack with highest priority
                         order_by = ai_mercenary_priority
                         position = 0
                         check_range_bounds = no
 
+                        # Recruit them
                         change_mercenary_employer = scope:recruiting_country
                         scope:recruiting_country = {
                             pay_price = recruit_mercenary
@@ -66,10 +85,14 @@
                 }
             }
 
+            # Try bribing only if wasn't able to recruit mercs and we are threatened enough to do it
             if = {
                 limit = {
                     local_var:recruited_a_mercenary = 0
+                    ai_is_facing_existential_threat = yes
                 }
+
+                # Gather all the mercs that we can bribe including economy factors into a list
                 every_countries_at_war_with = {
                     every_character = {
                         limit = {
@@ -90,6 +113,7 @@
                         }
                     }
                     ordered_in_local_list = {
+                        # Get one mercs stack with highest priority
                         variable = mercenaries_to_bribe
                         order_by = ai_mercenary_priority
                         position = 0
@@ -97,6 +121,7 @@
 
                         save_scope_as = mercenary_to_bribe
 
+                        # Same effect as the one found on the bribing button
                         scope:recruiting_country = {
                             add_treasury = {
                                 value = 0
@@ -127,9 +152,9 @@
                 }
             }
 
+            clear_saved_scope = recruiting_country
             clear_saved_scope = target_province
             remove_local_variable = recruited_a_mercenary
-            clear_saved_scope = recruiting_country
         }
 
         remove_local_variable = ai_treasury_for_mercenaries_cached

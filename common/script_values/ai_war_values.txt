@@ -243,6 +243,7 @@ ai_free_mercenary_maintenance = {
     subtract = ai_current_mercenary_maintenance
 }
 
+# Requires scope:recruiting_country and territory to check distance from as scope:target_province
 # Armies only
 ai_mercenary_priority = {
     # Bigger mercenaries are better
@@ -281,6 +282,24 @@ ai_mercenary_priority = {
             }
         }
         multiply = 2
+    }
+    # Lower priority for mercs that are in a risk of getting stack wiped
+    if = {
+        limit = {
+            exists = c:MER
+            employer = c:MER
+            location = {
+                any_neighbor_province = {
+                    any_unit_in_province = {
+                        is_army = yes
+                        unit_owner = {
+                            war_with = scope:recruiting_country
+                        }
+                    }
+                }
+            }
+        }
+        divide = 3
     }
 }
 
@@ -1277,10 +1296,7 @@ ai_treasury_for_unit_recovery = {
 ai_treasury_for_counter_bribing = {
     # Some really minimal buffer to negative treasury, where mercs become disloyal
     value = 10
-    add = {
-        value = has_monthly_income
-        divide = 2
-    }
+    add = has_monthly_income
 
     # For the event, idk why it's in local variable but only in ai_chance, but whatever
     if = {
@@ -1293,6 +1309,12 @@ ai_treasury_for_counter_bribing = {
     else = {
         add = scope:mercenary_to_bribe.ai_army_size_merc_estimation
     }
+
+    # We must be able to pay all our current mercenaries for at least some time
+    add = {
+        value = ai_current_mercenary_maintenance
+        multiply = 12
+    }
     
     # If balance is in the red, we must be able to hold out for a couple more months
     if = {
@@ -1301,7 +1323,7 @@ ai_treasury_for_counter_bribing = {
         }
         subtract = {
             value = has_monthly_balance
-            multiply = 6
+            multiply = 12
         }
     }
 }

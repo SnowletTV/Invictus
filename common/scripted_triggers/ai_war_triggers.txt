@@ -6,6 +6,105 @@
     }
 }
 
+# Same rules as found on Bribe button with some additions for the AI
+ai_can_bribe_mercenary = {
+    is_mercenary = yes
+    in_command = yes
+    # OR = {
+    #     is_general = yes
+    #     is_admiral = yes
+    # }
+    # Only armies for now
+    is_general = yes
+    any_character_unit = {
+        unit_size > 0
+        in_combat = no
+    }
+
+    save_temporary_scope_as = mercenary_to_bribe
+
+    employer = {
+        NOR = {
+            tag = MER
+            this = scope:recruiting_country
+        }
+        NOT = {
+            invention = recruit_mercenary_inv
+        }
+        # Minor fog removal for AI. While not completely fair, we need to compensate somehow for it lacking intuition.
+        # If we don't, AI countries will just drain gold with no gain, making them easier targets for players - BAD!
+        trigger_if = {
+            limit = {
+                is_ai = yes
+            }
+            # Bribe AI mercs only if it's guaranteed to succeed
+            OR = {
+                scope:mercenary_to_bribe = {
+                    any_character_unit = {
+                        is_exiled = yes
+                    }
+                }
+                treasury < ai_treasury_for_counter_bribing
+            }
+        }
+        trigger_else = {
+            # Bribe player mercs only if AI's pockets are deeper
+            treasury < scope:recruiting_country.treasury
+        }
+    }
+
+    scope:recruiting_country = {
+        war_with = scope:mercenary_to_bribe.employer
+        treasury >= scope:mercenary_to_bribe.ai_army_size_merc_estimation
+        num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
+    }
+
+    # A Mercenary cannot be enticed more than once a year
+    NOT = {
+        has_variable = merc_buyoff_cooldown
+    }
+
+    OR = {
+        location = {
+            trigger_if = {
+                limit = {
+                    exists = controller
+                }
+                NOT = {
+                    controller = {
+                        war_with = scope:recruiting_country
+                    }
+                }
+            }
+            trigger_else_if = {
+                limit = {
+                    exists = owner
+                }
+                NOT = {
+                    owner = {
+                        war_with = scope:recruiting_country
+                    }
+                }
+            }
+            trigger_else = {
+                always = yes
+            }
+        }
+        NOT = {
+            any_character_unit = {
+                morale_percentage < 0.80
+            }
+        }
+    }
+    
+    # Not exceeding the maintenance the country can cover
+    NOT = {
+        any_character_unit = {
+            unit_default_maintenance > scope:recruiting_country.ai_free_mercenary_maintenance
+        }
+    }
+}
+
 # Scope is character
 # Country must be saved as scope:recruiting_country
 ai_can_recruit_mercenary = {
@@ -73,6 +172,16 @@ ai_can_recruit_mercenary = {
                 }
                 trigger_else = {
                     always = no
+                }
+            }
+        }
+
+        # Don't recruit mercs if enemy army will just immediately stack wipe it
+        NOT = {
+            any_unit_in_province = {
+                is_army = yes
+                unit_owner = {
+                    war_with = scope:recruiting_country
                 }
             }
         }
@@ -250,7 +359,7 @@ ai_can_recruit_mercenary = {
     # Not exceeding the maintenance the country can cover
     NOT = {
         any_character_unit = {
-            unit_typical_maintenance_at_default_policy > scope:recruiting_country.ai_free_mercenary_maintenance
+            unit_default_maintenance > scope:recruiting_country.ai_free_mercenary_maintenance
         }
     }
 }
@@ -261,21 +370,22 @@ ai_is_facing_comparable_threat = {
     OR = {
         # Civil wars are no joke
         has_civil_war = yes
-        # Is at war with a player, which is always dangerous
-        any_countries_at_war_with = {
-            is_ai = no
-        }
+        # Is at war with player(s) with any significant combined population
+        country_population_of_enemy_players >= country_population_20_percent
         # There's a war where...
         any_current_war = {
             OR = {
                 # ...enemy side has similar amount of territories as ally side
-                num_of_territories_of_enemy_side >= num_of_territories_of_ally_side_minus_one_sixth
+                num_of_territories_of_enemy_side >= num_of_territories_of_ally_side_minus_one_fifth
+                # ...both sides have similar small-ish amount of territories
                 num_of_territories_of_enemy_side >= num_of_territories_of_ally_side_minus_ten
-                # ...enemy side combined would be equal to a great power, so it must be an absolutely massive war.
-                num_of_territories_of_enemy_side >= 500
+                # ...enemy side has similar amount of population as ally side
+                country_population_of_enemy_side >= country_population_of_ally_side_minus_one_fifth
+                # ...both sides have similar small-ish amount of population
+                country_population_of_enemy_side >= country_population_of_ally_side_minus_thirty
             }
         }
-        # A lot of out territories are occupied
+        # A lot of our territories are occupied
         any_owned_province = {
             percent >= 0.25
             controller = {
@@ -291,21 +401,18 @@ ai_is_facing_existential_threat = {
     OR = {
         # Civil wars are no joke
         has_civil_war = yes
-        # Is at war with a player, which is always dangerous
-        any_countries_at_war_with = {
-            is_ai = no
-        }
+        # Is at war with player(s) with somewhat comparable combined population
+        country_population_of_enemy_players >= country_population_40_percent
         # There's a war where...
         any_current_war = {
             OR = {
-                # ...enemy side is 1.(6) times larger than ally side. This is similar to a country having higher rank,
-                # as e.g. great power vs average major power is 500 to 300, which would be exactly 1.(6) times larger.
-                num_of_territories_of_enemy_side >= num_of_territories_of_ally_side_plus_two_thirds
-                # ...enemy side combined would be equal to a great power, so it must be an absolutely massive war.
-                num_of_territories_of_enemy_side >= 500
+                # ...enemy side has much larger amount of territories than ally side
+                num_of_territories_of_enemy_side >= num_of_territories_of_ally_side_plus_three_fifths
+                # ...enemy side has much larger amount of population than ally side
+                country_population_of_enemy_side >= country_population_of_ally_side_plus_three_fifths
             }
         }
-        # A lot of out territories are occupied
+        # A lot of our territories are occupied
         any_owned_province = {
             percent >= 0.50
             controller = {

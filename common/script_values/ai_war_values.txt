@@ -1,5 +1,5 @@
 ﻿ai_wartime_fund_desired = {
-    value = modifier:max_mercenary_stacks
+    value = max_mercenary_stacks_svalue
     multiply = recruit_mercenary_cost_svalue
     
     # Some money to pay mercenary wages
@@ -40,8 +40,17 @@ recruit_mercenary_cost_svalue = {
     }
 }
 
-num_free_mercenary_slots_svalue = {
+max_mercenary_stacks_svalue = {
     value = modifier:max_mercenary_stacks
+}
+
+max_mercenary_stacks_plus_1 = {
+    value = modifier:max_mercenary_stacks
+    add = 1
+}
+
+num_free_mercenary_slots_svalue = {
+    value = max_mercenary_stacks_svalue
     subtract = num_mercenaries_employed_svalue
 }
 
@@ -69,32 +78,72 @@ diplomatic_range_svalue = {
 ai_max_mercenary_maintenance = {
     if = {
         limit = {
-            has_local_variable = ai_max_mercenary_maintenance_cached
-        }
-        value = local_var:ai_max_mercenary_maintenance_cached
-    }
-    else = {
-        if = {
-            limit = {
+            trigger_if = {
+                limit = {
+                    exists = scope:mercenary_to_bribe
+                }
+                treasury >= scope:mercenary_to_bribe.ai_army_size_merc_estimation
+            }
+            trigger_else = {
                 treasury >= recruit_mercenary_cost_svalue
             }
+        }
 
-            # Use treasury to offset temporary deficit, starting with wartime fund
-            value = treasury
-            max = ai_wartime_fund_desired
-            # Everything above it can be used only partially
+        # Use treasury to offset temporary deficit, starting with wartime fund
+        value = ai_treasury_for_mercenaries
+        if = {
+            limit = {
+                exists = scope:mercenary_to_bribe
+            }
+            subtract = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+        }
+        else = {
+            subtract = recruit_mercenary_cost_svalue
+        }
+        divide = 36 # Assume we'll keep mercs for 3 years
+
+        # Current treasury monthly balance
+        add = has_monthly_balance
+
+        # If navy is not at default economic policy, add delta between current policy and default
+        add = navy_default_maintenance_delta
+
+        min = 0
+    }
+    else = {
+        value = 0
+    }
+}
+
+ai_treasury_for_mercenaries = {
+    if = {
+        limit = {
+            has_local_variable = ai_treasury_for_mercenaries_cached
+        }
+        value = local_var:ai_treasury_for_mercenaries_cached
+    }
+    else = {
+        # Start with allocating wartime fund
+        value = treasury
+        max = ai_wartime_fund_desired
+        # Everything above it can be used only partially
+        if = {
+            limit = {
+                treasury > ai_wartime_fund_desired
+            }
+            # Add part of the treasury at a decent rate, but with a rather harsh cap
             add = {
                 value = treasury
                 subtract = ai_wartime_fund_desired
                 min = 0
                 if = {
                     limit = {
-                        ai_is_facing_existential_threat = no
+                        ai_is_facing_existential_threat = yes
                     }
-                    multiply = 0.25
+                    multiply = 0.40
                 }
                 else = {
-                    multiply = 0.50
+                    multiply = 0.20
                 }
                 # No more than 175% or 250% of wartime fund is allowed in sum depending on threat
                 max = {
@@ -110,30 +159,63 @@ ai_max_mercenary_maintenance = {
                     }
                 }
             }
-            subtract = recruit_mercenary_cost_svalue
-            divide = 36 # Assume we'll keep mercs for 3 years
-
-            # Current treasury balance
-            add = has_monthly_balance
-
-            # If navy is not at default economic policy, add delta between current policy and default
-            if = {
-                limit = {
-                    OR = {
-                        has_high_economic_policy = expense_navy
-                        has_low_economic_policy = expense_navy
+            # Add part of the treasury at a low rate, but without a cap
+            add = {
+                value = treasury
+                subtract = ai_wartime_fund_desired
+                min = 0
+                if = {
+                    limit = {
+                        ai_is_facing_existential_threat = yes
                     }
+                    multiply = 0.10
                 }
-                every_navy = {
-                    add = unit_typical_maintenance
-                    subtract = unit_typical_maintenance_at_default_policy
+                else = {
+                    multiply = 0.05
                 }
             }
         }
-        else = {
-            value = 0
+    }
+}
+
+navy_default_maintenance_delta = {
+    if = {
+        limit = {
+            has_local_variable = navy_default_maintenance_delta_cached
+        }
+        value = local_var:navy_default_maintenance_delta_cached
+    }
+    else_if = {
+        limit = {
+            OR = {
+                has_high_economic_policy = expense_navy
+                has_low_economic_policy = expense_navy
+            }
+        }
+        value = 0
+        every_navy = {
+            add = unit_typical_maintenance
+            subtract = unit_default_maintenance
         }
     }
+    else = {
+        value = 0
+    }
+}
+
+# Copy of army_size_merc_estimation_sg but with scope being the character themselves
+ai_army_size_merc_estimation = { 
+	value = 0
+    ordered_character_unit = {
+        limit = {
+            unit_size > 0
+            in_combat = no
+        }
+        order_by = unit_size
+        add = unit_size
+    }
+	multiply = 4 #maintenance
+	multiply = 6 #months
 }
 
 # Armies only
@@ -150,7 +232,7 @@ ai_current_mercenary_maintenance = {
             limit = {
                 is_mercenary_unit = yes
             }
-            add = unit_typical_maintenance_at_default_policy
+            add = unit_default_maintenance
         }
     }
 }
@@ -161,6 +243,7 @@ ai_free_mercenary_maintenance = {
     subtract = ai_current_mercenary_maintenance
 }
 
+# Requires scope:recruiting_country and territory to check distance from as scope:target_province
 # Armies only
 ai_mercenary_priority = {
     # Bigger mercenaries are better
@@ -190,6 +273,33 @@ ai_mercenary_priority = {
         }
         # Let's avoid priority going into zero and below
         min = 0.01
+    }
+    # For bribing heavily prioritize stealing mercs from players
+    if = {
+        limit = {
+            employer = {
+                is_ai = no
+            }
+        }
+        multiply = 2
+    }
+    # Lower priority for mercs that are in a risk of getting stack wiped
+    if = {
+        limit = {
+            exists = c:MER
+            employer = c:MER
+            location = {
+                any_neighbor_province = {
+                    any_unit_in_province = {
+                        is_army = yes
+                        unit_owner = {
+                            war_with = scope:recruiting_country
+                        }
+                    }
+                }
+            }
+        }
+        divide = 3
     }
 }
 
@@ -1005,7 +1115,7 @@ unit_typical_maintenance = {
 
 # Doesn't include unit level modifiers like from active ability etc., assumes that army maintenance policy is default
 # Prefers scope:recruiting_country if it exists, otherwise current unit owner
-unit_typical_maintenance_at_default_policy = {
+unit_default_maintenance = {
     value = subunits_typical_maintenance
     if = {
         limit = {
@@ -1180,6 +1290,166 @@ ai_treasury_for_unit_recovery = {
         multiply = 2
         multiply = 12
     }
+}
+
+# Used in the warfare.3 event when counter bribing mercenaries
+ai_treasury_for_counter_bribing = {
+    # Some really minimal buffer to negative treasury, where mercs become disloyal
+    value = 10
+    add = has_monthly_income
+
+    # For the event, idk why it's in local variable but only in ai_chance, but whatever
+    if = {
+        limit = {
+            has_local_variable = merc_payoff_value
+        }
+        add = local_var:merc_payoff_value
+    }
+    # For checking it in the ai_can_bribe_mercenary trigger
+    else = {
+        add = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+    }
+
+    # We must be able to pay all our current mercenaries for at least some time
+    add = {
+        value = ai_current_mercenary_maintenance
+        multiply = 12
+    }
+    
+    # If balance is in the red, we must be able to hold out for a couple more months
+    if = {
+        limit = {
+            has_monthly_balance < 0
+        }
+        subtract = {
+            value = has_monthly_balance
+            multiply = 12
+        }
+    }
+}
+
+country_population_of_enemy_players = {
+    value = 0
+    every_countries_at_war_with = {
+        limit = {
+            is_ai = no
+        }
+        add = country_population
+    }
+}
+
+country_population_20_percent = {
+    value = country_population
+    multiply = 0.20
+}
+
+country_population_40_percent = {
+    value = country_population
+    multiply = 0.40
+}
+
+# Requires country to be saved as scope:country_at_war
+num_of_territories_of_enemy_side = {
+    value = 0
+    if = {
+        limit = {
+            any_war_attacker = {
+                this = scope:country_at_war
+            }
+        }
+        every_war_defender = {
+            add = num_of_territories_svalue
+        }
+    }
+    else = {
+        every_war_attacker = {
+            add = num_of_territories_svalue
+        }
+    }
+}
+
+# Requires country to be saved as scope:country_at_war
+num_of_territories_of_ally_side = {
+    value = 0
+    if = {
+        limit = {
+            any_war_attacker = {
+                this = scope:country_at_war
+            }
+        }
+        every_war_attacker = {
+            add = num_of_territories_svalue
+        }
+    }
+    else = {
+        every_war_defender = {
+            add = num_of_territories_svalue
+        }
+    }
+}
+num_of_territories_of_ally_side_plus_three_fifths = {
+    value = num_of_territories_of_ally_side
+    multiply = 1.60
+}
+num_of_territories_of_ally_side_minus_one_fifth = {
+    value = num_of_territories_of_ally_side
+    multiply = 0.80
+}
+num_of_territories_of_ally_side_minus_ten = {
+    value = num_of_territories_of_ally_side
+    subtract = 10
+}
+
+# Requires country to be saved as scope:country_at_war
+country_population_of_enemy_side = {
+    value = 0
+    if = {
+        limit = {
+            any_war_attacker = {
+                this = scope:country_at_war
+            }
+        }
+        every_war_defender = {
+            add = country_population
+        }
+    }
+    else = {
+        every_war_attacker = {
+            add = country_population
+        }
+    }
+}
+
+# Requires country to be saved as scope:country_at_war
+country_population_of_ally_side = {
+    value = 0
+    if = {
+        limit = {
+            any_war_attacker = {
+                this = scope:country_at_war
+            }
+        }
+        every_war_attacker = {
+            add = country_population
+        }
+    }
+    else = {
+        every_war_defender = {
+            add = country_population
+        }
+    }
+}
+country_population_of_ally_side_plus_three_fifths = {
+    value = country_population_of_ally_side
+    multiply = 1.60
+}
+country_population_of_ally_side_minus_one_fifth = {
+    value = country_population_of_ally_side
+    multiply = 0.80
+}
+country_population_of_ally_side_minus_thirty = {
+    value = country_population_of_ally_side
+    subtract = 30
 }
 
 # Generated using /tools/metaprogramming/distance_from_province.js

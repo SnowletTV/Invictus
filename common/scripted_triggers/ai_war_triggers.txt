@@ -38,14 +38,7 @@ ai_can_bribe_mercenary = {
                 is_ai = yes
             }
             # Bribe AI mercs only if it's guaranteed to succeed
-            OR = {
-                scope:mercenary_to_bribe = {
-                    any_character_unit = {
-                        is_exiled = yes
-                    }
-                }
-                treasury < ai_treasury_for_counter_bribing
-            }
+            ai_should_counter_bribe_mercenary = no
         }
         trigger_else = {
             # Bribe player mercs only if AI's pockets are deeper
@@ -100,7 +93,7 @@ ai_can_bribe_mercenary = {
     # Not exceeding the maintenance the country can cover
     NOT = {
         any_character_unit = {
-            unit_default_maintenance > scope:recruiting_country.ai_free_mercenary_maintenance
+            unit_default_maintenance > scope:recruiting_country.ai_free_mercenary_maintenance_for_bribing
         }
     }
 }
@@ -131,228 +124,13 @@ ai_can_recruit_mercenary = {
             }
         }
     }
-    
+
     # Check if mercenaries are in diplomatic range and are close enough so the AI can properly use them
-    location = {
-        # Prevent recruiting mercs in the enemy territory and spamming mercs on your own but occupied territories
-        trigger_if = {
-            limit = {
-                exists = controller
-            }
-            NOT = {
-                controller = {
-                    war_with = scope:recruiting_country
-                }
-            }
-        }
-        trigger_else_if = {
-            limit = {
-                exists = owner
-            }
-            NOT = {
-                owner = {
-                    war_with = scope:recruiting_country
-                }
-            }
-        }
-        # Recruit mercs from unsettled territories only if they are adjacent to territories of the recruiting country
-        trigger_else = {
-            any_neighbor_province = {
-                trigger_if = {
-                    limit = {
-                        exists = controller
-                    }
-                    controller = scope:recruiting_country
-                }
-                trigger_else_if = {
-                    limit = {
-                        exists = owner
-                    }
-                    owner = scope:recruiting_country
-                }
-                trigger_else = {
-                    always = no
-                }
-            }
-        }
-
-        # Don't recruit mercs if enemy army will just immediately stack wipe it
-        NOT = {
-            any_unit_in_province = {
-                is_army = yes
-                unit_owner = {
-                    war_with = scope:recruiting_country
-                }
-            }
-        }
-
-        # If we or our ally own Rhodope enclave, but our capital is not in it, Europa must have land path for mercs.
-        # Should remake this into generally applicable solution, but it's pathfinding territory so may be expensive.
-        trigger_if = {
-            limit = {
-                OR = {
-                    this = p:270
-                    this = p:297
-                    this = p:1774
-                }
-                exists = owner
-                owner = {
-                    OR = {
-                        this = scope:recruiting_country
-                        alliance_with = scope:recruiting_country
-                    }
-                }
-                scope:recruiting_country = {
-                    capital_scope = {
-                        NOR = {
-                            this = p:270
-                            this = p:297
-                            this = p:1774
-                        }
-                    }
-                }
-            }
-            p:349 = {
-                OR = {
-                    NOT = {
-                        exists = owner
-                    }
-                    owner = {
-                        OR = {
-                            this = scope:recruiting_country
-                            alliance_with = scope:recruiting_country
-                            war_with = scope:recruiting_country
-                        }
-                    }
-                }
-            }
-            area:europa_area = {
-                any_area_state = {
-                    owner = {
-                        OR = {
-                            this = scope:recruiting_country
-                            alliance_with = scope:recruiting_country
-                            war_with = scope:recruiting_country
-                        }
-                    }
-                }
-            }
-        }
-        trigger_else = {
-            always = yes
-        }
-
-        # Normally mercs are available by diplomatic range, but a proper check would be to compare distance from every
-        # province of the recruiting country, which is very expensive for such a frequently used trigger. Instead do a # series of simpler checks which should give us a good enough result, as mercs don't need a super precise one.
-        OR = {
-            # First check if we own the territory, which is the easiest scenario
-            AND = {
-                exists = owner
-                owner = scope:recruiting_country
-            }
-            AND = {
-                # If we don't, but there's still some owner, use fast native check if the owner is in range
-                OR = {
-                    NOT = {
-                        exists = owner
-                    }
-                    owner = {
-                        in_diplomatic_range = scope:recruiting_country
-                    }
-                }
-                # Then check territory distance from governorships capitals, good coverage but not as many checks
-                save_temporary_scope_as = mercenary_territory
-                scope:recruiting_country = {
-                    any_governorships = {
-                        exists = capital_scope
-                        capital_scope = {
-                            distance_from = {
-                                province = scope:mercenary_territory
-                                value <= scope:recruiting_country.diplomatic_range_svalue
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        save_temporary_scope_as = mercenary_territory
-        # Country is present in mercenary region or its neighbours with exceptions
-        region = {
-            save_temporary_scope_as = mercenary_region
-            scope:recruiting_country = {
-                any_governorships = {
-                    OR = {
-                        capital_scope.region = scope:mercenary_region
-                        # For some reason mercs from Britannia and Caledonia have troubles moving between them
-                        trigger_if = {
-                            limit = {
-                                OR = {
-                                    AND = {
-                                        capital_scope.region = p:2109.region # Caledonia
-                                        scope:mercenary_region = p:2022.region # Britannia
-                                    }
-                                    AND = {
-                                        capital_scope.region = p:2022.region # Britannia
-                                        scope:mercenary_region = p:2109.region # Caledonia
-                                    }
-                                }
-                            }
-                            # Allow only if recruiting country is present in area adjacent to mercenary area
-                            any_governorship_state = {
-                                area = {
-                                    any_neighbor_area = {
-                                        any_area_province = {
-                                            this = scope:mercenary_territory
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        # For other regions being present in neighbour region should be fine
-                        trigger_else = {
-                            capital_scope.region = {
-                                any_neighbor_region = {
-                                    this = scope:mercenary_region
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        # If it's island territory, recruiting country must be owner
-        trigger_if = {
-            limit = {
-                is_island_territory = yes
-            }
-            owner = scope:recruiting_country
-        }
-        # If it's island area, recruiting country must own non-island territory here
-        trigger_else_if = {
-            limit = {
-                area = {
-                    is_island_area = yes
-                }
-            }
-            area = {
-                any_area_province = {
-                    is_island_territory = no
-                    owner = scope:recruiting_country
-                }
-            }
-        }
-        # It's on the land, now check if owner is present on non-island territories
-        trigger_else = {
-            scope:recruiting_country = {
-                any_owned_province = {
-                    is_island_territory = no
-                    area = {
-                        is_island_area = no
-                    }
-                }
-            }
+    save_temporary_scope_as = mercenary_to_recruit
+    scope:recruiting_country = {
+        save_temporary_scope_as = potential_employer
+        scope:mercenary_to_recruit.location = {
+            ai_can_recruit_mercenary_in_territory = yes
         }
     }
 
@@ -360,6 +138,274 @@ ai_can_recruit_mercenary = {
     NOT = {
         any_character_unit = {
             unit_default_maintenance > scope:recruiting_country.ai_free_mercenary_maintenance
+        }
+    }
+}
+
+# Scope is character
+# Country must be saved as scope:recruiting_country
+ai_can_recruit_mercenary_without_bribed = {
+    # Basic checks for mercenary to be eligible
+    is_mercenary = yes
+    exists = c:MER
+    employer = c:MER
+    # OR = {
+    #     is_general = yes
+    #     is_admiral = yes
+    # }
+    # Only armies for now
+    is_general = yes
+    in_command = yes
+    any_character_unit = {
+        unit_size > 0
+    }
+    NOT = {
+        any_character_unit = {
+            OR = {
+                in_combat = yes
+                is_moving = yes
+                strength_percentage < 1
+            }
+        }
+    }
+
+    # Check if mercenaries are in diplomatic range and are close enough so the AI can properly use them
+    save_temporary_scope_as = mercenary_to_recruit
+    scope:counter_bribing_country = {
+        save_temporary_scope_as = potential_employer
+        scope:mercenary_to_recruit.location = {
+            ai_can_recruit_mercenary_in_territory = yes
+        }
+    }
+
+    # Not exceeding the maintenance the country can cover
+    NOT = {
+        any_character_unit = {
+            unit_default_maintenance > scope:counter_bribing_country.ai_free_mercenary_maintenance_without_bribed
+        }
+    }
+}
+
+# Country that recruits must be saved as scope:potential_employer
+ai_can_recruit_mercenary_in_territory = {
+    # Prevent recruiting mercs in the enemy territory and spamming mercs on your own but occupied territories
+    trigger_if = {
+        limit = {
+            exists = controller
+        }
+        NOT = {
+            controller = {
+                war_with = scope:potential_employer
+            }
+        }
+    }
+    trigger_else_if = {
+        limit = {
+            exists = owner
+        }
+        NOT = {
+            owner = {
+                war_with = scope:potential_employer
+            }
+        }
+    }
+    # Recruit mercs from unsettled territories only if they are adjacent to territories of the recruiting country
+    trigger_else = {
+        any_neighbor_province = {
+            trigger_if = {
+                limit = {
+                    exists = controller
+                }
+                controller = scope:potential_employer
+            }
+            trigger_else_if = {
+                limit = {
+                    exists = owner
+                }
+                owner = scope:potential_employer
+            }
+            trigger_else = {
+                always = no
+            }
+        }
+    }
+
+    # Don't recruit mercs if enemy army will just immediately stack wipe it
+    NOT = {
+        any_unit_in_province = {
+            is_army = yes
+            unit_owner = {
+                war_with = scope:potential_employer
+            }
+        }
+    }
+
+    # If we or our ally own Rhodope enclave, but our capital is not in it, Europa must have land path for mercs.
+    # Should remake this into generally applicable solution, but it's pathfinding territory so may be expensive.
+    trigger_if = {
+        limit = {
+            OR = {
+                this = p:270
+                this = p:297
+                this = p:1774
+            }
+            exists = owner
+            owner = {
+                OR = {
+                    this = scope:potential_employer
+                    alliance_with = scope:potential_employer
+                }
+            }
+            scope:potential_employer = {
+                capital_scope = {
+                    NOR = {
+                        this = p:270
+                        this = p:297
+                        this = p:1774
+                    }
+                }
+            }
+        }
+        p:349 = {
+            OR = {
+                NOT = {
+                    exists = owner
+                }
+                owner = {
+                    OR = {
+                        this = scope:potential_employer
+                        alliance_with = scope:potential_employer
+                        war_with = scope:potential_employer
+                    }
+                }
+            }
+        }
+        area:europa_area = {
+            any_area_state = {
+                owner = {
+                    OR = {
+                        this = scope:potential_employer
+                        alliance_with = scope:potential_employer
+                        war_with = scope:potential_employer
+                    }
+                }
+            }
+        }
+    }
+    trigger_else = {
+        always = yes
+    }
+
+    # Normally mercs are available by diplomatic range, but a proper check would be to compare distance from every
+    # province of the recruiting country, which is very expensive for such a frequently used trigger. Instead do a # series of simpler checks which should give us a good enough result, as mercs don't need a super precise one.
+    OR = {
+        # First check if we own the territory, which is the easiest scenario
+        AND = {
+            exists = owner
+            owner = scope:potential_employer
+        }
+        AND = {
+            # If we don't, but there's still some owner, use fast native check if the owner is in range
+            OR = {
+                NOT = {
+                    exists = owner
+                }
+                owner = {
+                    in_diplomatic_range = scope:potential_employer
+                }
+            }
+            # Then check territory distance from governorships capitals, good coverage but not as many checks
+            save_temporary_scope_as = mercenary_territory
+            scope:potential_employer = {
+                any_governorships = {
+                    exists = capital_scope
+                    capital_scope = {
+                        distance_from = {
+                            province = scope:mercenary_territory
+                            value <= scope:potential_employer.diplomatic_range_svalue
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    save_temporary_scope_as = mercenary_territory
+    # Country is present in mercenary region or its neighbours with exceptions
+    region = {
+        save_temporary_scope_as = mercenary_region
+        scope:potential_employer = {
+            any_governorships = {
+                OR = {
+                    capital_scope.region = scope:mercenary_region
+                    # For some reason mercs from Britannia and Caledonia have troubles moving between them
+                    trigger_if = {
+                        limit = {
+                            OR = {
+                                AND = {
+                                    capital_scope.region = p:2109.region # Caledonia
+                                    scope:mercenary_region = p:2022.region # Britannia
+                                }
+                                AND = {
+                                    capital_scope.region = p:2022.region # Britannia
+                                    scope:mercenary_region = p:2109.region # Caledonia
+                                }
+                            }
+                        }
+                        # Allow only if recruiting country is present in area adjacent to mercenary area
+                        any_governorship_state = {
+                            area = {
+                                any_neighbor_area = {
+                                    any_area_province = {
+                                        this = scope:mercenary_territory
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    # For other regions being present in neighbour region should be fine
+                    trigger_else = {
+                        capital_scope.region = {
+                            any_neighbor_region = {
+                                this = scope:mercenary_region
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    # If it's island territory, recruiting country must be owner
+    trigger_if = {
+        limit = {
+            is_island_territory = yes
+        }
+        owner = scope:potential_employer
+    }
+    # If it's island area, recruiting country must own non-island territory here
+    trigger_else_if = {
+        limit = {
+            area = {
+                is_island_area = yes
+            }
+        }
+        area = {
+            any_area_province = {
+                is_island_territory = no
+                owner = scope:potential_employer
+            }
+        }
+    }
+    # It's on the land, now check if owner is present on non-island territories
+    trigger_else = {
+        scope:potential_employer = {
+            any_owned_province = {
+                is_island_territory = no
+                area = {
+                    is_island_area = no
+                }
+            }
         }
     }
 }
@@ -482,6 +528,214 @@ unit_pays_maintenance = {
         }
         always = yes
     }
+    trigger_else = {
+        always = no
+    }
+}
+
+ai_should_counter_bribe_mercenary = {
+    # Check if we have anywhere near enough money in the treasury first for performance optimization
+    treasury >= ai_treasury_for_counter_bribing_base
+
+    # [HIGH PRIO] There's simply no comparable mercenary we can recruit instead of the one we are going to lose
+    trigger_if = {
+        limit = {
+            exists = c:MER
+            save_temporary_scope_as = counter_bribing_country
+            NOT = {
+                c:MER = {
+                    any_character = {
+                        # Newly recruited mercenary must be at least close in power (= maintenance) to the bribed one.
+                        # This includes strength check for counter bribed mercenary by comparing defxstr maintenance.
+                        # We don't check morale as it can be fixed fast, and a new mercenary will start with no morale.
+                        mercenary_defxstr_maintenance >= scope:mercenary_to_bribe.mercenary_default_maintenance_75_percent
+                        ai_can_recruit_mercenary_without_bribed = yes
+                    }
+                }
+            }
+        }
+        treasury >= ai_treasury_for_counter_bribing_high_prio
+    }
+
+    # [HIGH PRIO] Either this mercenary army is currently in the fort siege, or there's some enemy or ally army in its
+    # territory or any of the surrounding ones, so losing it will almost immediately affect our capabilities in battles
+    trigger_else_if = {
+        limit = {
+            scope:mercenary_to_bribe = {
+                NOT = {
+                    any_character_unit = {
+                        OR = {
+                            is_exiled = yes # Can't be exiled as it makes it no better than newly recruited mercs
+                            morale_percentage < 0.80 # Morale must be high enough for almost immediate fighting
+                            strength_percentage < 0.60 # Can be somewhat weakened but still must do some damage
+                        }
+                    }
+                }
+                any_character_unit = {
+                    save_temporary_scope_as = mercenary_unit
+                    OR = {
+                        AND = {
+                            in_siege = yes
+                            unit_location = {
+                                fort_level > 0
+                            }
+                        }
+                        unit_location = {
+                            OR = {
+                                any_unit_in_province = {
+                                    NOT = {
+                                        this = scope:mercenary_unit
+                                    }
+                                    is_army = yes
+                                    unit_owner = {
+                                        save_temporary_scope_as = other_unit_owner
+                                        scope:mercenary_to_bribe.employer = {
+                                            any_active_war = {
+                                                any_war_participant = {
+                                                    this = scope:other_unit_owner
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                any_neighbor_province = {
+                                    any_unit_in_province = {
+                                        NOT = {
+                                            this = scope:mercenary_unit
+                                        }
+                                        is_army = yes
+                                        unit_owner = {
+                                            save_temporary_scope_as = other_unit_owner
+                                            scope:mercenary_to_bribe.employer = {
+                                                any_active_war = {
+                                                    any_war_participant = {
+                                                        this = scope:other_unit_owner
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        treasury >= ai_treasury_for_counter_bribing_high_prio
+    }
+
+    # [MEDIUM PRIO] Affects the war as it's currently in the territory of participants or in one territory away from it
+    trigger_else_if = {
+        limit = {
+            scope:mercenary_to_bribe = {
+                NOT = {
+                    any_character_unit = {
+                        OR = {
+                            is_exiled = yes # Can't be exiled as it makes it no better than newly recruited mercs
+                            morale_percentage < 0.60 # Morale must be high enough to recover in a few months or so
+                            strength_percentage < 0.80 # Should be close to full strength to be worth the investment
+                        }
+                    }
+                }
+                any_character_unit = {
+                    unit_location = {
+                        OR = {
+                            trigger_if = {
+                                limit = {
+                                    exists = controller
+                                }
+                                controller = {
+                                    save_temporary_scope_as = unit_location_controller
+                                    scope:mercenary_to_bribe.employer = {
+                                        any_active_war = {
+                                            any_war_participant = {
+                                                this = scope:unit_location_controller
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            trigger_else_if = {
+                                limit = {
+                                    exists = owner
+                                }
+                                owner = {
+                                    save_temporary_scope_as = unit_location_owner
+                                    scope:mercenary_to_bribe.employer = {
+                                        any_active_war = {
+                                            any_war_participant = {
+                                                this = scope:unit_location_owner
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            trigger_else = {
+                                always = no
+                            }
+                            any_neighbor_province = {
+                                trigger_if = {
+                                    limit = {
+                                        exists = controller
+                                    }
+                                    controller = {
+                                        save_temporary_scope_as = unit_location_controller
+                                        scope:mercenary_to_bribe.employer = {
+                                            any_active_war = {
+                                                any_war_participant = {
+                                                    this = scope:unit_location_controller
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                trigger_else_if = {
+                                    limit = {
+                                        exists = owner
+                                    }
+                                    owner = {
+                                        save_temporary_scope_as = unit_location_owner
+                                        scope:mercenary_to_bribe.employer = {
+                                            any_active_war = {
+                                                any_war_participant = {
+                                                    this = scope:unit_location_owner
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                trigger_else = {
+                                    always = no
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        treasury >= ai_treasury_for_counter_bribing_medium_prio
+    }
+
+    # [LOW PRIO] The immediate impact would be relatively low, counter bribe only if rich enough to just do it anyways
+    trigger_else_if = {
+        limit = {
+            scope:mercenary_to_bribe = {
+                NOT = {
+                    any_character_unit = {
+                        OR = {
+                            is_exiled = yes # Can't be exiled as it makes it no better than newly recruited mercs
+                            morale_percentage < 0.95 # Should have almost full morale to be worth the investment
+                            strength_percentage < 0.95 # Should have almost full strength to be worth the investment
+                        }
+                    }
+                }
+            }
+        }
+        treasury >= ai_treasury_for_counter_bribing_low_prio
+    }
+
+    # Don't counter bribe mercenaries that are seemingly not worth it
     trigger_else = {
         always = no
     }

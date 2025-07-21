@@ -78,32 +78,75 @@ diplomatic_range_svalue = {
 ai_max_mercenary_maintenance = {
     if = {
         limit = {
-            trigger_if = {
-                limit = {
-                    exists = scope:mercenary_to_bribe
-                }
-                treasury >= scope:mercenary_to_bribe.ai_army_size_merc_estimation
-            }
-            trigger_else = {
-                treasury >= recruit_mercenary_cost_svalue
-            }
+            treasury >= recruit_mercenary_cost_svalue
         }
 
         # Use treasury to offset temporary deficit, starting with wartime fund
         value = ai_treasury_for_mercenaries
-        if = {
-            limit = {
-                exists = scope:mercenary_to_bribe
-            }
-            subtract = scope:mercenary_to_bribe.ai_army_size_merc_estimation
-        }
-        else = {
-            subtract = recruit_mercenary_cost_svalue
-        }
+        subtract = recruit_mercenary_cost_svalue
         divide = 36 # Assume we'll keep mercs for 3 years
 
         # Current treasury monthly balance
         add = has_monthly_balance
+
+        # If navy is not at default economic policy, add delta between current policy and default
+        add = navy_default_maintenance_delta
+
+        min = 0
+    }
+    else = {
+        value = 0
+    }
+}
+
+# Check how much gold per month a country can spend on mercenaries
+# Armies only
+ai_max_mercenary_maintenance_for_bribing = {
+    if = {
+        limit = {
+            treasury >= scope:mercenary_to_bribe.ai_army_size_merc_estimation
+        }
+
+        # Use treasury to offset temporary deficit, starting with wartime fund
+        value = ai_treasury_for_mercenaries
+        subtract = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+        divide = 36 # Assume we'll keep mercs for 3 years
+
+        # Current treasury monthly balance
+        add = has_monthly_balance
+
+        # If navy is not at default economic policy, add delta between current policy and default
+        add = navy_default_maintenance_delta
+
+        min = 0
+    }
+    else = {
+        value = 0
+    }
+}
+
+# Check how much gold per month a country can spend on mercenaries
+# Armies only
+ai_max_mercenary_maintenance_without_bribed = {
+    if = {
+        limit = {
+            treasury >= recruit_mercenary_cost_svalue
+        }
+
+        # Use treasury to offset temporary deficit, starting with wartime fund
+        value = ai_treasury_for_mercenaries
+        subtract = recruit_mercenary_cost_svalue
+        divide = 36 # Assume we'll keep mercs for 3 years
+
+        # Current treasury monthly balance
+        add = has_monthly_balance
+
+        # Our monthly balance will be higher without maintenance of the bribed mercs
+        scope:mercenary_to_bribe = {
+            every_character_unit = {
+                add = unit_default_maintenance
+            }
+        }
 
         # If navy is not at default economic policy, add delta between current policy and default
         add = navy_default_maintenance_delta
@@ -241,6 +284,23 @@ ai_current_mercenary_maintenance = {
 ai_free_mercenary_maintenance = {
     value = ai_max_mercenary_maintenance
     subtract = ai_current_mercenary_maintenance
+}
+
+ai_free_mercenary_maintenance_for_bribing = {
+    value = ai_max_mercenary_maintenance_for_bribing
+    subtract = ai_current_mercenary_maintenance
+}
+
+ai_free_mercenary_maintenance_without_bribed = {
+    # Max maintenance as if we didn't have the bribed mercs
+    value = ai_max_mercenary_maintenance_without_bribed
+    # Current maintenance as if we didn't have the bribed mercs
+    subtract = ai_current_mercenary_maintenance
+    scope:mercenary_to_bribe = {
+        every_character_unit = {
+            add = unit_default_maintenance
+        }
+    }
 }
 
 # Requires scope:recruiting_country and territory to check distance from as scope:target_province
@@ -1007,6 +1067,715 @@ subunits_typical_maintenance = {
     }
 }
 
+# Typical maintenance but including impact from strength losses
+subunits_strength_maintenance = {
+    if = {
+        limit = {
+            is_army = yes
+        }
+        value = 0
+        if = {
+            limit = {
+                unit_pays_maintenance = yes
+            }
+            every_sub_unit = {
+                add = {
+                    value = 0
+                    if = {
+                        limit = {
+                            sub_unit_type = archers
+                        }
+                        add = {
+                            value = 8
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:archers_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:archers_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:archers_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:archers_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = camels
+                        }
+                        add = {
+                            value = 15
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:camels_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:camels_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:camels_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:camels_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = chariots
+                        }
+                        add = {
+                            value = 8
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:chariots_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:chariots_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:chariots_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:chariots_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = engineer_cohort
+                        }
+                        add = {
+                            value = 40
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:engineer_cohort_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:engineer_cohort_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:engineer_cohort_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:engineer_cohort_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = heavy_cavalry
+                        }
+                        add = {
+                            value = 18
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:heavy_cavalry_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:heavy_cavalry_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:heavy_cavalry_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:heavy_cavalry_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = heavy_infantry
+                        }
+                        add = {
+                            value = 16
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:heavy_infantry_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:heavy_infantry_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:heavy_infantry_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:heavy_infantry_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = horse_archers
+                        }
+                        add = {
+                            value = 16
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:horse_archers_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:horse_archers_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:horse_archers_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:horse_archers_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = light_cavalry
+                        }
+                        add = {
+                            value = 10
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:light_cavalry_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:light_cavalry_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:light_cavalry_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:light_cavalry_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = light_infantry
+                        }
+                        add = {
+                            value = 8
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:light_infantry_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:light_infantry_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:light_infantry_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:light_infantry_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = spearmen
+                        }
+                        add = {
+                            value = 8
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:spearmen_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:spearmen_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:spearmen_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:spearmen_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = supply_train
+                        }
+                        add = {
+                            value = 20
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:supply_train_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:supply_train_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:supply_train_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:supply_train_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            sub_unit_type = warelephant
+                        }
+                        add = {
+                            value = 28
+                            if = {
+                                limit = {
+                                    exists = scope:recruiting_country
+                                }
+                                scope:recruiting_country = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:warelephant_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:warelephant_maintenance_cost
+                                    }
+                                }
+                            }
+                            else = {
+                                owning_unit.unit_owner = {
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:warelephant_cost
+                                    }
+                                    multiply = {
+                                        value = 1.00
+                                        add = modifier:warelephant_maintenance_cost
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    multiply = subunit_strength_percentage
+                    if = {
+                        limit = {
+                            owning_unit = {
+                                is_mercenary_unit = no
+                            }
+                            has_personal_loyalty = yes
+                        }
+                        multiply = 0.66
+                    }
+                }
+            }
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:cohort_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:cohort_cost
+                    }
+                }
+            }
+            multiply = 0.0208
+        }
+    }
+    else = {
+        value = 0
+        every_sub_unit = {
+            add = {
+                value = 0
+                if = {
+                    limit = {
+                        sub_unit_type = liburnian
+                    }
+                    add = {
+                        value = 5
+                        if = {
+                            limit = {
+                                exists = scope:recruiting_country
+                            }
+                            scope:recruiting_country = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:liburnian_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:liburnian_maintenance_cost
+                                }
+                            }
+                        }
+                        else = {
+                            owning_unit.unit_owner = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:liburnian_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:liburnian_maintenance_cost
+                                }
+                            }
+                        }
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = trireme
+                    }
+                    add = {
+                        value = 8
+                        if = {
+                            limit = {
+                                exists = scope:recruiting_country
+                            }
+                            scope:recruiting_country = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:trireme_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:trireme_maintenance_cost
+                                }
+                            }
+                        }
+                        else = {
+                            owning_unit.unit_owner = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:trireme_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:trireme_maintenance_cost
+                                }
+                            }
+                        }
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = tetrere
+                    }
+                    add = {
+                        value = 10
+                        if = {
+                            limit = {
+                                exists = scope:recruiting_country
+                            }
+                            scope:recruiting_country = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:tetrere_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:tetrere_maintenance_cost
+                                }
+                            }
+                        }
+                        else = {
+                            owning_unit.unit_owner = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:tetrere_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:tetrere_maintenance_cost
+                                }
+                            }
+                        }
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = hexere
+                    }
+                    add = {
+                        value = 15
+                        if = {
+                            limit = {
+                                exists = scope:recruiting_country
+                            }
+                            scope:recruiting_country = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:hexere_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:hexere_maintenance_cost
+                                }
+                            }
+                        }
+                        else = {
+                            owning_unit.unit_owner = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:hexere_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:hexere_maintenance_cost
+                                }
+                            }
+                        }
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = octere
+                    }
+                    add = {
+                        value = 25
+                        if = {
+                            limit = {
+                                exists = scope:recruiting_country
+                            }
+                            scope:recruiting_country = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:octere_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:octere_maintenance_cost
+                                }
+                            }
+                        }
+                        else = {
+                            owning_unit.unit_owner = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:octere_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:octere_maintenance_cost
+                                }
+                            }
+                        }
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = mega_galley
+                    }
+                    add = {
+                        value = 32
+                        if = {
+                            limit = {
+                                exists = scope:recruiting_country
+                            }
+                            scope:recruiting_country = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:mega_galley_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:mega_galley_maintenance_cost
+                                }
+                            }
+                        }
+                        else = {
+                            owning_unit.unit_owner = {
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:mega_galley_cost
+                                }
+                                multiply = {
+                                    value = 1.00
+                                    add = modifier:mega_galley_maintenance_cost
+                                }
+                            }
+                        }
+                    }
+                }
+                multiply = subunit_strength_percentage
+            }
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:ship_cost
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:ship_cost
+                }
+            }
+        }
+        multiply = 0.01665
+    }
+}
+
 # Doesn't include unit level modifiers like from active ability etc.
 # Prefers scope:recruiting_country if it exists, otherwise current unit owner
 unit_typical_maintenance = {
@@ -1271,6 +2040,182 @@ unit_default_maintenance = {
     }
 }
 
+# Default maintenance but including impact from strength losses
+unit_defxstr_maintenance = {
+    value = subunits_strength_maintenance
+    if = {
+        limit = {
+            is_army = yes
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:army_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_army
+                        }
+                        subtract = 0.25
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_army
+                        }
+                        add = 0.25
+                    }
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:army_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_army
+                        }
+                        subtract = 0.25
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_army
+                        }
+                        add = 0.25
+                    }
+                }
+            }
+        }
+        if = {
+            limit = {
+                is_mercenary_unit = yes
+            }
+            # Mercenary premium
+            multiply = 1.50
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_land_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_land_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            is_navy = yes
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:navy_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_navy
+                        }
+                        subtract = 0.50
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_navy
+                        }
+                        add = 0.50
+                    }
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:navy_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_navy
+                        }
+                        subtract = 0.50
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_navy
+                        }
+                        add = 0.50
+                    }
+                }
+            }
+        }
+        if = {
+            limit = {
+                is_mercenary_unit = yes
+            }
+            # Mercenary premium
+            multiply = 1.50
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_naval_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_naval_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+}
+
+mercenary_default_maintenance = {
+    value = 0
+    every_character_unit = {
+        add = unit_default_maintenance
+    }
+}
+
+mercenary_default_maintenance_75_percent = {
+    value = mercenary_default_maintenance
+    multiply = 0.75
+}
+
+mercenary_defxstr_maintenance = {
+    value = 0
+    every_character_unit = {
+        add = unit_defxstr_maintenance
+    }
+}
+
 # Scope is unit evaluated for unit recovery
 ai_treasury_for_unit_recovery_base = {
     # Minimal buffer before negative treasury for small countries
@@ -1292,23 +2237,43 @@ ai_treasury_for_unit_recovery = {
     }
 }
 
-# Used in the warfare.3 event when counter bribing mercenaries
-ai_treasury_for_counter_bribing = {
+# Used in ai_should_counter_bribe_mercenary, requires scope:mercenary_to_bribe
+ai_treasury_for_counter_bribing_base = {
     # Some really minimal buffer to negative treasury, where mercs become disloyal
     value = 10
-    add = has_monthly_income
+    add = {
+        value = has_monthly_income
+        divide = 2
+    }
+    # Counter bribe amount
+    add = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+}
 
-    # For the event, idk why it's in local variable but only in ai_chance, but whatever
+# Used in ai_should_counter_bribe_mercenary, requires scope:mercenary_to_bribe
+ai_treasury_for_counter_bribing_high_prio = {
+    value = ai_treasury_for_counter_bribing_base
+
+    # We must be able to pay all our current mercenaries for at least a couple of months
+    add = {
+        value = ai_current_mercenary_maintenance
+        multiply = 6
+    }
+    
+    # If balance is in the red, we must be able to hold out for at least a couple of months
     if = {
         limit = {
-            has_local_variable = merc_payoff_value
+            has_monthly_balance < 0
         }
-        add = local_var:merc_payoff_value
+        subtract = {
+            value = has_monthly_balance
+            multiply = 6
+        }
     }
-    # For checking it in the ai_can_bribe_mercenary trigger
-    else = {
-        add = scope:mercenary_to_bribe.ai_army_size_merc_estimation
-    }
+}
+
+# Used in ai_should_counter_bribe_mercenary, requires scope:mercenary_to_bribe
+ai_treasury_for_counter_bribing_medium_prio = {
+    value = ai_treasury_for_counter_bribing_base
 
     # We must be able to pay all our current mercenaries for at least some time
     add = {
@@ -1316,7 +2281,7 @@ ai_treasury_for_counter_bribing = {
         multiply = 12
     }
     
-    # If balance is in the red, we must be able to hold out for a couple more months
+    # If balance is in the red, we must be able to hold out for at least some time
     if = {
         limit = {
             has_monthly_balance < 0
@@ -1325,6 +2290,35 @@ ai_treasury_for_counter_bribing = {
             value = has_monthly_balance
             multiply = 12
         }
+    }
+}
+
+# Used in ai_should_counter_bribe_mercenary, requires scope:mercenary_to_bribe
+ai_treasury_for_counter_bribing_low_prio = {
+    value = ai_treasury_for_counter_bribing_base
+
+    # We must be able to pay all our current mercenaries for a long time
+    add = {
+        value = ai_current_mercenary_maintenance
+        multiply = 36
+    }
+    
+    # If balance is in the red, we must be able to hold out for a long time
+    if = {
+        limit = {
+            has_monthly_balance < 0
+        }
+        subtract = {
+            value = has_monthly_balance
+            multiply = 36
+        }
+    }
+
+    # Remaining treasury can't be lower than what we consider to be plenty of money for waging a war
+    min = {
+        value = ai_wartime_fund_desired
+        multiply = 2.50
+        add = scope:mercenary_to_bribe.ai_army_size_merc_estimation
     }
 }
 

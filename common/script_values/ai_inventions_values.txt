@@ -1402,12 +1402,84 @@ territory_research_points = {
 	}
 	min = 0
 }
+
+# Without impact of stability and big temporary modifiers like deficit research event
 territory_normalized_research_points = {
-	value = modifier:research_points
+	if = {
+		limit = {
+			num_of_nobles > 0
+			num_of_citizen > 0
+		}
+		# What research nobles would give at 50 stability with correction for their share in research points
+		value = {
+			value = modifier:research_points
+			multiply = share_of_base_research_from_nobles
+			multiply = {
+				value = nobles_happiness_at_50_stability
+				divide = {
+					value = nobles_happiness
+					min = 0.01
+				}
+			}
+		}
+		# What research citizens would give at 50 stability with correction for their share in research points
+		add = {
+			value = modifier:research_points
+			multiply = {
+				value = 1
+				subtract = share_of_base_research_from_nobles
+			}
+			multiply = {
+				value = citizen_happiness_at_50_stability
+				divide = {
+					value = citizen_happiness
+					min = 0.01
+				}
+			}
+		}
+	}
+	else_if = {
+		limit = {
+			num_of_nobles > 0
+		}
+		# What research nobles would give at 50 stability
+		value = {
+			value = modifier:research_points
+			multiply = {
+				value = nobles_happiness_at_50_stability
+				divide = {
+					value = nobles_happiness
+					min = 0.01
+				}
+			}
+		}
+	}
+	else_if = {
+		limit = {
+			num_of_citizen > 0
+		}
+		# What research citizens would give at 50 stability
+		value = {
+			value = modifier:research_points
+			multiply = {
+				value = citizen_happiness_at_50_stability
+				divide = {
+					value = citizen_happiness
+					min = 0.01
+				}
+			}
+		}
+	}
+	else = {
+		value = modifier:research_points
+	}
+
 	multiply = {
 		value = 1.00
 		add = modifier:local_research_points_modifier
 		add = owner.modifier:research_points_modifier
+		# Positive stability gives modifier research
+		subtract = owner.research_points_modifier_from_stability
 		if = {
 			limit = {
 				owner = {
@@ -1418,6 +1490,90 @@ territory_normalized_research_points = {
 		}
 	}
 	min = 0
+}
+
+share_of_base_research_from_nobles = {
+	value = {
+		value = num_of_nobles
+		multiply = 2.5
+		multiply = {
+			value = nobles_happiness
+			min = 0
+			max = 1
+		}
+	}
+	divide = {
+		value = {
+			value = num_of_nobles
+			multiply = 2.5
+			multiply = {
+				value = nobles_happiness
+				min = 0
+				max = 1
+			}
+		}
+		add = {
+			value = num_of_citizen
+			multiply = {
+				value = citizen_happiness
+				min = 0
+				max = 1
+			}
+		}
+		min = 1
+	}
+	min = 0
+	max = 1
+}
+
+research_points_modifier_from_stability = {
+	if = {
+		limit = {
+			stability > 50
+		}
+		value = stability
+		subtract = 50
+		divide = 200
+	}
+	else = {
+		value = 0
+	}
+}
+
+population_happiness_from_stability = {
+	if = {
+		limit = {
+			stability > 50
+		}
+		value = stability
+		subtract = 50
+		divide = 500
+	}
+	else_if = {
+		limit = {
+			stability < 50
+		}
+		value = stability
+		subtract = 50
+		divide = 100
+	}
+	else = {
+		value = 0
+	}
+}
+
+nobles_happiness_at_50_stability = {
+	value = nobles_happiness
+	subtract = owner.population_happiness_from_stability
+	min = 0
+	max = 1
+}
+
+citizen_happiness_at_50_stability = {
+	value = citizen_happiness
+	subtract = owner.population_happiness_from_stability
+	min = 0
+	max = 1
 }
 
 governorship_research_points = {

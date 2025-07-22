@@ -518,3 +518,149 @@ ai_choose_territory_and_found_city = {
 
     }
 }
+
+# Performed exactly once a year by setting a global variable, the scope that calls it doesn't matter
+ai_colonize_unowned_territories = {
+    if = {
+        limit = {
+            NOT = {
+                has_global_variable = ai_colonized_territories
+            }
+        }
+        set_global_variable = {
+            name = ai_colonized_territories
+            days = 365
+        }
+
+        # Check all uncolonized territories in the world, prioritizing ones with higher population first
+        ordered_ownable_province = {
+            limit = {
+                NOT = {
+                    exists = owner
+                }
+            }
+            order_by = total_population
+            # Won't loop through all territories otherwise
+            min = 0
+            max = 999999
+            check_range_bounds = no
+
+            # Create list of AI territories that are eligible to colonize this one
+            every_neighbor_province = {
+                
+                # Neighbour land territories
+                if = {
+                    limit = {
+                        is_water = no
+                    }
+                    if = {
+                        limit = {
+                            NOT = {
+                                is_target_in_local_variable_list = {
+                                    name = territories_to_colonize_from
+                                    target = this
+                                }
+                            }
+                        }
+                        add_to_local_variable_list = {
+                            name = territories_to_colonize_from
+                            target = this
+                        }
+                    }
+                }
+                
+                # One level deep over water
+                else = {
+
+                    # Land territories one level deep over water
+                    every_neighbor_province = {
+                        if = {
+                            limit = {
+                                is_water = no
+                            }
+                            if = {
+                                limit = {
+                                    NOT = {
+                                        is_target_in_local_variable_list = {
+                                            name = territories_to_colonize_from
+                                            target = this
+                                        }
+                                    }
+                                }
+                                add_to_local_variable_list = {
+                                    name = territories_to_colonize_from
+                                    target = this
+                                }
+                            }
+                        }
+
+                        # Two levels deep over water
+                        else = {
+
+                            # Land territories two levels deep over water
+                            every_neighbor_province = {
+                                limit = {
+                                    is_water = no
+                                }
+                                if = {
+                                    limit = {
+                                        NOT = {
+                                            is_target_in_local_variable_list = {
+                                                name = territories_to_colonize_from
+                                                target = this
+                                            }
+                                        }
+                                    }
+                                    add_to_local_variable_list = {
+                                        name = territories_to_colonize_from
+                                        target = this
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if = {
+                limit = {
+                    has_local_variable_list = territories_to_colonize_from
+                    local_variable_list_size = {
+                        name = territories_to_colonize_from
+                        value > 0
+                    }
+                }
+                save_scope_as = territory_to_colonize
+                ordered_in_local_list = {
+                    variable = territories_to_colonize_from
+                    limit = {
+                        ai_can_colonize_from_this_territory = yes
+                    }
+                    order_by = total_population
+                    position = 0
+
+                    owner = {
+                        add_treasury = -10
+                    }
+                    random_pops_in_province = {
+                        limit = {
+                            NOT = {
+                                pop_type = slaves
+                            }
+                        }
+                        move_pop = scope:territory_to_colonize
+                    }
+                    scope:territory_to_colonize = {
+                        set_owned_by = prev.owner
+                    }
+                    set_variable = {
+                        name = ai_colonized_from_this_territory
+                        days = 365
+                    }
+                }
+                clear_saved_scope = territory_to_colonize
+                clear_local_variable_list = territories_to_colonize_from
+            }
+        }
+    }
+}

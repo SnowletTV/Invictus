@@ -664,3 +664,270 @@ ai_colonize_unowned_territories = {
         }
     }
 }
+
+# Note that this may kinda steal goods due to add_trade_route probably ignoring a lot of things
+ai_import_food_into_starving_states = {
+    if = {
+        limit = {
+            NOT = {
+                has_global_variable = ai_imported_food_into_starving_states
+            }
+        }
+        set_global_variable = {
+            name = ai_imported_food_into_starving_states
+            days = 185
+        }
+
+        every_country = {
+            limit = {
+                is_ai = yes
+                any_country_state = {
+                    state_has_low_food = yes
+                    unused_trade_routes > 0
+                }
+            }
+            save_scope_as = importing_country
+            
+            every_country = {
+                limit = {
+                    # Don't steal trade goods from players
+                    is_ai = yes
+                    # Required for trading
+                    scope:importing_country = {
+                        in_diplomatic_range = prev
+                    }
+                    NOT = {
+                        war_with = scope:importing_country
+                    }
+                    # Threshold where negative opinion outweights the base value
+                    opinion = {
+                        target = scope:importing_country
+                        value > -120
+                    }
+                    # Allowed to trade all the goods we are looking for
+                    is_trade_goods_allowed = grain
+                    is_trade_goods_allowed = cattle
+                    is_trade_goods_allowed = fish
+                    is_trade_goods_allowed = vegetables
+                }
+
+                # Save states to export from to variable lists in country scope. The reason is that there may be a lot
+                # of low food states in the world, so it's much better to make every country loop over its states only
+                # once and save the result, rather than do it over and over again for each country with low food states
+                if = {
+                    limit = {
+                        NOT = {
+                            has_variable = ai_created_lists_of_food_states
+                        }
+                    }                    
+                    set_variable = ai_created_lists_of_food_states
+                    every_country_state = {
+                        limit = {
+                            # Don't steal food from states that need it themselves
+                            percent_of_cities_in_state < 0.1667
+                            # Disloyal states can't export goods
+                            state_is_disloyal = no
+                        }
+                        # Limit it to widely available food, don't steal relatively rare capital effects from players
+                        ai_add_to_list_if_state_can_export = {
+                            goods = grain
+                        }
+                        ai_add_to_list_if_state_can_export = {
+                            goods = cattle
+                        }
+                        ai_add_to_list_if_state_can_export = {
+                            goods = fish
+                        }
+                        ai_add_to_list_if_state_can_export = {
+                            goods = vegetables
+                        }
+                    }
+                }
+
+                # Copy country scope lists into local lists made specifically for the country with low food state
+                ai_duplicate_states_that_can_export = {
+                    goods = grain
+                }
+                ai_duplicate_states_that_can_export = {
+                    goods = cattle
+                }
+                ai_duplicate_states_that_can_export = {
+                    goods = fish
+                }
+                ai_duplicate_states_that_can_export = {
+                    goods = vegetables
+                }
+            }
+
+            # Check if at least any of the lists exists before proceeding
+            if = {
+                limit = {
+                    OR = {
+                        AND = {
+                            has_local_variable_list = states_to_import_grain_from
+                            local_variable_list_size = {
+                                name = states_to_import_grain_from
+                                value > 0
+                            }
+                        }
+                        AND = {
+                            has_local_variable_list = states_to_import_cattle_from
+                            local_variable_list_size = {
+                                name = states_to_import_cattle_from
+                                value > 0
+                            }
+                        }
+                        AND = {
+                            has_local_variable_list = states_to_import_fish_from
+                            local_variable_list_size = {
+                                name = states_to_import_fish_from
+                                value > 0
+                            }
+                        }
+                        AND = {
+                            has_local_variable_list = states_to_import_vegetables_from
+                            local_variable_list_size = {
+                                name = states_to_import_vegetables_from
+                                value > 0
+                            }
+                        }
+                    }
+                }
+                every_country_state = {
+                    limit = {
+                        state_has_low_food = yes
+                        unused_trade_routes > 0
+                    }
+                    save_scope_as = importing_state
+                    ai_import_goods_into_specific_state = {
+                        goods = grain
+                    }
+                    random_list = {
+                        50 = {
+                            ai_import_goods_into_specific_state = {
+                                goods = cattle
+                            }
+                            ai_import_goods_into_specific_state = {
+                                goods = fish
+                            }
+                        }
+                        50 = {
+                            ai_import_goods_into_specific_state = {
+                                goods = fish
+                            }
+                            ai_import_goods_into_specific_state = {
+                                goods = cattle
+                            }
+                        }
+                    }
+                    ai_import_goods_into_specific_state = {
+                        goods = vegetables
+                    }
+                    clear_saved_scope = importing_state
+                }
+
+                # Clear combined local lists
+                clear_local_variable_list = states_to_import_grain_from
+                clear_local_variable_list = states_to_import_cattle_from
+                clear_local_variable_list = states_to_import_fish_from
+                clear_local_variable_list = states_to_import_vegetables_from
+            }
+            
+            clear_saved_scope = importing_country
+        }
+
+        # After all low food states got their trade routes, clear data saved on country level
+        every_country = {
+            limit = {
+                has_variable = ai_created_lists_of_food_states
+            }
+            remove_variable = ai_created_lists_of_food_states
+            clear_variable_list = states_that_can_export_grain
+            clear_variable_list = states_that_can_export_cattle
+            clear_variable_list = states_that_can_export_fish
+            clear_variable_list = states_that_can_export_vegetables
+        }
+    }
+}
+
+# State scope, creates states_that_can_export_$goods$ variable list in country scope
+ai_add_to_list_if_state_can_export = {
+    if = {
+        limit = {
+            trade_good_surplus = {
+                target = $goods$
+                value >= 2
+            }
+        }
+        owner = {
+            add_to_variable_list = {
+                name = states_that_can_export_$goods$
+                target = prev
+            }
+        }
+    }
+}
+
+# Country scope, expects states_that_can_export_$goods$ variable list to be set
+ai_duplicate_states_that_can_export = {
+    if = {
+        limit = {
+            has_variable_list = states_that_can_export_$goods$
+            variable_list_size = {
+                name = states_that_can_export_$goods$
+                value > 0
+            }
+        }
+        every_in_list = {
+            variable = states_that_can_export_$goods$
+            add_to_local_variable_list = {
+                name = states_to_import_$goods$_from
+                target = this
+            }
+        }
+    }
+}
+
+# State scope, requires scope:importing_state, expects local variable list states_to_import_$goods$_from
+ai_import_goods_into_specific_state = {
+    if = {
+        limit = {
+            has_local_variable_list = states_to_import_$goods$_from
+            local_variable_list_size = {
+                name = states_to_import_$goods$_from
+                value > 0
+            }
+            unused_trade_routes > 0
+        }
+        set_local_variable = {
+            name = trade_routes_to_add
+            value = unused_trade_routes
+        }
+        while = {
+            count = local_var:trade_routes_to_add
+            random_in_local_list = {
+                variable = states_to_import_$goods$_from
+                # Need to re-check because this could change after previous routes
+                limit = {
+                    trade_good_surplus = {
+                        target = $goods$
+                        value >= 2
+                    }
+                    scope:importing_state = {
+                        can_create_trade_route = {
+                            target = prev
+                            goods = $goods$
+                        }
+                    }
+                }
+                scope:importing_state = {
+                    add_trade_route = {
+                        target = prev
+                        goods = $goods$
+                    }
+                }
+            }
+        }
+        remove_local_variable = trade_routes_to_add
+    }
+}

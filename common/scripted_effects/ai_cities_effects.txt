@@ -980,3 +980,122 @@ ai_import_goods_into_specific_state = {
         remove_local_variable = importing_state_unused_trade_routes
     }
 }
+
+ai_fix_underpopulated_cities = {
+    if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            is_ai = yes
+            treasury >= ai_wartime_fund_to_build
+        }
+        random_owned_province = {
+            limit = {
+                has_city_status = yes
+                total_population < population_cap_65_percent # Target population is actually higher, see below
+            }
+            weight = {
+                modifier = {
+                    factor = territory_population_until_cap
+                }
+            }
+
+            save_scope_as = underpopulated_city
+
+            every_neighbor_province = {
+                limit = {
+                    exists = owner
+                    owner = {
+                        this = prev.owner
+                    }
+                    ai_can_move_pops_from_territory = yes
+                }
+                add_to_local_variable_list = {
+                    name = territories_to_move_pops_from
+                    target = this
+                }
+            }
+            state = {
+                every_state_province = {
+                    limit = {
+                        NOT = {
+                            this = scope:underpopulated_city
+                        }
+                        ai_can_move_pops_from_territory = yes
+                    }
+                    add_to_local_variable_list = {
+                        name = territories_to_move_pops_from
+                        target = this
+                    }
+                }
+            }
+
+            if = {
+                limit = {
+                    has_non_empty_local_variable_list = {
+                        name = territories_to_move_pops_from
+                    }
+                }
+
+                set_local_variable = {
+                    name = num_pops_to_move
+                    value = {
+                        value = population_cap_75_percent # 10 percent more than entry trigger so we don't move 1 pop
+                        subtract = total_population
+                        min = 1
+                    }
+                }
+
+                while = {
+                    count = local_var:num_pops_to_move
+
+                    random_in_local_list = {
+                        variable = territories_to_move_pops_from
+                        # Recheck after previous moves
+                        limit = {
+                            owner = {
+                                treasury >= 10
+                            }
+                            ai_can_move_pops_from_territory = yes
+                        }
+                        weight = {
+                            modifier = {
+								factor = total_population
+							}
+                        }
+                        random_pops_in_province = {
+                            limit = {
+                                ai_pops_are_allowed_to_be_moved = yes
+                            }
+                            if = {
+                                limit = {
+                                    pop_type = tribesmen
+                                }
+                                country = {
+                                    add_treasury = {
+                                        value = 0
+                                        subtract = tribesmen_move_cost_svalue
+                                    }
+                                }
+                            }
+                            else = {
+                                country = {
+                                    add_treasury = {
+                                        value = 0
+                                        subtract = slaves_move_cost_svalue
+                                    }
+                                }
+                            }
+                            move_pop = scope:underpopulated_city
+                        }
+                    }
+                }
+
+                remove_local_variable = num_pops_to_move
+
+                clear_local_variable_list = territories_to_move_pops_from
+            }
+
+            clear_saved_scope = underpopulated_city
+        }
+    }
+}

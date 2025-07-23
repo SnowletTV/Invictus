@@ -675,40 +675,53 @@ ai_import_food_into_starving_states = {
         }
         set_global_variable = {
             name = ai_imported_food_into_starving_states
-            days = 185
+            days = 364
         }
 
-        every_country = {
+        ordered_country = {
             limit = {
+                has_land = yes
                 is_ai = yes
                 any_country_state = {
-                    state_has_low_food = yes
                     unused_trade_routes > 0
+                    state_has_low_food = yes
                 }
             }
+            order_by = country_population
+            min = 0
+            max = 999999
+            check_range_bounds = no
+
             save_scope_as = importing_country
             
             every_country = {
                 limit = {
-                    # Don't steal trade goods from players
-                    is_ai = yes
-                    # Required for trading
-                    scope:importing_country = {
-                        in_diplomatic_range = prev
+                    has_land = yes
+                    OR = {
+                        this = scope:importing_country
+                        AND = {
+                            # Don't steal trade goods from players
+                            is_ai = yes
+                            # Required for trading
+                            scope:importing_country = {
+                                in_diplomatic_range = prev
+                            }
+                            NOT = {
+                                war_with = scope:importing_country
+                            }
+                            # Threshold where negative opinion outweights the base value
+                            opinion = {
+                                target = scope:importing_country
+                                value > -120
+                            }
+                            # Allowed to trade all the goods we are looking for
+                            is_trade_goods_allowed = grain
+                            is_trade_goods_allowed = cattle
+                            is_trade_goods_allowed = fish
+                            is_trade_goods_allowed = vegetables
+                            is_trade_goods_allowed = olive
+                        }
                     }
-                    NOT = {
-                        war_with = scope:importing_country
-                    }
-                    # Threshold where negative opinion outweights the base value
-                    opinion = {
-                        target = scope:importing_country
-                        value > -120
-                    }
-                    # Allowed to trade all the goods we are looking for
-                    is_trade_goods_allowed = grain
-                    is_trade_goods_allowed = cattle
-                    is_trade_goods_allowed = fish
-                    is_trade_goods_allowed = vegetables
                 }
 
                 # Save states to export from to variable lists in country scope. The reason is that there may be a lot
@@ -741,6 +754,9 @@ ai_import_food_into_starving_states = {
                         ai_add_to_list_if_state_can_export = {
                             goods = vegetables
                         }
+                        ai_add_to_list_if_state_can_export = {
+                            goods = olive
+                        }
                     }
                 }
 
@@ -756,6 +772,9 @@ ai_import_food_into_starving_states = {
                 }
                 ai_duplicate_states_that_can_export = {
                     goods = vegetables
+                }
+                ai_duplicate_states_that_can_export = {
+                    goods = olive
                 }
             }
 
@@ -791,14 +810,29 @@ ai_import_food_into_starving_states = {
                                 value > 0
                             }
                         }
+                        AND = {
+                            has_local_variable_list = states_to_import_olive_from
+                            local_variable_list_size = {
+                                name = states_to_import_olive_from
+                                value > 0
+                            }
+                        }
                     }
                 }
                 every_country_state = {
                     limit = {
-                        state_has_low_food = yes
                         unused_trade_routes > 0
+                        state_has_low_food = yes
                     }
                     save_scope_as = importing_state
+                    if = {
+                        limit = {
+                            is_capital_state = yes
+                        }
+                        ai_import_goods_into_specific_state = {
+                            goods = olive
+                        }
+                    }
                     ai_import_goods_into_specific_state = {
                         goods = grain
                     }
@@ -823,6 +857,14 @@ ai_import_food_into_starving_states = {
                     ai_import_goods_into_specific_state = {
                         goods = vegetables
                     }
+                    if = {
+                        limit = {
+                            is_capital_state = no
+                        }
+                        ai_import_goods_into_specific_state = {
+                            goods = olive
+                        }
+                    }
                     clear_saved_scope = importing_state
                 }
 
@@ -831,6 +873,7 @@ ai_import_food_into_starving_states = {
                 clear_local_variable_list = states_to_import_cattle_from
                 clear_local_variable_list = states_to_import_fish_from
                 clear_local_variable_list = states_to_import_vegetables_from
+                clear_local_variable_list = states_to_import_olive_from
             }
             
             clear_saved_scope = importing_country
@@ -846,6 +889,7 @@ ai_import_food_into_starving_states = {
             clear_variable_list = states_that_can_export_cattle
             clear_variable_list = states_that_can_export_fish
             clear_variable_list = states_that_can_export_vegetables
+            clear_variable_list = states_that_can_export_olive
         }
     }
 }
@@ -899,35 +943,40 @@ ai_import_goods_into_specific_state = {
             }
             unused_trade_routes > 0
         }
+
         set_local_variable = {
-            name = trade_routes_to_add
+            name = importing_state_unused_trade_routes
             value = unused_trade_routes
         }
-        while = {
-            count = local_var:trade_routes_to_add
-            random_in_local_list = {
-                variable = states_to_import_$goods$_from
-                # Need to re-check because this could change after previous routes
-                limit = {
-                    trade_good_surplus = {
-                        target = $goods$
-                        value >= 2
-                    }
-                    scope:importing_state = {
-                        can_create_trade_route = {
-                            target = prev
-                            goods = $goods$
-                        }
-                    }
+
+        ordered_in_local_list = {
+            variable = states_to_import_$goods$_from
+            # Need to re-check because this could change after previous routes
+            limit = {
+                trade_good_surplus = {
+                    target = $goods$
+                    value >= 2
                 }
                 scope:importing_state = {
-                    add_trade_route = {
+                    can_create_trade_route = {
                         target = prev
                         goods = $goods$
                     }
                 }
             }
+            order_by = reverse_outgoing_trade_routes
+            min = 0
+            max = importing_state_unused_trade_routes
+            check_range_bounds = no
+
+            scope:importing_state = {
+                add_trade_route = {
+                    target = prev
+                    goods = $goods$
+                }
+            }
         }
-        remove_local_variable = trade_routes_to_add
+
+        remove_local_variable = importing_state_unused_trade_routes
     }
 }

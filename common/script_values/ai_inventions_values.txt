@@ -1393,6 +1393,75 @@ country_population_svalue = {
 	min = 1
 }
 
+research_efficiency_svalue = {
+	value = 0
+	every_owned_province = {
+		add = territory_research_points
+	}
+	multiply = 12
+	divide = {
+		every_country_culture = {
+			limit = {
+				is_integrated = yes
+			}
+			add = country_culture_pop_count
+		}
+		min = 1
+	}
+}
+
+adjusted_research_efficiency_cached = {
+	if = {
+		limit = {
+			has_variable = adjusted_research_efficiency_cached
+		}
+		value = var:adjusted_research_efficiency_cached
+	}
+	else = {
+		value = adjusted_research_efficiency_by_governorships_cached
+	}
+}
+
+adjusted_research_efficiency_by_governorships_cached = {
+	value = 0
+	every_governorships = {
+		add = governorship_adjusted_research_points_cached
+	}
+	multiply = 12
+	divide = {
+		every_country_culture = {
+			limit = {
+				is_integrated = yes
+			}
+			add = country_culture_pop_count
+		}
+		min = 1
+	}
+}
+
+governorship_adjusted_research_points_cached = {
+	if = {
+		limit = {
+			exists = capital_scope
+			capital_scope = {
+				has_variable = adjusted_research_points_cached
+			}
+		}
+		value = capital_scope.var:adjusted_research_points_cached
+	}
+	else = {
+		value = governorship_adjusted_research_points
+	}
+}
+
+governorship_adjusted_research_points = {
+	every_governorship_state = {
+		every_state_province = {
+			add = territory_adjusted_research_points
+		}
+	}
+}
+
 territory_research_points = {
 	value = modifier:research_points
 	multiply = {
@@ -1403,8 +1472,58 @@ territory_research_points = {
 	min = 0
 }
 
-# Without impact of stability and big temporary modifiers like deficit research event
-territory_normalized_research_points = {
+# Typical - without impact of stability and big temporary modifiers like deficit research event
+# territory_typical_research_points = {
+# 	value = pops_typical_research_points
+# 	multiply = {
+# 		value = 1.00
+# 		add = modifier:local_research_points_modifier
+# 		add = owner.modifier:research_points_modifier
+# 		# Positive stability gives modifier research
+# 		subtract = owner.research_points_modifier_from_stability
+# 		if = {
+# 			limit = {
+# 				owner = {
+# 					has_country_modifier = deficit_research_points
+# 				}
+# 			}
+# 			add = 0.50
+# 		}
+# 	}
+# 	min = 0
+# }
+
+# Adjusted - same as typical, but also at default economic policy
+territory_adjusted_research_points = {
+	value = pops_typical_research_points
+	multiply = {
+		value = 1.00
+		add = modifier:local_research_points_modifier
+		add = owner.modifier:research_points_modifier
+		# Positive stability gives modifier research
+		subtract = owner.research_points_modifier_from_stability
+		if = {
+			limit = {
+				owner = {
+					has_country_modifier = deficit_research_points
+				}
+			}
+			add = 0.50
+		}
+		if = {
+			limit = {
+				owner = {
+					has_high_economic_policy = income_tax
+				}
+			}
+			add = 0.20
+		}
+	}
+	min = 0
+}
+
+# Typical - without impact of stability and big temporary modifiers like deficit research event
+pops_typical_research_points = {
 	if = {
 		limit = {
 			num_of_nobles > 0
@@ -1473,23 +1592,6 @@ territory_normalized_research_points = {
 	else = {
 		value = modifier:research_points
 	}
-
-	multiply = {
-		value = 1.00
-		add = modifier:local_research_points_modifier
-		add = owner.modifier:research_points_modifier
-		# Positive stability gives modifier research
-		subtract = owner.research_points_modifier_from_stability
-		if = {
-			limit = {
-				owner = {
-					has_country_modifier = deficit_research_points
-				}
-			}
-			add = 0.50
-		}
-	}
-	min = 0
 }
 
 share_of_base_research_from_nobles = {
@@ -1524,20 +1626,6 @@ share_of_base_research_from_nobles = {
 	}
 	min = 0
 	max = 1
-}
-
-research_points_modifier_from_stability = {
-	if = {
-		limit = {
-			stability > 50
-		}
-		value = stability
-		subtract = 50
-		divide = 200
-	}
-	else = {
-		value = 0
-	}
 }
 
 population_happiness_from_stability = {
@@ -1576,63 +1664,17 @@ citizen_happiness_at_50_stability = {
 	max = 1
 }
 
-governorship_research_points = {
-	every_governorship_state = {
-		every_state_province = {
-			add = territory_research_points
-		}
-	}
-}
-governorship_normalized_research_points = {
-	every_governorship_state = {
-		every_state_province = {
-			add = territory_normalized_research_points
-		}
-	}
-}
-
-current_research_efficiency_svalue = {
-	value = 0
-	every_owned_province = {
-		add = territory_research_points
-	}
-	multiply = 12
-	divide = {
-		every_country_culture = {
-			limit = {
-				is_integrated = yes
-			}
-			add = country_culture_pop_count
-		}
-		min = 1
-	}
-}
-current_normalized_research_efficiency = {
-	value = 0
-	every_owned_province = {
-		add = territory_normalized_research_points
-	}
-	multiply = 12
-	divide = {
-		every_country_culture = {
-			limit = {
-				is_integrated = yes
-			}
-			add = country_culture_pop_count
-		}
-		min = 1
-	}
-}
-
-cached_normalized_research_efficiency = {
+research_points_modifier_from_stability = {
 	if = {
 		limit = {
-			has_variable = cached_normalized_research_efficiency
+			stability > 50
 		}
-		value = var:cached_normalized_research_efficiency
+		value = stability
+		subtract = 50
+		divide = 200
 	}
 	else = {
-		value = current_normalized_research_efficiency
+		value = 0
 	}
 }
 

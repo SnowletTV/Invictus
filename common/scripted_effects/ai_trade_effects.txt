@@ -322,14 +322,27 @@ ai_import_goods_into_specific_state = {
                 }
                 # Try adding same amount of trade routes as they have surplus - may be lower if surplus is from import
                 set_local_variable = {
-                    name = num_goods_for_export
+                    name = num_goods_to_export
                     value = {
                         value = trade_good_surplus_$goods$
                         subtract = 1
+                        # No more than the free trade routes we have
+                        max = scope:importing_state.unused_trade_routes
+                        # No more than the difference between target surplus and current surplus
+                        if = {
+                            limit = {
+                                $target$ >= 0
+                            }
+                            max = {
+                                value = $target$
+                                subtract = scope:importing_state.trade_good_surplus_$goods$
+                            }
+                        }
+                        min = 0
                     }
                 }
                 while = {
-                    count = local_var:num_goods_for_export
+                    count = local_var:num_goods_to_export
                     scope:importing_state = {
                         add_trade_route = {
                             target = prev
@@ -337,7 +350,7 @@ ai_import_goods_into_specific_state = {
                         }
                     }
                 }
-                remove_local_variable = num_goods_for_export
+                remove_local_variable = num_goods_to_export
             }
         }
 

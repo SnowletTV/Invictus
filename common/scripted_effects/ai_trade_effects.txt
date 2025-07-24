@@ -259,10 +259,8 @@ ai_duplicate_states_that_can_export = {
 ai_import_goods_into_specific_state = {
     if = {
         limit = {
-            has_local_variable_list = states_to_import_$goods$_from
-            local_variable_list_size = {
+            has_non_empty_local_variable_list = {
                 name = states_to_import_$goods$_from
-                value > 0
             }
             unused_trade_routes > 0
         }
@@ -274,7 +272,8 @@ ai_import_goods_into_specific_state = {
 
         ordered_in_local_list = {
             variable = states_to_import_$goods$_from
-            # Need to re-check because this could change after previous routes
+
+            # Need to re-check because this could change after routes of previous countries or iterations
             limit = {
                 trade_good_surplus = {
                     target = $goods$
@@ -287,16 +286,38 @@ ai_import_goods_into_specific_state = {
                     }
                 }
             }
-            order_by = reverse_outgoing_trade_routes
+
+            # Prefer states with higher expected amount of the goods to export
+            order_by = trade_good_surplus_$goods$
             min = 0
             max = importing_state_unused_trade_routes
             check_range_bounds = no
 
-            scope:importing_state = {
-                add_trade_route = {
-                    target = prev
-                    goods = $goods$
+            # Check if previous states haven't exhausted our trade routes
+            if = {
+                limit = {
+                    scope:importing_state = {
+                        unused_trade_routes > 0
+                    }
                 }
+                # Try adding same amount of trade routes as they have surplus - may be lower if surplus is from import
+                set_local_variable = {
+                    name = num_goods_for_export
+                    value = {
+                        value = trade_good_surplus_$goods$
+                        subtract = 1
+                    }
+                }
+                while = {
+                    count = local_var:num_goods_for_export
+                    scope:importing_state = {
+                        add_trade_route = {
+                            target = prev
+                            goods = $goods$
+                        }
+                    }
+                }
+                remove_local_variable = num_goods_for_export
             }
         }
 

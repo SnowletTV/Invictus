@@ -138,6 +138,8 @@ ai_import_into_low_food_states = {
                         state_has_low_food = yes
                     }
                     save_scope_as = importing_state
+
+                    # If capital and doesn't have bonus from olives, try to import them
                     if = {
                         limit = {
                             is_capital_state = yes
@@ -148,46 +150,50 @@ ai_import_into_low_food_states = {
                         }
                         ai_import_goods_into_specific_state = {
                             goods = olive
+                            target = 2
                         }
                     }
+
+                    # Grain is preferred for giving 2x food compared to other goods
                     ai_import_goods_into_specific_state = {
                         goods = grain
+                        target = -1
                     }
+
+                    # Coinflip if we prefer cattle or fish next
                     random_list = {
                         50 = {
                             ai_import_goods_into_specific_state = {
                                 goods = cattle
+                                target = -1
                             }
                             ai_import_goods_into_specific_state = {
                                 goods = fish
+                                target = -1
                             }
                         }
                         50 = {
                             ai_import_goods_into_specific_state = {
                                 goods = fish
+                                target = -1
                             }
                             ai_import_goods_into_specific_state = {
                                 goods = cattle
+                                target = -1
                             }
                         }
                     }
+
+                    # Lower priority food but will do if nothing else works
                     ai_import_goods_into_specific_state = {
                         goods = vegetables
+                        target = -1
                     }
-                    if = {
-                        limit = {
-                            OR = {
-                                is_capital_state = no
-                                trade_good_surplus = {
-                                    target = olive
-                                    value >= 2
-                                }
-                            }
-                        }
-                        ai_import_goods_into_specific_state = {
-                            goods = olive
-                        }
+                    ai_import_goods_into_specific_state = {
+                        goods = olive
+                        target = -1
                     }
+
                     clear_saved_scope = importing_state
                 }
 
@@ -263,6 +269,13 @@ ai_import_goods_into_specific_state = {
                 name = states_to_import_$goods$_from
             }
             unused_trade_routes > 0
+            OR = {
+                $target$ < 0
+                trade_good_surplus = {
+                    target = $goods$
+                    value < $target$
+                }
+            }
         }
 
         set_local_variable = {
@@ -293,11 +306,18 @@ ai_import_goods_into_specific_state = {
             max = importing_state_unused_trade_routes
             check_range_bounds = no
 
-            # Check if previous states haven't exhausted our trade routes
+            # Check if previous states haven't exhausted our trade routes and haven't reached the target
             if = {
                 limit = {
                     scope:importing_state = {
                         unused_trade_routes > 0
+                        OR = {
+                            $target$ < 0
+                            trade_good_surplus = {
+                                target = $goods$
+                                value < $target$
+                            }
+                        }
                     }
                 }
                 # Try adding same amount of trade routes as they have surplus - may be lower if surplus is from import

@@ -16,7 +16,11 @@ ai_import_into_low_food_states = {
                 has_land = yes
                 is_ai = yes
                 any_country_state = {
+                    trade_routes > 1
                     state_has_low_food = yes
+                    capital_scope = {
+                        has_siege = no
+                    }
                 }
             }
             order_by = country_population
@@ -133,36 +137,41 @@ ai_import_into_low_food_states = {
                 }
                 every_country_state = {
                     limit = {
+                        trade_routes > 1
                         state_has_low_food = yes
+                        capital_scope = {
+                            has_siege = no
+                        }
                     }
                     save_scope_as = importing_state
 
-                    # Add temporary trade routes to the state if there are not enough free ones to make a difference,
-                    # as add_trade_route refuses to work if there are no free routes, so we can't force it otherwise
-                    ai_add_temporary_trade_routes = yes
+                    # Fun little trick, read comments right next to the effect itself
+                    ai_clear_state_trade_routes = yes
 
                     # If capital and doesn't have bonus from olives, try to import them
                     if = {
                         limit = {
                             is_capital_state = yes
-                            # Only if not enough olives for capital bonus and more routes than we need olives
+                            # Only if not enough olives for capital bonus and much more routes than we need olives
                             trigger_if = {
                                 limit = {
                                     trade_good_surplus = {
                                         target = olive
-                                        value = 1
+                                        # testing for exact value (=), this will work, but is probably not intended,
+                                        # use <, >, <=, >= instead - imagine spamming this in error log for "value = 1"
+                                        value = { 1 1 }
                                     }
                                 }
-                                unused_trade_routes > 1
+                                unused_trade_routes >= 3
                             }
                             trigger_else_if = {
                                 limit = {
                                     trade_good_surplus = {
                                         target = olive
-                                        value = 0
+                                        value <= 0
                                     }
                                 }
-                                unused_trade_routes > 2
+                                unused_trade_routes >= 6
                             }
                             trigger_else = {
                                 always = no
@@ -214,9 +223,6 @@ ai_import_into_low_food_states = {
                         target = -1
                     }
 
-                    # Remove previously added temporary trade routes if there were any
-                    ai_remove_temporary_trade_routes = yes
-
                     clear_saved_scope = importing_state
                 }
 
@@ -242,177 +248,6 @@ ai_import_into_low_food_states = {
             clear_variable_list = states_that_can_export_fish
             clear_variable_list = states_that_can_export_vegetables
             clear_variable_list = states_that_can_export_olive
-        }
-    }
-}
-
-ai_add_temporary_trade_routes = {
-    if = {
-        limit = {
-            unused_trade_routes < ai_min_trade_routes_if_low_food
-        }
-        set_local_variable = {
-            name = temporary_trade_routes
-            value = ai_min_trade_routes_if_low_food
-        }
-        if = {
-            limit = {
-                local_var:temporary_trade_routes > unused_trade_routes
-            }
-            add_state_modifier = {
-                name = ai_temporary_trade_route_1
-                duration = 1
-            }
-            if = {
-                limit = {
-                    local_var:temporary_trade_routes > unused_trade_routes
-                }
-                add_state_modifier = {
-                    name = ai_temporary_trade_route_2
-                    duration = 1
-                }
-                if = {
-                    limit = {
-                        local_var:temporary_trade_routes > unused_trade_routes
-                    }
-                    add_state_modifier = {
-                        name = ai_temporary_trade_route_3
-                        duration = 1
-                    }
-                    if = {
-                        limit = {
-                            local_var:temporary_trade_routes > unused_trade_routes
-                        }
-                        add_state_modifier = {
-                            name = ai_temporary_trade_route_4
-                            duration = 1
-                        }
-                        if = {
-                            limit = {
-                                local_var:temporary_trade_routes > unused_trade_routes
-                            }
-                            add_state_modifier = {
-                                name = ai_temporary_trade_route_5
-                                duration = 1
-                            }
-                            if = {
-                                limit = {
-                                    local_var:temporary_trade_routes > unused_trade_routes
-                                }
-                                add_state_modifier = {
-                                    name = ai_temporary_trade_route_6
-                                    duration = 1
-                                }
-                                if = {
-                                    limit = {
-                                        local_var:temporary_trade_routes > unused_trade_routes
-                                    }
-                                    add_state_modifier = {
-                                        name = ai_temporary_trade_route_7
-                                        duration = 1
-                                    }
-                                    if = {
-                                        limit = {
-                                            local_var:temporary_trade_routes > unused_trade_routes
-                                        }
-                                        add_state_modifier = {
-                                            name = ai_temporary_trade_route_8
-                                            duration = 1
-                                        }
-                                        if = {
-                                            limit = {
-                                                local_var:temporary_trade_routes > unused_trade_routes
-                                            }
-                                            add_state_modifier = {
-                                                name = ai_temporary_trade_route_9
-                                                duration = 1
-                                            }
-                                            if = {
-                                                limit = {
-                                                    local_var:temporary_trade_routes > unused_trade_routes
-                                                }
-                                                add_state_modifier = {
-                                                    name = ai_temporary_trade_route_10
-                                                    duration = 1
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-ai_remove_temporary_trade_routes = {
-    if = {
-        limit = {
-            has_local_variable = temporary_trade_routes
-        }
-        remove_local_variable = temporary_trade_routes
-        if = {
-            limit = {
-                has_state_modifier = ai_temporary_trade_route_1
-            }
-            remove_state_modifier = ai_temporary_trade_route_1
-            if = {
-                limit = {
-                    has_state_modifier = ai_temporary_trade_route_2
-                }
-                remove_state_modifier = ai_temporary_trade_route_2
-                if = {
-                    limit = {
-                        has_state_modifier = ai_temporary_trade_route_3
-                    }
-                    remove_state_modifier = ai_temporary_trade_route_3
-                    if = {
-                        limit = {
-                            has_state_modifier = ai_temporary_trade_route_4
-                        }
-                        remove_state_modifier = ai_temporary_trade_route_4
-                        if = {
-                            limit = {
-                                has_state_modifier = ai_temporary_trade_route_5
-                            }
-                            remove_state_modifier = ai_temporary_trade_route_5
-                            if = {
-                                limit = {
-                                    has_state_modifier = ai_temporary_trade_route_6
-                                }
-                                remove_state_modifier = ai_temporary_trade_route_6
-                                if = {
-                                    limit = {
-                                        has_state_modifier = ai_temporary_trade_route_7
-                                    }
-                                    remove_state_modifier = ai_temporary_trade_route_7
-                                    if = {
-                                        limit = {
-                                            has_state_modifier = ai_temporary_trade_route_8
-                                        }
-                                        remove_state_modifier = ai_temporary_trade_route_8
-                                        if = {
-                                            limit = {
-                                                has_state_modifier = ai_temporary_trade_route_9
-                                            }
-                                            remove_state_modifier = ai_temporary_trade_route_9
-                                            if = {
-                                                limit = {
-                                                    has_state_modifier = ai_temporary_trade_route_10
-                                                }
-                                                remove_state_modifier = ai_temporary_trade_route_10
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
@@ -550,4 +385,24 @@ ai_import_goods_into_specific_state = {
 
         remove_local_variable = importing_state_unused_trade_routes
     }
+}
+
+# It seems that AI is prohibited from overclocking trade routes more than by 1, meaning that if you set the state to
+# have like -100 routes, clamped to 0, AI immediately removes all the trade routes except 1. You can then fill newly
+# freed routes with stuff you want.
+#
+# Modifiers are a bit sticky, so after applying -100 we must then immediately apply +100, otherwise state routes won't
+# be updated immediately to use them in effects despite you remove_state_modifier'ing it. So we manipulate modifiers
+# twice to get to the normal state, but AI clears trade in the meanwhile, and then modifiers simultaneously falls off.
+ai_clear_state_trade_routes = {
+    add_state_modifier = {
+        name = ai_clear_state_trade_routes
+        duration = 1
+    }
+    add_state_modifier = {
+        name = ai_restore_state_trade_routes
+        duration = 1
+    }
+    remove_state_modifier = ai_clear_state_trade_routes
+    remove_state_modifier = ai_restore_state_trade_routes
 }

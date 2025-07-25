@@ -16,7 +16,10 @@ ai_import_into_low_food_states = {
                 has_land = yes
                 is_ai = yes
                 any_country_state = {
-                    trade_routes > 1
+                    OR = {
+                        can_reset_state_trade_routes = yes
+                        unused_trade_routes > 0
+                    }
                     state_has_low_food = yes
                     capital_scope = {
                         has_siege = no
@@ -155,7 +158,10 @@ ai_import_into_low_food_states = {
                 }
                 every_country_state = {
                     limit = {
-                        trade_routes > 1
+                        OR = {
+                            can_reset_state_trade_routes = yes
+                            unused_trade_routes > 0
+                        }
                         state_has_low_food = yes
                         capital_scope = {
                             has_siege = no
@@ -164,7 +170,12 @@ ai_import_into_low_food_states = {
                     save_scope_as = importing_state
 
                     # Fun little trick, read comments right before the effect itself
-                    ai_clear_state_trade_routes = yes
+                    if = {
+                        limit = {
+                            can_reset_state_trade_routes = yes
+                        }
+                        ai_reset_state_trade_routes = yes
+                    }
 
                     # If capital and doesn't have bonuses from food, try to get them all
                     if = {
@@ -605,8 +616,29 @@ ai_import_goods_into_specific_state = {
 # be updated immediately to use them in effects despite you remove_state_modifier'ing it. So we manipulate modifiers
 # twice to get to the normal state, but AI clears trade in the meanwhile, and then modifiers simultaneously falls off.
 #
-# Unfortunately when applied to many states at once it causes the game to stutter.
-ai_clear_state_trade_routes = {
+# UNFORTUNATELY CAUSES THE GAME TO STUTTER AND EVEN CRASH
+ai_reset_state_trade_routes = {
+    set_variable = {
+        name = ai_applied_trade_routes_reset
+        days = 3650 # 10 years
+    }
+    if = {
+        limit = {
+            NOT = {
+                has_global_variable = ai_applied_trade_routes_reset
+            }
+        }
+        set_global_variable = {
+            name = ai_applied_trade_routes_reset
+            value = 0
+            days = 365
+        }
+    }
+    change_global_variable = {
+        name = ai_applied_trade_routes_reset
+        add = 1
+    }
+
     add_state_modifier = {
         name = ai_clear_state_trade_routes
         duration = 1

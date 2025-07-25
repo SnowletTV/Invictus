@@ -168,7 +168,7 @@ ai_import_into_low_food_states = {
                         limit = {
                             is_capital_state = yes
                             owner = {
-                                rank >= major_power
+                                rank >= regional_power
                             }
                         }
                         # Raises slave happiness a lot, helps with state loyalty and revolts
@@ -333,7 +333,6 @@ ai_import_into_low_food_states = {
                             }
                         }
 
-                        remove_local_variable = current_unused_trade_routes
                         remove_local_variable = type_of_goods_to_import
                         remove_local_variable = amount_of_goods_to_import
                     }
@@ -447,7 +446,7 @@ ai_import_goods_into_specific_state = {
                 $amount$ >= 0
             }
             set_local_variable = {
-                name = surplus_before_starting_to_import
+                name = surplus_before_adding_routes
                 value = trade_good_surplus_$goods$
             }
         }
@@ -508,7 +507,7 @@ ai_import_goods_into_specific_state = {
                                 $amount$ >= 0
                             }
                             max = {
-                                value = local_var:surplus_before_starting_to_import
+                                value = local_var:surplus_before_adding_routes
                                 add = $amount$
                                 subtract = scope:importing_state.trade_good_surplus_$goods$
                             }
@@ -524,49 +523,46 @@ ai_import_goods_into_specific_state = {
                     local_var:num_goods_to_export > 0
                 }
 
+                # Track if adding trade routes won't actually result in it appearing
                 set_local_variable = {
-                    name = unsuccessful_add_trade_route
+                    name = could_not_add_trade_route
                     value = 0
                 }
 
                 while = {
                     count = local_var:num_goods_to_export
-
                     if = {
                         limit = {
-                            local_var:unsuccessful_add_trade_route = 0
+                            local_var:could_not_add_trade_route = 0
                         }
-
                         scope:importing_state = {
                             set_local_variable = {
                                 name = current_unused_trade_routes
                                 value = unused_trade_routes
                             }
-
                             add_trade_route = {
                                 target = prev
                                 goods = $goods$
                             }
-
                             if = {
                                 limit = {
                                     local_var:current_unused_trade_routes = unused_trade_routes
                                 }
                                 change_local_variable = {
-                                    name = unsuccessful_add_trade_route
+                                    name = could_not_add_trade_route
                                     add = 1
                                 }
                             }
-
                             remove_local_variable = current_unused_trade_routes
                         }
                     }
                 }
 
+                # If the state can't produce more trade routes, remove it from lists
                 if = {
                     limit = {
                         OR = {
-                            local_var:unsuccessful_add_trade_route > 0
+                            local_var:could_not_add_trade_route > 0
                             trade_good_surplus = {
                                 target = $goods$
                                 value < 2
@@ -585,12 +581,13 @@ ai_import_goods_into_specific_state = {
                     }
                 }
 
-                remove_local_variable = num_goods_to_export
-                remove_local_variable = unsuccessful_add_trade_route
+                remove_local_variable = could_not_add_trade_route
             }
+            
+            remove_local_variable = num_goods_to_export
         }
 
         remove_local_variable = exporting_states_to_check
-        remove_local_variable = surplus_before_starting_to_import
+        remove_local_variable = surplus_before_adding_routes
     }
 }

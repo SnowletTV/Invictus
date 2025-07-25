@@ -163,41 +163,75 @@ ai_import_into_low_food_states = {
                     }
                     save_scope_as = importing_state
 
-                    # Fun little trick, read comments right next to the effect itself
+                    # Fun little trick, read comments right before the effect itself
                     ai_clear_state_trade_routes = yes
 
-                    # If capital and doesn't have bonus from olives, try to import them
+                    # If capital and doesn't have bonuses from food, try to get them all
                     if = {
                         limit = {
                             is_capital_state = yes
-                            # Only if not enough olives for capital bonus and much more routes than we need olives
-                            trigger_if = {
-                                limit = {
-                                    trade_good_surplus = {
-                                        target = olive
-                                        # testing for exact value (=), this will work, but is probably not intended,
-                                        # use <, >, <=, >= instead - imagine spamming this in error log for "value = 1"
-                                        value = { 1 1 }
-                                    }
-                                }
-                                unused_trade_routes >= 3
-                            }
-                            trigger_else_if = {
-                                limit = {
-                                    trade_good_surplus = {
-                                        target = olive
-                                        value <= 0
-                                    }
-                                }
-                                unused_trade_routes >= 6
-                            }
-                            trigger_else = {
-                                always = no
+                            owner = {
+                                rank >= major_power
                             }
                         }
-                        ai_import_goods_into_specific_state = {
-                            goods = olive
-                            target = 2
+                        # Raises slave happiness a lot, helps with state loyalty and revolts
+                        if = {
+                            limit = {
+                                ai_should_try_to_get_capital_bonus = {
+                                    goods = olive
+                                }
+                            }
+                            ai_import_goods_into_specific_state = {
+                                goods = olive
+                                target = 2
+                                amount = -1
+                            }
+                        }
+                        # Raises slave happiness a lot, helps with state loyalty and revolts
+                        if = {
+                            limit = {
+                                ai_should_try_to_get_capital_bonus = {
+                                    goods = fish
+                                }
+                            }
+                            ai_import_goods_into_specific_state = {
+                                goods = fish
+                                target = 2
+                                amount = -1
+                            }
+                        }
+                        # We are here for food, aren't we? Here's a buff to all the food
+                        if = {
+                            limit = {
+                                # Easy conditions as it's all the other are limited due to giving less food than grain
+                                trade_good_surplus = {
+                                    target = grain
+                                    value < 2
+                                }
+                            }
+                            ai_import_goods_into_specific_state = {
+                                goods = grain
+                                target = 2
+                                amount = -1
+                            }
+                        }
+                        # Pop promotion speed doesn't do much if you don't have cities
+                        if = {
+                            limit = {
+                                owner = {
+                                    NOT = {
+                                        government = tribal_chiefdom
+                                    }
+                                }
+                                ai_should_try_to_get_capital_bonus = {
+                                    goods = cattle
+                                }
+                            }
+                            ai_import_goods_into_specific_state = {
+                                goods = cattle
+                                target = 2
+                                amount = -1
+                            }
                         }
                     }
 
@@ -205,40 +239,126 @@ ai_import_into_low_food_states = {
                     ai_import_goods_into_specific_state = {
                         goods = grain
                         target = -1
+                        amount = -1
                     }
 
-                    # Coinflip if we prefer cattle or fish next
-                    random_list = {
-                        50 = {
-                            ai_import_goods_into_specific_state = {
-                                goods = cattle
-                                target = -1
-                            }
-                            ai_import_goods_into_specific_state = {
-                                goods = fish
-                                target = -1
-                            }
-                        }
-                        50 = {
-                            ai_import_goods_into_specific_state = {
-                                goods = fish
-                                target = -1
-                            }
-                            ai_import_goods_into_specific_state = {
-                                goods = cattle
-                                target = -1
+                    set_local_variable = {
+                        name = initial_unused_trade_routes
+                        value = unused_trade_routes
+                    }
+                    set_local_variable = {
+                        name = type_of_goods_to_import
+                        value = {
+                            integer_range = {
+                                min = 1
+                                max = 3
                             }
                         }
                     }
 
-                    # Lower priority food but will do if nothing else works
-                    ai_import_goods_into_specific_state = {
-                        goods = vegetables
-                        target = -1
+                    while = {
+                        # Mostly a hard limit for edge cases
+                        count = initial_unused_trade_routes_mult_2
+
+                        # Actual condition for continuing
+                        if = {
+                            limit = {
+                                unused_trade_routes > 0
+                            }
+                            set_local_variable = {
+                                name = amount_of_goods_to_import
+                                value = {
+                                    integer_range = {
+                                        min = 2
+                                        max = {
+                                            value = 3
+                                            add = {
+                                                value = local_var:initial_unused_trade_routes
+                                                multiply = 0.10
+                                                round = yes
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if = {
+                                limit = {
+                                    local_var:type_of_goods_to_import = 1
+                                }
+                                ai_import_goods_into_specific_state = {
+                                    goods = cattle
+                                    target = -1
+                                    amount = local_var:amount_of_goods_to_import
+                                }
+                            }
+                            else_if = {
+                                limit = {
+                                    local_var:type_of_goods_to_import = 2
+                                }
+                                ai_import_goods_into_specific_state = {
+                                    goods = fish
+                                    target = -1
+                                    amount = local_var:amount_of_goods_to_import
+                                }
+                            }
+                            else_if = {
+                                limit = {
+                                    local_var:type_of_goods_to_import = 3
+                                }
+                                ai_import_goods_into_specific_state = {
+                                    goods = vegetables
+                                    target = -1
+                                    amount = local_var:amount_of_goods_to_import
+                                }
+                            }
+
+                            remove_local_variable = amount_of_goods_to_import
+
+                            set_local_variable = {
+                                name = type_of_goods_to_import
+                                value = {
+                                    if = {
+                                        limit = {
+                                            local_var:type_of_goods_to_import = 1
+                                        }
+                                        integer_range = {
+                                            min = 2
+                                            max = 3
+                                        }
+                                    }
+                                    else_if = {
+                                        limit = {
+                                            local_var:type_of_goods_to_import = 2
+                                        }
+                                        integer_range = {
+                                            min = 1
+                                            max = 2
+                                        }
+                                        multiply = 1.5 # = 1.5 or 3
+                                        floor = yes # = 1 or 3
+                                    }
+                                    else_if = {
+                                        limit = {
+                                            local_var:type_of_goods_to_import = 3
+                                        }
+                                        integer_range = {
+                                            min = 1
+                                            max = 2
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
+                    remove_local_variable = current_unused_trade_routes
+                    remove_local_variable = type_of_goods_to_import
+
+                    # Lower priority but will do if nothing else works
                     ai_import_goods_into_specific_state = {
                         goods = olive
                         target = -1
+                        amount = -1
                     }
 
                     clear_saved_scope = importing_state
@@ -292,10 +412,8 @@ ai_add_to_list_if_state_can_export = {
 ai_duplicate_states_that_can_export = {
     if = {
         limit = {
-            has_variable_list = states_that_can_export_$goods$
-            variable_list_size = {
+            has_non_empty_variable_list = {
                 name = states_that_can_export_$goods$
-                value > 0
             }
         }
         every_in_list = {
@@ -327,7 +445,24 @@ ai_import_goods_into_specific_state = {
 
         set_local_variable = {
             name = importing_state_unused_trade_routes
-            value = unused_trade_routes
+            value = {
+                value = unused_trade_routes
+                if = {
+                    limit = {
+                        $amount$ >= 0
+                    }
+                    max = $amount$
+                }
+            }
+        }
+        if = {
+            limit = {
+                $amount$ >= 0
+            }
+            set_local_variable = {
+                name = surplus_before_starting_to_import
+                value = trade_good_surplus_$goods$
+            }
         }
 
         ordered_in_local_list = {
@@ -382,6 +517,17 @@ ai_import_goods_into_specific_state = {
                             }
                             max = {
                                 value = $target$
+                                subtract = scope:importing_state.trade_good_surplus_$goods$
+                            }
+                        }
+                        # No more than the difference between target surplus and current surplus
+                        if = {
+                            limit = {
+                                $amount$ >= 0
+                            }
+                            max = {
+                                value = local_var:surplus_before_starting_to_import
+                                add = $amount$
                                 subtract = scope:importing_state.trade_good_surplus_$goods$
                             }
                         }

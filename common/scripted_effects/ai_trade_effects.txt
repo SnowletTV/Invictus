@@ -242,117 +242,103 @@ ai_import_into_low_food_states = {
                         amount = -1
                     }
 
-                    set_local_variable = {
-                        name = initial_unused_trade_routes
-                        value = unused_trade_routes
-                    }
-                    set_local_variable = {
-                        name = type_of_goods_to_import
-                        value = {
-                            integer_range = {
-                                min = 1
-                                max = 3
-                            }
+                    # While this is checked in ai_import_goods_into_specific_state, seems useful to do it beforehand
+                    if = {
+                        limit = {
+                            unused_trade_routes > 0
                         }
-                    }
 
-                    while = {
-                        # Mostly a hard limit for edge cases
-                        count = initial_unused_trade_routes_mult_2
-
-                        # Actual condition for continuing
-                        if = {
-                            limit = {
-                                unused_trade_routes > 0
-                            }
-                            set_local_variable = {
-                                name = amount_of_goods_to_import
-                                value = {
-                                    integer_range = {
-                                        min = 2
-                                        max = {
-                                            value = 3
-                                            add = {
-                                                value = local_var:initial_unused_trade_routes
-                                                multiply = 0.10
-                                                round = yes
-                                            }
-                                        }
-                                    }
+                        # Randomly determine which goods will be first to get imported
+                        set_local_variable = {
+                            name = type_of_goods_to_import
+                            value = {
+                                integer_range = {
+                                    min = 1
+                                    max = 3
                                 }
                             }
+                        }
 
+                        # Aim to somewhat evenly split routes between 3 types of goods
+                        set_local_variable = {
+                            name = amount_of_goods_to_import
+                            value = {
+                                value = unused_trade_routes
+                                multiply = 0.3334
+                                ceiling = yes
+                            }
+                        }
+
+                        while = {
+                            # Max 2 attempts for each goods type
+                            count = 6
                             if = {
                                 limit = {
-                                    local_var:type_of_goods_to_import = 1
+                                    unused_trade_routes > 0
                                 }
-                                ai_import_goods_into_specific_state = {
-                                    goods = cattle
-                                    target = -1
-                                    amount = local_var:amount_of_goods_to_import
-                                }
-                            }
-                            else_if = {
-                                limit = {
-                                    local_var:type_of_goods_to_import = 2
-                                }
-                                ai_import_goods_into_specific_state = {
-                                    goods = fish
-                                    target = -1
-                                    amount = local_var:amount_of_goods_to_import
-                                }
-                            }
-                            else_if = {
-                                limit = {
-                                    local_var:type_of_goods_to_import = 3
-                                }
-                                ai_import_goods_into_specific_state = {
-                                    goods = vegetables
-                                    target = -1
-                                    amount = local_var:amount_of_goods_to_import
-                                }
-                            }
 
-                            remove_local_variable = amount_of_goods_to_import
+                                if = {
+                                    limit = {
+                                        local_var:type_of_goods_to_import = 1
+                                    }
+                                    ai_import_goods_into_specific_state = {
+                                        goods = cattle
+                                        target = -1
+                                        amount = local_var:amount_of_goods_to_import
+                                    }
+                                }
+                                else_if = {
+                                    limit = {
+                                        local_var:type_of_goods_to_import = 2
+                                    }
+                                    ai_import_goods_into_specific_state = {
+                                        goods = fish
+                                        target = -1
+                                        amount = local_var:amount_of_goods_to_import
+                                    }
+                                }
+                                else_if = {
+                                    limit = {
+                                        local_var:type_of_goods_to_import = 3
+                                    }
+                                    ai_import_goods_into_specific_state = {
+                                        goods = vegetables
+                                        target = -1
+                                        amount = local_var:amount_of_goods_to_import
+                                    }
+                                }
 
-                            set_local_variable = {
-                                name = type_of_goods_to_import
-                                value = {
-                                    if = {
-                                        limit = {
-                                            local_var:type_of_goods_to_import = 1
+                                # Move on to the next type of goods
+                                set_local_variable = {
+                                    name = type_of_goods_to_import
+                                    value = {
+                                        if = {
+                                            limit = {
+                                                local_var:type_of_goods_to_import = 1
+                                            }
+                                            value = 2
                                         }
-                                        integer_range = {
-                                            min = 2
-                                            max = 3
+                                        else_if = {
+                                            limit = {
+                                                local_var:type_of_goods_to_import = 2
+                                            }
+                                            value = 3
                                         }
-                                    }
-                                    else_if = {
-                                        limit = {
-                                            local_var:type_of_goods_to_import = 2
-                                        }
-                                        integer_range = {
-                                            min = 1
-                                            max = 2
-                                        }
-                                        multiply = 1.5 # = 1.5 or 3
-                                        floor = yes # = 1 or 3
-                                    }
-                                    else_if = {
-                                        limit = {
-                                            local_var:type_of_goods_to_import = 3
-                                        }
-                                        integer_range = {
-                                            min = 1
-                                            max = 2
+                                        else_if = {
+                                            limit = {
+                                                local_var:type_of_goods_to_import = 3
+                                            }
+                                            value = 1
                                         }
                                     }
                                 }
                             }
                         }
+
+                        remove_local_variable = current_unused_trade_routes
+                        remove_local_variable = type_of_goods_to_import
+                        remove_local_variable = amount_of_goods_to_import
                     }
-                    remove_local_variable = current_unused_trade_routes
-                    remove_local_variable = type_of_goods_to_import
 
                     # Lower priority but will do if nothing else works
                     ai_import_goods_into_specific_state = {
@@ -430,10 +416,10 @@ ai_duplicate_states_that_can_export = {
 ai_import_goods_into_specific_state = {
     if = {
         limit = {
+            unused_trade_routes > 0
             has_non_empty_local_variable_list = {
                 name = states_to_import_$goods$_from
             }
-            unused_trade_routes > 0
             OR = {
                 $target$ < 0
                 trade_good_surplus = {
@@ -444,7 +430,7 @@ ai_import_goods_into_specific_state = {
         }
 
         set_local_variable = {
-            name = importing_state_unused_trade_routes
+            name = exporting_states_to_check
             value = {
                 value = unused_trade_routes
                 if = {
@@ -453,6 +439,9 @@ ai_import_goods_into_specific_state = {
                     }
                     max = $amount$
                 }
+                # A bit more states than needed in case some of them won't work
+                multiply = 1.25
+                ceiling = yes
             }
         }
         if = {
@@ -468,7 +457,6 @@ ai_import_goods_into_specific_state = {
         ordered_in_local_list = {
             variable = states_to_import_$goods$_from
 
-            # Need to re-check because this could change after routes of previous countries or iterations
             limit = {
                 trade_good_surplus = {
                     target = $goods$
@@ -485,31 +473,26 @@ ai_import_goods_into_specific_state = {
             # Prefer states with higher expected amount of the goods to export
             order_by = trade_good_surplus_$goods$
             min = 0
-            max = importing_state_unused_trade_routes
+            max = local_var:exporting_states_to_check
             check_range_bounds = no
 
-            # Check if previous states haven't exhausted our trade routes and haven't reached the target
-            if = {
-                limit = {
-                    scope:importing_state = {
-                        unused_trade_routes > 0
-                        OR = {
-                            $target$ < 0
-                            trade_good_surplus = {
-                                target = $goods$
-                                value < $target$
-                            }
+            # Calculate num routes to create based on exporting state surplus, free routes, target and amount
+            set_local_variable = {
+                name = num_goods_to_export
+                value = {
+                    if = {
+                        limit = {
+                            scope:importing_state.unused_trade_routes = 0
                         }
+                        value = 0
                     }
-                }
-                # Try adding same amount of trade routes as they have surplus - may be lower if surplus is from import
-                set_local_variable = {
-                    name = num_goods_to_export
-                    value = {
+                    else = {
                         value = trade_good_surplus_$goods$
                         subtract = 1
+
                         # No more than the free trade routes we have
                         max = scope:importing_state.unused_trade_routes
+
                         # No more than the difference between target surplus and current surplus
                         if = {
                             limit = {
@@ -520,6 +503,7 @@ ai_import_goods_into_specific_state = {
                                 subtract = scope:importing_state.trade_good_surplus_$goods$
                             }
                         }
+
                         # No more than the difference between target surplus and current surplus
                         if = {
                             limit = {
@@ -531,23 +515,85 @@ ai_import_goods_into_specific_state = {
                                 subtract = scope:importing_state.trade_good_surplus_$goods$
                             }
                         }
+
                         min = 0
                     }
                 }
+            }
+
+            if = {
+                limit = {
+                    local_var:num_goods_to_export > 0
+                }
+
+                set_local_variable = {
+                    name = unsuccessful_add_trade_route
+                    value = 0
+                }
+
                 while = {
                     count = local_var:num_goods_to_export
-                    scope:importing_state = {
-                        add_trade_route = {
-                            target = prev
-                            goods = $goods$
+
+                    if = {
+                        limit = {
+                            local_var:unsuccessful_add_trade_route = 0
+                        }
+
+                        scope:importing_state = {
+                            set_local_variable = {
+                                name = current_unused_trade_routes
+                                value = unused_trade_routes
+                            }
+
+                            add_trade_route = {
+                                target = prev
+                                goods = $goods$
+                            }
+
+                            if = {
+                                limit = {
+                                    local_var:current_unused_trade_routes = unused_trade_routes
+                                }
+                                change_local_variable = {
+                                    name = unsuccessful_add_trade_route
+                                    add = 1
+                                }
+                            }
+
+                            remove_local_variable = current_unused_trade_routes
                         }
                     }
                 }
+
+                if = {
+                    limit = {
+                        OR = {
+                            local_var:unsuccessful_add_trade_route > 0
+                            trade_good_surplus = {
+                                target = $goods$
+                                value < 2
+                            }
+                        }
+                    }
+                    remove_list_local_variable = {
+                        name = states_to_import_$goods$_from
+                        target = this
+                    }
+                    owner = {
+                        remove_list_variable = {
+                            name = states_that_can_export_$goods$
+                            target = prev
+                        }
+                    }
+                }
+
                 remove_local_variable = num_goods_to_export
+                remove_local_variable = unsuccessful_add_trade_route
             }
         }
 
-        remove_local_variable = importing_state_unused_trade_routes
+        remove_local_variable = exporting_states_to_check
+        remove_local_variable = surplus_before_starting_to_import
     }
 }
 

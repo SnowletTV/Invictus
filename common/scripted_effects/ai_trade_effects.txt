@@ -12,350 +12,333 @@ ai_import_into_low_food_states = {
         }
 
         ordered_country = {
-            limit = {
-                has_land = yes
-                is_ai = yes
-                any_country_state = {
-                    unused_trade_routes > 0
-                    state_has_low_food = yes
-                    capital_scope = {
-                        has_siege = no
-                    }
-                }
-            }
             order_by = country_population
             min = 0
             max = 999999
             check_range_bounds = no
 
-            save_scope_as = importing_country
-            
-            every_country = {
-                limit = {
-                    has_land = yes
-                    OR = {
-                        this = scope:importing_country
-                        AND = {
-                            # Don't steal trade goods from players
-                            is_ai = yes
-                            # Required for trading
-                            scope:importing_country = {
-                                in_diplomatic_range = prev
-                            }
-                            NOT = {
-                                war_with = scope:importing_country
-                            }
-                            # If subject with only_trade_with_overlord = yes, importing must be its overlord
-                            trigger_if = {
-                                limit = {
-                                    is_subject = yes
-                                    OR = {
-                                        is_subject_type = client_state
-                                        is_subject_type = subject_mercenary_city_state
-                                        is_subject_type = subject_league_city_state
-                                        is_subject_type = kushite_client
-                                        is_subject_type = indian_client
-                                        is_subject_type = fiefdom
-                                    }
-                                }
-                                overlord = scope:importing_country
-                            }
-                            trigger_else = {
-                                always = yes
-                            }
-                            # Threshold where negative opinion outweights the base value
-                            opinion = {
-                                target = scope:importing_country
-                                value > -120
-                            }
-                            # Allowed to trade all the goods we are looking for
-                            is_trade_goods_allowed = grain
-                            is_trade_goods_allowed = cattle
-                            is_trade_goods_allowed = fish
-                            is_trade_goods_allowed = vegetables
-                            is_trade_goods_allowed = olive
-                        }
-                    }
-                }
-
-                # Save states to export from to variable lists in country scope. The reason is that there may be a lot
-                # of low food states in the world, so it's much better to make every country loop over its states only
-                # once and save the result, rather than do it over and over again for each country with low food states
-                if = {
-                    limit = {
-                        NOT = {
-                            has_variable = ai_created_lists_of_food_states
-                        }
-                    }                    
-                    set_variable = ai_created_lists_of_food_states
-                    every_country_state = {
-                        limit = {
-                            # Don't steal food from states that need it themselves
-                            share_of_cities_in_state < 0.1666
-                            # Disloyal states can't export goods
-                            state_is_disloyal = no
-                        }
-                        # Limit it to widely available food, don't steal relatively rare capital effects from players
-                        ai_add_to_list_if_state_can_export = {
-                            goods = grain
-                        }
-                        ai_add_to_list_if_state_can_export = {
-                            goods = cattle
-                        }
-                        ai_add_to_list_if_state_can_export = {
-                            goods = fish
-                        }
-                        ai_add_to_list_if_state_can_export = {
-                            goods = vegetables
-                        }
-                        ai_add_to_list_if_state_can_export = {
-                            goods = olive
-                        }
-                    }
-                }
-
-                # Copy country scope lists into local lists made specifically for the country with low food state
-                ai_duplicate_states_that_can_export = {
-                    goods = grain
-                }
-                ai_duplicate_states_that_can_export = {
-                    goods = cattle
-                }
-                ai_duplicate_states_that_can_export = {
-                    goods = fish
-                }
-                ai_duplicate_states_that_can_export = {
-                    goods = vegetables
-                }
-                ai_duplicate_states_that_can_export = {
-                    goods = olive
-                }
-            }
-
-            # Check if at least any of the lists exists before proceeding
             if = {
                 limit = {
-                    OR = {
-                        has_non_empty_local_variable_list = {
-                            name = states_to_import_grain_from
+                    has_land = yes
+                    is_ai = yes
+                    any_country_state = {
+                        OR = {
+                            can_reset_state_trade_routes = yes
+                            unused_trade_routes > 0
                         }
-                        has_non_empty_local_variable_list = {
-                            name = states_to_import_cattle_from
-                        }
-                        has_non_empty_local_variable_list = {
-                            name = states_to_import_fish_from
-                        }
-                        has_non_empty_local_variable_list = {
-                            name = states_to_import_vegetables_from
-                        }
-                        has_non_empty_local_variable_list = {
-                            name = states_to_import_olive_from
-                        }
-                    }
-                }
-                every_country_state = {
-                    limit = {
-                        unused_trade_routes > 0
                         state_has_low_food = yes
                         capital_scope = {
                             has_siege = no
                         }
                     }
-                    save_scope_as = importing_state
-
-                    # If capital and doesn't have bonuses from food, try to get them all
-                    if = {
-                        limit = {
-                            is_capital_state = yes
-                            owner = {
-                                rank >= regional_power
-                            }
-                        }
-                        # Raises slave happiness a lot, helps with state loyalty and revolts
-                        if = {
-                            limit = {
-                                ai_should_try_to_get_capital_bonus = {
-                                    goods = olive
-                                }
-                            }
-                            ai_import_goods_into_specific_state = {
-                                goods = olive
-                                target = 2
-                                amount = -1
-                            }
-                        }
-                        # Raises slave happiness a lot, helps with state loyalty and revolts
-                        if = {
-                            limit = {
-                                ai_should_try_to_get_capital_bonus = {
-                                    goods = fish
-                                }
-                            }
-                            ai_import_goods_into_specific_state = {
-                                goods = fish
-                                target = 2
-                                amount = -1
-                            }
-                        }
-                        # We are here for food, aren't we? Here's a buff to all the food
-                        if = {
-                            limit = {
-                                # Easy conditions as it's all the other are limited due to giving less food than grain
-                                trade_good_surplus = {
-                                    target = grain
-                                    value < 2
-                                }
-                            }
-                            ai_import_goods_into_specific_state = {
-                                goods = grain
-                                target = 2
-                                amount = -1
-                            }
-                        }
-                        # Pop promotion speed doesn't do much if you don't have cities
-                        if = {
-                            limit = {
-                                owner = {
-                                    NOT = {
-                                        government = tribal_chiefdom
-                                    }
-                                }
-                                ai_should_try_to_get_capital_bonus = {
-                                    goods = cattle
-                                }
-                            }
-                            ai_import_goods_into_specific_state = {
-                                goods = cattle
-                                target = 2
-                                amount = -1
-                            }
-                        }
-                    }
-
-                    # Grain is preferred for giving 2x food compared to other goods
-                    ai_import_goods_into_specific_state = {
-                        goods = grain
-                        target = -1
-                        amount = -1
-                    }
-
-                    # While this is checked in ai_import_goods_into_specific_state, seems useful to do it beforehand
-                    if = {
-                        limit = {
-                            unused_trade_routes > 0
-                        }
-
-                        # Randomly determine which goods will be first to get imported
-                        set_local_variable = {
-                            name = type_of_goods_to_import
-                            value = {
-                                integer_range = {
-                                    min = 1
-                                    max = 3
-                                }
-                            }
-                        }
-
-                        # Aim to somewhat evenly split routes between 3 types of goods
-                        set_local_variable = {
-                            name = amount_of_goods_to_import
-                            value = {
-                                value = unused_trade_routes
-                                multiply = 0.3334
-                                ceiling = yes
-                                min = 2
-                            }
-                        }
-
-                        while = {
-                            # Max 2 attempts for each goods type
-                            count = 6
-                            if = {
-                                limit = {
-                                    unused_trade_routes > 0
-                                }
-
-                                if = {
-                                    limit = {
-                                        local_var:type_of_goods_to_import = 1
-                                    }
-                                    ai_import_goods_into_specific_state = {
-                                        goods = cattle
-                                        target = -1
-                                        amount = local_var:amount_of_goods_to_import
-                                    }
-                                }
-                                else_if = {
-                                    limit = {
-                                        local_var:type_of_goods_to_import = 2
-                                    }
-                                    ai_import_goods_into_specific_state = {
-                                        goods = fish
-                                        target = -1
-                                        amount = local_var:amount_of_goods_to_import
-                                    }
-                                }
-                                else_if = {
-                                    limit = {
-                                        local_var:type_of_goods_to_import = 3
-                                    }
-                                    ai_import_goods_into_specific_state = {
-                                        goods = vegetables
-                                        target = -1
-                                        amount = local_var:amount_of_goods_to_import
-                                    }
-                                }
-
-                                # Move on to the next type of goods
-                                set_local_variable = {
-                                    name = type_of_goods_to_import
-                                    value = {
-                                        if = {
-                                            limit = {
-                                                local_var:type_of_goods_to_import = 1
-                                            }
-                                            value = 2
-                                        }
-                                        else_if = {
-                                            limit = {
-                                                local_var:type_of_goods_to_import = 2
-                                            }
-                                            value = 3
-                                        }
-                                        else_if = {
-                                            limit = {
-                                                local_var:type_of_goods_to_import = 3
-                                            }
-                                            value = 1
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        remove_local_variable = type_of_goods_to_import
-                        remove_local_variable = amount_of_goods_to_import
-                    }
-
-                    # Lower priority but will do if nothing else works
-                    ai_import_goods_into_specific_state = {
-                        goods = olive
-                        target = -1
-                        amount = -1
-                    }
-
-                    clear_saved_scope = importing_state
                 }
 
-                # Clear combined local lists
-                clear_local_variable_list = states_to_import_grain_from
-                clear_local_variable_list = states_to_import_cattle_from
-                clear_local_variable_list = states_to_import_fish_from
-                clear_local_variable_list = states_to_import_vegetables_from
-                clear_local_variable_list = states_to_import_olive_from
+                save_scope_as = importing_country
+                
+                every_country = {
+                    limit = {
+                        has_land = yes
+                        OR = {
+                            this = scope:importing_country
+                            AND = {
+                                # Don't steal trade goods from players
+                                is_ai = yes
+                                # Required for trading
+                                scope:importing_country = {
+                                    in_diplomatic_range = prev
+                                }
+                                NOT = {
+                                    war_with = scope:importing_country
+                                }
+                                # If subject with only_trade_with_overlord = yes, importing must be its overlord
+                                trigger_if = {
+                                    limit = {
+                                        is_subject = yes
+                                        OR = {
+                                            is_subject_type = client_state
+                                            is_subject_type = subject_mercenary_city_state
+                                            is_subject_type = subject_league_city_state
+                                            is_subject_type = kushite_client
+                                            is_subject_type = indian_client
+                                            is_subject_type = fiefdom
+                                        }
+                                    }
+                                    overlord = scope:importing_country
+                                }
+                                trigger_else = {
+                                    always = yes
+                                }
+                                # Threshold where negative opinion outweights the base value
+                                opinion = {
+                                    target = scope:importing_country
+                                    value > -120
+                                }
+                                # Allowed to trade all the goods we are looking for
+                                is_trade_goods_allowed = grain
+                                is_trade_goods_allowed = cattle
+                                is_trade_goods_allowed = fish
+                                is_trade_goods_allowed = vegetables
+                                is_trade_goods_allowed = olive
+                            }
+                        }
+                    }
+
+                    # Cache lists of states to export from in country scope
+                    ai_create_exporting_states_lists = yes
+
+                    # Copy country scope lists into local lists made specifically for the country with low food state
+                    ai_duplicate_states_that_can_export = {
+                        goods = grain
+                    }
+                    ai_duplicate_states_that_can_export = {
+                        goods = cattle
+                    }
+                    ai_duplicate_states_that_can_export = {
+                        goods = fish
+                    }
+                    ai_duplicate_states_that_can_export = {
+                        goods = vegetables
+                    }
+                    ai_duplicate_states_that_can_export = {
+                        goods = olive
+                    }
+                }
+
+                # Check if at least any of the lists exists before proceeding
+                if = {
+                    limit = {
+                        OR = {
+                            has_non_empty_local_variable_list = {
+                                name = states_to_import_grain_from
+                            }
+                            has_non_empty_local_variable_list = {
+                                name = states_to_import_cattle_from
+                            }
+                            has_non_empty_local_variable_list = {
+                                name = states_to_import_fish_from
+                            }
+                            has_non_empty_local_variable_list = {
+                                name = states_to_import_vegetables_from
+                            }
+                            has_non_empty_local_variable_list = {
+                                name = states_to_import_olive_from
+                            }
+                        }
+                    }
+                    every_country_state = {
+                        limit = {
+                            OR = {
+                                can_reset_state_trade_routes = yes
+                                unused_trade_routes > 0
+                            }
+                            state_has_low_food = yes
+                            capital_scope = {
+                                has_siege = no
+                            }
+                        }
+                        save_scope_as = importing_state
+
+                        # Fun little trick, read comments right before the effect itself
+                        if = {
+                            limit = {
+                                can_reset_state_trade_routes = yes
+                            }
+                            ai_reset_state_trade_routes = yes
+                        }
+
+                        # If capital and doesn't have bonuses from food, try to get them all
+                        if = {
+                            limit = {
+                                is_capital_state = yes
+                                owner = {
+                                    rank >= regional_power
+                                }
+                            }
+                            # Raises slave happiness a lot, helps with state loyalty and revolts
+                            if = {
+                                limit = {
+                                    ai_should_try_to_get_capital_bonus = {
+                                        goods = olive
+                                    }
+                                }
+                                ai_import_goods_into_specific_state = {
+                                    goods = olive
+                                    target = 2
+                                    amount = -1
+                                }
+                            }
+                            # Raises slave happiness a lot, helps with state loyalty and revolts
+                            if = {
+                                limit = {
+                                    ai_should_try_to_get_capital_bonus = {
+                                        goods = fish
+                                    }
+                                }
+                                ai_import_goods_into_specific_state = {
+                                    goods = fish
+                                    target = 2
+                                    amount = -1
+                                }
+                            }
+                            # We are here for food, aren't we? Here's a buff to all the food
+                            if = {
+                                limit = {
+                                    # Easy conditions as it's all the other are limited due to giving less food than grain
+                                    trade_good_surplus = {
+                                        target = grain
+                                        value < 2
+                                    }
+                                }
+                                ai_import_goods_into_specific_state = {
+                                    goods = grain
+                                    target = 2
+                                    amount = -1
+                                }
+                            }
+                            # Pop promotion speed doesn't do much if you don't have cities
+                            if = {
+                                limit = {
+                                    owner = {
+                                        NOT = {
+                                            government = tribal_chiefdom
+                                        }
+                                    }
+                                    ai_should_try_to_get_capital_bonus = {
+                                        goods = cattle
+                                    }
+                                }
+                                ai_import_goods_into_specific_state = {
+                                    goods = cattle
+                                    target = 2
+                                    amount = -1
+                                }
+                            }
+                        }
+
+                        # Grain is preferred for giving 2x food compared to other goods
+                        ai_import_goods_into_specific_state = {
+                            goods = grain
+                            target = -1
+                            amount = -1
+                        }
+
+                        # While this is checked in ai_import_goods_into_specific_state, seems useful to do it beforehand
+                        if = {
+                            limit = {
+                                unused_trade_routes > 0
+                            }
+
+                            # Randomly determine which goods will be first to get imported
+                            set_local_variable = {
+                                name = type_of_goods_to_import
+                                value = {
+                                    integer_range = {
+                                        min = 1
+                                        max = 3
+                                    }
+                                }
+                            }
+
+                            # Aim to somewhat evenly split routes between 3 types of goods
+                            set_local_variable = {
+                                name = amount_of_goods_to_import
+                                value = {
+                                    value = unused_trade_routes
+                                    multiply = 0.3334
+                                    ceiling = yes
+                                }
+                            }
+
+                            while = {
+                                # Max 2 attempts for each goods type
+                                count = 6
+                                if = {
+                                    limit = {
+                                        unused_trade_routes > 0
+                                    }
+
+                                    if = {
+                                        limit = {
+                                            local_var:type_of_goods_to_import = 1
+                                        }
+                                        ai_import_goods_into_specific_state = {
+                                            goods = cattle
+                                            target = -1
+                                            amount = local_var:amount_of_goods_to_import
+                                        }
+                                    }
+                                    else_if = {
+                                        limit = {
+                                            local_var:type_of_goods_to_import = 2
+                                        }
+                                        ai_import_goods_into_specific_state = {
+                                            goods = fish
+                                            target = -1
+                                            amount = local_var:amount_of_goods_to_import
+                                        }
+                                    }
+                                    else_if = {
+                                        limit = {
+                                            local_var:type_of_goods_to_import = 3
+                                        }
+                                        ai_import_goods_into_specific_state = {
+                                            goods = vegetables
+                                            target = -1
+                                            amount = local_var:amount_of_goods_to_import
+                                        }
+                                    }
+
+                                    # Move on to the next type of goods
+                                    set_local_variable = {
+                                        name = type_of_goods_to_import
+                                        value = {
+                                            if = {
+                                                limit = {
+                                                    local_var:type_of_goods_to_import = 1
+                                                }
+                                                value = 2
+                                            }
+                                            else_if = {
+                                                limit = {
+                                                    local_var:type_of_goods_to_import = 2
+                                                }
+                                                value = 3
+                                            }
+                                            else_if = {
+                                                limit = {
+                                                    local_var:type_of_goods_to_import = 3
+                                                }
+                                                value = 1
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            remove_local_variable = type_of_goods_to_import
+                            remove_local_variable = amount_of_goods_to_import
+                        }
+
+                        # Lower priority but will do if nothing else works
+                        ai_import_goods_into_specific_state = {
+                            goods = olive
+                            target = -1
+                            amount = -1
+                        }
+
+                        clear_saved_scope = importing_state
+                    }
+
+                    # Clear combined local lists
+                    clear_local_variable_list = states_to_import_grain_from
+                    clear_local_variable_list = states_to_import_cattle_from
+                    clear_local_variable_list = states_to_import_fish_from
+                    clear_local_variable_list = states_to_import_vegetables_from
+                    clear_local_variable_list = states_to_import_olive_from
+                }
+                
+                clear_saved_scope = importing_country
             }
-            
-            clear_saved_scope = importing_country
         }
 
         # After all low food states got their trade routes, clear data saved on country level
@@ -369,6 +352,44 @@ ai_import_into_low_food_states = {
             clear_variable_list = states_that_can_export_fish
             clear_variable_list = states_that_can_export_vegetables
             clear_variable_list = states_that_can_export_olive
+        }
+    }
+}
+
+# Save states to export from to variable lists in country scope. The reason is that there may be a lot of low food
+# states in the world, so it's much better to make every country loop over its states only once and save the result,
+# rather than do it over and over again for each country with low food states.
+ai_create_exporting_states_lists = {
+    if = {
+        limit = {
+            NOT = {
+                has_variable = ai_created_lists_of_food_states
+            }
+        }                    
+        set_variable = ai_created_lists_of_food_states
+        every_country_state = {
+            limit = {
+                # Don't steal food from states that need it themselves
+                share_of_cities_in_state < 0.1666
+                # Disloyal states can't export goods
+                state_is_disloyal = no
+            }
+            # Limit it to widely available food, don't steal relatively rare capital effects from players
+            ai_add_to_list_if_state_can_export = {
+                goods = grain
+            }
+            ai_add_to_list_if_state_can_export = {
+                goods = cattle
+            }
+            ai_add_to_list_if_state_can_export = {
+                goods = fish
+            }
+            ai_add_to_list_if_state_can_export = {
+                goods = vegetables
+            }
+            ai_add_to_list_if_state_can_export = {
+                goods = olive
+            }
         }
     }
 }
@@ -590,4 +611,47 @@ ai_import_goods_into_specific_state = {
         remove_local_variable = exporting_states_to_check
         remove_local_variable = surplus_before_adding_routes
     }
+}
+
+# It seems that AI is prohibited from overclocking trade routes more than by 1, meaning that if you set the state to
+# have like -100 routes, clamped to 0, AI immediately removes all the trade routes except 1. You can then fill newly
+# freed routes with stuff you want.
+#
+# Modifiers are a bit sticky, so after applying -100 we must then immediately apply +100, otherwise state routes won't
+# be updated immediately to use them in effects despite you remove_state_modifier'ing it. So we manipulate modifiers
+# twice to get to the normal state, but AI clears trade in the meanwhile, and then modifiers simultaneously falls off.
+#
+# Unfortunately causes the game to stutter shortly, but if do it on January 1st, combined result looks somewhat normal.
+ai_reset_state_trade_routes = {
+    set_variable = {
+        name = ai_applied_trade_routes_reset
+        days = 3650 # 10 years
+    }
+    if = {
+        limit = {
+            NOT = {
+                has_global_variable = ai_applied_trade_routes_reset
+            }
+        }
+        set_global_variable = {
+            name = ai_applied_trade_routes_reset
+            value = 0
+            days = 365
+        }
+    }
+    change_global_variable = {
+        name = ai_applied_trade_routes_reset
+        add = 1
+    }
+
+    add_state_modifier = {
+        name = ai_clear_state_trade_routes
+        duration = 1
+    }
+    add_state_modifier = {
+        name = ai_restore_state_trade_routes
+        duration = 1
+    }
+    remove_state_modifier = ai_clear_state_trade_routes
+    remove_state_modifier = ai_restore_state_trade_routes
 }

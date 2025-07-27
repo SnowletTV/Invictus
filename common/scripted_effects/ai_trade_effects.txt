@@ -1,4 +1,4 @@
-﻿# Note that this may kinda steal goods due to add_trade_route probably ignoring a lot of things
+﻿# Note that this kinda steals goods due to add_trade_route simply creating it so it's limited to AI + AI
 ai_import_food_into_states_in_need = {
     if = {
         limit = {
@@ -11,75 +11,90 @@ ai_import_food_into_states_in_need = {
             days = 365
         }
 
-        # Prioritize countries where importing can really make a difference
-        ordered_country = {
-            limit = {
-                has_land = yes
-                is_ai = yes
-            }
-            order_by = {
-                value = 0
-                every_country_state = {
-                    limit = {
-                        state_has_low_food = yes
+        # Collect all the AI states worldwide that need importing, doesn't matter much how it's done
+        every_region = {
+            every_region_governorship = {
+                limit = {
+                    owner = {
+                        is_ai = yes
                     }
-                    add = trade_routes
+                }
+                every_governorship_state = {
+                    limit = {
+                        ai_state_in_need_to_import_food = yes
+                    }
+                    add_to_local_variable_list = {
+                        name = states_in_need_to_import_food
+                        target = this
+                    }
                 }
             }
+        }
+
+        # Order them by amount of trade routes, basically how big of an impact importing can achieve
+        ordered_in_local_list = {
+            variable = states_in_need_to_import_food
+            order_by = trade_routes
             min = 0
             max = 999999
             check_range_bounds = no
 
-            # Has triggers that depend on previous iterations so it must be outside the main limit
+            # ai_state_in_need_to_import_food has ai_can_reset_state_trade_routes trigger that changes while looping
+            # through this list, so we need to check it via if rather than list limit. Naturally, this will mean some
+            # states collected into the list initially may not end up receiving imports.
+            #
+            # The conflict boils down to the state either having unused trade routes or being allowed to reset them,
+            # so it's enough to re-check only this part of the trigger.
             if = {
                 limit = {
-                    any_country_state = {
-                        ai_state_in_need_to_import_food = yes
+                    OR = {
+                        unused_trade_routes > 0
+                        ai_can_reset_state_trade_routes = yes
                     }
                 }
-                save_scope_as = importing_country
-                
-                # For all countries we can trade with cache what their states can export in country scopes
-                every_country = {
-                    limit = {
-                        ai_can_import_from_this_country = yes
+
+                # Check if state owner fetched data on which states they can import from and do it if hasn't yet
+                owner = {
+                    if = {
+                        limit = {
+                            NOT = {
+                                has_variable = ai_combined_states_to_import_from
+                            }
+                        }
+                        set_variable = ai_combined_states_to_import_from
+                        
+                        save_scope_as = importing_country
+                        # For all countries we can trade with, cache in their scopes which of their states can export
+                        every_country = {
+                            limit = {
+                                ai_can_import_from_this_country = yes
+                            }
+                            ai_collect_states_that_can_export = yes
+                            # Copy these states into combined lists of all states the current country can import from
+                            ai_combine_states_to_import_from = yes
+                        }
+                        clear_saved_scope = importing_country
                     }
-                    ai_collect_states_that_can_export = yes
-                    # Copy these states into combined lists of all states the current importing country can buy from
-                    ai_combine_states_to_import_from = yes
                 }
 
                 # Check if we got any of these combined lists and thus we have some states to import from
                 if = {
                     limit = {
-                        ai_has_states_to_import_food_from = yes
-                    }
-
-                    # Prioritize higher population states so they get limited goods first
-                    ordered_country_state = {
-                        limit = {
-                            ai_state_in_need_to_import_food = yes
+                        owner = {
+                            ai_has_states_to_import_food_from = yes
                         }
-                        order_by = state_population_svalue
-                        min = 0
-                        max = 999999
-                        check_range_bounds = no
-
-                        # Perform importing of various food goods into the current state
-                        ai_import_food_into_specific_state = yes
                     }
-
-                    # Clear combined lists of all states that can export
-                    ai_discard_states_to_import_from = yes
+                    # Perform importing of various food goods into the current state
+                    ai_import_food_into_specific_state = yes
                 }
-                
-                # Garbage colletion
-                clear_saved_scope = importing_country
             }
         }
 
-        # Clear lists with what goods the states can export in country scopes
+        # Clear country scope lists with food trading states from exporting and importing perspectives
         ai_discard_states_that_can_export = yes
+        ai_discard_states_to_import_from = yes
+
+        clear_local_variable_list = states_in_need_to_import_food
     }
 }
 
@@ -139,7 +154,7 @@ ai_add_to_list_if_state_can_export = {
     }
 }
 
-# After all states in need of food got their trade routes, clear data saved on country level
+# Clear lists of all states that can export food for all the countries that were considered
 ai_discard_states_that_can_export = {
     every_country = {
         limit = {
@@ -154,7 +169,7 @@ ai_discard_states_that_can_export = {
     }
 }
 
-# Copy country scope lists into local lists made specifically for the current importing country
+# Copy exporting country scope lists into combined lists in the current importing country scope
 ai_combine_states_to_import_from = {
     ai_duplicate_states_that_can_export = {
         goods = grain
@@ -173,7 +188,7 @@ ai_combine_states_to_import_from = {
     }
 }
 
-# Country scope, expects states_that_can_export_$goods$ variable list and copies it into local one
+# Expects states_that_can_export_$goods$ variable list and copies it for current importing country
 ai_duplicate_states_that_can_export = {
     if = {
         limit = {
@@ -183,21 +198,29 @@ ai_duplicate_states_that_can_export = {
         }
         every_in_list = {
             variable = states_that_can_export_$goods$
-            add_to_local_variable_list = {
-                name = states_to_import_$goods$_from
-                target = this
+            scope:importing_country = {
+                add_to_variable_list = {
+                    name = states_to_import_$goods$_from
+                    target = prev
+                }
             }
         }
     }
 }
 
-# Clear combined lists of all states that can export something to the current importing country
+# Clear combined lists of all states to import food from for all the countries that tried importing
 ai_discard_states_to_import_from = {
-    clear_local_variable_list = states_to_import_grain_from
-    clear_local_variable_list = states_to_import_cattle_from
-    clear_local_variable_list = states_to_import_fish_from
-    clear_local_variable_list = states_to_import_vegetables_from
-    clear_local_variable_list = states_to_import_olive_from
+    every_country = {
+        limit = {
+            has_variable = ai_combined_states_to_import_from
+        }
+        remove_variable = ai_combined_states_to_import_from
+        clear_variable_list = states_to_import_grain_from
+        clear_variable_list = states_to_import_cattle_from
+        clear_variable_list = states_to_import_fish_from
+        clear_variable_list = states_to_import_vegetables_from
+        clear_variable_list = states_to_import_olive_from
+    }
 }
 
 # Try importing various food goods based on priorities and availability until we are out of routes
@@ -418,13 +441,15 @@ ai_import_food_into_specific_state = {
     clear_saved_scope = importing_state
 }
 
-# State scope, requires scope:importing_state, expects local variable list states_to_import_$goods$_from
+# State scope, requires scope:importing_state, expects owner to have variable list states_to_import_$goods$_from
 ai_import_goods_into_specific_state = {
     if = {
         limit = {
             unused_trade_routes > 0
-            has_non_empty_local_variable_list = {
-                name = states_to_import_$goods$_from
+            owner = {
+                has_non_empty_variable_list = {
+                    name = states_to_import_$goods$_from
+                }
             }
             OR = {
                 $target$ < 0
@@ -460,148 +485,149 @@ ai_import_goods_into_specific_state = {
             }
         }
 
-        ordered_in_local_list = {
-            variable = states_to_import_$goods$_from
-
-            limit = {
-                trade_good_surplus = {
-                    target = $goods$
-                    value >= 2
-                }
-                scope:importing_state = {
-                    can_create_trade_route = {
-                        target = prev
-                        goods = $goods$
-                    }
-                }
-            }
-
-            # Prefer states with higher expected amount of the goods to export
-            order_by = {
-                value = trade_good_surplus_$goods$
-                if = {
-                    limit = {
-                        owner = scope:importing_state.owner
-                    }
-                    multiply = 0.10
-                }
-            }
-            min = 0
-            max = local_var:exporting_states_to_check
-            check_range_bounds = no
-
-            # Calculate num routes to create based on exporting state surplus, free routes, target and amount
-            set_local_variable = {
-                name = num_goods_to_export
-                value = {
-                    if = {
-                        limit = {
-                            scope:importing_state.unused_trade_routes = 0
-                        }
-                        value = 0
-                    }
-                    else = {
-                        value = trade_good_surplus_$goods$
-                        subtract = 1
-
-                        # No more than the free trade routes we have
-                        max = scope:importing_state.unused_trade_routes
-
-                        # No more than the difference between target surplus and current surplus
-                        if = {
-                            limit = {
-                                $target$ >= 0
-                            }
-                            max = {
-                                value = $target$
-                                subtract = scope:importing_state.trade_good_surplus_$goods$
-                            }
-                        }
-
-                        # No more than the difference between target surplus and current surplus
-                        if = {
-                            limit = {
-                                $amount$ >= 0
-                            }
-                            max = {
-                                value = local_var:surplus_before_adding_routes
-                                add = $amount$
-                                subtract = scope:importing_state.trade_good_surplus_$goods$
-                            }
-                        }
-
-                        min = 0
-                    }
-                }
-            }
-
-            if = {
+        owner = {
+            ordered_in_list = {
+                variable = states_to_import_$goods$_from
                 limit = {
-                    local_var:num_goods_to_export > 0
+                    trade_good_surplus = {
+                        target = $goods$
+                        value >= 2
+                    }
+                    scope:importing_state = {
+                        can_create_trade_route = {
+                            target = prev
+                            goods = $goods$
+                        }
+                    }
                 }
 
-                # Track if adding trade routes won't actually result in it appearing
-                set_local_variable = {
-                    name = could_not_add_trade_route
-                    value = 0
-                }
-
-                while = {
-                    count = local_var:num_goods_to_export
+                # Prefer states with higher expected amount of the goods to export
+                order_by = {
+                    value = trade_good_surplus_$goods$
                     if = {
                         limit = {
-                            local_var:could_not_add_trade_route = 0
+                            owner = scope:importing_state.owner
                         }
-                        scope:importing_state = {
-                            set_local_variable = {
-                                name = current_unused_trade_routes
-                                value = unused_trade_routes
+                        multiply = 0.10
+                    }
+                }
+                min = 0
+                max = local_var:exporting_states_to_check
+                check_range_bounds = no
+
+                # Calculate num routes to create based on exporting state surplus, free routes, target and amount
+                set_local_variable = {
+                    name = num_goods_to_export
+                    value = {
+                        if = {
+                            limit = {
+                                scope:importing_state.unused_trade_routes = 0
                             }
-                            add_trade_route = {
-                                target = prev
-                                goods = $goods$
-                            }
+                            value = 0
+                        }
+                        else = {
+                            value = trade_good_surplus_$goods$
+                            subtract = 1
+
+                            # No more than the free trade routes we have
+                            max = scope:importing_state.unused_trade_routes
+
+                            # No more than the difference between target surplus and current surplus
                             if = {
                                 limit = {
-                                    local_var:current_unused_trade_routes = unused_trade_routes
+                                    $target$ >= 0
                                 }
-                                change_local_variable = {
-                                    name = could_not_add_trade_route
-                                    add = 1
+                                max = {
+                                    value = $target$
+                                    subtract = scope:importing_state.trade_good_surplus_$goods$
                                 }
                             }
-                            remove_local_variable = current_unused_trade_routes
+
+                            # No more than the difference between target surplus and current surplus
+                            if = {
+                                limit = {
+                                    $amount$ >= 0
+                                }
+                                max = {
+                                    value = local_var:surplus_before_adding_routes
+                                    add = $amount$
+                                    subtract = scope:importing_state.trade_good_surplus_$goods$
+                                }
+                            }
+
+                            min = 0
                         }
                     }
                 }
 
-                # If the state can't produce more trade routes, remove it from lists
                 if = {
                     limit = {
-                        OR = {
-                            local_var:could_not_add_trade_route > 0
-                            trade_good_surplus = {
-                                target = $goods$
-                                value < 2
+                        local_var:num_goods_to_export > 0
+                    }
+
+                    # Track if adding trade routes won't actually result in it appearing
+                    set_local_variable = {
+                        name = could_not_add_trade_route
+                        value = 0
+                    }
+
+                    while = {
+                        count = local_var:num_goods_to_export
+                        if = {
+                            limit = {
+                                local_var:could_not_add_trade_route = 0
+                            }
+                            scope:importing_state = {
+                                set_local_variable = {
+                                    name = current_unused_trade_routes
+                                    value = unused_trade_routes
+                                }
+                                add_trade_route = {
+                                    target = prev
+                                    goods = $goods$
+                                }
+                                if = {
+                                    limit = {
+                                        local_var:current_unused_trade_routes = unused_trade_routes
+                                    }
+                                    change_local_variable = {
+                                        name = could_not_add_trade_route
+                                        add = 1
+                                    }
+                                }
+                                remove_local_variable = current_unused_trade_routes
                             }
                         }
                     }
-                    remove_list_local_variable = {
-                        name = states_to_import_$goods$_from
-                        target = this
-                    }
-                    owner = {
-                        remove_list_variable = {
-                            name = states_that_can_export_$goods$
-                            target = prev
+
+                    # If the state can't produce more trade routes, remove it from lists
+                    if = {
+                        limit = {
+                            OR = {
+                                local_var:could_not_add_trade_route > 0
+                                trade_good_surplus = {
+                                    target = $goods$
+                                    value < 2
+                                }
+                            }
+                        }
+                        remove_list_local_variable = {
+                            name = states_to_import_$goods$_from
+                            target = this
+                        }
+                        owner = {
+                            remove_list_variable = {
+                                name = states_that_can_export_$goods$
+                                target = prev
+                            }
                         }
                     }
-                }
 
-                remove_local_variable = could_not_add_trade_route
+                    remove_local_variable = could_not_add_trade_route
+                }
+                
+                remove_local_variable = num_goods_to_export
             }
-            
-            remove_local_variable = num_goods_to_export
         }
 
         remove_local_variable = exporting_states_to_check
@@ -639,7 +665,6 @@ ai_reset_state_trade_routes = {
         name = ai_applied_trade_routes_reset
         add = 1
     }
-
     add_state_modifier = {
         name = ai_clear_state_trade_routes
         duration = 1

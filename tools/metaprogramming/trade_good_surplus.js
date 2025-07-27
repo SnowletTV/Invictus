@@ -44,30 +44,30 @@ let tradeGoods = [
 ];
 
 let depth = 100;
-let script_value = `country_outgoing_trade_routes = {\n`;
+
+let svalues = ``;
 for (let i = 0; i < tradeGoods.length; i++) {
-  script_value += `    if = { limit = { country_trade_good_exports = { target = ${tradeGoods[i]} value > 0 } }\n`;
+  svalues += `trade_good_surplus_${tradeGoods[i]} = {\n    value = 0\n    if = { limit = { trade_good_surplus = { target = ${tradeGoods[i]} value > 0 } }\n`;
   for (let j = 1; j <= depth; j++) {
 
     if (j % 10 === 0 && j < depth) {
-      script_value += `        else_if = {\n            limit = { country_trade_good_exports = { target = ${tradeGoods[i]} value < ${j + 10} } }\n`;
+      svalues += `        else_if = {\n            limit = { trade_good_surplus = { target = ${tradeGoods[i]} value < ${j + 10} } }\n`;
     }
 
     if (j >= 10 && j !== depth) {
-      script_value += `    `;
+      svalues += `    `;
     }
-    script_value += `        `;
+    svalues += `        `;
     if (j > 1 && (j % 10 !== 0 || j === depth)) {
-      script_value += `else_`;
+      svalues += `else_`;
     }
-    script_value += `if = { limit = { country_trade_good_exports = { target = ${tradeGoods[i]} value ${j === depth ? `>= ${j}` : `= { ${j} ${j} }` } } } add = ${j} }\n`;
+    svalues += `if = { limit = { trade_good_surplus = { target = ${tradeGoods[i]} value ${j === depth ? `>= ${j}` : `= { ${j} ${j} }` } } } add = ${j} }\n`;
 
     if (j > 9 && j % 10 === 9) {
-      script_value += `        }\n`;
+      svalues += `        }\n`;
     }
   }
-  script_value += `    }\n`;
+  svalues += `    }\n}\n\n`;
 }
-script_value += `}`;
 
-console.log(script_value);
+console.log(svalues.trim());

@@ -211,6 +211,96 @@
                 }
             }
 
+            # If couldn't fix anyone's loyalty at all and Advanced AI is enabled, try to befriend someone disloyal
+            if = {
+                limit = {
+                    local_var:loyalty_fixes_done = 0
+                    is_advanced_ai_enabled = yes
+                    NOT = {
+                        has_global_variable = game_rule_advanced_ai_character_loyalty
+                    }
+                }
+                ordered_character = {
+                    limit = {
+                        # Character conditions we want to match
+                        character_is_disloyal = yes
+                        character_is_powerful = yes
+                        character_is_eligible_for_urgent_loyalty_fixing = yes
+                        # Required by character interaction triggers
+                        save_temporary_scope_as = target
+                        # Check eligibility for the interaction
+                        character_is_eligible_for_befriending = yes
+                    }
+                    # Highest character by power base
+                    order_by = power_base
+                    position = 0
+                    # Required by character interaction effects
+                    save_scope_as = target
+                    # Perform interaction
+                    befriend_effect = yes
+                    change_local_variable = {
+                        name = loyalty_fixes_done
+                        add = 1
+                    }
+                    # Garbage collection
+                    clear_saved_scope = target
+                }
+            }
+
+            # If couldn't fix anyone's loyalty at all and Advanced AI is enabled, start granting holdings
+            if = {
+                limit = {
+                    local_var:loyalty_fixes_done = 0
+                    is_advanced_ai_enabled = yes
+                    NOT = {
+                        has_global_variable = game_rule_advanced_ai_character_loyalty
+                    }
+                    possible_holdings > 0
+                }
+                ordered_character = {
+                    limit = {
+                        # Character conditions we want to match
+                        character_is_disloyal = yes
+                        character_is_powerful = yes
+                        character_is_eligible_for_urgent_loyalty_fixing = yes
+                        # Required by character interaction triggers
+                        save_temporary_scope_as = target
+                        # Check eligibility for the interaction
+                        character_is_eligible_for_granting_holding = yes
+                    }
+                    # Highest character by power base
+                    order_by = power_base
+                    position = 0
+                    # Required by character interaction effects
+                    save_scope_as = target
+                    # Perform interaction
+                    scope:actor = {
+                        ordered_owned_province = {
+                            limit = {
+                                grant_holding_province_actor_trigger = yes
+                            }
+                            order_by = total_population
+                            min = 0
+                            max = 3
+                            check_range_bounds = no
+
+                            if = {
+                                limit = {
+                                    scope:target = {
+                                        character_is_disloyal = yes
+                                    }
+                                }
+                                save_scope_as = recipient
+                                grant_holding_effect = yes
+                                clear_saved_scope = recipient
+                            }
+                        }
+                    }
+                    # Garbage collection
+                    clear_saved_scope = target
+                }
+            }
+
             # Garbage collection
             remove_local_variable = loyalty_fixes_done
         }

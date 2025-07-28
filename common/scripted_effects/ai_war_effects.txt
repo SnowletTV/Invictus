@@ -2,11 +2,23 @@
     if = {
         limit = {
             is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
             is_ai = yes
+            has_land = yes
             war = yes
             exists = c:MER
             # Simple trigger to prevent broke countries from making performance impact
-            treasury >= recruit_mercenary_cost_svalue
+            trigger_if = {
+                limit = {
+                    num_free_mercenary_slots_svalue > 0
+                }
+                treasury >= recruit_mercenary_cost_svalue
+            }
+            trigger_else = {
+                treasury >= 200 # Min value for bribing
+            }
             # For comparable threat only recruit mercs normally, without bribing, which requires free slots
             trigger_if = {
                 limit = {
@@ -33,8 +45,8 @@
             value = ai_treasury_for_mercenaries
         }
         set_local_variable = {
-            name = navy_default_maintenance_delta_cached
-            value = navy_default_maintenance_delta
+            name = navy_adjusted_maintenance_delta_cached
+            value = navy_adjusted_maintenance_delta
         }
         set_local_variable = {
             name = ai_current_mercenary_maintenance_cached
@@ -89,6 +101,7 @@
             if = {
                 limit = {
                     local_var:recruited_a_mercenary = 0
+                    treasury >= 200 # Min value for bribing
                     ai_is_facing_existential_threat = yes
                 }
 
@@ -137,10 +150,6 @@
                             save_scope_as = actor
                         }
                         employer = {
-                            set_local_variable = {
-                                name = merc_payoff_value
-                                value = scope:mercenary_to_bribe.ai_army_size_merc_estimation
-                            }
                             trigger_event = {
                                 id = warfare.3
                             }
@@ -158,7 +167,7 @@
         }
 
         remove_local_variable = ai_treasury_for_mercenaries_cached
-        remove_local_variable = navy_default_maintenance_delta_cached
+        remove_local_variable = navy_adjusted_maintenance_delta_cached
         remove_local_variable = ai_current_mercenary_maintenance_cached
     }
 
@@ -168,5 +177,22 @@
             always = no
         }
         set_global_variable = game_rule_ai_custom_mercenary_recruitment
+    }
+}
+
+ai_destroy_leftover_navies = {
+    if = {
+        limit = {
+            is_ai = yes
+            war = no
+            num_of_ports <= 0
+        }
+        every_navy = {
+            limit = {
+                in_combat = no
+                is_mercenary_unit = no
+            }
+            destroy_unit = yes
+        }
     }
 }

@@ -201,10 +201,11 @@ brc_aqueduct = {
                 # Must be close to population cap
                 total_population < population_cap_minus_10
                 # Build more useful stuff first
-				num_of_used_building_slots < 5
                 has_any_city_ratio_building_maxed_out = no
-                # Not too big to avoid starvation
-				total_population >= 80 # Just enough for metropolis
+                # No issues with food in state
+                state = {
+				    state_has_close_to_low_food = yes
+                }
 			}
         }
         value = 0
@@ -262,7 +263,7 @@ brc_granary = {
             num_of_population_building < level_of_granary_wanted
         }
         value = brc_territory_importance
-        multiply = brc_75
+        multiply = brc_85
     }
     else = {
         value = 0
@@ -336,15 +337,7 @@ brc_academy = {
             brc_wants_academy = yes
         }
         value = brc_territory_importance
-        if = {
-            limit = {
-                is_capital = yes
-            }
-            multiply = brc_80
-        }
-        else = {
-            multiply = brc_70
-        }
+        multiply = brc_70
         multiply = {
             value = 1.00
             add = {
@@ -600,7 +593,7 @@ brc_basic_settlement_infratructure = {
     if = {
         limit = {
             root.state = {
-                has_state_food <= 50
+                state_has_low_food = yes
             }
         }
         multiply = brc_100
@@ -609,7 +602,7 @@ brc_basic_settlement_infratructure = {
         limit = {
             OR = {
                 has_trade_good_of_extreme_priority = yes
-                percent_of_cities_in_same_state >= 0.3333
+                share_of_cities_in_same_state >= 0.3333
             }
         }
         multiply = brc_99
@@ -628,19 +621,19 @@ brc_basic_settlement_infratructure = {
     }
     else_if = {
         limit = {
-            percent_of_cities_in_same_state >= 0.25
+            share_of_cities_in_same_state >= 0.25
         }
         multiply = brc_65
     }
     else_if = {
         limit = {
-            percent_of_cities_in_same_state >= 0.20
+            share_of_cities_in_same_state >= 0.20
         }
         multiply = brc_55
     }
     else_if = {
         limit = {
-            percent_of_cities_in_same_state >= 0.1666
+            share_of_cities_in_same_state >= 0.1666
         }
         multiply = brc_45
     }
@@ -702,8 +695,11 @@ brc_territory_importance = {
     if = {
         limit = {
             is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
             owner = {
-                ai_wartime_fund_to_build < ai_wartime_fund_desired
+                treasury < ai_wartime_fund_with_medium_buffer
             }
         }
         value = 0
@@ -927,14 +923,28 @@ port_levels_to_mega_tier = {
 port_tier_enum_mega = 1
 port_tier_enum_giga = 2
 
-# 1 per every 30 pops - better to sync with 10s, so after reaching threshold AI could instantly build it using new slot
+# 1 per every 20-30 pops - better to sync with 10s, so after reaching threshold AI could build it using the new slot
 level_of_granary_wanted = {
     value = total_population
-    divide = 30
+    if = {
+        limit = {
+            share_of_cities_in_same_state >= 0.40
+        }
+        divide = 20
+    }
+    else_if = {
+        limit = {
+            share_of_cities_in_same_state >= 0.20
+        }
+        divide = 25
+    }
+    else = {
+        divide = 30
+    }
     floor = yes
 }
 
-percent_of_cities_in_same_state = {
+share_of_cities_in_same_state = {
     value = 0
     state = {
         every_state_province = {
@@ -950,6 +960,23 @@ percent_of_cities_in_same_state = {
             every_state_province = {
                 add = 1
             }
+        }
+        min = 1
+    }
+}
+
+share_of_cities_in_state = {
+    value = 0
+    every_state_province = {
+        limit = {
+            has_city_status = yes
+        }
+        add = 1
+    }
+    divide = {
+        value = 0
+        every_state_province = {
+            add = 1
         }
         min = 1
     }

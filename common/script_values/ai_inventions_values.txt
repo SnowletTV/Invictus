@@ -252,32 +252,33 @@ cdt_mangonel_target_100 = {
 }
 
 # Timbered Roads - conditional tree / Celtic specific
-cdt_timbered_roads_20 = {
-	if = {
-		limit = {
-			# Copy-pasted from gallic_timbered_roads_inv
-			OR = {
-				country_culture_group = gallic
-				country_culture_group = celto_pannonian_group
-				country_culture_group = belgae_group
-				custom_tooltip = {
-					text = integrated_any_celtic_culture
-					has_variable = celtic_science
-					any_integrated_culture = {
-						OR = {
-							this.culture.culture_group = culture_group:gallic
-							this.culture.culture_group = culture_group:celto_pannonian_group
-							this.culture.culture_group = culture_group:belgae_group
-						}
-					}
-				}
-			}
-		}
-		value = irc_20
-	}
-	else = {
+# Idk seems useless?
+cdt_timbered_roads_1 = {
+	# if = {
+	# 	limit = {
+	# 		# Copy-pasted from gallic_timbered_roads_inv
+	# 		OR = {
+	# 			country_culture_group = gallic
+	# 			country_culture_group = celto_pannonian_group
+	# 			country_culture_group = belgae_group
+	# 			custom_tooltip = {
+	# 				text = integrated_any_celtic_culture
+	# 				has_variable = celtic_science
+	# 				any_integrated_culture = {
+	# 					OR = {
+	# 						this.culture.culture_group = culture_group:gallic
+	# 						this.culture.culture_group = culture_group:celto_pannonian_group
+	# 						this.culture.culture_group = culture_group:belgae_group
+	# 					}
+	# 				}
+	# 			}
+	# 		}
+	# 	}
+	# 	value = irc_20
+	# }
+	# else = {
 		value = irc_base
-	}
+	# }
 }
 
 # --------------------- #
@@ -587,6 +588,9 @@ uct_mercenary_benefits_90 = {
 	if = {
 		limit = {
 			is_advanced_ai_enabled = yes
+			NOT = {
+				has_global_variable = game_rule_advanced_ai_mercenaries
+			}
 			NOT = {
 				invention = recruit_mercenary_inv
 			}
@@ -1328,7 +1332,6 @@ share_of_wrong_culture_pops = {
 					}
 				}
 			}
-			
 		}
 		add = country_culture_pop_count
 	}
@@ -1393,49 +1396,7 @@ country_population_svalue = {
 	min = 1
 }
 
-territory_research_points = {
-	value = modifier:research_points
-	multiply = {
-		value = 1.00
-		add = modifier:local_research_points_modifier
-		add = owner.modifier:research_points_modifier
-	}
-	min = 0
-}
-territory_normalized_research_points = {
-	value = modifier:research_points
-	multiply = {
-		value = 1.00
-		add = modifier:local_research_points_modifier
-		add = owner.modifier:research_points_modifier
-		if = {
-			limit = {
-				owner = {
-					has_country_modifier = deficit_research_points
-				}
-			}
-			add = 0.50
-		}
-	}
-	min = 0
-}
-
-governorship_research_points = {
-	every_governorship_state = {
-		every_state_province = {
-			add = territory_research_points
-		}
-	}
-}
-governorship_normalized_research_points = {
-	every_governorship_state = {
-		every_state_province = {
-			add = territory_normalized_research_points
-		}
-	}
-}
-
-current_research_efficiency_svalue = {
+research_efficiency_svalue = {
 	value = 0
 	every_owned_province = {
 		add = territory_research_points
@@ -1451,10 +1412,23 @@ current_research_efficiency_svalue = {
 		min = 1
 	}
 }
-current_normalized_research_efficiency = {
+
+adjusted_research_efficiency_cached = {
+	if = {
+		limit = {
+			has_variable = adjusted_research_efficiency_cached
+		}
+		value = var:adjusted_research_efficiency_cached
+	}
+	else = {
+		value = adjusted_research_efficiency_by_governorships_cached
+	}
+}
+
+adjusted_research_efficiency_by_governorships_cached = {
 	value = 0
-	every_owned_province = {
-		add = territory_normalized_research_points
+	every_governorships = {
+		add = governorship_adjusted_research_points_cached
 	}
 	multiply = 12
 	divide = {
@@ -1468,15 +1442,250 @@ current_normalized_research_efficiency = {
 	}
 }
 
-cached_normalized_research_efficiency = {
+governorship_adjusted_research_points_cached = {
 	if = {
 		limit = {
-			has_variable = cached_normalized_research_efficiency
+			exists = capital_scope
+			capital_scope = {
+				has_variable = adjusted_research_points_cached
+			}
 		}
-		value = var:cached_normalized_research_efficiency
+		value = capital_scope.var:adjusted_research_points_cached
 	}
 	else = {
-		value = current_normalized_research_efficiency
+		value = governorship_adjusted_research_points
+	}
+}
+
+governorship_adjusted_research_points = {
+	every_governorship_state = {
+		every_state_province = {
+			add = territory_adjusted_research_points
+		}
+	}
+}
+
+territory_research_points = {
+	value = modifier:research_points
+	multiply = {
+		value = 1.00
+		add = modifier:local_research_points_modifier
+		add = owner.modifier:research_points_modifier
+	}
+	min = 0
+}
+
+# Typical - without impact of stability and big temporary modifiers like deficit research event
+# territory_typical_research_points = {
+# 	value = pops_typical_research_points
+# 	multiply = {
+# 		value = 1.00
+# 		add = modifier:local_research_points_modifier
+# 		add = owner.modifier:research_points_modifier
+# 		# Positive stability gives modifier research
+# 		subtract = owner.research_points_modifier_from_stability
+# 		if = {
+# 			limit = {
+# 				owner = {
+# 					has_country_modifier = deficit_research_points
+# 				}
+# 			}
+# 			add = 0.50
+# 		}
+# 	}
+# 	min = 0
+# }
+
+# Adjusted - same as typical, but also at default economic policy
+territory_adjusted_research_points = {
+	if = {
+		limit = {
+			modifier:research_points = 0
+		}
+		value = 0
+	}
+	else = {
+		value = pops_typical_research_points
+		multiply = {
+			value = 1.00
+			add = modifier:local_research_points_modifier
+			add = owner.modifier:research_points_modifier
+			# Positive stability gives modifier research
+			subtract = owner.research_points_modifier_from_stability
+			if = {
+				limit = {
+					owner = {
+						has_country_modifier = deficit_research_points
+					}
+				}
+				add = 0.50
+			}
+			if = {
+				limit = {
+					owner = {
+						has_high_economic_policy = income_tax
+					}
+				}
+				add = 0.20
+			}
+		}
+		min = 0
+	}
+}
+
+# Typical - without impact of stability and big temporary modifiers like deficit research event
+pops_typical_research_points = {
+	if = {
+		limit = {
+			num_of_nobles > 0
+			num_of_citizen > 0
+		}
+		# What research nobles would give at 50 stability with correction for their share in research points
+		value = {
+			value = modifier:research_points
+			multiply = share_of_base_research_from_nobles
+			multiply = {
+				value = nobles_happiness_at_50_stability
+				divide = {
+					value = nobles_happiness
+					min = 0.01
+				}
+			}
+		}
+		# What research citizens would give at 50 stability with correction for their share in research points
+		add = {
+			value = modifier:research_points
+			multiply = {
+				value = 1
+				subtract = share_of_base_research_from_nobles
+			}
+			multiply = {
+				value = citizen_happiness_at_50_stability
+				divide = {
+					value = citizen_happiness
+					min = 0.01
+				}
+			}
+		}
+	}
+	else_if = {
+		limit = {
+			num_of_nobles > 0
+		}
+		# What research nobles would give at 50 stability
+		value = {
+			value = modifier:research_points
+			multiply = {
+				value = nobles_happiness_at_50_stability
+				divide = {
+					value = nobles_happiness
+					min = 0.01
+				}
+			}
+		}
+	}
+	else_if = {
+		limit = {
+			num_of_citizen > 0
+		}
+		# What research citizens would give at 50 stability
+		value = {
+			value = modifier:research_points
+			multiply = {
+				value = citizen_happiness_at_50_stability
+				divide = {
+					value = citizen_happiness
+					min = 0.01
+				}
+			}
+		}
+	}
+	else = {
+		value = modifier:research_points
+	}
+}
+
+share_of_base_research_from_nobles = {
+	value = {
+		value = num_of_nobles
+		multiply = 2.5
+		multiply = {
+			value = nobles_happiness
+			min = 0
+			max = 1
+		}
+	}
+	divide = {
+		value = {
+			value = num_of_nobles
+			multiply = 2.5
+			multiply = {
+				value = nobles_happiness
+				min = 0
+				max = 1
+			}
+		}
+		add = {
+			value = num_of_citizen
+			multiply = {
+				value = citizen_happiness
+				min = 0
+				max = 1
+			}
+		}
+		min = 1
+	}
+	min = 0
+	max = 1
+}
+
+population_happiness_from_stability = {
+	if = {
+		limit = {
+			stability > 50
+		}
+		value = stability
+		subtract = 50
+		divide = 500
+	}
+	else_if = {
+		limit = {
+			stability < 50
+		}
+		value = stability
+		subtract = 50
+		divide = 100
+	}
+	else = {
+		value = 0
+	}
+}
+
+nobles_happiness_at_50_stability = {
+	value = nobles_happiness
+	subtract = owner.population_happiness_from_stability
+	min = 0
+	max = 1
+}
+
+citizen_happiness_at_50_stability = {
+	value = citizen_happiness
+	subtract = owner.population_happiness_from_stability
+	min = 0
+	max = 1
+}
+
+research_points_modifier_from_stability = {
+	if = {
+		limit = {
+			stability > 50
+		}
+		value = stability
+		subtract = 50
+		divide = 200
+	}
+	else = {
+		value = 0
 	}
 }
 

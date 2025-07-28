@@ -1,0 +1,178 @@
+﻿state_has_low_food = {
+    trigger_if = {
+        limit = {
+            state_monthly_food_income < 0
+        }
+        state_food_percent <= 0.50
+    }
+    trigger_else = {
+        state_food_percent <= 0.25
+    }
+}
+
+state_has_close_to_low_food = {
+    trigger_if = {
+        limit = {
+            state_monthly_food_income < 0
+        }
+        state_food_percent <= 0.75
+    }
+    trigger_else = {
+        state_food_percent <= 0.50
+    }
+}
+
+# Only if enough trade routes to get both the bonus and some grain
+ai_should_try_to_get_capital_bonus = {
+    trigger_if = {
+        limit = {
+            trade_good_surplus = {
+                target = $goods$
+                value = { 1 1 }
+            }
+        }
+        unused_trade_routes >= 3
+    }
+    trigger_else_if = {
+        limit = {
+            trade_good_surplus = {
+                target = $goods$
+                value <= 0
+            }
+        }
+        unused_trade_routes >= 4
+    }
+    trigger_else = {
+        always = no
+    }
+}
+
+ai_state_in_need_to_import_food = {
+    # Food is abnormally low while under siege
+    capital_scope = {
+        has_siege = no
+    }
+    # If has low food, should actively try to fix it
+    trigger_if = {
+        limit = {
+            state_has_low_food = yes
+        }
+        OR = {
+            unused_trade_routes > 0
+            ai_can_reset_state_trade_routes = yes
+        }
+    }
+    # Otherwise import if AI can't use trade routes normally
+    # This equals to 2/4, 3/5, 4/6, 4/7, 5/8, 6/9, 6/10 etc.
+    trigger_else = {
+        trade_routes >= 4
+        unused_trade_routes_percent >= 0.3333
+    }
+}
+
+ai_can_reset_state_trade_routes = {
+    OR = {
+        NOT = {
+            has_global_variable = ai_applied_trade_routes_reset
+        }
+        global_var:ai_applied_trade_routes_reset < 1
+    }
+
+    trigger_if = {
+        limit = {
+            trade_routes >= 4
+        }
+        unused_trade_routes <= 1
+    }
+    trigger_else_if = {
+        limit = {
+            trade_routes >= 2
+        }
+        unused_trade_routes = 0
+    }
+    trigger_else = {
+        always = no
+    }
+    
+    OR = {
+        # For capital state bonuses from import
+        AND = {
+            is_capital_state = yes
+            owner = {
+                rank >= major_power
+            }
+        }
+        state_food_percent <= 0.20
+    }
+}
+
+ai_can_import_from_this_country = {
+    has_land = yes
+    OR = {
+        this = scope:importing_country
+        AND = {
+            # Don't steal trade goods from players
+            is_ai = yes
+            # Required for trading
+            scope:importing_country = {
+                in_diplomatic_range = prev
+            }
+            NOT = {
+                war_with = scope:importing_country
+            }
+            # If subject with only_trade_with_overlord = yes, importing must be its overlord
+            trigger_if = {
+                limit = {
+                    is_subject_that_only_exports_to_overlord = yes
+                }
+                overlord = scope:importing_country
+            }
+            trigger_else = {
+                always = yes
+            }
+            # Threshold where negative opinion outweights the base value
+            opinion = {
+                target = scope:importing_country
+                value > -120
+            }
+            # Allowed to trade all the goods we are looking for
+            is_trade_goods_allowed = grain
+            is_trade_goods_allowed = cattle
+            is_trade_goods_allowed = fish
+            is_trade_goods_allowed = vegetables
+            is_trade_goods_allowed = olive
+        }
+    }
+}
+
+is_subject_that_only_exports_to_overlord = {
+    is_subject = yes
+    OR = {
+        is_subject_type = client_state
+        is_subject_type = subject_mercenary_city_state
+        is_subject_type = subject_league_city_state
+        is_subject_type = kushite_client
+        is_subject_type = indian_client
+        is_subject_type = fiefdom
+    }
+}
+
+ai_has_states_to_import_food_from = {
+    OR = {
+        has_non_empty_variable_list = {
+            name = states_to_import_grain_from
+        }
+        has_non_empty_variable_list = {
+            name = states_to_import_cattle_from
+        }
+        has_non_empty_variable_list = {
+            name = states_to_import_fish_from
+        }
+        has_non_empty_variable_list = {
+            name = states_to_import_vegetables_from
+        }
+        has_non_empty_variable_list = {
+            name = states_to_import_olive_from
+        }
+    }
+}

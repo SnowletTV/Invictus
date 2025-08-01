@@ -713,13 +713,13 @@ ai_manually_move_pops_to_cities = {
                 treasury >= ai_wartime_fund_with_small_buffer
             }
             trigger_else = {
-                always = yes
+                treasury >= 75
             }
         }
         random_owned_province = {
             limit = {
                 has_city_status = yes
-                # Target population is actually higher, see below
+                # Target population is actually higher than this, see below
                 trigger_if = {
                     limit = {
                         owner = {
@@ -731,10 +731,12 @@ ai_manually_move_pops_to_cities = {
                 trigger_else = {
                     total_population < population_cap_65_percent
                 }
+                # Moving slaves to cities will only make food issues worse
                 state = {
                     state_has_low_food = no
                 }
             }
+            # Prefer territories with more room available to move pops in
             weight = {
                 modifier = {
                     factor = territory_population_until_cap
@@ -743,6 +745,7 @@ ai_manually_move_pops_to_cities = {
 
             save_scope_as = underpopulated_city
 
+            # Save all neighbour and same state territories into a list
             every_neighbor_province = {
                 limit = {
                     exists = owner
@@ -761,6 +764,12 @@ ai_manually_move_pops_to_cities = {
                     limit = {
                         NOT = {
                             this = scope:underpopulated_city
+                        }
+                        NOT = {
+                            is_target_in_local_variable_list = {
+                                name = territories_to_move_pops_from
+                                target = this
+                            }
                         }
                         ai_can_move_pops_from_territory = yes
                     }
@@ -793,7 +802,6 @@ ai_manually_move_pops_to_cities = {
                         else = {
                             value = population_cap_75_percent
                         }
-                        value = population_cap_75_percent 
                         subtract = total_population
                         min = 3
                         max = population_cap_40_percent
@@ -806,13 +814,29 @@ ai_manually_move_pops_to_cities = {
 
                     random_in_local_list = {
                         variable = territories_to_move_pops_from
-                        # Recheck after previous moves
                         limit = {
+                            # Recheck if we still some money after previous moves
                             owner = {
                                 treasury >= 10
                             }
+                            # Ensure nothing weird happened and cap wasn't reached
+                            scope:underpopulated_city = {
+                                trigger_if = {
+                                    limit = {
+                                        owner = {
+                                            is_tribal = no
+                                        }
+                                    }
+                                    total_population < population_cap_85_percent
+                                }
+                                trigger_else = {
+                                    total_population < population_cap_75_percent
+                                }
+                            }
+                            # Recheck if the territory can still move pops away
                             ai_can_move_pops_from_territory = yes
                         }
+                        # Prefer territories with more pops living there
                         weight = {
                             modifier = {
 								factor = total_population

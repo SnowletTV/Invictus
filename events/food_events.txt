@@ -1,0 +1,4309 @@
+﻿namespace = food_events
+
+food_events.1 = {							# Poor Harvest
+	type = country_event
+	title = "food_events.1.t"
+	desc = "food_events.1.desc"
+	
+	picture = farming
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	goto_location = scope:fe_city
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+				NOR = {	
+					terrain = desert
+					has_winter = yes
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					NOR = { 
+						terrain = desert
+						has_winter = no
+					}
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							this = root.capital_scope
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					any_state_province = {
+						OR = {
+							has_province_modifier = terrible_storm_modifier
+							has_province_modifier = ravaged_by_storms
+						}	
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+					NOR = { 
+						terrain = desert
+						has_winter = no
+					}
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		famine_relocation_immediate_effect = yes
+	}
+	
+	option = {
+		name = "food_events.1.a"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_governor_relief }
+		}
+		add_treasury = {
+			value = mild_famine_relief_cost_svalue
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+	
+	option = {
+		name = "food_events.1.b"
+		trigger = {
+			exists = scope:fe_city.governor
+			NOT = { root.current_ruler = scope:fe_city.governor }
+			scope:fe_city.governor = { wealth >= mild_famine_relief_cost_svalue }
+		}
+		scope:fe_city.governor = { 
+			add_loyalty = loyalty_food_governor_pays
+			add_gold = { value = mild_famine_relief_cost_svalue }
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+	
+	option = {
+		name = "food_events.1.c"
+		trigger = {
+			exists = scope:relocation_state_city
+		}
+		add_political_influence = subtract_influence_small
+		hidden_effect = {
+			famine_relocation_effect = yes
+		}
+		custom_tooltip = "famine_relocation_tooltip"
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:relocation_state_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+		ai_chance = {
+			modifier = {
+				factor = 0
+			}
+		}
+	}
+
+	option = {
+		name = "food_events.1.d"
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = { 
+				add_state_modifier = {
+					name = mild_famine_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+		ai_chance = {
+			modifier = {
+				factor = 0
+			}
+		}
+	}
+
+	after = {
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.2 = {							# Winter
+	type = country_event
+	title = "food_events.2.t"
+	desc = "food_events.2.desc"
+	
+	picture = farming
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }			
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+				NOT = { terrain = desert }
+				has_winter = yes
+			}
+		}
+	}
+	
+	weight_multiplier = {
+		base = 1
+		modifier = {
+			factor = 5
+			any_country_state = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					NOT = { terrain = desert }
+					has_winter = yes
+				}
+				any_state_province = {
+					OR = {
+						has_province_modifier = terrible_storm_modifier
+						has_province_modifier = ravaged_by_storms
+						has_province_modifier = snow_storm
+					}	
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					NOT = { terrain = desert }
+					has_winter = yes
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							this = root.capital_scope
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					any_state_province = {
+						OR = {
+							has_province_modifier = terrible_storm_modifier
+							has_province_modifier = ravaged_by_storms
+							has_province_modifier = snow_storm
+						}	
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+					NOT = { terrain = desert }
+					has_winter = yes
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		famine_relocation_immediate_effect = yes
+	}
+	
+	option = {
+		name = "food_events.2.a"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_governor_relief }
+		}
+		add_treasury = {
+			value = mild_famine_relief_cost_svalue
+		}
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+	
+	option = {
+		name = "food_events.2.b"
+		trigger = {
+			exists = scope:fe_city.governor
+			NOT = { root.current_ruler = scope:fe_city.governor }
+			scope:fe_city.governor = { wealth >= mild_famine_relief_cost_svalue }
+		}
+		scope:fe_city.governor = { 
+			add_loyalty = loyalty_food_governor_pays
+			add_gold = { value = mild_famine_relief_cost_svalue }
+		}
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+	
+	option = {
+		name = "food_events.2.c"
+		trigger = {
+			exists = scope:relocation_state_city
+		}
+		add_political_influence = subtract_influence_small
+		hidden_effect = {
+			famine_relocation_effect = yes
+		}
+		custom_tooltip = "famine_relocation_tooltip"
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:relocation_state_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+		ai_chance = {
+			modifier = {
+				factor = 0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.2.d"
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = { 
+				add_state_modifier = {
+					name = mild_famine_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+
+	after = {
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.3 = {							# Natural disaster
+	type = country_event
+	title = "food_events.3.t"
+	desc = "food_events.3.desc"
+	
+	picture = city_country
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+			}
+			any_state_province = {
+				count >= 1
+				owner = root
+				OR = {
+					has_province_modifier = province_diminishment_ravaged_volcano
+					has_province_modifier = province_diminishment_destroyed_volcano
+					has_province_modifier = province_diminishment_earthquake_affected
+					has_province_modifier = province_diminishment_earthquake_ravaged
+					has_province_modifier = province_diminishment_earthquake_destroyed
+					any_neighbor_province = {
+						has_province_modifier = province_diminishment_ravaged_volcano
+						has_province_modifier = province_diminishment_destroyed_volcano
+						has_province_modifier = province_diminishment_earthquake_affected
+						has_province_modifier = province_diminishment_earthquake_ravaged
+						has_province_modifier = province_diminishment_earthquake_destroyed
+					}
+				}
+			}
+		}
+	}
+	
+	weight_multiplier = {
+		base = 1
+		modifier = {
+			factor = 5
+			any_country_state = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+				}
+				any_state_province = {
+					count >= 1
+					owner = root
+					OR = {
+						has_province_modifier = province_diminishment_ravaged_volcano
+						has_province_modifier = province_diminishment_destroyed_volcano
+						has_province_modifier = province_diminishment_earthquake_ravaged
+						has_province_modifier = province_diminishment_earthquake_destroyed
+					}
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+				}
+				any_state_province = {
+					count >= 1
+					owner = root
+					OR = {
+						has_province_modifier = province_diminishment_ravaged_volcano
+						has_province_modifier = province_diminishment_destroyed_volcano
+						has_province_modifier = province_diminishment_earthquake_affected
+						has_province_modifier = province_diminishment_earthquake_ravaged
+						has_province_modifier = province_diminishment_earthquake_destroyed
+						any_neighbor_province = {
+							has_province_modifier = province_diminishment_ravaged_volcano
+							has_province_modifier = province_diminishment_destroyed_volcano
+							has_province_modifier = province_diminishment_earthquake_affected
+							has_province_modifier = province_diminishment_earthquake_ravaged
+							has_province_modifier = province_diminishment_earthquake_destroyed
+						}
+					}
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							this = root.capital_scope
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					any_state_province = {
+						has_province_modifier = province_diminishment_earthquake_affected
+					}
+				}
+				modifier = {
+					factor = 2
+					any_state_province = {
+						OR = {
+							has_province_modifier = province_diminishment_ravaged_volcano
+							has_province_modifier = province_diminishment_earthquake_ravaged
+						}	
+					}
+				}
+				modifier = {
+					factor = 3
+					any_state_province = {
+						OR = {
+							has_province_modifier = province_diminishment_earthquake_destroyed
+							has_province_modifier = province_diminishment_earthquake_destroyed
+						}	
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+					OR = {
+						has_province_modifier = province_diminishment_ravaged_volcano
+						has_province_modifier = province_diminishment_destroyed_volcano
+						has_province_modifier = province_diminishment_earthquake_affected
+						has_province_modifier = province_diminishment_earthquake_ravaged
+						has_province_modifier = province_diminishment_earthquake_destroyed
+						any_neighbor_province = {
+							has_province_modifier = province_diminishment_ravaged_volcano
+							has_province_modifier = province_diminishment_destroyed_volcano
+							has_province_modifier = province_diminishment_earthquake_affected
+							has_province_modifier = province_diminishment_earthquake_ravaged
+							has_province_modifier = province_diminishment_earthquake_destroyed
+						}
+					}
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		famine_relocation_immediate_effect = yes
+	}
+	
+	option = {
+		name = "food_events.3.a"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_governor_relief }
+		}
+		add_treasury = {
+			value = mild_famine_relief_cost_svalue
+		}
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+	
+	option = {
+		name = "food_events.3.b"
+		trigger = {
+			exists = scope:fe_city.governor
+			NOT = { root.current_ruler = scope:fe_city.governor }
+			scope:fe_city.governor = { wealth >= mild_famine_relief_cost_svalue }
+		}
+		scope:fe_city.governor = { 
+			add_loyalty = loyalty_food_governor_pays
+			add_gold = { value = mild_famine_relief_cost_svalue }
+		}
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+	
+	option = {
+		name = "food_events.3.c"
+		trigger = {
+			exists = scope:relocation_state_city
+		}
+		add_political_influence = subtract_influence_small
+		hidden_effect = {
+			famine_relocation_effect = yes
+		}
+		custom_tooltip = "famine_relocation_tooltip"
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:relocation_state_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+		ai_chance = {
+			modifier = {
+				factor = 0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.3.d"
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = { 
+				add_state_modifier = {
+					name = mild_famine_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+
+	after = {
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.4 = {							# War/pillage
+	type = country_event
+	title = "food_events.4.t"
+	desc = "food_events.4.desc"
+	
+	picture = looting
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	goto_location = scope:fe_city
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }		
+		war = yes
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+				has_winter = yes
+			}
+			any_state_province = {
+				count >= 1
+				owner = root
+				OR = {
+					has_province_modifier = mercs_ransacked
+					has_province_modifier = province_diminishment_medium_looted
+					has_province_modifier = province_diminishment_super_looted
+				}
+			}
+		}
+	}
+	
+	weight_multiplier = {
+		base = 1
+		modifier = {
+			factor = 5
+			any_country_state = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					has_winter = yes
+				}
+				any_state_province = {
+					count >= 1
+					owner = root
+					has_province_modifier = province_diminishment_super_looted
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+				}
+				any_state_province = {
+					count >= 1
+					owner = root
+					OR = {
+						has_province_modifier = mercs_ransacked
+						has_province_modifier = province_diminishment_medium_looted
+						has_province_modifier = province_diminishment_super_looted
+					}
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							this = root.capital_scope
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					any_state_province = {
+						OR = {
+							has_province_modifier = mercs_ransacked
+							has_province_modifier = province_diminishment_medium_looted
+						}	
+					}
+				}
+				modifier = {
+					factor = 3
+					any_state_province = {
+						has_province_modifier = province_diminishment_super_looted
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+					OR = {
+						has_province_modifier = mercs_ransacked
+						has_province_modifier = province_diminishment_medium_looted
+						has_province_modifier = province_diminishment_super_looted
+					}
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		famine_relocation_immediate_effect = yes
+	}
+	
+	option = {
+		name = "food_events.4.a"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_governor_relief }
+		}
+		add_treasury = {
+			value = mild_famine_relief_cost_svalue
+		}
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+	
+	option = {
+		name = "food_events.4.b"
+		trigger = {
+			exists = scope:fe_city.governor
+			NOT = { root.current_ruler = scope:fe_city.governor }
+			scope:fe_city.governor = { wealth >= mild_famine_relief_cost_svalue }
+		}
+		scope:fe_city.governor = { 
+			add_loyalty = loyalty_food_governor_pays
+			add_gold = { value = mild_famine_relief_cost_svalue }
+		}
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+	
+	option = {
+		name = "food_events.4.c"
+		trigger = {
+			exists = scope:relocation_state_city
+		}
+		add_political_influence = subtract_influence_small
+		hidden_effect = {
+			famine_relocation_effect = yes
+		}
+		custom_tooltip = "famine_relocation_tooltip"
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = {
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:relocation_state_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+		ai_chance = {
+			modifier = {
+				factor = 0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.4.d"
+		if = {
+			limit = { is_ai = no }	
+			scope:fe_city.state = { 
+				add_state_modifier = {
+					name = mild_famine_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+		if = { 
+			limit = { has_variable = famine_relocation_number }
+			remove_variable = famine_relocation_number
+		}
+	}
+
+	after = {
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.5 = {							# Famine escalation
+	type = country_event
+	title = "food_events.5.t"
+	desc = "food_events.5.desc"
+	
+	picture = city_country
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			OR = {
+				has_state_modifier = mild_famine_smod
+				has_state_modifier = severe_famine_smod
+			}
+			any_state_province = {
+				count >= 2
+				total_population >= 1
+				owner = root
+			}
+		}
+		NOT = { has_variable = famine_exacerbation_cooldown }
+	}
+	
+	immediate = {
+		set_variable = {
+			name = famine_exacerbation_cooldown
+			days = 1825 # 5 years
+		}
+		random_country_state = {
+			limit = {
+				OR = {
+					has_state_modifier = mild_famine_smod
+					has_state_modifier = severe_famine_smod
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		if = {
+			limit = {
+				scope:fe_city.area.region = {
+					any_region_state = {
+						NOR = {
+							has_state_modifier = mild_famine_smod
+							has_state_modifier = mild_famine_relief_smod
+							has_state_modifier = severe_famine_smod
+							has_state_modifier = severe_famine_relief_smod
+							this = scope:fe_city.state
+							has_state_food <= 200
+							has_state_modifier = diverted_food_smod
+							any_state_province = { has_variable = food_event_cooldown_state }
+						}
+						any_state_province = {
+							count >= 3
+							owner = root
+						}
+					}
+				}
+			}
+			scope:fe_city.region = {
+				random_region_state = {
+					limit = {
+						NOR = {
+							has_state_modifier = mild_famine_smod
+							has_state_modifier = mild_famine_relief_smod
+							has_state_modifier = severe_famine_smod
+							has_state_modifier = severe_famine_relief_smod
+							this = scope:fe_city.state
+							has_state_food <= 200
+							has_state_modifier = diverted_food_smod
+							any_state_province = { has_variable = food_event_cooldown_state }
+						}
+					}
+					random_state_province = {
+						limit = {
+							owner = root
+						}
+						save_scope_as = fe_city_divert
+					}
+				}
+			}
+		}
+		if = {
+			limit = {
+				is_ai = yes
+				scope:fe_city.state = { has_state_modifier = mild_famine_relief_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = { remove_state_modifier = mild_famine_relief_smod }
+			}
+		}
+		else_if = {
+			limit = {
+				is_ai = yes
+				scope:fe_city.state = { has_state_modifier = mild_famine_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = { remove_state_modifier = mild_famine_smod }
+			}
+		}
+		else_if = {
+			limit = {
+				is_ai = yes
+				scope:fe_city.state = { has_state_modifier = severe_famine_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = { remove_state_modifier = severe_famine_smod }
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.5.a"
+		current_ruler = { add_popularity = popularity_medium }
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_more_relief }
+		}
+		add_treasury = {
+			value = severe_famine_relief_cost_svalue
+		}
+		if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = mild_famine_relief_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = { remove_state_modifier = mild_famine_relief_smod }
+			}
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = severe_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		else_if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = mild_famine_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = { remove_state_modifier = mild_famine_smod }
+			}
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = severe_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		else_if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = severe_famine_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = { remove_state_modifier = severe_famine_smod }
+			}
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = severe_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.5.b"
+		trigger = {
+			exists = scope:fe_city.governor
+			NOT = { root.current_ruler = scope:fe_city.governor }
+			scope:fe_city.governor = { wealth >= severe_famine_relief_cost_svalue }
+		}
+		scope:fe_city.governor = { 
+			add_loyalty = loyalty_food_governor_pays
+			add_popularity = popularity_medium
+			add_gold = { value = severe_famine_relief_cost_svalue }
+		}
+		add_tyranny = tyranny_small
+		if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = mild_famine_relief_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = {
+					remove_state_modifier = mild_famine_relief_smod
+				}
+			}
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = severe_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = mild_famine_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = {
+					remove_state_modifier = mild_famine_smod
+				}
+			}
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = severe_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = severe_famine_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = {
+					remove_state_modifier = severe_famine_smod
+				}
+			}
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = severe_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.5.c"
+		trigger = {
+			is_ai = no
+			exists = scope:fe_city_divert
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_diverted_to }
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city_divert.governor
+				NOR = { 
+					root.current_ruler = scope:fe_city_divert.governor
+					scope:fe_city.governor = scope:fe_city_divert.governor
+				}
+				scope:fe_city_divert.governor = { loyalty < 100 }
+			}
+			scope:fe_city_divert.governor = { add_loyalty = loyalty_food_diverted_from }
+		}
+		scope:fe_city_divert.state = {
+			add_state_modifier = {
+				name = diverted_food_smod
+				duration = 1825 # 5 years
+			}
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 3650 # 10 years
+			} 
+		}
+		scope:fe_city_divert = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -5.0
+			}
+		}
+		scope:fe_city_divert.state = {
+			add_state_food = -100.0
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:fe_city.state = {
+			add_state_food = 100.0
+		}
+		add_political_influence = subtract_influence_small
+	}
+	
+	option = {
+		name = "food_events.5.d"
+		if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = mild_famine_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = { remove_state_modifier = mild_famine_smod }
+			}
+			scope:fe_city.state = { 
+				add_state_modifier = {
+					name = severe_famine_smod 
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = mild_famine_relief_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = { remove_state_modifier = mild_famine_relief_smod }
+			}
+		}
+		if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = severe_famine_smod }
+			}
+			scope:fe_city.state = {
+				random_state_province = {
+					limit = {
+						owner = root
+						total_population >= 1
+					}
+					ordered_pops_in_province = {
+						order_by = {
+							value = 0   # For clarity
+							subtract = pop_hapiness
+						}
+						kill_pop = yes
+					}
+				}
+				random_state_province = {
+					limit = {
+						owner = root
+						total_population >= 1
+					}
+					ordered_pops_in_province = {
+						order_by = {
+							value = 0   # For clarity
+							subtract = pop_hapiness
+						}
+						kill_pop = yes
+					}
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+	}
+}
+
+food_events.6 = {							# Over-exploitation
+	type = country_event
+	title = "food_events.6.t"
+	desc = "food_events.6.desc"
+	
+	picture = slaves_working
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	goto_location = scope:fe_city
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+			}
+			any_state_province = {
+				count >= 1
+				owner = root
+				OR = {
+					trade_goods = vegetables
+					trade_goods = grain
+					trade_goods = olive
+					trade_goods = wine
+					trade_goods = dates
+				}
+				num_of_slaves >= 20
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+				}
+				any_state_province = {
+					count >= 1
+					owner = root
+					OR = {
+						trade_goods = vegetables
+						trade_goods = grain
+						trade_goods = olive
+						trade_goods = wine
+						trade_goods = dates
+					}
+					num_of_slaves >= 20
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							this = root.capital_scope
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+					OR = {
+						trade_goods = vegetables
+						trade_goods = grain
+						trade_goods = olive
+						trade_goods = wine
+						trade_goods = dates
+					}
+					num_of_slaves >= 20
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.6.a"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_governor_relief }
+		}
+		add_treasury = {
+			value = mild_famine_relief_cost_svalue
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.6.b"
+		trigger = {
+			exists = scope:fe_city.governor
+			NOT = { root.current_ruler = scope:fe_city.governor }
+			scope:fe_city.governor = { wealth >= mild_famine_relief_cost_svalue }
+		}
+		scope:fe_city.governor = { 
+			add_loyalty = loyalty_food_governor_pays
+			add_gold = { value = mild_famine_relief_cost_svalue }
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.6.c"
+		current_ruler = { add_popularity = subtract_popularity_medium }
+		add_political_influence = subtract_influence_small
+		scope:fe_city = {
+			add_province_modifier = {
+				name = slaves_redistributed_pmod
+				duration = 3650 # 10 years
+			}
+		}
+		if = {
+			limit = {
+				any_character = {
+					has_holding_in = scope:fe_city
+					employer = root
+				}
+			}
+			every_character = {
+				limit = {
+					has_holding_in = scope:fe_city
+					employer = root
+				}
+				add_loyalty = loyalty_food_holdings_removed
+			}
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.6.d"
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = { 
+				add_state_modifier = {
+					name = mild_famine_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+	}
+
+	after = {
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.7 = {							# Drought
+	type = country_event
+	title = "food_events.7.t"
+	desc = "food_events.7.desc"
+	
+	picture = farming
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+			}
+			any_state_province = {
+				owner = root
+				NOT = { has_winter = yes }
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+				}
+				any_state_province = {
+					owner = root
+					NOT = { has_winter = yes }
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							this = root.capital_scope
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+					NOT = { has_winter = yes }
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		if = {
+			limit = {
+				scope:fe_city.area.region = {
+					any_region_state = {
+						NOR = {
+							has_state_modifier = mild_famine_smod
+							has_state_modifier = mild_famine_relief_smod
+							has_state_modifier = severe_famine_smod
+							has_state_modifier = severe_famine_relief_smod
+							this = scope:fe_city.state
+							has_state_food <= 200
+							has_state_modifier = diverted_food_smod
+							any_state_province = { has_variable = food_event_cooldown_state }
+						}
+						any_state_province = {
+							count >= 3
+							owner = root
+						}
+					}
+				}
+			}
+			scope:fe_city.region = {
+				random_region_state = {
+					limit = {
+						NOR = {
+							has_state_modifier = mild_famine_smod
+							has_state_modifier = mild_famine_relief_smod
+							has_state_modifier = severe_famine_smod
+							has_state_modifier = severe_famine_relief_smod
+							this = scope:fe_city.state
+							has_state_food <= 200
+							has_state_modifier = diverted_food_smod
+							any_state_province = { has_variable = food_event_cooldown_state }
+						}
+					}
+					random_state_province = {
+						limit = {
+							owner = root
+						}
+						save_scope_as = fe_city_divert
+					}
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.7.a"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_governor_relief }
+		}
+		add_treasury = {
+			value = mild_famine_relief_cost_svalue
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.7.b"
+		trigger = {
+			exists = scope:fe_city.governor
+			NOT = { root.current_ruler = scope:fe_city.governor }
+			scope:fe_city.governor = { wealth >= mild_famine_relief_cost_svalue }
+		}
+		scope:fe_city.governor = { 
+			add_loyalty = loyalty_food_governor_pays
+			add_gold = { value = mild_famine_relief_cost_svalue }
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.7.c"
+		trigger = {
+			is_ai = no
+			exists = scope:fe_city_divert
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_diverted_to }
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city_divert.governor
+				NOR = { 
+					root.current_ruler = scope:fe_city_divert.governor
+					scope:fe_city.governor = scope:fe_city_divert.governor
+				}
+				scope:fe_city_divert.governor = { loyalty < 100 }
+			}
+			scope:fe_city_divert.governor = { add_loyalty = loyalty_food_diverted_from }
+		}
+		scope:fe_city_divert.state = {
+			add_state_modifier = {
+				name = diverted_food_smod
+				duration = 1825 # 5 years
+			}
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 3650 # 10 years
+			} 
+		}
+		scope:fe_city_divert = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -5.0
+			}
+		}
+		scope:fe_city_divert.state = {
+			add_state_food = -100.0
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:fe_city.state = {
+			add_state_food = 100.0
+		}
+		add_political_influence = subtract_influence_small
+	}
+	
+	option = {
+		name = "food_events.7.d"
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = { 
+				add_state_modifier = {
+					name = mild_famine_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+	}
+
+	after = {
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.8 = {							# Disloyal raid
+	type = country_event
+	title = "food_events.8.t"
+	desc = "food_events.8.desc"
+	
+	picture = looting
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+				state_loyalty < 75
+			}
+		}
+	}
+	
+	weight_multiplier = {
+		base = 1
+		modifier = {
+			factor = 5
+			any_country_state = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					state_loyalty < 75
+				}
+			}
+		}
+		modifier = {
+			factor = 10
+			any_country_state = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					state_loyalty < 60
+				}
+			}
+		}
+		modifier = {
+			factor = 10
+			any_country_state = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					state_loyalty < 50
+				}
+			}
+		}
+		modifier = {
+			factor = 15
+			any_country_state = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					state_loyalty < 40
+				}
+			}
+		}
+		modifier = {
+			factor = 20
+			any_country_state = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					state_loyalty < 30
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					state_loyalty < 75
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							this = root.capital_scope
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+					state_loyalty < 75
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		hidden_effect = {
+			if = {
+				limit = { has_variable = fe_66_percent_food_var }
+				remove_variable = fe_66_percent_food_var
+			}
+			set_variable = {
+				name = fe_66_percent_food_var
+				value = scope:fe_city.state.has_state_food
+			}
+			change_variable = {
+				name = fe_66_percent_food_var
+				divide = 3
+			}
+			change_variable = {
+				name = fe_66_percent_food_var
+				multiply = 2
+				max = 200
+			}
+			scope:fe_city.state = {
+				add_state_food = {
+					value = root.var:fe_66_percent_food_var
+					multiply = -1
+				}
+			}
+		}
+		custom_tooltip = food_events_66_percent_tooltip
+	}
+	
+	option = {
+		name = "food_events.8.a"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_governor_relief }
+		}
+		add_treasury = {
+			value = mild_famine_relief_cost_svalue
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.8.b"
+		trigger = {
+			exists = scope:fe_city.governor
+			NOT = { root.current_ruler = scope:fe_city.governor }
+			scope:fe_city.governor = { wealth >= mild_famine_relief_cost_svalue }
+		}
+		scope:fe_city.governor = { 
+			add_loyalty = loyalty_food_governor_pays
+			add_gold = { value = mild_famine_relief_cost_svalue }
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.8.c"
+		add_political_influence = subtract_influence_small
+		add_manpower = -4
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.8.d"
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {
+				add_state_modifier = {
+					name = mild_famine_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+	}
+	
+	after = {
+		if = {
+			limit = { has_variable = fe_66_percent_food_var }
+			remove_variable = fe_66_percent_food_var
+		}
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.9 = {							# Famine abates
+	type = country_event
+	title = "food_events.9.t"
+	desc = "food_events.9.desc"
+	
+	picture = city_country
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = famine_mollification_cooldown }
+		any_country_state = {
+			OR = {
+				has_state_modifier = mild_famine_smod
+				has_state_modifier = severe_famine_smod
+			}
+			any_state_province = {
+				count >= 2
+				total_population >= 1
+				owner = root
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = famine_mollification_cooldown
+			days = 1825 # 5 years
+		}
+		random_country_state = {
+			limit = {
+				OR = {
+					has_state_modifier = mild_famine_smod
+					has_state_modifier = severe_famine_smod
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.9.a"
+		if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = mild_famine_relief_smod }
+			}
+			scope:fe_city.state = { remove_state_modifier = mild_famine_relief_smod }
+		}
+		else_if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = mild_famine_smod }
+			}
+			scope:fe_city.state = { remove_state_modifier = mild_famine_smod }
+		}
+		else_if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = severe_famine_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = { remove_state_modifier = severe_famine_smod }
+			}
+			custom_tooltip = food_events.9.at
+			scope:fe_city.state = {
+				add_state_modifier = {
+					name = mild_famine_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		else_if = {
+			limit = {
+				is_ai = no
+				scope:fe_city.state = { has_state_modifier = severe_famine_relief_smod }
+			}
+			hidden_effect = { 
+				scope:fe_city.state = { remove_state_modifier = severe_famine_relief_smod }
+			}
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+}
+
+food_events.10 = {							# Incompetent governor
+	type = country_event
+	title = "food_events.10.t"
+	desc = "food_events.10.desc"
+	
+	picture = senator_conversing
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOR = {
+				any_state_province = { is_in_region = root.capital_scope }
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOR = {
+					any_state_province = { is_in_region = root.capital_scope }
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							this = root.capital_scope
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.10.a"
+		current_ruler = { add_popularity = popularity_medium }
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+			}
+			if = {
+				limit = {
+					scope:fe_city.governor = {
+						num_holdings_owned > 0
+						any_holdings = {
+							is_in_area = scope:fe_city
+						}
+					}
+				}
+				#scope:fe_city.area = { #TODO
+				#	random_area_province = {
+				#		limit = {
+				#			#any_holding_owners = {
+				#			#	this = scope:fe_city.governor #TODO
+				#			#}
+				#		}
+				#		save_temporary_scope_as = fe_city_holding
+				#		scope:fe_city.governor = {
+				#			remove_holding = scope:fe_city_holding
+				#		}
+				#	}
+				#}
+				
+			}	
+			scope:fe_city.governor = {
+				add_loyalty = loyalty_food_holdings_removed 
+			}
+		}
+		add_treasury = {
+			value = mild_famine_relief_cost_svalue
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.10.b"
+		current_ruler = { add_popularity = popularity_medium }
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+			}
+			if = {
+				limit = {
+					scope:fe_city.governor = {
+						num_holdings_owned > 0
+						any_holdings = {
+							is_in_area = scope:fe_city
+						}
+					}
+				}
+				#scope:fe_city.area = {  #TODO
+				#	random_area_province = {
+				#		limit = {
+				#			any_holding_owners = {
+				#				this = scope:fe_city.governor
+				#			}
+				#		}
+				#		save_temporary_scope_as = fe_city_holding
+				#		scope:fe_city.governor = {
+				#			remove_holding = scope:fe_city_holding
+				#		}
+				#	}
+				#}
+			}	
+			scope:fe_city.governor = { 
+				add_loyalty = loyalty_food_arrested
+				if = {
+					limit = { wealth >= mild_famine_relief_cost_svalue }
+					add_gold = mild_famine_relief_cost_svalue
+				}			
+			}
+			imprison = { target = scope:fe_city.governor }
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 15.0
+			}
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+		add_tyranny = tyranny_medium
+	}
+	
+	option = {
+		name = "food_events.10.c"
+		current_ruler = { 
+			add_popularity = subtract_popularity_small
+			add_corruption = corruption_medium
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+			}
+			scope:fe_city.governor = { 
+				add_loyalty = loyalty_food_incompetence_ignored
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 15.0
+			}
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+
+	after = {
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.11 = {							# Famine spreads
+	type = country_event
+	title = "food_events.11.t"
+	desc = "food_events.11.desc"
+	
+	picture = city_country
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_spread_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_spread_cooldown }
+		any_country_state = {
+			OR = {
+				has_state_modifier = mild_famine_smod
+				has_state_modifier = severe_famine_smod
+				has_state_modifier = severe_famine_relief_smod
+			}
+			any_state_province = {
+				owner = root
+				any_neighbor_province = {
+					NOT = { is_in_area = prev }
+					exists = owner
+					exists = state
+					owner = root
+					state = {
+						NOR = {
+							any_state_province = { has_variable = food_event_cooldown_state }
+							has_state_modifier = mild_famine_smod
+							has_state_modifier = severe_famine_smod
+							has_state_modifier = severe_famine_relief_smod
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	weight_multiplier = {
+		base = 1
+		modifier = {
+			factor = 5
+			any_country_state = {
+				OR = {
+					has_state_modifier = severe_famine_smod
+					has_state_modifier = severe_famine_relief_smod
+				}
+			}
+		}
+		modifier = {
+			factor = 5
+			num_of_cities > 100
+		}
+		modifier = {
+			factor = 5
+			num_of_cities > 200
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_spread_cooldown
+			days = 730 # 2 years
+		}
+		random_country_state = {
+			limit = {
+				NOR = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+					has_state_modifier = mild_famine_smod
+					has_state_modifier = severe_famine_smod
+					has_state_modifier = severe_famine_relief_smod
+				}
+				any_state_province = {
+					any_neighbor_province = {
+						exists = owner
+						exists = state
+						owner = root
+						state = {
+							OR = {
+								has_state_modifier = mild_famine_smod
+								has_state_modifier = severe_famine_smod
+								has_state_modifier = severe_famine_relief_smod
+							}
+						}
+					}
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = { this = root.capital_scope }
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+				}
+				order_by = total_population
+				save_scope_as = fe_spread_city
+			}
+		}
+		scope:fe_spread_city.state = {
+			random_state_province = {
+				limit = {
+					any_neighbor_province = {
+						exists = owner
+						exists = state
+						owner = root
+						state = {
+							OR = {
+								has_state_modifier = mild_famine_smod
+								has_state_modifier = severe_famine_smod
+								has_state_modifier = severe_famine_relief_smod
+							}
+						}
+						NOT = { state = scope:fe_spread_city.state }
+					}
+				}
+				random_neighbor_province = {
+					limit = {
+						exists = owner
+						exists = state
+						owner = root
+						state = {
+							OR = {
+								has_state_modifier = mild_famine_smod
+								has_state_modifier = severe_famine_smod
+								has_state_modifier = severe_famine_relief_smod
+							}
+						}
+						NOT = { state = scope:fe_spread_city.state }
+					}
+					save_scope_as = fe_city
+				}
+			}
+		}
+		if = {
+			limit = {
+				scope:fe_spread_city.area.region = {
+					any_region_state = {
+						NOR = {
+							has_state_modifier = mild_famine_smod
+							has_state_modifier = mild_famine_relief_smod
+							has_state_modifier = severe_famine_smod
+							has_state_modifier = severe_famine_relief_smod
+							this = scope:fe_city.state
+							has_state_food <= 200
+							has_state_modifier = diverted_food_smod
+							any_state_province = { has_variable = food_event_cooldown_state }
+						}
+						any_state_province = {
+							count >= 3
+							owner = root
+						}
+					}
+				}
+			}
+			scope:fe_spread_city.region = {
+				random_region_state = {
+					limit = {
+						NOR = {
+							has_state_modifier = mild_famine_smod
+							has_state_modifier = mild_famine_relief_smod
+							has_state_modifier = severe_famine_smod
+							has_state_modifier = severe_famine_relief_smod
+							this = scope:fe_spread_city.state
+							has_state_food <= 200
+							has_state_modifier = diverted_food_smod
+							any_state_province = { has_variable = food_event_cooldown_state }
+						}
+					}
+					random_state_province = {
+						limit = {
+							owner = root
+						}
+						save_scope_as = fe_city_divert
+					}
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.11.a"
+		if = {
+			limit = {
+				exists = scope:fe_spread_city.governor
+				NOT = { root.current_ruler = scope:fe_spread_city.governor }
+				scope:fe_spread_city.governor = { loyalty < 100 }
+			}
+			scope:fe_spread_city.governor = { add_loyalty = loyalty_food_governor_relief }
+		}
+		add_treasury = { value = mild_famine_relief_cost_svalue }
+		scope:fe_spread_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_spread_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.11.b"
+		trigger = {
+			exists = scope:fe_spread_city.governor
+			NOT = { root.current_ruler = scope:fe_spread_city.governor }
+			scope:fe_spread_city.governor = { wealth >= mild_famine_relief_cost_svalue }
+		}
+		scope:fe_spread_city.governor = { 
+			add_loyalty = loyalty_food_governor_pays
+			add_gold = { value = mild_famine_relief_cost_svalue }
+		}
+		scope:fe_spread_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_spread_city.state = {	
+				add_state_modifier = {
+					name = mild_famine_relief_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.11.c"
+		trigger = {
+			is_ai = no
+			exists = scope:fe_city_divert
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_diverted_to }
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city_divert.governor
+				NOR = { 
+					root.current_ruler = scope:fe_city_divert.governor
+					scope:fe_city.governor = scope:fe_city_divert.governor
+				}
+				scope:fe_city_divert.governor = { loyalty < 100 }
+			}
+			scope:fe_city_divert.governor = { add_loyalty = loyalty_food_diverted_from }
+		}
+		scope:fe_city_divert.state = {
+			add_state_modifier = {
+				name = diverted_food_smod
+				duration = 1825 # 5 years
+			}
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 3650 # 10 years
+			} 
+		}
+		scope:fe_city_divert = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -15.0
+			}
+		}
+		scope:fe_city_divert.state = {
+			add_state_food = -100.0
+		}
+		scope:fe_spread_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:fe_city.state = {
+			add_state_food = 100.0
+		}
+		add_political_influence = subtract_influence_small
+	}
+	
+	option = {
+		name = "food_events.11.d"
+		scope:fe_spread_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		if = {
+			limit = { is_ai = no }
+			scope:fe_spread_city.state = { 
+				add_state_modifier = {
+					name = mild_famine_smod
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+
+	after = {
+		scope:fe_spread_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.12 = {							# Bountiful Harvest
+	type = country_event
+	title = "food_events.12.t"
+	desc = "food_events.12.desc"
+	
+	picture = farming
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+				OR = {
+					trade_goods = vegetables
+					trade_goods = grain
+					trade_goods = olive
+					trade_goods = wine
+					trade_goods = dates
+				}
+				NOT = { has_winter = yes }
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+					OR = {
+						trade_goods = vegetables
+						trade_goods = grain
+						trade_goods = olive
+						trade_goods = wine
+						trade_goods = dates
+					}
+					NOT = { has_winter = no }
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = { this = root.capital_scope }
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					any_state_province = { is_adjacent_to_major_river = yes }
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+					OR = {
+						trade_goods = vegetables
+						trade_goods = grain
+						trade_goods = olive
+						trade_goods = wine
+						trade_goods = dates
+					}
+					NOT  = { has_winter = no }
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		if = {
+			limit = {
+				any_country_state = {
+					NOT = { this = scope:fe_city.state }
+					has_state_food < has_state_food_capacity
+				}
+			}
+			random_country_state = {
+				limit = {
+					NOT = { this = scope:fe_city.state }
+					has_state_food < has_state_food_capacity
+				}
+				weight = {
+					modifier = {
+						factor = 5 
+						has_state_food <= 750
+					}
+					modifier = {
+						factor = 10
+						has_state_food <= 500
+					}
+					modifier = {
+						factor = 15
+						has_state_food <= 250
+					}
+					modifier = {
+						factor = 20 
+						has_state_food <= 100
+					}
+				}
+				random_state_province = {
+					limit = { owner = root }
+					save_scope_as = fe_gift_city
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.12.a"
+		trigger = {
+			scope:fe_city.state = {
+				has_state_food < has_state_food_capacity
+			}
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_boon_distributed }
+		}
+		scope:fe_city.state = {
+			add_state_food = 200.0
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.12.b"
+		trigger = {
+			exists = scope:fe_gift_city
+		}
+		if = {
+			limit = {
+				exists = scope:fe_gift_city.governor
+				NOR = { 
+					root.current_ruler = scope:fe_city.governor 
+					root.current_ruler = scope:fe_gift_city.governor 
+				}
+				scope:fe_gift_city.governor = { loyalty < 100 }
+			}
+			scope:fe_gift_city.governor = { add_loyalty = loyalty_food_boon_distributed }
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOR = { 									 
+					root.current_ruler = scope:fe_city.governor
+					root.current_ruler = scope:fe_gift_city.governor 
+					scope:fe_city.governor = scope:fe_gift_city.governor
+				}
+				scope:fe_city.governor = { loyalty > 0 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_boon_appropriated }
+		}
+		scope:fe_gift_city.state = {
+			add_state_food = 200.0
+		}
+		scope:fe_gift_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.12.c"
+		current_ruler = { add_popularity = popularity_large }
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty > 0 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_boon_aggrandizement }
+		}
+		add_tyranny = tyranny_small
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.12.d"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty > 0 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_boon_appropriated }
+		}
+		add_treasury = {
+			value = root.has_monthly_income
+			multiply = 2.3
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -10.0
+			}
+		}
+	}
+
+	after = {
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.13 = {						# Excellent land management
+	type = country_event
+	title = "food_events.13.t"
+	desc = "food_events.13.desc"
+	
+	picture = slaves_working
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOR = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+				has_state_modifier = excellent_land_management_smod
+			}
+			any_state_province = {
+				count >= 1
+				owner = root
+				OR = {
+					trade_goods = vegetables
+					trade_goods = grain
+					trade_goods = olive
+					trade_goods = wine
+					trade_goods = dates
+				}
+				NOT = {	has_winter = yes }
+			}
+		}
+	}
+	
+	weight_multiplier = {
+		base = 2
+		modifier = {
+			factor = 5
+			NOT = { has_variable = food_event_cooldown }
+			any_country_state = {
+				NOR = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+					has_state_modifier = excellent_land_management_smod
+				}
+				any_state_province = {
+					count >= 1
+					owner = root
+					OR = {
+						trade_goods = vegetables
+						trade_goods = grain
+						trade_goods = olive
+						trade_goods = wine
+						trade_goods = dates
+					}
+					NOT = {	has_winter = yes }
+				}
+				any_state_province = {
+					count >= 1
+					is_adjacent_to_major_river = yes
+				}
+			}
+		}
+		modifier = {
+			factor = -1
+			any_country_state = {
+				has_state_modifier = excellent_land_management_smod
+			}
+		} 
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 1
+					owner = root
+					OR = {
+						trade_goods = vegetables
+						trade_goods = grain
+						trade_goods = olive
+						trade_goods = wine
+						trade_goods = dates
+					}
+					NOT = {	has_winter = yes }
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							this = root.capital_scope
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+				modifier = {
+					factor = 1
+					any_state_province = { is_adjacent_to_major_river = yes }
+				}
+			}
+			ordered_state_province = {
+				limit = {
+					owner = root
+					OR = {
+						trade_goods = vegetables
+						trade_goods = grain
+						trade_goods = olive
+						trade_goods = wine
+						trade_goods = dates
+					}
+					NOT = {	has_winter = yes }
+				}
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		if = {
+			limit = {
+				scope:fe_city.state = { has_state_food < has_state_food_capacity }
+			}
+			scope:fe_city.state = { add_state_food = 100.0 }
+		}
+	}
+	
+	option = {
+		name = "food_events.13.a"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_benign_neglect }
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:fe_city.state = { 
+			add_state_modifier = {
+				name = excellent_land_management_smod
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.13.b"
+		add_treasury = {
+			value = root.has_monthly_income
+			multiply = -1.2
+		}
+		add_country_modifier = {
+			name = agricultural_lessons_cmod 
+			duration = 1825 # 5 years
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.13.c"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty > 0 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_advisors_procured }
+		}
+		add_country_modifier = {
+			name = advisors_procured_cmod 
+			duration = 1825 # 5 years
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+	}
+
+	after = {
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.14 = {						# Granary fire
+	type = country_event
+	title = "food_events.14.t"
+	desc = "food_events.14.desc"
+	picture = looting
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	goto_location = scope:fe_city
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				num_of_population_building > 0
+			}
+		}
+	}
+	
+	weight_multiplier = {
+		base = 1
+		modifier = {
+			factor = 5
+			any_country_state = {
+				any_state_province = {
+					count > 1
+					has_building = population_building
+				}
+			}
+		}
+		modifier = {
+			factor = 5
+			any_country_state = {
+				any_state_province = { num_of_population_building >= 3 }
+			}
+		}
+	}
+
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count > 0
+					has_building = population_building
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = { THIS = ROOT.capital_scope }
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = ROOT }
+						}
+					}
+				}
+				modifier = {
+					factor = 5
+					any_state_province = {
+						count > 3
+						has_building = population_building
+					}
+				}
+				modifier = {
+					factor = 5
+					any_state_province = { num_of_population_building >= 3 }
+				}
+			}
+			random_state_province = {
+				limit = { has_building = population_building }
+				weight = {
+					modifier = {
+						factor = 10
+						num_of_population_building >= 3
+					}
+				}
+				save_scope_as = fe_city
+				add_city_fire_effect = yes
+			}
+		}
+		hidden_effect = {
+			set_variable = {
+				name = fe_66_percent_food_var
+				value = scope:fe_city.state.has_state_food
+			}
+			change_variable = {
+				name = fe_66_percent_food_var
+				divide = 3
+			}
+			change_variable = {
+				name = fe_66_percent_food_var
+				multiply = 2
+			}
+			scope:fe_city.state = {
+				add_state_food = {
+					value = scope:fe_city.state.has_state_food
+					divide = 3
+					multiply = -2
+					min = -200
+				}
+			}
+		}
+		custom_tooltip = food_events_66_percent_tooltip
+	}
+	
+	option = {
+		name = "food_events.14.a"
+		current_ruler = { add_popularity = popularity_small }
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_granary_replaced }
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		add_treasury = {
+			value = has_monthly_income
+			multiply = -1
+			min = -50
+			max = -10	
+		}
+	}
+	
+	option = {
+		name = "food_events.14.b"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_granary_abandoned }
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+			remove_building_level = population_building
+		}
+	}
+	
+	after = {
+		if = {
+			limit = { has_variable = fe_66_percent_food_var }
+			remove_variable = fe_66_percent_food_var
+		}
+		scope:fe_city = {
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.15 = {						# Incompetent storage
+	type = country_event
+	title = "food_events.15.t"
+	desc = "food_events.15.desc"
+	
+	picture = slaves_working
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = { this = root.capital_scope }
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = { owner = root }
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		hidden_effect = { fe_66_percent_food_var_effect = yes }
+		scope:fe_city.state = {
+			add_state_food = { subtract = root.var:fe_66_percent_food_var }
+		}
+	}
+	
+	option = {
+		name = "food_events.15.a"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_standards_covered }
+		}
+		add_treasury = {
+			value = has_monthly_income
+			multiply = -1.3
+		}
+	}
+	
+	option = {
+		name = "food_events.15.b"
+		trigger = {
+			exists = scope:fe_city.governor
+			NOT = { root.current_ruler = scope:fe_city.governor }
+		}
+		current_ruler = { add_popularity = popularity_medium }
+		scope:fe_city.governor = { 
+			remove_all_positions = yes
+			add_loyalty = loyalty_food_disaster_blame
+		}
+		scope:fe_city.state = {
+			add_state_modifier = {
+				name = food_production_lowered_smod
+				duration = 3650 # 10 years
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.15.c"
+		current_ruler = { add_popularity = popularity_small }
+		if = {
+			limit = {
+				current_ruler = {
+					NOT = { has_trait = cruel }
+					number_of_traits < max_number_of_traits_svalue
+				}
+			}
+			current_ruler = { add_trait = cruel }
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_crucified_handlers }
+		}
+		add_tyranny = tyranny_medium
+		scope:fe_city.state = {
+			add_state_modifier = {
+				name = food_production_lowered_smod
+				duration = 3650 # 10 years
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { state_loyalty < 100 }
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.15.d"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty > 0 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_plight_ignored }
+		}
+		scope:fe_city = {
+			add_province_modifier = {
+				name = incompetent_storage_pmod
+				duration = 3650 # 10 years
+			}
+		}
+		scope:fe_city.state = {
+			add_state_modifier = {
+				name = food_production_lowered_smod
+				duration = 3650 # 10 years
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { state_loyalty > 0 }
+				add_state_loyalty = -20.0
+			}
+		}
+	}
+	
+	after = {
+		if = {
+			limit = { has_variable = fe_66_percent_food_var }
+			remove_variable = fe_66_percent_food_var
+		}
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.16 = {						# Food bought up
+	type = country_event
+	title = "food_events.16.t"
+	desc = "food_events.16.desc"
+	
+	picture = slaves_working
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+			}
+		}
+	}
+
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = { this = root.capital_scope }
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+			}
+			ordered_state_province = {
+				limit = { owner = root }
+				order_by = total_population
+				save_scope_as = fe_city
+			}
+		}
+		hidden_effect = { fe_66_percent_food_var_effect = yes }
+		scope:fe_city.state = {
+			add_state_food = { subtract = root.var:fe_66_percent_food_var }
+		}
+	}
+	
+	option = {
+		name = "food_events.16.a"
+		trigger = {
+			exists = scope:fe_city.governor
+			NOT = { root.current_ruler = scope:fe_city.governor }
+		}
+		current_ruler = { add_popularity = popularity_medium }
+		scope:fe_city.governor = { 
+			remove_all_positions = yes
+			add_loyalty = loyalty_food_governor_pays
+		}
+		scope:fe_city = {
+			if = {
+				limit = { state_loyalty < 100 }
+				add_state_loyalty = 10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.16.b"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_returned_food }
+		}
+		add_treasury = {
+			value = 0
+			subtract = fe_66_percent_buy_svalue
+			min = -100
+		}
+		scope:fe_city = {
+			if = {
+				limit = { state_loyalty < 100 }
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:fe_city.state = {
+			add_state_food = { add = root.var:fe_66_percent_food_var }
+		}
+	}
+	
+	option = {
+		name = "food_events.16.c"
+		if = {
+			limit = {
+				current_ruler = {
+					NOR = { 
+						has_trait = cruel
+						number_of_traits >= max_number_of_traits_svalue
+					}
+				}
+			}
+			current_ruler = { add_trait = cruel }
+			current_ruler = { add_popularity = popularity_small }
+			if = {
+				limit = {
+					exists = scope:fe_city.governor
+					NOT = { root.current_ruler = scope:fe_city.governor }
+					scope:fe_city.governor = { loyalty < 100 }
+				}
+				scope:fe_city.governor = { add_loyalty = loyalty_food_crucified_handlers }
+			}
+			add_tyranny = tyranny_small
+		}
+		else_if = {
+			limit = { 
+				current_ruler = { has_trait = cruel }
+			}
+			current_ruler = { add_popularity = popularity_small }
+			if = {
+				limit = {
+					exists = scope:fe_city.governor
+					NOT = { root.current_ruler = scope:fe_city.governor }
+					scope:fe_city.governor = { loyalty < 100 }
+				}
+				scope:fe_city.governor = { add_loyalty = loyalty_food_crucified_handlers }
+			}
+			add_tyranny = tyranny_medium
+		}
+		else_if = {
+			limit = { 
+				current_ruler = { number_of_traits >= max_number_of_traits_svalue }
+			}
+			current_ruler = { add_popularity = popularity_small }
+			if = {
+				limit = {
+					exists = scope:fe_city.governor
+					NOT = { root.current_ruler = scope:fe_city.governor }
+					scope:fe_city.governor = { loyalty < 100 }
+				}
+				scope:fe_city.governor = { add_loyalty = loyalty_food_crucified_handlers }
+			}
+			add_tyranny = tyranny_small
+		}
+		scope:fe_city = {
+			if = {
+				limit = { state_loyalty < 100 }
+				add_state_loyalty = 5.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.16.d"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty > 0 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_plight_ignored }
+		}
+		scope:fe_city = {
+			if = {
+				limit = { state_loyalty > 0 }
+				add_state_loyalty = -20.0
+			}
+		}
+	}
+	
+	after = {
+		if = {
+			limit = { has_variable = fe_66_percent_food_var }
+			remove_variable = fe_66_percent_food_var
+		}
+		scope:fe_city = { 
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+food_events.17 = {						# Contributions
+	type = country_event
+	title = "food_events.17.t"
+	desc = "food_events.17.desc"
+	
+	picture = senator_conversing
+	
+	goto_location = scope:fe_city
+	
+	left_portrait = current_ruler
+	right_portrait = scope:fe_city.governor
+	
+	trigger = {
+		NOT = { has_variable = food_event_cooldown }
+		any_country_state = {
+			NOT = {
+				any_state_province = { has_variable = food_event_cooldown_state }
+			}
+			any_state_province = {
+				count >= 3
+				owner = root
+			}
+		}
+	}
+
+	immediate = {
+		set_variable = {
+			name = food_event_cooldown
+			days = 3650 # 10 years
+		}
+		random_country_state = {
+			limit = {
+				NOT = {
+					any_state_province = { has_variable = food_event_cooldown_state }
+				}
+				any_state_province = {
+					count >= 3
+					owner = root
+				}
+			}
+			weight = {
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = { this = root.capital_scope }
+					}
+				}
+				modifier = {
+					factor = 1
+					NOT = {
+						any_state_province = {
+							NOT = { owner = root }
+						}
+					}
+				}
+			}
+			random_state_province = {
+				limit = {
+					owner = root
+				}
+				save_scope_as = fe_city
+			}
+		}
+		if = {
+			limit = {
+				any_country_state = {
+					NOT = { this = scope:fe_city.state }
+					has_state_food < has_state_food_capacity
+				}
+			}
+			random_country_state = {
+				limit = {
+					NOT = { this = scope:fe_city.state }
+					has_state_food < has_state_food_capacity
+				}
+				weight = {
+					modifier = {
+						factor = 5 
+						has_state_food <= 750
+					}
+					modifier = {
+						factor = 10
+						has_state_food <= 500
+					}
+					modifier = {
+						factor = 15
+						has_state_food <= 250
+					}
+					modifier = {
+						factor = 20 
+						has_state_food <= 100
+					}
+				}
+				random_state_province = {
+					limit = { owner = root }
+					save_scope_as = fe_gift_city
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.17.a"
+		trigger = {
+			scope:fe_city.state = {
+				has_state_food < has_state_food_capacity
+			}
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty < 100 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_benign_neglect }
+		}
+		scope:fe_city = {
+			if = {
+				limit = { state_loyalty < 100 }
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:fe_city.state = {
+			add_state_food = 200.0
+		}
+	}
+	
+	option = {
+		name = "food_events.17.b"
+		trigger = {
+			exists = scope:fe_gift_city
+		}
+		if = {
+			limit = {
+				exists = scope:fe_gift_city.governor
+				NOR = { 						
+					root.current_ruler = scope:fe_city.governor 
+					root.current_ruler = scope:fe_gift_city.governor 
+				}
+				scope:fe_gift_city.governor = { loyalty < 100 }
+			}
+			scope:fe_gift_city.governor = { add_loyalty = loyalty_food_boon_distributed }
+		}
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOR = { 
+					root.current_ruler = scope:fe_city.governor
+					root.current_ruler = scope:fe_gift_city.governor 
+					scope:fe_city.governor = scope:fe_gift_city.governor 
+				}
+				scope:fe_city.governor = { loyalty > 0 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_boon_appropriated }
+		}
+		scope:fe_gift_city.state = {
+			add_state_food = 200.0
+		}
+		scope:fe_gift_city = {
+			if = {
+				limit = { 
+					state_loyalty < 100 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = 10.0
+			}
+		}
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -10.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.17.c"
+		current_ruler = { add_popularity = popularity_large }
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty > 0 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_boon_aggrandizement }
+		}
+		add_tyranny = tyranny_small
+		scope:fe_city = {
+			if = {
+				limit = { 
+					state_loyalty > 0 
+					NOT = { is_in_area = root.capital_scope }
+				}
+				add_state_loyalty = -20.0
+			}
+		}
+	}
+	
+	option = {
+		name = "food_events.17.d"
+		if = {
+			limit = {
+				exists = scope:fe_city.governor
+				NOT = { root.current_ruler = scope:fe_city.governor }
+				scope:fe_city.governor = { loyalty > 0 }
+			}
+			scope:fe_city.governor = { add_loyalty = loyalty_food_boon_appropriated }
+		}
+		add_treasury = {
+			value = root.has_monthly_income
+			multiply = 1.8
+		}
+		scope:fe_city = {
+			if = {
+				limit = { state_loyalty > 0 }
+				add_state_loyalty = -10.0
+			}
+		}
+	}
+
+	after = {
+		scope:fe_city = {
+			set_variable = {
+				name = food_event_cooldown_state 
+				days = 9125 # 25 years
+			}
+		}
+	}
+}
+
+

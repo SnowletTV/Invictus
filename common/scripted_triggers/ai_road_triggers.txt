@@ -1,0 +1,185 @@
+﻿ai_country_allowed_to_build_roads = {
+    OR = {
+        has_military_bonus = latin_roman_path_4
+		civic_tech > 4
+    }
+    any_unit = {
+        ai_unit_qualifies_for_building_roads = yes
+    }
+}
+
+ai_unit_qualifies_for_building_roads = {
+    # Vanilla road_building unit ability requirements
+    is_army = yes
+    trigger_if = {
+        limit = {
+            unit_owner = {
+                has_military_bonus = latin_roman_path_4
+            }
+        }
+        unit_size >= 5
+    }
+    trigger_else = {
+        unit_size >= 10
+    }
+    in_combat = no
+    is_moving = no
+    is_exiled = no
+    trigger_if = {
+        limit = {
+            exists = commander
+        }
+        commander = {
+            loyalty > 33
+        }
+    }
+    # Additional requirement to filter tribes and minors
+    is_legion_unit = yes
+}
+
+ai_country_can_afford_to_build_1_road = {
+    trigger_if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
+        }
+        treasury >= ai_wartime_fund_and_1_road
+    }
+    trigger_else = {
+        treasury >= ai_country_build_1_road_price
+    }
+}
+ai_country_can_afford_to_build_10_roads = {
+    trigger_if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
+        }
+        treasury >= ai_wartime_fund_and_10_roads
+    }
+    trigger_else = {
+        treasury >= ai_country_build_10_roads_price
+    }
+}
+
+has_same_depth_as_current_territory = {
+    has_variable = territory_depth_level
+    territory_depth_level_svalue = scope:current_road_territory.territory_depth_level_svalue
+}
+has_same_depth_as_potential_territory = {
+    has_variable = territory_depth_level
+    territory_depth_level_svalue = scope:potential_road_territory.territory_depth_level_svalue
+}
+
+has_less_depth_than_current_territory = {
+    has_variable = territory_depth_level
+    territory_depth_level_svalue < scope:current_road_territory.territory_depth_level_svalue
+}
+has_less_depth_than_potential_territory = {
+    has_variable = territory_depth_level
+    territory_depth_level_svalue < scope:potential_road_territory.territory_depth_level_svalue
+}
+
+previous_territory_has_same_depth_as_current = {
+    exists = scope:previous_road_territory
+    scope:previous_road_territory = {
+        has_same_depth_as_current_territory = yes
+    }
+}
+
+territory_eligible_for_road_building = {
+    has_variable = territory_depth_level
+    NOT = {
+        is_target_in_local_variable_list = {
+            name = already_processed_territories
+            target = this
+        }
+    }
+}
+
+territory_is_junction_of_its_area = {
+    is_water = no
+    save_temporary_scope_as = evaluated_territory
+
+    # Variable based junction overrides everything
+    trigger_if = {
+        limit = {
+            area = {
+                any_area_province = {
+                    has_variable = area_junction_territory
+                }
+            }
+        }
+        has_variable = area_junction_territory
+    }
+    # For areas with a lot of pre-existing roads choose territory with the highest amount of them
+    trigger_else_if = {
+        limit = {
+            area = {
+                any_area_province = {
+                    num_of_roads_towards_neighbors >= 4
+                }
+            }
+        }
+        NOT = {
+            area = {
+                any_area_province = {
+                    OR = {
+                        num_of_roads_towards_neighbors > scope:evaluated_territory.num_of_roads_towards_neighbors
+                        AND = {
+                            num_of_roads_towards_neighbors = scope:evaluated_territory.num_of_roads_towards_neighbors
+                            # Resolve draws by highest territory priority
+                            territory_priority_for_junction > scope:evaluated_territory.territory_priority_for_junction
+                        }
+                    }
+                }
+            }
+        }
+    }
+    # In most cases it must be a capital of a state with the highest junction priority
+    trigger_else_if = {
+        limit = {
+            area = {
+                any_area_state = {
+                    count > 0
+                }
+            }
+        }
+        exists = state
+        state = {
+            exists = capital_scope
+            capital_scope = scope:evaluated_territory
+            NOT = {
+                area = {
+                    any_area_state = {
+                        NOT = {
+                            this = scope:evaluated_territory.state
+                        }
+                        state_priority_for_junction > scope:evaluated_territory.state.state_priority_for_junction
+                    }
+                }
+            }
+        }
+    }
+    # As a fallback simply choose a territory with the highest population
+    trigger_else = {
+        NOT = {
+            area = {
+                any_area_province = {
+                    OR = {
+                        total_population > scope:evaluated_territory.total_population
+                        AND = {
+                            total_population = scope:evaluated_territory.total_population
+                            # Resolve draws by highest territory priority
+                            territory_priority_for_junction > scope:evaluated_territory.territory_priority_for_junction
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

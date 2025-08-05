@@ -1,5 +1,5 @@
 ﻿# ----------------------------------------------------------------------------------------------------------------------
-# AI actions on a quarter basis. Order has a big impact in these effects as most of them depend on political influence.
+# AI actions on a quarter basis - order has a big impact in these effects as many of them depend on same resource types
 # ----------------------------------------------------------------------------------------------------------------------
 
 yearly_country_pulse = {
@@ -10,7 +10,7 @@ yearly_country_pulse = {
 		delay = { days = 90 }
 		ai_q2_pulse
 		# Q3
-		delay = { days = 191 }
+		delay = { days = 181 }
 		ai_q3_pulse
 		# Q4
 		delay = { days = 273 }
@@ -20,35 +20,110 @@ yearly_country_pulse = {
 
 ai_q1_pulse = {
 	effect = {
-		ai_determine_economic_policies = yes # Every year
-		ai_revoke_free_hands = yes # Every year
-		ai_fix_character_loyalty = yes # Every quarter
-		ai_choose_and_enact_law = yes # Every half year
-		ai_perform_divine_sacrifice = yes # Every quarter
-		ai_try_upgrading_city_to_metropolis = yes # Every 5 years, gated by timed variable
-		ai_choose_territory_and_found_city = yes # Every year
-		ai_choose_and_make_investment = yes # Every year
+		ai_import_food_into_states_in_need = yes  # Every year         State food is at its lowest during winter
+		ai_destroy_leftover_navies = yes          # Every year
+		ai_revoke_free_hands = yes                # Every half year    Before loyalty fix to compensate if needed
+		ai_fix_character_loyalty = yes            # Every quarter      Spends a bit of political influence
+		ai_perform_divine_sacrifice = yes         # Every quarter      Spends political influence
+		ai_try_upgrading_city_to_metropolis = yes # Every half year    Spends political influence and gold
+		ai_choose_territory_and_found_city = yes  # Every half year    Spends political influence and gold
 	}
 }
 
 ai_q2_pulse = {
 	effect = {
-		ai_fix_character_loyalty = yes # Every quarter
-		ai_perform_divine_sacrifice = yes # Every quarter
+		ai_colonize_unowned_territories = yes     # Every year         Spends a bit of gold
+		ai_press_hold_games_button = yes          # Every half year    Only tribes with Advanced AI, spends gold
+		ai_fix_character_loyalty = yes            # Every quarter      Spends a bit of political influence
+		ai_choose_and_enact_law = yes             # Every half year    Spends stability and political influence
+		ai_perform_divine_sacrifice = yes         # Every quarter      Spends political influence
+		ai_choose_and_make_investment = yes       # Every half year    Spends political influence and maybe gold
 	}
 }
 
 ai_q3_pulse = {
 	effect = {
-		ai_fix_character_loyalty = yes # Every quarter
-		ai_choose_and_enact_law = yes # Every half year
-		ai_perform_divine_sacrifice = yes # Every quarter
+		ai_enshrine_social_equity = yes           # Every year         Only if Mixed Gender Rules are enabled
+		ai_manually_move_pops_to_cities = yes     # Every year         Only with Advanced AI
+		ai_revoke_free_hands = yes                # Every half year    Before loyalty fix to compensate if needed
+		ai_fix_character_loyalty = yes            # Every quarter      Spends a bit of political influence
+		ai_perform_divine_sacrifice = yes         # Every quarter      Spends political influence
+		ai_try_upgrading_city_to_metropolis = yes # Every half year    Spends political influence and gold
+		ai_choose_territory_and_found_city = yes  # Every half year    Spends political influence and gold
 	}
 }
 
 ai_q4_pulse = {
 	effect = {
-		ai_fix_character_loyalty = yes # Every quarter
-		ai_perform_divine_sacrifice = yes # Every quarter
+		ai_press_hold_games_button = yes          # Every half year    Only tribes with Advanced AI, spends gold
+		cache_adjusted_research_efficiency = yes  # Every year         For players as well to prevent lags if switching
+		ai_determine_economic_policies = yes      # Every year         Depends on cache_adjusted_research_efficiency
+		ai_fix_character_loyalty = yes            # Every quarter      Spends a bit of political influence
+		ai_choose_and_enact_law = yes             # Every half year    Spends stability and political influence
+		ai_perform_divine_sacrifice = yes         # Every quarter      Spends political influence
+		ai_choose_and_make_investment = yes       # Every half year    Spends political influence and maybe gold
+	}
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# AI actions on a monthly basis
+# ----------------------------------------------------------------------------------------------------------------------
+
+monthly_country_pulse = {
+	on_actions = {
+		ai_monthly_pulse
+	}
+}
+
+ai_monthly_pulse = {
+	effect = {
+		ai_recruit_mercenaries = yes              # Every month        Only with Advanced AI
+
+		# Prevent pre-1.10.0.3 saves from lagging due to cache variables being renamed and effects moved in AI pulse
+		if = {
+			limit = {
+				NOT = {
+					has_global_variable = deprecated_normalized_research
+				}
+			}
+			set_global_variable = deprecated_normalized_research
+			every_country = {
+				limit = {
+					has_land = yes
+				}
+				cache_adjusted_research_efficiency = yes # For players as well to prevent lags if switching
+				if = {
+					limit = {
+						is_ai = yes
+					}
+					ai_determine_economic_policies = yes # Depends on cache_adjusted_research_efficiency
+				}
+			}
+		}
+	}
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# AI actions after ending war
+# ----------------------------------------------------------------------------------------------------------------------
+
+on_ending_war = {
+	on_actions = {
+		# This is where the "after" part comes from
+		delay = { days = 7 }
+		ai_on_ending_war
+	}
+}
+
+ai_on_ending_war = {
+	effect = { 
+		if = {
+			limit = {
+				# The country may not exist anymore after the delay
+				has_land = yes
+				is_ai = yes
+			}
+			ai_destroy_leftover_navies = yes
+		}
 	}
 }

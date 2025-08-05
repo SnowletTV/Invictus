@@ -1,5 +1,4 @@
 ﻿merc_buyoff = { ### Any changes here need to be replicated in the Scripted GUI version of Bribe Mercenary
-
 	on_other_nation = yes
 	on_own_nation = no
 	message = no
@@ -9,7 +8,10 @@
 	potential_trigger = {
 		hidden:scope:target = {
 			is_mercenary = yes
-			is_general = yes
+			OR = {
+				is_general = yes
+				is_admiral = yes
+			}
 			any_character_unit = {
 				unit_size > 0
 			}
@@ -18,26 +20,36 @@
 	
 	allowed_trigger = {
 		scope:target = {
-			any_character_unit = { in_combat = no }
 			custom_tooltip = {
 				text = merc_employed_tt
+				# Unlike SGUI, no need to check if employer is not scope:actor here, it's covered by on_own_nation = no
 				NOT = {
 					employer = {
 						tag = MER
 					}
 				}
 			}
+			any_character_unit = {
+				in_combat = no
+			}
+		}
+		trigger_if = {
+			limit = {
+				exists = scope:target.employer
+			}
+			scope:target.employer = {
+				NOT = {
+					invention = recruit_mercenary_inv
+				}
+			}
 		}
 		hidden:scope:actor = {
 			war_with = scope:target.employer
 			treasury >= army_size_merc_estimation
-		}
-		scope:actor.current_ruler = {
-			can_get_rivals = yes
-		}
-		scope:target.employer = {
-			NOT = {
-				invention = recruit_mercenary_inv
+            # Bribing is allowed up until max stacks + 1
+            custom_tooltip = {
+				text = merc_buyoff_stack_limit
+				num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
 			}
 		}
 		custom_tooltip = {
@@ -66,15 +78,10 @@
 		}
 		hidden_effect = {
 			scope:target.employer = {
-				set_local_variable = {
-					name = merc_payoff_value
-					value = army_size_merc_estimation
-				}
 				trigger_event = {
 					id = warfare.3
 				}
 			}
 		}
 	}
-	
 }

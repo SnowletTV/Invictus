@@ -503,9 +503,6 @@ ai_connect_with_selected_interlands = {
             scope:current_road_interland = {
                 interland_depth_level_svalue > 0
             }
-            scope:road_building_country = {
-                ai_country_can_afford_to_build_10_roads = yes
-            }
         }
 
         # Reset it to 0 on every iteration, update to 1 after finding new interland
@@ -529,20 +526,19 @@ ai_connect_with_selected_interlands = {
                     limit = {
                         interland_eligible_for_road_building = yes
                     }
+
+                    capital_scope = {
+                        set_variable = {
+                            name = interland_order_of_road_building
+                            value = num_already_processed_interlands
+                        }
+                    }
                     
                     # Save current interland as previous to track pairs, then set this one as current
                     scope:current_road_interland = {
                         save_scope_as = previous_road_interland
                     }
                     save_scope_as = current_road_interland
-                    
-                    scope:previous_road_interland = {
-                        ai_state_to_junction_connection = {
-                            specific = 1
-                            state = scope:current_road_interland
-                            processed = 1
-                        }
-                    }
 
                     # Mark that we were able to find some new interland and while loop can continue
                     set_local_variable = {
@@ -558,6 +554,36 @@ ai_connect_with_selected_interlands = {
                 }
             }
         }
+    }
+
+    ordered_in_local_list = {
+        variable = already_processed_interlands
+        order_by = var:interland_order_of_road_building
+        min = 0
+        max = 999999
+        check_range_bounds = no
+
+        if = {
+            limit = {
+                exists = scope:state_for_junction_connection
+            }
+            ai_state_to_junction_connection = {
+                specific = 1
+                state = scope:state_for_junction_connection
+                processed = 1
+            }
+        }
+
+        save_scope_as = state_for_junction_connection
+    }
+    clear_saved_scope = state_for_junction_connection
+    
+    every_in_local_list = {
+        variable = already_processed_interlands
+        limit = {
+            has_variable = interland_order_of_road_building
+        }
+        remove_variable = interland_order_of_road_building
     }
 
     # Garbage collection
@@ -697,17 +723,19 @@ ai_connect_with_selected_junctions = {
 
         if = {
             limit = {
-                trigger_if = {
-                    limit = {
-                        is_advanced_ai_enabled = yes
-                        NOT = {
-                            has_global_variable = game_rule_advanced_ai_mercenaries
+                scope:road_building_country = {
+                    trigger_if = {
+                        limit = {
+                            is_advanced_ai_enabled = yes
+                            NOT = {
+                                has_global_variable = game_rule_advanced_ai_mercenaries
+                            }
                         }
+                        treasury >= ai_wartime_fund_and_planned_roads
                     }
-                    treasury >= ai_wartime_fund_and_planned_roads
-                }
-                trigger_else = {
-                    treasury >= cumulated_cost_of_planned_roads
+                    trigger_else = {
+                        treasury >= cumulated_cost_of_planned_roads
+                    }
                 }
             }
             every_in_local_list = {

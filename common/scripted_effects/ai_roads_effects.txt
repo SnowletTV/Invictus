@@ -55,7 +55,7 @@
                                     state_is_neighbor_of = {
                                         state = scope:current_frontier_state
                                     }
-                                    
+
                                     OR = {
                                         state_was_tried_for_road_building = yes
                                         state_junction_has_any_roads = yes
@@ -497,10 +497,6 @@ ai_connect_with_selected_interlands = {
         value = 1
     }
 
-    p:1 = {
-        set_variable = TEST1
-    }
-
     while = {
         limit = {
             local_var:found_new_interland_for_road > 0
@@ -518,10 +514,6 @@ ai_connect_with_selected_interlands = {
             value = 0
         }
 
-        p:1 = {
-            set_variable = TEST2
-        }
-
         scope:current_road_interland.area = {
             ordered_neighbor_area = {
                 limit = {
@@ -532,10 +524,6 @@ ai_connect_with_selected_interlands = {
                 order_by = area_priority_for_road_building
                 position = 0
                 check_range_bounds = no
-
-                p:1 = {
-                    set_variable = TEST3
-                }
 
                 random_area_state = {
                     limit = {
@@ -680,12 +668,9 @@ ai_connect_with_selected_junctions = {
                                 has_road_towards = scope:current_road_territory
                             }
                         }
-                        add_road_towards = scope:current_road_territory
-                        scope:road_building_country = {
-                            add_treasury = {
-                                value = 0
-                                subtract = ai_country_build_roads_price
-                            }
+                        add_to_variable_list = {
+                            name = will_have_road_towards
+                            target = scope:current_road_territory
                         }
                     }
                     
@@ -708,6 +693,51 @@ ai_connect_with_selected_junctions = {
                     }
                 }
             }
+        }
+
+        if = {
+            limit = {
+                trigger_if = {
+                    limit = {
+                        is_advanced_ai_enabled = yes
+                        NOT = {
+                            has_global_variable = game_rule_advanced_ai_mercenaries
+                        }
+                    }
+                    treasury >= ai_wartime_fund_and_planned_roads
+                }
+                trigger_else = {
+                    treasury >= cumulated_cost_of_planned_roads
+                }
+            }
+            every_in_local_list = {
+                variable = already_processed_territories
+                limit = {
+                    has_non_empty_variable_list = will_have_road_towards
+                }
+                save_scope_as = territory_to_build_road_from
+                every_in_list = {
+                    variable = will_have_road_towards
+                    scope:territory_to_build_road_from = {
+                        add_road_towards = prev
+                    }
+                    scope:road_building_country = {
+                        add_treasury = {
+                            value = 0
+                            subtract = ai_country_build_roads_price
+                        }
+                    }
+                }
+                clear_saved_scope = territory_to_build_road_from
+            }
+        }
+        
+        every_in_local_list = {
+            variable = already_processed_territories
+            limit = {
+                has_non_empty_variable_list = will_have_road_towards
+            }
+            clear_variable_list = will_have_road_towards
         }
         
         # Mark that we already (or rather will very soon) processed this pair of junctions

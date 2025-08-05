@@ -1,59 +1,31 @@
-let depth = 5;
-let script_value = `distance_from_province = {\n`;
-for (let k = 1; k <= depth; k++) {
-  script_value += `    `;
-  if (k === depth) {
-    script_value +=
-    `else = {\n`;
-  } else {
-    if (k > 1) {
-      script_value +=
-      `else_`;
-    }
-    script_value +=
-    `if = { limit = { distance_from = { province = scope:target_province value <= ` + (k * 1000) + ` } }\n`;
+function generateBinaryDistanceScript(min, max, indent = 0) {
+  const space = ' '.repeat(indent);
+  const mid = Math.floor((min + max) / 20) * 10; // round to nearest 10
+
+  if (max - min <= 10) {
+    return (
+      space +
+      `value = ${Math.max(0, min - 5)}\n`
+    );
   }
 
-  for (let i = 1; i <= 10; i++) {
-    script_value += `        `;
-    if (i === 10) {
-      script_value +=
-      `else = {\n`;
-    } else {
-      if (i > 1) {
-        script_value +=
-        `else_`;
-      }
-      script_value +=
-      `if = { limit = { distance_from = { province = scope:target_province value <= ` + ((k - 1) * 1000 + i * 100) + ` } }\n`;
-    }
-    
-    for (let j = 1; j <= 10; j++) {
-      let distance = ((k - 1) * 1000 + (i - 1) * 100 + j * 10);
-
-      script_value += `            `;
-      if (j === 10) {
-        script_value +=
-        `else = {` + checkIfBelowOrAboveFive(distance) + `            }\n`;
-      } else {
-        if (j > 1) {
-          script_value +=
-          `else_`;
-        }
-        script_value +=
-        `if = { limit = { distance_from = { province = scope:target_province value <= ` + distance + ` } }` + checkIfBelowOrAboveFive(distance) + `            }\n`;
-      }
-    }
-
-    script_value +=
-    `        }\n`;
-  }
-  script_value += `    }\n`;
+  return (
+    `${space}if = {\n` +
+    `${space}    limit = { distance_from = { province = scope:target_province value <= ${mid} } }\n` +
+    generateBinaryDistanceScript(min, mid, indent + 4) +
+    `${space}}\n` +
+    `${space}else = {\n` +
+    generateBinaryDistanceScript(mid + 10, max, indent + 4) +
+    `${space}}\n`
+  );
 }
-script_value += `}\n`;
 
-console.log(script_value);
+// Usage
+const minDistance = 10;
+const maxDistance = 5000;
+const scriptValue =
+  `script_value = {\n` +
+  generateBinaryDistanceScript(minDistance, maxDistance, 4) +
+  `}\n`;
 
-function checkIfBelowOrAboveFive(value) {
-  return `\n                if = { limit = { distance_from = { province = scope:target_province value <= ` + (value - 5) + ` } } value = ` + (value - 5) + ` }\n                else = { value = ` + value + ` }\n`;
-}
+console.log(scriptValue);

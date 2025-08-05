@@ -83,9 +83,9 @@ has_less_depth_than_potential_territory = {
     has_variable = territory_depth_level
     territory_depth_level_svalue < scope:potential_road_territory.territory_depth_level_svalue
 }
-has_less_depth_than_deep_potential_territory = {
+has_less_depth_than_projected_territory = {
     has_variable = territory_depth_level
-    territory_depth_level_svalue < scope:deep_potential_road_territory.territory_depth_level_svalue
+    territory_depth_level_svalue < scope:projected_road_territory.territory_depth_level_svalue
 }
 
 previous_territory_has_same_depth_as_current = {
@@ -238,6 +238,7 @@ area_is_eligible_for_interland_connect = {
             limit = {
                 has_less_depth_than_current_interland = yes
             }
+
             # Guarantee that it has neighbor that qualifies to continue road building
             save_temporary_scope_as = potential_road_interland
             area = {
@@ -247,6 +248,7 @@ area_is_eligible_for_interland_connect = {
                         state_is_neighbor_of = {
                             state = scope:potential_road_interland
                         }
+
                         # interlands with depth going down are always allowed
                         trigger_if = {
                             limit = {
@@ -254,23 +256,29 @@ area_is_eligible_for_interland_connect = {
                             }
                             always = yes
                         }
+
                         # For same depth interlands check same conditions as below
                         trigger_else_if = {
                             limit = {
                                 has_same_depth_as_potential_interland = yes
                             }
+
                             # Only allow this if it has road to potential interland
                             state_has_roads_to_its_junction = yes
+
                             # Guarantee it has a neighbor eligible to follow no same depth in a row rule
-                            save_temporary_scope_as = deep_potential_road_interland
+                            save_temporary_scope_as = projected_road_interland
                             area = {
                                 any_neighbor_area = {
                                     any_area_state = {
+                                        NOT = {
+                                            this = scope:potential_road_interland
+                                        }
                                         interland_eligible_for_road_building = yes
                                         state_is_neighbor_of = {
-                                            state = scope:potential_road_interland
+                                            state = scope:projected_road_interland
                                         }
-                                        has_less_depth_than_deep_potential_interland = yes
+                                        has_less_depth_than_projected_interland = yes
                                     }
                                 }
                             }
@@ -278,7 +286,6 @@ area_is_eligible_for_interland_connect = {
                     }
                 }
             }
-            always = yes
         }
 
         # Same depth means we are not progressing, but it can be allowed conditionally
@@ -286,10 +293,13 @@ area_is_eligible_for_interland_connect = {
             limit = {
                 has_same_depth_as_current_interland = yes
             }
+
             # Only allow this if it has road to current interland in order to use existing ones better
             state_has_roads_to_its_junction = yes
+
             # Only allow this if it's not the case for the previous pair, otherwise can make a circle
             previous_interland_has_same_depth_as_current = no
+            
             # Guarantee that it has neighbor that qualifies to continue road building
             save_temporary_scope_as = potential_road_interland
             area = {
@@ -303,7 +313,6 @@ area_is_eligible_for_interland_connect = {
                     }
                 }
             }
-            always = yes
         }
 
         # Don't go back in depth because it may lead to zig-zaging and other fun stuff
@@ -341,9 +350,9 @@ has_less_depth_than_potential_interland = {
     interland_depth_level_svalue > -1
     interland_depth_level_svalue < scope:potential_road_interland.interland_depth_level_svalue
 }
-has_less_depth_than_deep_potential_interland = {
+has_less_depth_than_projected_interland = {
     interland_depth_level_svalue > -1
-    interland_depth_level_svalue < scope:deep_potential_road_interland.interland_depth_level_svalue
+    interland_depth_level_svalue < scope:projected_road_interland.interland_depth_level_svalue
 }
 
 previous_interland_has_same_depth_as_current = {
@@ -363,10 +372,12 @@ province_is_eligible_for_road_building = {
         limit = {
             has_less_depth_than_current_territory = yes
         }
+
         # Guarantee that it has neighbor that qualifies to continue road building
         save_temporary_scope_as = potential_road_territory
         any_neighbor_province = {
             territory_eligible_for_road_building = yes
+
             # Territories with depth going down are always allowed
             trigger_if = {
                 limit = {
@@ -374,18 +385,24 @@ province_is_eligible_for_road_building = {
                 }
                 always = yes
             }
+
             # For same depth territories check same conditions as below
             trigger_else_if = {
                 limit = {
                     has_same_depth_as_potential_territory = yes
                 }
+
                 # Only allow this if it has road to potential territory
                 has_road_towards = scope:potential_road_territory
+
                 # Guarantee it has a neighbor eligible to follow no same depth in a row rule
-                save_temporary_scope_as = deep_potential_road_territory
+                save_temporary_scope_as = projected_road_territory
                 any_neighbor_province = {
+                    NOT = {
+                        this = scope:potential_road_territory
+                    }
                     territory_eligible_for_road_building = yes
-                    has_less_depth_than_deep_potential_territory = yes
+                    has_less_depth_than_projected_territory = yes
                 }
             }
         }
@@ -396,10 +413,13 @@ province_is_eligible_for_road_building = {
         limit = {
             has_same_depth_as_current_territory = yes
         }
+
         # Only allow this if it has road to current territory in order to use existing ones better
         has_road_towards = scope:current_road_territory
+
         # Only allow this if it's not the case for the previous pair, otherwise can make a circle
         previous_territory_has_same_depth_as_current = no
+
         # Guarantee that it has neighbor that qualifies to continue road building
         save_temporary_scope_as = potential_road_territory
         any_neighbor_province = {

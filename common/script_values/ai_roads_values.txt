@@ -1,4 +1,10 @@
-﻿ai_country_build_roads_price = {
+﻿# Assume 50000 of territory IDs which should be more than safe
+assumed_territory_id_limit = 50000
+
+# Assume max distance between territories of 50000 which should be more than safe
+assumed_max_territory_distance = 50000
+
+ai_country_build_roads_price = {
     if = {
         limit = {
             has_local_variable = ai_country_build_roads_price_cached
@@ -98,26 +104,87 @@ cumulated_cost_of_planned_roads = {
 
 road_building_junction_search_depth = 15
 
-territory_depth_level_svalue = {
-    value = var:territory_depth_level
+# Reverse of ordering by ID because we want lower IDs to be prioritized
+territory_priority_by_id = {
+    value = assumed_territory_id_limit
+    subtract = province_id
 }
 
-# Requires country capital saved as scope:target_province
-state_priority_for_road_building = {
+state_priority_by_id = {
+    value = capital_scope.territory_priority_by_id
+}
+
+area_priority_by_id = {
+    value = 0
+    every_area_province = {
+        add = territory_priority_by_id
+    }
+}
+
+region_priority_by_id = {
+    value = 0
+    every_region_area = {
+        add = area_priority_by_id
+    }
+}
+
+governorship_priority_by_id = {
+    value = capital_scope.territory_priority_by_id
+}
+
+
+
+
+
+
+territory_priority_by_distance_from_capital = {
     if = {
         limit = {
-            is_capital_state = yes
+            this = scope:road_building_country.capital_scope
         }
-        value = 0 # 2 billions
+        value = 0
     }
     else = {
-        value = 0
-        ordered_state_province = {
+        # Draws are decided by territory id
+        value = territory_priority_by_id
+        divide = assumed_territory_id_limit
+
+        # Draws by state depth are decided by plain distance
+        add = distance_from_province
+
+        # Main factor should be distance in depth levels if specified
+        if = {
             limit = {
-                territory_is_junction_of_its_area = yes
+                has_variable = state_capital_distance
             }
-            # There shouldn't ever be more than one junction per area, but for safety it's deterministic by ID
-            order_by = territory_priority_by_id
+            value = var:state_capital_distance
+            multiply = assumed_max_territory_distance
+        }
+    }
+}
+
+state_priority_by_distance_from_capital = {
+    value = capital_scope.territory_priority_by_distance_from_capital
+}
+
+area_priority_by_distance_from_capital = {
+    if = {
+        limit = {
+            any_area_state = {
+                count > 0
+            }
+        }
+        ordered_area_state = {
+            order_by = state_priority_by_distance_from_capital
+            position = 0
+            check_range_bounds = no
+
+            add = state_priority_by_distance_from_capital
+        }
+    }
+    else = {
+        ordered_area_province = {
+            order_by = territory_priority_by_distance_from_capital
             position = 0
             check_range_bounds = no
 
@@ -126,11 +193,51 @@ state_priority_for_road_building = {
     }
 }
 
-# Reverse of ordering by province_id, assume 50000 of IDs for complete safety
-territory_priority_by_id = {
-    value = 50000
-    subtract = province_id
+state_priority_by_closeness_to_capital = {
+    value = 0
+    subtract = state_priority_by_distance_from_capital
 }
+
+territory_priority_by_closeness_to_capital = {
+    value = 0
+    subtract = territory_priority_by_distance_from_capital
+}
+
+area_priority_by_closeness_to_capital = {
+    value = 0
+    subtract = area_priority_by_distance_from_capital
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+territory_depth_level_svalue = {
+    value = var:territory_depth_level
+}
+
+
 
 territory_priority_for_road_building = {
     value = territory_priority_by_id
@@ -163,7 +270,7 @@ area_priority_for_road_building = {
         }
         if = {
             limit = {
-                state_junction_has_any_roads = yes
+                state_contains_junction_with_roads = yes
             }
             add = 1000000
         }
@@ -174,20 +281,6 @@ area_priority_for_road_building = {
             add = 100000
         }
     }
-}
-
-# Requires country capital saved as scope:target_province
-territory_priority_by_distance_from_capital = {
-    value = {
-        value = distance_from_province
-        multiply = 50000
-    }
-
-    add = territory_priority_by_id
-}
-
-state_priority_by_distance_from_capital = {
-    value = capital_scope.territory_priority_by_distance_from_capital
 }
 
 num_of_state_territories_svalue = {
@@ -201,32 +294,11 @@ territory_priority_for_junction = {
     value = territory_priority_by_id
 }
 
-state_priority_by_area_territory_ids = {
-    value = 0
-    area = {
-        every_area_province = {
-            add = province_id
-        }
-    }
-}
-
 state_priority_by_depth_level = {
     value = capital_scope.var:state_depth_level
-    multiply = 50000
+    multiply = assumed_territory_id_limit
 
     add = capital_scope.territory_priority_by_id
-}
-
-state_area_priority_by_depth_level = {
-    value = 0
-    every_area_state = {
-        limit = {
-            capital_scope = {
-                has_variable = state_depth_level
-            }
-        }
-        add = state_priority_by_depth_level
-    }
 }
 
 area_priority_by_territory_ids = {
@@ -238,7 +310,7 @@ area_priority_by_territory_ids = {
 
 state_priority_for_junction = {
     value = num_of_state_territories_svalue
-    multiply = 50000
+    multiply = assumed_territory_id_limit
     add = capital_scope.territory_priority_by_id
 }
 
@@ -282,4 +354,4 @@ num_already_processed_states = {
     }
 }
 
-thresholds_for_roads_to_governorship = 25
+min_junctions_in_governorship_for_roads = 2

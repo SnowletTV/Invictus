@@ -34,45 +34,16 @@
             max = 999999
             check_range_bounds = no
 
-            set_local_variable = {
-                name = num_territories_in_governorship
-                value = {
-                    value = 0
-                    every_governorship_state = {
-                        every_state_province = {
-                            add = 1
-                        }
-                    }
-                }
-            }
 
+            # Recheck after every iteration
             if = {
                 limit = {
-                    local_var:num_territories_in_governorship >= thresholds_for_roads_to_governorship
-                }
-                
-                save_scope_as = current_governorship_djshdgfs
-
-                ai_determine_governorships_to_connect = yes
-                capital_scope.state = {
-                    ai_determine_state_depth_level = yes
-                }
-                ai_connect_with_selected_states = yes
-
-                clear_local_variable_list = states_selected_to_connect
-
-                every_in_local_list = {
-                    variable = states_to_clear_depth_level
-                    capital_scope = {
-                        remove_variable = state_depth_level
+                    scope:road_building_country = {
+                        ai_country_can_afford_to_build_10_roads = yes
                     }
                 }
-                clear_local_variable_list = states_to_clear_depth_level
-
-                clear_saved_scope = current_governorship_djshdgfs
+                ai_build_roads_between_principals = yes
             }
-
-            remove_local_variable = num_territories_in_governorship
         }
 
 
@@ -97,7 +68,6 @@
                         ai_country_can_afford_to_build_10_roads = yes
                     }
                 }
-
                 ai_state_to_junction_connection = {
                     specific = 0
                     state = scope:target_province.state
@@ -105,6 +75,12 @@
                 }
             }
         }
+
+        every_in_local_list = {
+            variable = principals_with_processed_list
+            clear_variable_list = already_processed_principals
+        }
+        clear_local_variable_list = principals_with_processed_list
 
         every_in_local_list = {
             variable = junctions_with_processed_list
@@ -122,148 +98,53 @@
 
 
 
-ai_determine_state_depth_level = {
-    # Initiate state depth calculations starting from destination junction
-    capital_scope = {
-        set_variable = {
-            name = state_depth_level
-            value = 0
-        }
-    }
-    add_to_local_variable_list = {
-        name = states_of_current_level
-        target = this
-    }
 
-    # Save it to list so we don't need to every_owned_province to clear state_depth_level
-    add_to_local_variable_list = {
-        name = states_to_clear_depth_level
-        target = this
-    }
 
-    # Track it separately in local variable to use it easily as while limit and to set new variables
+ai_build_roads_between_principals = {
     set_local_variable = {
-        name = current_state_depth_level
-        value = 0
+        name = num_territories_in_governorship
+        value = {
+            value = 0
+            every_governorship_state = {
+                every_state_province = {
+                    add = 1
+                }
+            }
+        }
     }
 
-    # Try all neigbours level by level, forming state depth map to use in pathfinding algorithm later
-    while = {
+    if = {
         limit = {
-            has_non_empty_local_variable_list = {
-                name = states_of_current_level
-            }
-            OR = {
-                NOT = {
-                    has_non_empty_local_variable_list = {
-                        name = states_selected_to_connect
-                    }
-                }
-                any_in_local_list = {
-                    variable = states_selected_to_connect
-                    NOT = {
-                        has_variable = state_depth_level
-                    }
-                }
-            }
+            local_var:num_territories_in_governorship >= thresholds_for_roads_to_governorship
         }
+        capital_scope.state = {
+            save_scope_as = road_building_principal
 
-        ordered_in_local_list = {
-            variable = states_of_current_level
-            # Deterministic based on state ID
-            order_by = state_priority_by_area_territory_ids
-            min = 0
-            max = 999999
-            check_range_bounds = no
+            ai_determine_principals_to_connect = yes
+            ai_determine_state_depth_level = yes
+            ai_connect_with_selected_states = yes
 
-            save_scope_as = current_state
+            clear_local_variable_list = states_selected_to_connect
 
-            area = {
-                ordered_neighbor_area = {
-                    # Deterministic based on state ID
-                    order_by = area_priority_by_territory_ids
-                    min = 0
-                    max = 999999
-                    check_range_bounds = no
-
-                    ordered_area_state = {
-                        limit = {
-                            NOT = {
-                                capital_scope = {
-                                    has_variable = state_depth_level
-                                }
-                            }
-                            
-                            owned_by_road_builder_or_permasubject = yes
-
-                            state_is_neighbor_of = {
-                                state = scope:current_state
-                            }
-                        }
-                        # Deterministic based on state ID
-                        order_by = area.area_priority_by_territory_ids
-                        min = 0
-                        max = 999999
-                        check_range_bounds = no
-                        
-                        # Set corresponding depth level as state variable
-                        capital_scope = {
-                            set_variable = {
-                                name = state_depth_level
-                                value = {
-                                    value = local_var:current_state_depth_level
-                                    add = 1
-                                }
-                            }
-                        }
-                        # Add to list of the states whose neighbours will be processed in the next iteration
-                        add_to_local_variable_list = {
-                            name = states_of_next_level
-                            target = this
-                        }
-                        # Save it to list so we don't need to every_owned_province to clear state_depth_level
-                        add_to_local_variable_list = {
-                            name = states_to_clear_depth_level
-                            target = this
-                        }
-                    }
+            every_in_local_list = {
+                variable = states_to_clear_depth_level
+                capital_scope = {
+                    remove_variable = state_depth_level
                 }
             }
+            clear_local_variable_list = states_to_clear_depth_level
 
-            clear_saved_scope = current_state
-        }
-
-        # Set next level states as current level for the next iteration 
-        clear_local_variable_list = states_of_current_level
-        every_in_local_list = {
-            variable = states_of_next_level
-            add_to_local_variable_list = {
-                name = states_of_current_level
-                target = this
-            }
-        }
-        clear_local_variable_list = states_of_next_level
-
-        # Increment local variable with current state depth level
-        change_local_variable = {
-            name = current_state_depth_level
-            add = 1
+            clear_saved_scope = road_building_principal
         }
     }
 
-    # Garbage collection
-    clear_local_variable_list = states_of_current_level
-    remove_local_variable = current_state_depth_level
+    remove_local_variable = num_territories_in_governorship
 }
 
 
 
-
-
-
-ai_determine_governorships_to_connect = {
-    save_scope_as = current_destination_governorship
-    capital_scope.region = {
+ai_determine_principals_to_connect = {
+    region = {
         every_neighbor_region = {
             limit = {
                 any_region_state = {
@@ -275,7 +156,7 @@ ai_determine_governorships_to_connect = {
                             any_area_state = {
                                 owned_by_road_builder_or_permasubject = yes
                                 # Is adjacent to current state by land path
-                                governorship = scope:current_destination_governorship
+                                governorship = scope:road_building_principal.governorship
                                 # Junction is located in this state
                                 any_state_province = {
                                     territory_is_junction_of_its_area = yes
@@ -300,65 +181,51 @@ ai_determine_governorships_to_connect = {
                 limit = {
                     owned_by_road_builder_or_permasubject = yes
                 }
-                ai_determine_governorships_to_connect_1 = yes
+                # ordered_state_province = {
+                #     limit = {
+                #         territory_is_junction_of_its_area = yes
+                #     }
+                #     # There shouldn't ever be more than one junction per area, but for safety it's deterministic by ID
+                #     order_by = territory_priority_by_id
+                #     position = 0
+                #     check_range_bounds = no
+
+                capital_scope.state = {
+                    # Try connecting with this junction only if this pair wasn't processed before
+                    if = {
+                        limit = {
+                            NOR = {
+                                AND = {
+                                    has_non_empty_variable_list = {
+                                        name = already_processed_principals
+                                    }
+                                    is_target_in_variable_list = {
+                                        name = already_processed_principals
+                                        target = scope:road_building_principal
+                                    }
+                                }
+                                scope:road_building_principal = {
+                                    has_non_empty_variable_list = {
+                                        name = already_processed_principals
+                                    }
+                                    is_target_in_variable_list = {
+                                        name = already_processed_principals
+                                        target = prev
+                                    }
+                                }
+                            }
+                        }
+                        add_to_local_variable_list = {
+                            name = states_selected_to_connect
+                            target = this
+                        }
+                    }
+                }
+                # }
             }
         }
     }
     clear_saved_scope = current_destination_governorship
-}
-
-ai_determine_governorships_to_connect_1 = {
-    # ordered_state_province = {
-    #     limit = {
-    #         territory_is_junction_of_its_area = yes
-    #     }
-    #     # There shouldn't ever be more than one junction per area, but for safety it's deterministic by ID
-    #     order_by = territory_priority_by_id
-    #     position = 0
-    #     check_range_bounds = no
-
-    #     # Regardless of everything else, territory determined to be junction stays it for a lifetime
-    #     if = {
-    #         limit = {
-    #             NOT = {
-    #                 has_variable = area_junction_territory
-    #             }
-    #         }
-    #         set_variable = area_junction_territory
-    #     }
-
-    capital_scope.state = {
-        # Try connecting with this junction only if this pair wasn't processed before
-        if = {
-            limit = {
-                NOR = {
-                    AND = {
-                        has_non_empty_variable_list = {
-                            name = already_processed_governorships
-                        }
-                        is_target_in_variable_list = {
-                            name = already_processed_governorships
-                            target = scope:current_governorship_djshdgfs
-                        }
-                    }
-                    scope:current_governorship_djshdgfs = {
-                        has_non_empty_variable_list = {
-                            name = already_processed_governorships
-                        }
-                        is_target_in_variable_list = {
-                            name = already_processed_governorships
-                            target = prev
-                        }
-                    }
-                }
-            }
-            add_to_local_variable_list = {
-                name = states_selected_to_connect
-                target = this
-            }
-        }
-    }
-    # }
 }
 
 
@@ -466,118 +333,46 @@ ai_determine_junctions_to_connect_1 = {
     }
 }
 
-ai_determine_territory_depth_level = {
-    # Initiate territory depth calculations starting from destination junction
-    set_variable = {
-        name = territory_depth_level
-        value = 0
-    }
-    add_to_local_variable_list = {
-        name = territories_of_current_level
-        target = this
-    }
-
-    # Save it to list so we don't need to every_owned_province to clear territory_depth_level
-    add_to_local_variable_list = {
-        name = territories_to_clear_depth_level
-        target = this
-    }
-
-    # Track it separately in local variable to use it easily as while limit and to set new variables
-    set_local_variable = {
-        name = current_territory_depth_level
-        value = 0
-    }
-
-    # Try all neigbours level by level, forming territory depth map to use in pathfinding algorithm later
-    while = {
+ai_state_to_junction_connection = {
+    ordered_state_province = {
         limit = {
-            local_var:current_territory_depth_level < road_building_junction_search_depth
-            # If all the junctions were already found, there's no need to go deeper, so save performance
-            any_in_local_list = {
-                variable = neighbor_junctions_to_connect
+            territory_is_junction_of_its_area = yes
+        }
+        # There shouldn't ever be more than one junction per area, but for safety it's deterministic by ID
+        order_by = province_id
+        position = 0
+        check_range_bounds = no
+
+        # Regardless of everything else, territory determined to be junction stays it for a lifetime
+        if = {
+            limit = {
                 NOT = {
-                    has_variable = territory_depth_level
+                    has_variable = area_junction_territory
                 }
             }
+            set_variable = area_junction_territory
         }
 
-        ordered_in_local_list = {
-            variable = territories_of_current_level
-            # Deterministic based on territory ID
-            order_by = territory_priority_by_id
-            min = 0
-            max = 999999
-            check_range_bounds = no
+        save_scope_as = current_state_junction
 
-            ordered_neighbor_province = {
-                limit = {
-                    # Only land territories that armies can walk on
-                    is_water = no
-                    NOT = {
-                        terrain = impassable_terrain
-                    }
-                    # Not processed previously
-                    NOT = {
-                        has_variable = territory_depth_level
-                    }
-                    OR = {
-                        # Uncolonized and uninhabitable territories
-                        NOT = {
-                            exists = owner
-                        }
-                        # Must be owned either by the country itself or its subject with subject_can_cancel = no
-                        owned_by_road_builder_or_permasubject = yes
-                    }
-                }
-                # Deterministic based on territory ID
-                order_by = territory_priority_by_id
-                min = 0
-                max = 999999
-                check_range_bounds = no
-                
-                # Set corresponding depth level as territory variable
-                set_variable = {
-                    name = territory_depth_level
-                    value = {
-                        value = local_var:current_territory_depth_level
-                        add = 1
-                    }
-                }
-                # Add to list of the territories whose neighbours will be processed in the next iteration
-                add_to_local_variable_list = {
-                    name = territories_of_next_level
-                    target = this
-                }
-                # Save it to list so we don't need to every_owned_province to clear territory_depth_level
-                add_to_local_variable_list = {
-                    name = territories_to_clear_depth_level
-                    target = this
-                }
-            }
+        ai_determine_junctions_to_connect = {
+            specific = $specific$
+            state = $state$
+            processed = $processed$
         }
+        ai_determine_territory_depth_level = yes
+        ai_connect_with_selected_junctions = yes
 
-        # Set next level territories as current level for the next iteration 
-        clear_local_variable_list = territories_of_current_level
+        clear_local_variable_list = neighbor_junctions_to_connect
+
         every_in_local_list = {
-            variable = territories_of_next_level
-            add_to_local_variable_list = {
-                name = territories_of_current_level
-                target = this
-            }
+            variable = territories_to_clear_depth_level
+            remove_variable = territory_depth_level
         }
-        clear_local_variable_list = territories_of_next_level
+        clear_local_variable_list = territories_to_clear_depth_level
 
-        # Increment local variable with current territory depth level
-        change_local_variable = {
-            name = current_territory_depth_level
-            add = 1
-        }
+        clear_saved_scope = current_state_junction
     }
-
-    # Garbage collection
-    clear_local_variable_list = territories_of_current_level
-    remove_local_variable = current_territory_depth_level
 }
 
 
@@ -700,53 +495,37 @@ ai_connect_with_selected_states = {
             }
         }
 
+
+
+        # Mark that we already (or rather will very soon) processed this pair of principals
+        add_to_variable_list = {
+            name = already_processed_principals
+            target = scope:current_state_junction
+        }
+        scope:current_state_junction = {
+            add_to_variable_list = {
+                name = already_processed_principals
+                target = prev
+            }
+        }
+        # Save it to list so we don't need to every_owned_province to clear already_processed_principals
+        add_to_local_variable_list = {
+            name = principals_with_processed_list
+            target = this
+        }
+        add_to_local_variable_list = {
+            name = principals_with_processed_list
+            target = scope:current_state_junction
+        }
+
+
+
+
         # Garbage collection
         clear_saved_scope = current_road_state
         clear_saved_scope = previous_road_state
         clear_local_variable_list = already_processed_states
         remove_local_variable = found_new_state_for_road
-    }
-}
-
-ai_state_to_junction_connection = {
-    ordered_state_province = {
-        limit = {
-            territory_is_junction_of_its_area = yes
-        }
-        # There shouldn't ever be more than one junction per area, but for safety it's deterministic by ID
-        order_by = province_id
-        position = 0
-        check_range_bounds = no
-
-        # Regardless of everything else, territory determined to be junction stays it for a lifetime
-        if = {
-            limit = {
-                NOT = {
-                    has_variable = area_junction_territory
-                }
-            }
-            set_variable = area_junction_territory
-        }
-
-        save_scope_as = current_state_junction
-
-        ai_determine_junctions_to_connect = {
-            specific = $specific$
-            state = $state$
-            processed = $processed$
-        }
-        ai_determine_territory_depth_level = yes
-        ai_connect_with_selected_junctions = yes
-
-        clear_local_variable_list = neighbor_junctions_to_connect
-
-        every_in_local_list = {
-            variable = territories_to_clear_depth_level
-            remove_variable = territory_depth_level
-        }
-        clear_local_variable_list = territories_to_clear_depth_level
-
-        clear_saved_scope = current_state_junction
     }
 }
 
@@ -914,4 +693,256 @@ ai_connect_with_selected_junctions = {
         clear_local_variable_list = already_processed_territories
         remove_local_variable = found_new_territory_for_road
     }
+}
+
+
+
+
+
+ai_determine_state_depth_level = {
+    # Initiate state depth calculations starting from destination junction
+    capital_scope = {
+        set_variable = {
+            name = state_depth_level
+            value = 0
+        }
+    }
+    add_to_local_variable_list = {
+        name = states_of_current_level
+        target = this
+    }
+
+    # Save it to list so we don't need to every_owned_province to clear state_depth_level
+    add_to_local_variable_list = {
+        name = states_to_clear_depth_level
+        target = this
+    }
+
+    # Track it separately in local variable to use it easily as while limit and to set new variables
+    set_local_variable = {
+        name = current_state_depth_level
+        value = 0
+    }
+
+    # Try all neigbours level by level, forming state depth map to use in pathfinding algorithm later
+    while = {
+        limit = {
+            has_non_empty_local_variable_list = {
+                name = states_of_current_level
+            }
+            OR = {
+                NOT = {
+                    has_non_empty_local_variable_list = {
+                        name = states_selected_to_connect
+                    }
+                }
+                any_in_local_list = {
+                    variable = states_selected_to_connect
+                    NOT = {
+                        has_variable = state_depth_level
+                    }
+                }
+            }
+        }
+
+        ordered_in_local_list = {
+            variable = states_of_current_level
+            # Deterministic based on state ID
+            order_by = state_priority_by_area_territory_ids
+            min = 0
+            max = 999999
+            check_range_bounds = no
+
+            save_scope_as = current_state
+
+            area = {
+                ordered_neighbor_area = {
+                    # Deterministic based on state ID
+                    order_by = area_priority_by_territory_ids
+                    min = 0
+                    max = 999999
+                    check_range_bounds = no
+
+                    ordered_area_state = {
+                        limit = {
+                            NOT = {
+                                capital_scope = {
+                                    has_variable = state_depth_level
+                                }
+                            }
+                            
+                            owned_by_road_builder_or_permasubject = yes
+
+                            state_is_neighbor_of = {
+                                state = scope:current_state
+                            }
+                        }
+                        # Deterministic based on state ID
+                        order_by = area.area_priority_by_territory_ids
+                        min = 0
+                        max = 999999
+                        check_range_bounds = no
+                        
+                        # Set corresponding depth level as state variable
+                        capital_scope = {
+                            set_variable = {
+                                name = state_depth_level
+                                value = {
+                                    value = local_var:current_state_depth_level
+                                    add = 1
+                                }
+                            }
+                        }
+                        # Add to list of the states whose neighbours will be processed in the next iteration
+                        add_to_local_variable_list = {
+                            name = states_of_next_level
+                            target = this
+                        }
+                        # Save it to list so we don't need to every_owned_province to clear state_depth_level
+                        add_to_local_variable_list = {
+                            name = states_to_clear_depth_level
+                            target = this
+                        }
+                    }
+                }
+            }
+
+            clear_saved_scope = current_state
+        }
+
+        # Set next level states as current level for the next iteration 
+        clear_local_variable_list = states_of_current_level
+        every_in_local_list = {
+            variable = states_of_next_level
+            add_to_local_variable_list = {
+                name = states_of_current_level
+                target = this
+            }
+        }
+        clear_local_variable_list = states_of_next_level
+
+        # Increment local variable with current state depth level
+        change_local_variable = {
+            name = current_state_depth_level
+            add = 1
+        }
+    }
+
+    # Garbage collection
+    clear_local_variable_list = states_of_current_level
+    remove_local_variable = current_state_depth_level
+}
+
+ai_determine_territory_depth_level = {
+    # Initiate territory depth calculations starting from destination junction
+    set_variable = {
+        name = territory_depth_level
+        value = 0
+    }
+    add_to_local_variable_list = {
+        name = territories_of_current_level
+        target = this
+    }
+
+    # Save it to list so we don't need to every_owned_province to clear territory_depth_level
+    add_to_local_variable_list = {
+        name = territories_to_clear_depth_level
+        target = this
+    }
+
+    # Track it separately in local variable to use it easily as while limit and to set new variables
+    set_local_variable = {
+        name = current_territory_depth_level
+        value = 0
+    }
+
+    # Try all neigbours level by level, forming territory depth map to use in pathfinding algorithm later
+    while = {
+        limit = {
+            local_var:current_territory_depth_level < road_building_junction_search_depth
+            # If all the junctions were already found, there's no need to go deeper, so save performance
+            any_in_local_list = {
+                variable = neighbor_junctions_to_connect
+                NOT = {
+                    has_variable = territory_depth_level
+                }
+            }
+        }
+
+        ordered_in_local_list = {
+            variable = territories_of_current_level
+            # Deterministic based on territory ID
+            order_by = territory_priority_by_id
+            min = 0
+            max = 999999
+            check_range_bounds = no
+
+            ordered_neighbor_province = {
+                limit = {
+                    # Only land territories that armies can walk on
+                    is_water = no
+                    NOT = {
+                        terrain = impassable_terrain
+                    }
+                    # Not processed previously
+                    NOT = {
+                        has_variable = territory_depth_level
+                    }
+                    OR = {
+                        # Uncolonized and uninhabitable territories
+                        NOT = {
+                            exists = owner
+                        }
+                        # Must be owned either by the country itself or its subject with subject_can_cancel = no
+                        owned_by_road_builder_or_permasubject = yes
+                    }
+                }
+                # Deterministic based on territory ID
+                order_by = territory_priority_by_id
+                min = 0
+                max = 999999
+                check_range_bounds = no
+                
+                # Set corresponding depth level as territory variable
+                set_variable = {
+                    name = territory_depth_level
+                    value = {
+                        value = local_var:current_territory_depth_level
+                        add = 1
+                    }
+                }
+                # Add to list of the territories whose neighbours will be processed in the next iteration
+                add_to_local_variable_list = {
+                    name = territories_of_next_level
+                    target = this
+                }
+                # Save it to list so we don't need to every_owned_province to clear territory_depth_level
+                add_to_local_variable_list = {
+                    name = territories_to_clear_depth_level
+                    target = this
+                }
+            }
+        }
+
+        # Set next level territories as current level for the next iteration 
+        clear_local_variable_list = territories_of_current_level
+        every_in_local_list = {
+            variable = territories_of_next_level
+            add_to_local_variable_list = {
+                name = territories_of_current_level
+                target = this
+            }
+        }
+        clear_local_variable_list = territories_of_next_level
+
+        # Increment local variable with current territory depth level
+        change_local_variable = {
+            name = current_territory_depth_level
+            add = 1
+        }
+    }
+
+    # Garbage collection
+    clear_local_variable_list = territories_of_current_level
+    remove_local_variable = current_territory_depth_level
 }

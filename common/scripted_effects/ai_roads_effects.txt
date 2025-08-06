@@ -21,7 +21,12 @@
             save_scope_as = target_province
         }
 
-
+        # Calculate state distance from capital in neighbour levels to use in priority value
+        capital_scope = {
+            ai_determine_state_depth_level = {
+                variable = state_capital_distance
+            }
+        }
 
         ordered_governorships = {
             limit = {
@@ -46,35 +51,47 @@
             }
         }
 
-
-
-        ordered_country_state = {
+        if = {
             limit = {
                 always = no
-                any_state_province = {
-                    territory_is_junction_of_its_area = yes
-                }
+                ai_country_can_afford_to_build_10_roads = yes
             }
-            # Deterministic based on area junction distance from country capital and its territory ID
-            order_by = state_priority_for_road_building
-            min = 0
-            max = 999999
-            check_range_bounds = no
-
-            # Recheck after every iteration
-            if = {
+            ordered_country_state = {
                 limit = {
-                    scope:road_building_country = {
-                        ai_country_can_afford_to_build_10_roads = yes
+                    any_state_province = {
+                        territory_is_junction_of_its_area = yes
                     }
                 }
-                ai_state_to_junction_connection = {
-                    specific = 0
-                    state = scope:target_province.state
-                    processed = 0
+                # Deterministic based on area junction distance from country capital and its territory ID
+                order_by = state_priority_for_road_building
+                min = 0
+                max = 999999
+                check_range_bounds = no
+
+                # Recheck after every iteration
+                if = {
+                    limit = {
+                        scope:road_building_country = {
+                            ai_country_can_afford_to_build_10_roads = yes
+                        }
+                    }
+                    ai_state_to_junction_connection = {
+                        specific = 0
+                        state = scope:target_province.state
+                        processed = 0
+                    }
                 }
             }
         }
+
+        # Clear state distance from capital
+        every_in_local_list = {
+            variable = clear_state_capital_distance
+            capital_scope = {
+                remove_variable = state_capital_distance
+            }
+        }
+        clear_local_variable_list = clear_state_capital_distance
 
         every_in_local_list = {
             variable = principals_with_processed_list
@@ -121,18 +138,20 @@ ai_build_roads_between_principals = {
             save_scope_as = road_building_principal
 
             ai_determine_principals_to_connect = yes
-            ai_determine_state_depth_level = yes
+            ai_determine_state_depth_level = {
+                variable = state_depth_level
+            }
             ai_connect_with_selected_states = yes
 
             clear_local_variable_list = states_selected_to_connect
 
             every_in_local_list = {
-                variable = states_to_clear_depth_level
+                variable = clear_state_depth_level
                 capital_scope = {
                     remove_variable = state_depth_level
                 }
             }
-            clear_local_variable_list = states_to_clear_depth_level
+            clear_local_variable_list = clear_state_depth_level
 
             clear_saved_scope = road_building_principal
         }
@@ -366,10 +385,10 @@ ai_state_to_junction_connection = {
         clear_local_variable_list = neighbor_junctions_to_connect
 
         every_in_local_list = {
-            variable = territories_to_clear_depth_level
+            variable = clear_territory_depth_level
             remove_variable = territory_depth_level
         }
-        clear_local_variable_list = territories_to_clear_depth_level
+        clear_local_variable_list = clear_territory_depth_level
 
         clear_saved_scope = current_state_junction
     }
@@ -703,7 +722,7 @@ ai_determine_state_depth_level = {
     # Initiate state depth calculations starting from destination junction
     capital_scope = {
         set_variable = {
-            name = state_depth_level
+            name = $variable$
             value = 0
         }
     }
@@ -714,7 +733,7 @@ ai_determine_state_depth_level = {
 
     # Save it to list so we don't need to every_owned_province to clear state_depth_level
     add_to_local_variable_list = {
-        name = states_to_clear_depth_level
+        name = clear_$variable$
         target = this
     }
 
@@ -739,7 +758,7 @@ ai_determine_state_depth_level = {
                 any_in_local_list = {
                     variable = states_selected_to_connect
                     NOT = {
-                        has_variable = state_depth_level
+                        has_variable = $variable$
                     }
                 }
             }
@@ -767,7 +786,7 @@ ai_determine_state_depth_level = {
                         limit = {
                             NOT = {
                                 capital_scope = {
-                                    has_variable = state_depth_level
+                                    has_variable = $variable$
                                 }
                             }
                             
@@ -786,7 +805,7 @@ ai_determine_state_depth_level = {
                         # Set corresponding depth level as state variable
                         capital_scope = {
                             set_variable = {
-                                name = state_depth_level
+                                name = $variable$
                                 value = {
                                     value = local_var:current_state_depth_level
                                     add = 1
@@ -800,7 +819,7 @@ ai_determine_state_depth_level = {
                         }
                         # Save it to list so we don't need to every_owned_province to clear state_depth_level
                         add_to_local_variable_list = {
-                            name = states_to_clear_depth_level
+                            name = clear_$variable$
                             target = this
                         }
                     }
@@ -846,7 +865,7 @@ ai_determine_territory_depth_level = {
 
     # Save it to list so we don't need to every_owned_province to clear territory_depth_level
     add_to_local_variable_list = {
-        name = territories_to_clear_depth_level
+        name = clear_territory_depth_level
         target = this
     }
 
@@ -861,10 +880,17 @@ ai_determine_territory_depth_level = {
         limit = {
             local_var:current_territory_depth_level < road_building_junction_search_depth
             # If all the junctions were already found, there's no need to go deeper, so save performance
-            any_in_local_list = {
-                variable = neighbor_junctions_to_connect
+            OR = {
                 NOT = {
-                    has_variable = territory_depth_level
+                    has_non_empty_local_variable_list = {
+                        name = neighbor_junctions_to_connect
+                    }
+                }
+                any_in_local_list = {
+                    variable = neighbor_junctions_to_connect
+                    NOT = {
+                        has_variable = territory_depth_level
+                    }
                 }
             }
         }
@@ -918,7 +944,7 @@ ai_determine_territory_depth_level = {
                 }
                 # Save it to list so we don't need to every_owned_province to clear territory_depth_level
                 add_to_local_variable_list = {
-                    name = territories_to_clear_depth_level
+                    name = clear_territory_depth_level
                     target = this
                 }
             }

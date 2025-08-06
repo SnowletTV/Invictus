@@ -13,7 +13,7 @@
 
         ai_determine_junctions_of_own_areas = yes
 
-        save_scope_as = road_building_country
+        save_scope_as = current_road_building_country
 
         set_local_variable = {
             name = ai_country_build_roads_price_cached
@@ -113,7 +113,7 @@
         clear_local_variable_list = junctions_with_processed_list
 
         # Garbage collection
-        clear_saved_scope = road_building_country
+        clear_saved_scope = current_road_building_country
         remove_local_variable = ai_country_build_roads_price_cached
         clear_saved_scope = target_province
     }
@@ -336,7 +336,6 @@ ai_add_state_junction_to_road_list = {
         limit = {
             territory_is_junction_of_its_area = yes
         }
-        # There shouldn't ever be more than one junction per area, but for safety it's deterministic by ID
         order_by = territory_priority_by_id
         position = 0
         check_range_bounds = no
@@ -381,7 +380,6 @@ ai_fetch_junctions_and_build_roads = {
         limit = {
             territory_is_junction_of_its_area = yes
         }
-        # There shouldn't ever be more than one junction per area, but for safety it's deterministic by ID
         order_by = province_id
         position = 0
         check_range_bounds = no
@@ -428,116 +426,125 @@ ai_build_roads_between_principals = {
             }
 
             # Start with the destination junction and find a path to current state junction
-            save_scope_as = current_road_state
+            save_scope_as = current_road_building_state
 
             # Save all processed states to a list so we wont't walk them more than once
             capital_scope = {
                 set_variable = {
-                    name = state_order_of_road_building
-                    value = num_already_processed_states
+                    name = order_of_road_building_in_state
+                    value = num_states_chosen_for_road_building
                 }
             }
             add_to_local_variable_list = {
-                name = already_processed_states
+                name = states_chosen_for_road_building
                 target = this
             }
 
             # Emergency exist for edge cases to prevent while loop from going on 1000 times
             set_local_variable = {
-                name = found_new_state_for_road
+                name = found_new_state_for_roads
                 value = 1
             }
 
             while = {
                 limit = {
-                    local_var:found_new_state_for_road > 0
-                    scope:current_road_state = {
+                    local_var:found_new_state_for_roads > 0
+                    scope:current_road_building_state = {
                         state_depth_level_svalue > 0
                     }
                 }
 
                 # Reset it to 0 on every iteration, update to 1 after finding new state
                 set_local_variable = {
-                    name = found_new_state_for_road
+                    name = found_new_state_for_roads
                     value = 0
                 }
 
-                scope:current_road_state.area = {
-                    ordered_neighbor_area = {
-                        limit = {
-                            area_is_eligible_for_state_connect = yes
-                        }
-                        
-                        # Deterministic preference based on existing roads, being a city, etc.
-                        order_by = area_priority_for_road_building
-                        position = 0
-                        check_range_bounds = no
-
-                        random_area_state = {
-                            limit = {
-                                state_eligible_for_road_building = yes
-                            }
-
-                            capital_scope = {
-                                set_variable = {
-                                    name = state_order_of_road_building
-                                    value = num_already_processed_states
-                                }
-                            }
-                            
-                            # Save current state as previous to track pairs, then set this one as current
-                            scope:current_road_state = {
-                                save_scope_as = previous_road_state
-                            }
-                            save_scope_as = current_road_state
-
-                            # Mark that we were able to find some new state and while loop can continue
-                            set_local_variable = {
-                                name = found_new_state_for_road
-                                value = 1
-                            }
-
-                            # Save all processed states to a list so we wont't walk them more than once
+                scope:current_road_building_state.area = {
+                    every_neighbor_area = {
+                        every_area_state = {
                             add_to_local_variable_list = {
-                                name = already_processed_states
+                                name = all_states_of_neighboring_areas
                                 target = this
                             }
                         }
                     }
+
+                    ordered_in_local_list = {
+                        variable = all_states_of_neighboring_areas
+                        limit = {
+                            state_is_suitable_for_road_building = yes
+                        }
+                        order_by = state_priority_for_road_building
+                        position = 0
+                        check_range_bounds = no
+
+                        capital_scope = {
+                            set_variable = {
+                                name = order_of_road_building_in_state
+                                value = num_states_chosen_for_road_building
+                            }
+                        }
+                        
+                        # Save current state as previous to track pairs, then set this one as current
+                        scope:current_road_building_state = {
+                            save_scope_as = previous_road_state
+                        }
+                        save_scope_as = current_road_building_state
+
+                        # Mark that we were able to find some new state and while loop can continue
+                        set_local_variable = {
+                            name = found_new_state_for_roads
+                            value = 1
+                        }
+
+                        # Save all processed states to a list so we wont't walk them more than once
+                        add_to_local_variable_list = {
+                            name = states_chosen_for_road_building
+                            target = this
+                        }
+                    }
+
+                    clear_local_variable_list = all_states_of_neighboring_areas
                 }
             }
 
-            ordered_in_local_list = {
-                variable = already_processed_states
-                order_by = capital_scope.var:state_order_of_road_building
-                min = 0
-                max = 999999
-                check_range_bounds = no
-
-                if = {
-                    limit = {
-                        exists = scope:state_for_junction_connection
-                    }
-                    ai_fetch_junctions_and_build_roads = {
-                        specific = 1
-                        state = scope:state_for_junction_connection
-                        processed = 1
-                    }
+            if = {
+                limit = {
+                    local_var:found_new_state_for_roads > 0
                 }
+                ordered_in_local_list = {
+                    variable = states_chosen_for_road_building
+                    order_by = capital_scope.var:order_of_road_building_in_state
+                    min = 0
+                    max = 999999
+                    check_range_bounds = no
 
-                save_scope_as = state_for_junction_connection
+                    if = {
+                        limit = {
+                            exists = scope:state_for_junction_connection
+                        }
+                        ai_fetch_junctions_and_build_roads = {
+                            specific = 1
+                            state = scope:state_for_junction_connection
+                            processed = 1
+                        }
+                    }
+
+                    save_scope_as = state_for_junction_connection
+                }
+                clear_saved_scope = state_for_junction_connection
             }
-            clear_saved_scope = state_for_junction_connection
             
             every_in_local_list = {
-                variable = already_processed_states
+                variable = states_chosen_for_road_building
                 limit = {
                     capital_scope = {
-                        has_variable = state_order_of_road_building
+                        has_variable = order_of_road_building_in_state
                     }
                 }
                 capital_scope = {
-                    remove_variable = state_order_of_road_building
+                    remove_variable = order_of_road_building_in_state
                 }
             }
 
@@ -568,10 +575,10 @@ ai_build_roads_between_principals = {
 
 
             # Garbage collection
-            clear_saved_scope = current_road_state
+            clear_saved_scope = current_road_building_state
             clear_saved_scope = previous_road_state
-            clear_local_variable_list = already_processed_states
-            remove_local_variable = found_new_state_for_road
+            clear_local_variable_list = states_chosen_for_road_building
+            remove_local_variable = found_new_state_for_roads
         }
     }
 }
@@ -594,11 +601,11 @@ ai_build_roads_between_junctions = {
             }
 
             # Start with the destination junction and find a path to current state junction
-            save_scope_as = current_road_territory
+            save_scope_as = current_road_building_territory
 
             # Save all processed territories to a list so we wont't walk them more than once
             add_to_local_variable_list = {
-                name = already_processed_territories
+                name = territories_chosen_for_road_building
                 target = this
             }
 
@@ -611,11 +618,8 @@ ai_build_roads_between_junctions = {
             while = {
                 limit = {
                     local_var:found_new_territory_for_road > 0
-                    scope:current_road_territory = {
+                    scope:current_road_building_territory = {
                         territory_depth_level_svalue > 0
-                    }
-                    scope:road_building_country = {
-                        ai_country_can_afford_to_build_1_road = yes
                     }
                 }
 
@@ -625,12 +629,11 @@ ai_build_roads_between_junctions = {
                     value = 0
                 }
 
-                scope:current_road_territory = {
+                scope:current_road_building_territory = {
                     ordered_neighbor_province = {
                         limit = {
-                            province_is_eligible_for_road_building = yes
+                            territory_is_suitable_for_road_building = yes
                         }
-                        # Deterministic preference based on existing roads, being a city, etc.
                         order_by = territory_priority_for_road_building
                         position = 0
                         check_range_bounds = no
@@ -638,20 +641,20 @@ ai_build_roads_between_junctions = {
                         if = {
                             limit = {
                                 NOT = {
-                                    has_road_towards = scope:current_road_territory
+                                    has_road_towards = scope:current_road_building_territory
                                 }
                             }
                             add_to_variable_list = {
                                 name = will_have_road_towards
-                                target = scope:current_road_territory
+                                target = scope:current_road_building_territory
                             }
                         }
                         
                         # Save current territory as previous to track pairs, then set this one as current
-                        scope:current_road_territory = {
-                            save_scope_as = previous_road_territory
+                        scope:current_road_building_territory = {
+                            save_scope_as = previous_road_building_territory
                         }
-                        save_scope_as = current_road_territory
+                        save_scope_as = current_road_building_territory
 
                         # Mark that we were able to find some new territory and while loop can continue
                         set_local_variable = {
@@ -661,7 +664,7 @@ ai_build_roads_between_junctions = {
 
                         # Save all processed territories to a list so we wont't walk them more than once
                         add_to_local_variable_list = {
-                            name = already_processed_territories
+                            name = territories_chosen_for_road_building
                             target = this
                         }
                     }
@@ -670,7 +673,7 @@ ai_build_roads_between_junctions = {
 
             if = {
                 limit = {
-                    scope:road_building_country = {
+                    scope:current_road_building_country = {
                         trigger_if = {
                             limit = {
                                 is_advanced_ai_enabled = yes
@@ -686,7 +689,7 @@ ai_build_roads_between_junctions = {
                     }
                 }
                 every_in_local_list = {
-                    variable = already_processed_territories
+                    variable = territories_chosen_for_road_building
                     limit = {
                         has_non_empty_variable_list = {
                             name = will_have_road_towards
@@ -698,7 +701,7 @@ ai_build_roads_between_junctions = {
                         scope:territory_to_build_road_from = {
                             add_road_towards = prev
                         }
-                        scope:road_building_country = {
+                        scope:current_road_building_country = {
                             add_treasury = {
                                 value = 0
                                 subtract = ai_country_build_roads_price
@@ -718,7 +721,7 @@ ai_build_roads_between_junctions = {
 
             if = {
                 limit = {
-                    scope:road_building_country = {
+                    scope:current_road_building_country = {
                         ai_country_can_afford_to_build_10_roads = no
                     }
                 }
@@ -730,7 +733,7 @@ ai_build_roads_between_junctions = {
             }
             
             every_in_local_list = {
-                variable = already_processed_territories
+                variable = territories_chosen_for_road_building
                 limit = {
                     has_non_empty_variable_list = {
                         name = will_have_road_towards
@@ -761,9 +764,9 @@ ai_build_roads_between_junctions = {
             }
 
             # Garbage collection
-            clear_saved_scope = current_road_territory
-            clear_saved_scope = previous_road_territory
-            clear_local_variable_list = already_processed_territories
+            clear_saved_scope = current_road_building_territory
+            clear_saved_scope = previous_road_building_territory
+            clear_local_variable_list = territories_chosen_for_road_building
             remove_local_variable = found_new_territory_for_road
         }
     }
@@ -830,7 +833,6 @@ ai_determine_state_depth_level = {
 
             area = {
                 ordered_neighbor_area = {
-                    # Deterministic based on state ID
                     order_by = area_priority_by_territory_ids
                     min = 0
                     max = 999999
@@ -850,7 +852,6 @@ ai_determine_state_depth_level = {
                                 state = scope:current_state
                             }
                         }
-                        # Deterministic based on state ID
                         order_by = area.area_priority_by_territory_ids
                         min = 0
                         max = 999999
@@ -951,7 +952,6 @@ ai_determine_territory_depth_level = {
 
         ordered_in_local_list = {
             variable = territories_of_current_level
-            # Deterministic based on territory ID
             order_by = territory_priority_by_id
             min = 0
             max = 999999
@@ -977,7 +977,6 @@ ai_determine_territory_depth_level = {
                         owned_by_road_builder_or_permasubject = yes
                     }
                 }
-                # Deterministic based on territory ID
                 order_by = territory_priority_by_id
                 min = 0
                 max = 999999

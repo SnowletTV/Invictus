@@ -89,7 +89,7 @@ ai_wartime_fund_and_planned_roads = {
 
 cumulated_cost_of_planned_roads = {
     every_in_local_list = {
-        variable = already_processed_territories
+        variable = territories_chosen_for_road_building
         limit = {
             has_non_empty_variable_list = {
                 name = will_have_road_towards
@@ -97,7 +97,7 @@ cumulated_cost_of_planned_roads = {
         }
         every_in_list = {
             variable = will_have_road_towards
-            add = scope:road_building_country.ai_country_build_roads_price
+            add = scope:current_road_building_country.ai_country_build_roads_price
         }
     }
 }
@@ -108,6 +108,7 @@ road_building_junction_search_depth = 15
 territory_priority_by_id = {
     value = assumed_territory_id_limit
     subtract = province_id
+    divide = assumed_territory_id_limit
 }
 
 state_priority_by_id = {
@@ -119,12 +120,26 @@ area_priority_by_id = {
     every_area_province = {
         add = territory_priority_by_id
     }
+    divide = {
+        value = 0
+        every_area_province = {
+            add = 1
+        }
+        min = 1
+    }
 }
 
 region_priority_by_id = {
     value = 0
     every_region_area = {
         add = area_priority_by_id
+    }
+    divide = {
+        value = 0
+        every_region_area = {
+            add = 1
+        }
+        min = 1
     }
 }
 
@@ -140,14 +155,13 @@ governorship_priority_by_id = {
 territory_priority_by_distance_from_capital = {
     if = {
         limit = {
-            this = scope:road_building_country.capital_scope
+            this = scope:current_road_building_country.capital_scope
         }
         value = 0
     }
     else = {
-        # Draws are decided by territory id
+        # Draws are decided by IDs
         value = territory_priority_by_id
-        divide = assumed_territory_id_limit
 
         # Draws by state depth are decided by plain distance
         add = distance_from_province
@@ -208,10 +222,74 @@ area_priority_by_closeness_to_capital = {
     subtract = area_priority_by_distance_from_capital
 }
 
+territory_priority_for_road_building = {
+    # Draws are decided by IDs
+    value = territory_priority_by_id
+    # Already having a road is the most important thing, reducing parallel ones and not wasting money
+    if = {
+        limit = {
+            has_road_towards = scope:current_road_building_territory
+        }
+        add = 10000
+    }
+    # City territories are prioritized as they are important military targets
+    if = {
+        limit = {
+            has_city_status = yes
+        }
+        add = 1000
+    }
+    # Prefer territories that make us closer to a destination
+    if = {
+        limit = {
+            has_less_depth_than_current_territory = yes
+        }
+        add = 100
+    }
+    # Also prefer our own territories more than subject ones
+    if = {
+        limit = {
+            owner = scope:current_road_building_country
+        }
+        add = 10
+    }
+}
 
-
-
-
+state_priority_for_road_building = {
+    # Draws are decided by IDs
+    value = state_priority_by_id
+    # Already having roads is the most important thing, reducing parallel ones and not wasting money
+    if = {
+        limit = {
+            state_contains_junction_with_roads = yes
+        }
+        add = 10000
+    }
+    # City junctions are prioritized as they are important military targets
+    if = {
+        limit = {
+            any_state_province = {
+                territory_is_junction_of_its_area = yes
+                has_city_status = yes
+            }
+        }
+        add = 1000
+    }
+    # Prefer states that make us closer to a destination
+    if = {
+        limit = {
+            has_less_depth_than_current_state = yes
+        }
+        add = 100
+    }
+    # Also prefer our own states more than subject ones
+    if = {
+        limit = {
+            owner = scope:current_road_building_country
+        }
+        add = 10
+    }
+}
 
 
 
@@ -239,49 +317,6 @@ territory_depth_level_svalue = {
 
 
 
-territory_priority_for_road_building = {
-    value = territory_priority_by_id
-    if = {
-        limit = {
-            has_road_towards = scope:current_road_territory
-        }
-        add = 1000000
-    }
-    if = {
-        limit = {
-            has_city_status = yes
-        }
-        add = 500000
-    }
-    if = {
-        limit = {
-            has_less_depth_than_current_territory = yes
-        }
-        add = 100000
-    }
-}
-
-area_priority_for_road_building = {
-    value = 0
-    every_area_state = {
-        limit = {
-            state_eligible_for_road_building = yes
-            owned_by_road_builder_or_permasubject = yes
-        }
-        if = {
-            limit = {
-                state_contains_junction_with_roads = yes
-            }
-            add = 1000000
-        }
-        if = {
-            limit = {
-                has_less_depth_than_current_state = yes
-            }
-            add = 100000
-        }
-    }
-}
 
 num_of_state_territories_svalue = {
     value = 0
@@ -339,16 +374,16 @@ state_depth_level_svalue = {
     }
 }
 
-num_already_processed_states = {
+num_states_chosen_for_road_building = {
     value = 0
     if = {
         limit = {
             has_non_empty_local_variable_list = {
-                name = already_processed_states
+                name = states_chosen_for_road_building
             }
         }
         every_in_local_list = {
-            variable = already_processed_states
+            variable = states_chosen_for_road_building
             add = 1
         }
     }

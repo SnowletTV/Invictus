@@ -21,68 +21,61 @@
             save_scope_as = target_province
         }
 
-        capital_scope.state = {
-            ai_determine_interland_depth_level = yes
-        }
 
-        set_local_variable = {
-            name = found_any_frontier_states
-            value = 1
-        }
 
-        while = {
+        ordered_governorships = {
             limit = {
-                local_var:found_any_frontier_states > 0
-                ai_country_can_afford_to_build_10_roads = yes
+                exists = capital_scope
             }
+
+            # Deterministic
+            order_by = capital_scope.territory_priority_by_distance_from_capital
+            min = 0
+            max = 999999
+            check_range_bounds = no
 
             set_local_variable = {
-                name = found_any_frontier_states
-                value = 0
-            }
-
-            ordered_country_state = {
-                limit = {
-                    capital_scope = {
-                        has_variable = interland_depth_level
-                    }
-                    state_was_tried_for_road_building = no
-                    state_junction_has_any_roads = no
-                    save_temporary_scope_as = current_frontier_state
-                    NOT = {
-                        area = {
-                            any_neighbor_area = {
-                                any_area_state = {
-                                    owned_by_road_builder_or_permasubject = yes
-                                    state_is_neighbor_of = {
-                                        state = scope:current_frontier_state
-                                    }
-
-                                    OR = {
-                                        state_was_tried_for_road_building = yes
-                                        state_junction_has_any_roads = yes
-                                    }
-                                    # TODO ONLY IF LOWER LEVEL?
-                                }
-                            }
+                name = num_territories_in_governorship
+                value = {
+                    value = 0
+                    every_governorship_state = {
+                        every_state_province = {
+                            add = 1
                         }
                     }
                 }
-                # Deterministic based on area junction distance from country capital and its territory ID
-                order_by = interland_priority_by_depth_level
-                position = 0
-                check_range_bounds = no
+            }
 
+            if = {
+                limit = {
+                    local_var:num_territories_in_governorship >= thresholds_for_roads_to_governorship
+                }
+                
+                save_scope_as = current_governorship_djshdgfs
+
+                ai_determine_governorships_to_connect = yes
+                capital_scope.state = {
+                    ai_determine_interland_depth_level = yes
+                }
                 ai_connect_with_selected_interlands = yes
 
-                set_local_variable = {
-                    name = found_any_frontier_states
-                    value = 1
+                clear_local_variable_list = interlands_selected_to_connect
+
+                every_in_local_list = {
+                    variable = interlands_to_clear_depth_level
+                    capital_scope = {
+                        remove_variable = interland_depth_level
+                    }
                 }
+                clear_local_variable_list = interlands_to_clear_depth_level
+
+                clear_saved_scope = current_governorship_djshdgfs
             }
+
+            remove_local_variable = num_territories_in_governorship
         }
 
-        remove_local_variable = found_any_frontier_states
+
 
         ordered_country_state = {
             limit = {
@@ -112,14 +105,6 @@
                 }
             }
         }
-
-        every_in_local_list = {
-            variable = interlands_to_clear_depth_level
-            capital_scope = {
-                remove_variable = interland_depth_level
-            }
-        }
-        clear_local_variable_list = interlands_to_clear_depth_level
 
         every_in_local_list = {
             variable = junctions_with_processed_list
@@ -167,6 +152,19 @@ ai_determine_interland_depth_level = {
         limit = {
             has_non_empty_local_variable_list = {
                 name = interlands_of_current_level
+            }
+            OR = {
+                NOT = {
+                    has_non_empty_local_variable_list = {
+                        name = interlands_selected_to_connect
+                    }
+                }
+                any_in_local_list = {
+                    variable = interlands_selected_to_connect
+                    NOT = {
+                        has_variable = interland_depth_level
+                    }
+                }
             }
         }
 
@@ -261,6 +259,107 @@ ai_determine_interland_depth_level = {
 
 
 
+
+
+ai_determine_governorships_to_connect = {
+    save_scope_as = current_destination_governorship
+    capital_scope.region = {
+        every_neighbor_region = {
+            limit = {
+                any_region_state = {
+                    # Must be owned either by the country itself or its subject with subject_can_cancel = no
+                    owned_by_road_builder_or_permasubject = yes
+                    # Is adjacent to current state by land path
+                    area = {
+                        any_neighbor_area = {
+                            any_area_state = {
+                                owned_by_road_builder_or_permasubject = yes
+                                # Is adjacent to current state by land path
+                                governorship = scope:current_destination_governorship
+                                # Junction is located in this state
+                                any_state_province = {
+                                    territory_is_junction_of_its_area = yes
+                                }
+                            }
+                        }
+                    }
+                    # Junction is located in this state
+                    any_state_province = {
+                        territory_is_junction_of_its_area = yes
+                    }
+                }
+            }
+
+            # Deterministic based on sum of area territory IDs
+            # order_by = interland_area_priority_by_depth_level
+            # min = 0
+            # max = 999999
+            # check_range_bounds = no
+
+            random_region_governorship = {
+                limit = {
+                    owned_by_road_builder_or_permasubject = yes
+                }
+                ai_determine_governorships_to_connect_1 = yes
+            }
+        }
+    }
+    clear_saved_scope = current_destination_governorship
+}
+
+ai_determine_governorships_to_connect_1 = {
+    # ordered_state_province = {
+    #     limit = {
+    #         territory_is_junction_of_its_area = yes
+    #     }
+    #     # There shouldn't ever be more than one junction per area, but for safety it's deterministic by ID
+    #     order_by = territory_priority_by_id
+    #     position = 0
+    #     check_range_bounds = no
+
+    #     # Regardless of everything else, territory determined to be junction stays it for a lifetime
+    #     if = {
+    #         limit = {
+    #             NOT = {
+    #                 has_variable = area_junction_territory
+    #             }
+    #         }
+    #         set_variable = area_junction_territory
+    #     }
+
+    capital_scope.state = {
+        # Try connecting with this junction only if this pair wasn't processed before
+        if = {
+            limit = {
+                NOR = {
+                    AND = {
+                        has_non_empty_variable_list = {
+                            name = already_processed_governorships
+                        }
+                        is_target_in_variable_list = {
+                            name = already_processed_governorships
+                            target = scope:current_governorship_djshdgfs
+                        }
+                    }
+                    scope:current_governorship_djshdgfs = {
+                        has_non_empty_variable_list = {
+                            name = already_processed_governorships
+                        }
+                        is_target_in_variable_list = {
+                            name = already_processed_governorships
+                            target = prev
+                        }
+                    }
+                }
+            }
+            add_to_local_variable_list = {
+                name = interlands_selected_to_connect
+                target = this
+            }
+        }
+    }
+    # }
+}
 
 
 
@@ -483,125 +582,130 @@ ai_determine_territory_depth_level = {
 
 
 ai_connect_with_selected_interlands = {
-    # Start with the destination junction and find a path to current state junction
-    save_scope_as = current_road_interland
+    every_in_local_list = {
+        variable = interlands_selected_to_connect
 
-    # Save all processed interlands to a list so we wont't walk them more than once
-    capital_scope = {
-        set_variable = {
-            name = interland_order_of_road_building
-            value = num_already_processed_interlands
-        }
-    }
-    add_to_local_variable_list = {
-        name = already_processed_interlands
-        target = this
-    }
 
-    # Emergency exist for edge cases to prevent while loop from going on 1000 times
-    set_local_variable = {
-        name = found_new_interland_for_road
-        value = 1
-    }
+        # Start with the destination junction and find a path to current state junction
+        save_scope_as = current_road_interland
 
-    while = {
-        limit = {
-            local_var:found_new_interland_for_road > 0
-            scope:current_road_interland = {
-                interland_depth_level_svalue > 0
+        # Save all processed interlands to a list so we wont't walk them more than once
+        capital_scope = {
+            set_variable = {
+                name = interland_order_of_road_building
+                value = num_already_processed_interlands
             }
         }
+        add_to_local_variable_list = {
+            name = already_processed_interlands
+            target = this
+        }
 
-        # Reset it to 0 on every iteration, update to 1 after finding new interland
+        # Emergency exist for edge cases to prevent while loop from going on 1000 times
         set_local_variable = {
             name = found_new_interland_for_road
-            value = 0
+            value = 1
         }
 
-        scope:current_road_interland.area = {
-            ordered_neighbor_area = {
-                limit = {
-                    area_is_eligible_for_interland_connect = yes
+        while = {
+            limit = {
+                local_var:found_new_interland_for_road > 0
+                scope:current_road_interland = {
+                    interland_depth_level_svalue > 0
                 }
-                
-                # Deterministic preference based on existing roads, being a city, etc.
-                order_by = area_priority_for_road_building
-                position = 0
-                check_range_bounds = no
+            }
 
-                random_area_state = {
+            # Reset it to 0 on every iteration, update to 1 after finding new interland
+            set_local_variable = {
+                name = found_new_interland_for_road
+                value = 0
+            }
+
+            scope:current_road_interland.area = {
+                ordered_neighbor_area = {
                     limit = {
-                        interland_eligible_for_road_building = yes
-                    }
-
-                    capital_scope = {
-                        set_variable = {
-                            name = interland_order_of_road_building
-                            value = num_already_processed_interlands
-                        }
+                        area_is_eligible_for_interland_connect = yes
                     }
                     
-                    # Save current interland as previous to track pairs, then set this one as current
-                    scope:current_road_interland = {
-                        save_scope_as = previous_road_interland
-                    }
-                    save_scope_as = current_road_interland
+                    # Deterministic preference based on existing roads, being a city, etc.
+                    order_by = area_priority_for_road_building
+                    position = 0
+                    check_range_bounds = no
 
-                    # Mark that we were able to find some new interland and while loop can continue
-                    set_local_variable = {
-                        name = found_new_interland_for_road
-                        value = 1
-                    }
+                    random_area_state = {
+                        limit = {
+                            interland_eligible_for_road_building = yes
+                        }
 
-                    # Save all processed interlands to a list so we wont't walk them more than once
-                    add_to_local_variable_list = {
-                        name = already_processed_interlands
-                        target = this
+                        capital_scope = {
+                            set_variable = {
+                                name = interland_order_of_road_building
+                                value = num_already_processed_interlands
+                            }
+                        }
+                        
+                        # Save current interland as previous to track pairs, then set this one as current
+                        scope:current_road_interland = {
+                            save_scope_as = previous_road_interland
+                        }
+                        save_scope_as = current_road_interland
+
+                        # Mark that we were able to find some new interland and while loop can continue
+                        set_local_variable = {
+                            name = found_new_interland_for_road
+                            value = 1
+                        }
+
+                        # Save all processed interlands to a list so we wont't walk them more than once
+                        add_to_local_variable_list = {
+                            name = already_processed_interlands
+                            target = this
+                        }
                     }
                 }
             }
         }
-    }
 
-    ordered_in_local_list = {
-        variable = already_processed_interlands
-        order_by = capital_scope.var:interland_order_of_road_building
-        min = 0
-        max = 999999
-        check_range_bounds = no
+        ordered_in_local_list = {
+            variable = already_processed_interlands
+            order_by = capital_scope.var:interland_order_of_road_building
+            min = 0
+            max = 999999
+            check_range_bounds = no
 
-        if = {
+            if = {
+                limit = {
+                    exists = scope:state_for_junction_connection
+                }
+                ai_state_to_junction_connection = {
+                    specific = 1
+                    state = scope:state_for_junction_connection
+                    processed = 1
+                }
+            }
+
+            save_scope_as = state_for_junction_connection
+        }
+        clear_saved_scope = state_for_junction_connection
+        
+        every_in_local_list = {
+            variable = already_processed_interlands
             limit = {
-                exists = scope:state_for_junction_connection
+                capital_scope = {
+                    has_variable = interland_order_of_road_building
+                }
             }
-            ai_state_to_junction_connection = {
-                specific = 1
-                state = scope:state_for_junction_connection
-                processed = 1
-            }
-        }
-
-        save_scope_as = state_for_junction_connection
-    }
-    clear_saved_scope = state_for_junction_connection
-    
-    every_in_local_list = {
-        variable = already_processed_interlands
-        limit = {
             capital_scope = {
-                has_variable = interland_order_of_road_building
+                remove_variable = interland_order_of_road_building
             }
         }
-        capital_scope = {
-            remove_variable = interland_order_of_road_building
-        }
-    }
 
-    # Garbage collection
-    clear_saved_scope = current_road_interland
-    clear_saved_scope = previous_road_interland
-    clear_local_variable_list = already_processed_interlands
-    remove_local_variable = found_new_interland_for_road
+        # Garbage collection
+        clear_saved_scope = current_road_interland
+        clear_saved_scope = previous_road_interland
+        clear_local_variable_list = already_processed_interlands
+        remove_local_variable = found_new_interland_for_road
+    }
 }
 
 ai_state_to_junction_connection = {

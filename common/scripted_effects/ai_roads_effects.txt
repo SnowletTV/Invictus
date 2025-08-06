@@ -55,9 +55,9 @@
 
                 ai_determine_governorships_to_connect = yes
                 capital_scope.state = {
-                    ai_determine_interland_depth_level = yes
+                    ai_determine_state_depth_level = yes
                 }
-                ai_connect_with_selected_interlands = yes
+                ai_connect_with_selected_states = yes
 
                 clear_local_variable_list = interlands_selected_to_connect
 
@@ -122,7 +122,7 @@
 
 
 
-ai_determine_interland_depth_level = {
+ai_determine_state_depth_level = {
     # Initiate interland depth calculations starting from destination junction
     capital_scope = {
         set_variable = {
@@ -143,7 +143,7 @@ ai_determine_interland_depth_level = {
 
     # Track it separately in local variable to use it easily as while limit and to set new variables
     set_local_variable = {
-        name = current_interland_depth_level
+        name = current_state_depth_level
         value = 0
     }
 
@@ -176,7 +176,7 @@ ai_determine_interland_depth_level = {
             max = 999999
             check_range_bounds = no
 
-            save_scope_as = current_interland
+            save_scope_as = current_state
 
             area = {
                 ordered_neighbor_area = {
@@ -197,7 +197,7 @@ ai_determine_interland_depth_level = {
                             owned_by_road_builder_or_permasubject = yes
 
                             state_is_neighbor_of = {
-                                state = scope:current_interland
+                                state = scope:current_state
                             }
                         }
                         # Deterministic based on interland ID
@@ -211,7 +211,7 @@ ai_determine_interland_depth_level = {
                             set_variable = {
                                 name = interland_depth_level
                                 value = {
-                                    value = local_var:current_interland_depth_level
+                                    value = local_var:current_state_depth_level
                                     add = 1
                                 }
                             }
@@ -230,7 +230,7 @@ ai_determine_interland_depth_level = {
                 }
             }
 
-            clear_saved_scope = current_interland
+            clear_saved_scope = current_state
         }
 
         # Set next level interlands as current level for the next iteration 
@@ -246,14 +246,14 @@ ai_determine_interland_depth_level = {
 
         # Increment local variable with current interland depth level
         change_local_variable = {
-            name = current_interland_depth_level
+            name = current_state_depth_level
             add = 1
         }
     }
 
     # Garbage collection
     clear_local_variable_list = interlands_of_current_level
-    remove_local_variable = current_interland_depth_level
+    remove_local_variable = current_state_depth_level
 }
 
 
@@ -581,50 +581,50 @@ ai_determine_territory_depth_level = {
 }
 
 
-ai_connect_with_selected_interlands = {
+ai_connect_with_selected_states = {
     every_in_local_list = {
         variable = interlands_selected_to_connect
 
 
         # Start with the destination junction and find a path to current state junction
-        save_scope_as = current_road_interland
+        save_scope_as = current_road_state
 
         # Save all processed interlands to a list so we wont't walk them more than once
         capital_scope = {
             set_variable = {
                 name = interland_order_of_road_building
-                value = num_already_processed_interlands
+                value = num_already_processed_states
             }
         }
         add_to_local_variable_list = {
-            name = already_processed_interlands
+            name = already_processed_states
             target = this
         }
 
         # Emergency exist for edge cases to prevent while loop from going on 1000 times
         set_local_variable = {
-            name = found_new_interland_for_road
+            name = found_new_state_for_road
             value = 1
         }
 
         while = {
             limit = {
-                local_var:found_new_interland_for_road > 0
-                scope:current_road_interland = {
+                local_var:found_new_state_for_road > 0
+                scope:current_road_state = {
                     interland_depth_level_svalue > 0
                 }
             }
 
             # Reset it to 0 on every iteration, update to 1 after finding new interland
             set_local_variable = {
-                name = found_new_interland_for_road
+                name = found_new_state_for_road
                 value = 0
             }
 
-            scope:current_road_interland.area = {
+            scope:current_road_state.area = {
                 ordered_neighbor_area = {
                     limit = {
-                        area_is_eligible_for_interland_connect = yes
+                        area_is_eligible_for_state_connect = yes
                     }
                     
                     # Deterministic preference based on existing roads, being a city, etc.
@@ -640,25 +640,25 @@ ai_connect_with_selected_interlands = {
                         capital_scope = {
                             set_variable = {
                                 name = interland_order_of_road_building
-                                value = num_already_processed_interlands
+                                value = num_already_processed_states
                             }
                         }
                         
                         # Save current interland as previous to track pairs, then set this one as current
-                        scope:current_road_interland = {
-                            save_scope_as = previous_road_interland
+                        scope:current_road_state = {
+                            save_scope_as = previous_road_state
                         }
-                        save_scope_as = current_road_interland
+                        save_scope_as = current_road_state
 
                         # Mark that we were able to find some new interland and while loop can continue
                         set_local_variable = {
-                            name = found_new_interland_for_road
+                            name = found_new_state_for_road
                             value = 1
                         }
 
                         # Save all processed interlands to a list so we wont't walk them more than once
                         add_to_local_variable_list = {
-                            name = already_processed_interlands
+                            name = already_processed_states
                             target = this
                         }
                     }
@@ -667,7 +667,7 @@ ai_connect_with_selected_interlands = {
         }
 
         ordered_in_local_list = {
-            variable = already_processed_interlands
+            variable = already_processed_states
             order_by = capital_scope.var:interland_order_of_road_building
             min = 0
             max = 999999
@@ -689,7 +689,7 @@ ai_connect_with_selected_interlands = {
         clear_saved_scope = state_for_junction_connection
         
         every_in_local_list = {
-            variable = already_processed_interlands
+            variable = already_processed_states
             limit = {
                 capital_scope = {
                     has_variable = interland_order_of_road_building
@@ -701,10 +701,10 @@ ai_connect_with_selected_interlands = {
         }
 
         # Garbage collection
-        clear_saved_scope = current_road_interland
-        clear_saved_scope = previous_road_interland
-        clear_local_variable_list = already_processed_interlands
-        remove_local_variable = found_new_interland_for_road
+        clear_saved_scope = current_road_state
+        clear_saved_scope = previous_road_state
+        clear_local_variable_list = already_processed_states
+        remove_local_variable = found_new_state_for_road
     }
 }
 

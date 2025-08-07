@@ -235,46 +235,7 @@ state_is_suitable_for_road_building = {
         limit = {
             has_less_depth_than_current_state = yes
         }
-
-        # Guarantee that it has neighbor that qualifies to continue road building
-        save_temporary_scope_as = potential_road_building_state
-        capital_scope = {
-            any_in_list = {
-                variable = neighbor_states_to_connect_with
-                state_is_eligible_for_road_building = yes
-
-                # States with depth going down are always allowed
-                trigger_if = {
-                    limit = {
-                        has_less_depth_than_potential_state = yes
-                    }
-                    always = yes
-                }
-
-                # For same depth states check same conditions as below
-                trigger_else_if = {
-                    limit = {
-                        has_same_depth_as_potential_state = yes
-                    }
-
-                    # Only allow this if it has road to potential state
-                    state_contains_junction_with_roads = yes
-
-                    # Guarantee it has a neighbor eligible to follow no same depth in a row rule
-                    save_temporary_scope_as = projected_road_building_state
-                    capital_scope = {
-                        any_in_list = {
-                            variable = neighbor_states_to_connect_with
-                            NOT = {
-                                this = scope:potential_road_building_state
-                            }
-                            state_is_eligible_for_road_building = yes
-                            has_less_depth_than_projected_state = yes
-                        }
-                    }
-                }
-            }
-        }
+        always = yes
     }
 
     # Same depth means we are not progressing, but it can be allowed conditionally
@@ -288,16 +249,6 @@ state_is_suitable_for_road_building = {
 
         # Only allow this if it's not the case for the previous pair, otherwise can make a circle
         previous_state_has_same_depth_as_current = no
-        
-        # Guarantee that it has neighbor that qualifies to continue road building
-        save_temporary_scope_as = potential_road_building_state
-        capital_scope = {
-            any_in_list = {
-                variable = neighbor_states_to_connect_with
-                state_is_eligible_for_road_building = yes
-                has_less_depth_than_potential_state = yes
-            }
-        }
     }
 
     # Don't go back in depth because it may lead to zig-zaging and other fun stuff
@@ -321,11 +272,6 @@ has_same_depth_as_current_state = {
     state_depth_level_svalue = scope:current_road_building_state.state_depth_level_svalue
 }
 
-has_same_depth_as_potential_state = {
-    state_depth_level_svalue > -1
-    state_depth_level_svalue = scope:potential_road_building_state.state_depth_level_svalue
-}
-
 previous_state_has_same_depth_as_current = {
     exists = scope:previous_road_state
     scope:previous_road_state = {
@@ -338,16 +284,6 @@ has_less_depth_than_current_state = {
     state_depth_level_svalue < scope:current_road_building_state.state_depth_level_svalue
 }
 
-has_less_depth_than_potential_state = {
-    state_depth_level_svalue > -1
-    state_depth_level_svalue < scope:potential_road_building_state.state_depth_level_svalue
-}
-
-has_less_depth_than_projected_state = {
-    state_depth_level_svalue > -1
-    state_depth_level_svalue < scope:projected_road_building_state.state_depth_level_svalue
-}
-
 territory_is_suitable_for_road_building = {
     territory_is_eligible_for_road_building = yes
 
@@ -356,42 +292,7 @@ territory_is_suitable_for_road_building = {
         limit = {
             has_less_depth_than_current_territory = yes
         }
-
-        # Guarantee that it has neighbor that qualifies to continue road building
-        save_temporary_scope_as = potential_road_territory
-        any_neighbor_province = {
-            territory_is_eligible_for_road_building = yes
-
-            # Territories with depth going down are always allowed
-            trigger_if = {
-                limit = {
-                    has_less_depth_than_potential_territory = yes
-                }
-                always = yes
-            }
-
-            # For same depth territories check same conditions as below
-            trigger_else_if = {
-                limit = {
-                    has_same_depth_as_potential_territory = yes
-                }
-
-                # Only allow this if it has road to potential territory
-                has_or_will_have_road_towards = {
-                    territory = scope:potential_road_territory
-                }
-
-                # Guarantee it has a neighbor eligible to follow no same depth in a row rule
-                save_temporary_scope_as = projected_road_territory
-                any_neighbor_province = {
-                    NOT = {
-                        this = scope:potential_road_territory
-                    }
-                    territory_is_eligible_for_road_building = yes
-                    has_less_depth_than_projected_territory = yes
-                }
-            }
-        }
+        always = yes
     }
 
     # Same depth means we are not progressing, but it can be allowed conditionally
@@ -406,13 +307,9 @@ territory_is_suitable_for_road_building = {
         }
 
         # Only allow this if it's not the case for the previous pair, otherwise can make a circle
-        previous_territory_has_same_depth_as_current = no
-
-        # Guarantee that it has neighbor that qualifies to continue road building
-        save_temporary_scope_as = potential_road_territory
-        any_neighbor_province = {
-            territory_is_eligible_for_road_building = yes
-            has_less_depth_than_potential_territory = yes
+        OR = {
+            previous_territory_has_same_depth_as_current = no
+            prevprev_territory_has_same_depth_as_previous = no
         }
     }
 
@@ -464,11 +361,6 @@ has_same_depth_as_current_territory = {
     territory_depth_level_svalue = scope:current_road_building_territory.territory_depth_level_svalue
 }
 
-has_same_depth_as_potential_territory = {
-    has_variable = territory_depth_level
-    territory_depth_level_svalue = scope:potential_road_territory.territory_depth_level_svalue
-}
-
 previous_territory_has_same_depth_as_current = {
     exists = scope:previous_road_building_territory
     scope:previous_road_building_territory = {
@@ -476,17 +368,13 @@ previous_territory_has_same_depth_as_current = {
     }
 }
 
+prevprev_territory_has_same_depth_as_previous = {
+    exists = scope:previous_road_building_territory
+    exists = scope:prevprev_road_building_territory
+    scope:previous_road_building_territory.territory_depth_level_svalue = scope:prevprev_road_building_territory.territory_depth_level_svalue
+}
+
 has_less_depth_than_current_territory = {
     has_variable = territory_depth_level
     territory_depth_level_svalue < scope:current_road_building_territory.territory_depth_level_svalue
-}
-
-has_less_depth_than_potential_territory = {
-    has_variable = territory_depth_level
-    territory_depth_level_svalue < scope:potential_road_territory.territory_depth_level_svalue
-}
-
-has_less_depth_than_projected_territory = {
-    has_variable = territory_depth_level
-    territory_depth_level_svalue < scope:projected_road_territory.territory_depth_level_svalue
 }

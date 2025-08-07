@@ -106,26 +106,27 @@
         }
         clear_local_variable_list = clear_state_contained_junction_territory
 
-        # every_in_local_list = {
-        #     variable = states_to_connect_with_neighbors
-        #     capital_scope = {
-        #         clear_variable_list = neighbor_states_to_connect_with
-        #     }
-        # }
-        # clear_local_variable_list = states_to_connect_with_neighbors
+        every_in_local_list = {
+            variable = states_to_connect_with_neighbors
+            capital_scope = {
+                clear_variable_list = neighbor_states_to_connect_with
+            }
+        }
+        clear_local_variable_list = states_to_connect_with_neighbors
 
-        # every_in_local_list = {
-        #     variable = governorships_to_connect_with_neighbors
-        #     capital_scope = {
-        #         clear_variable_list = neighbor_governorships_to_connect_with
-        #     }
-        # }
-        # clear_local_variable_list = governorships_to_connect_with_neighbors
+        every_in_local_list = {
+            variable = governorships_to_connect_with_neighbors
+            capital_scope = {
+                clear_variable_list = neighbor_governorships_to_connect_with
+            }
+        }
+        clear_local_variable_list = governorships_to_connect_with_neighbors
 
         # Garbage collection
         clear_saved_scope = current_road_building_country
         remove_local_variable = ai_country_build_roads_price_cached
         clear_saved_scope = target_province
+        remove_local_variable = not_enough_gold_for_road_building
     }
 }
 
@@ -156,6 +157,14 @@ ai_cache_required_ruled_states_data = {
 
     every_governorships = {
         ai_cache_governorships_to_connect = yes
+    }
+    every_subject = {
+        limit = {
+            is_permanent_subject = yes
+        }
+        every_governorships = {
+            ai_cache_governorships_to_connect = yes
+        }
     }
 }
 
@@ -269,12 +278,12 @@ ai_cache_governorships_to_connect = {
         limit = {
             exists = capital_scope
             capital_scope.state = {
-                state_contains_junction_of_its_area = yes
+                state_is_target_for_road_building = yes
             }
 
             any_governorship_state = {
                 count >= min_junctions_in_governorship_for_roads
-                state_contains_junction_of_its_area = yes
+                state_is_target_for_road_building = yes
             }
         }
         save_scope_as = governorship_to_check_neighbors
@@ -314,16 +323,16 @@ ai_cache_governorships_to_connect = {
 
                     exists = capital_scope
                     capital_scope.state = {
-                        state_contains_junction_of_its_area = yes
+                        state_is_target_for_road_building = yes
                     }
                     
                     any_governorship_state = {
                         count >= min_junctions_in_governorship_for_roads
-                        state_contains_junction_of_its_area = yes
+                        state_is_target_for_road_building = yes
                     }
 
-                    any_governorship_state = {                        
-                        state_contains_junction_of_its_area = yes
+                    any_governorship_state = {
+                        state_is_target_for_road_building = yes
 
                         capital_scope = {
                             has_non_empty_variable_list = {
@@ -331,8 +340,8 @@ ai_cache_governorships_to_connect = {
                             }
                             any_in_list = {
                                 variable = neighbor_states_to_connect_with
+                                state_is_target_for_road_building = yes
                                 governorship = scope:governorship_to_check_neighbors
-                                state_contains_junction_of_its_area = yes
                             }
                         }
                     }
@@ -448,9 +457,6 @@ ai_determine_junctions_for_roads = {
                 }
                 ordered_in_list = {
                     variable = neighbor_states_to_connect_with
-                    limit = {
-                        state_contains_junction_of_its_area = yes
-                    }
                     order_by = state_priority_by_closeness_to_capital
                     min = 0
                     max = 999999
@@ -537,7 +543,7 @@ ai_build_roads_between_principals = {
                 }
             }
         }
-        order_by = state_priority_by_distance_from_capital
+        order_by = state_priority_by_closeness_to_capital
         min = 0
         max = 999999
         check_range_bounds = no
@@ -701,7 +707,7 @@ ai_build_roads_between_junctions = {
         limit = {
             has_variable = territory_depth_level
         }
-        order_by = territory_priority_by_distance_from_capital
+        order_by = territory_priority_by_closeness_to_capital
         min = 0
         max = 999999
         check_range_bounds = no
@@ -916,20 +922,17 @@ ai_determine_state_depth_level = {
     # Try all neigbours level by level, forming state depth map to use in pathfinding algorithm later
     while = {
         limit = {
+            local_var:current_state_depth_level < road_building_state_search_depth
             has_non_empty_local_variable_list = {
                 name = states_of_current_level
             }
-            OR = {
+            has_non_empty_local_variable_list = {
+                name = principals_for_road_building
+            }
+            any_in_local_list = {
+                variable = principals_for_road_building
                 NOT = {
-                    has_non_empty_local_variable_list = {
-                        name = principals_for_road_building
-                    }
-                }
-                any_in_local_list = {
-                    variable = principals_for_road_building
-                    NOT = {
-                        has_variable = $variable$
-                    }
+                    has_variable = $variable$
                 }
             }
         }
@@ -1037,19 +1040,17 @@ ai_determine_territory_depth_level = {
     # Try all neigbours level by level, forming territory depth map to use in pathfinding algorithm later
     while = {
         limit = {
-            local_var:current_territory_depth_level < road_building_junction_search_depth
-            # If all the junctions were already found, there's no need to go deeper, so save performance
-            OR = {
+            local_var:current_territory_depth_level < road_building_territory_search_depth
+            has_non_empty_local_variable_list = {
+                name = territories_of_current_level
+            }
+            has_non_empty_local_variable_list = {
+                name = junctions_for_road_building
+            }
+            any_in_local_list = {
+                variable = junctions_for_road_building
                 NOT = {
-                    has_non_empty_local_variable_list = {
-                        name = junctions_for_road_building
-                    }
-                }
-                any_in_local_list = {
-                    variable = junctions_for_road_building
-                    NOT = {
-                        has_variable = territory_depth_level
-                    }
+                    has_variable = territory_depth_level
                 }
             }
         }

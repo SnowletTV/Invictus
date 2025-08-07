@@ -37,19 +37,9 @@
             value = 0
         }
 
-        ordered_governorships = {
-            limit = {
-                exists = capital_scope
-                capital_scope.state = {
-                    state_contains_junction_of_its_area = yes
-                }
-
-                any_governorship_state = {
-                    count >= min_junctions_in_governorship_for_roads
-                    state_contains_junction_of_its_area = yes
-                }
-            }
-            order_by = capital_scope.territory_priority_by_closeness_to_capital
+        ordered_in_local_list = {
+            variable = governorships_to_connect_with_neighbors
+            order_by = governorship_priority_by_closeness_to_capital
             min = 0
             max = 999999
             check_range_bounds = no
@@ -71,6 +61,11 @@
             ordered_country_state = {
                 limit = {
                     state_contains_junction_of_its_area = yes
+                    capital_scope = {
+                        has_non_empty_variable_list = {
+                            name = neighbor_states_for_road_building
+                        }
+                    }
                 }
                 order_by = state_priority_by_closeness_to_capital
                 min = 0
@@ -124,6 +119,14 @@
         }
         clear_local_variable_list = clear_neighbor_states_for_road_building
 
+        every_in_local_list = {
+            variable = governorships_to_connect_with_neighbors
+            capital_scope = {
+                clear_variable_list = neighbor_governorships_to_connect
+            }
+        }
+        clear_local_variable_list = governorships_to_connect_with_neighbors
+
         # Garbage collection
         clear_saved_scope = current_road_building_country
         remove_local_variable = ai_country_build_roads_price_cached
@@ -145,57 +148,68 @@ ai_cache_required_ruled_states_data = {
             ai_cache_state_junction_territory = yes
         }
     }
+    every_governorships = {
+        ai_cache_governorships_to_connect = yes
+    }
 }
 
 ai_cache_ruled_neighbors_of_state = {
     save_scope_as = state_to_check_neighbors
+
     area = {
         every_area_state = {
             limit = {
                 NOT = {
                     this = scope:state_to_check_neighbors
                 }
+            }
+            add_to_local_variable_list = {
+                name = potential_state_neighbors
+                target = this
+            }
+        }
+        every_neighbor_area = {
+            every_area_state = {
+                add_to_local_variable_list = {
+                    name = potential_state_neighbors
+                    target = this
+                }
+            }
+        }
+    }
+
+    if = {
+        limit = {
+            has_non_empty_local_variable_list = {
+                name = potential_state_neighbors
+            }
+        }
+        every_in_local_list = {
+            variable = potential_state_neighbors
+            limit = {
                 ruled_by_road_building_country = yes
                 state_is_neighbor_of = {
                     state = scope:state_to_check_neighbors
                 }
             }
-            save_scope_as = state_for_neighbor_ruled_list
+            
+            save_scope_as = neighbor_state_for_road_building
             scope:state_to_check_neighbors.capital_scope = {
                 add_to_variable_list = {
                     name = neighbor_states_for_road_building
-                    target = scope:state_for_neighbor_ruled_list
+                    target = scope:neighbor_state_for_road_building
                 }
                 add_to_local_variable_list = {
                     name = clear_neighbor_states_for_road_building
                     target = this
                 }
             }
-            clear_saved_scope = state_for_neighbor_ruled_list
-        }
-        every_neighbor_area = {
-            every_area_state = {
-                limit = {
-                    ruled_by_road_building_country = yes
-                    state_is_neighbor_of = {
-                        state = scope:state_to_check_neighbors
-                    }
-                }
-                save_scope_as = state_for_neighbor_ruled_list
-                scope:state_to_check_neighbors.capital_scope = {
-                    add_to_variable_list = {
-                        name = neighbor_states_for_road_building
-                        target = scope:state_for_neighbor_ruled_list
-                    }
-                    add_to_local_variable_list = {
-                        name = clear_neighbor_states_for_road_building
-                        target = this
-                    }
-                }
-                clear_saved_scope = state_for_neighbor_ruled_list
-            }
+            clear_saved_scope = neighbor_state_for_road_building
         }
     }
+
+    clear_local_variable_list = potential_state_neighbors
+
     clear_saved_scope = state_to_check_neighbors
 }
 
@@ -238,6 +252,101 @@ ai_cache_state_junction_territory = {
     }
 }
 
+ai_cache_governorships_to_connect = {
+    if = {
+        limit = {
+            exists = capital_scope
+            capital_scope.state = {
+                state_contains_junction_of_its_area = yes
+            }
+
+            any_governorship_state = {
+                count >= min_junctions_in_governorship_for_roads
+                state_contains_junction_of_its_area = yes
+            }
+        }
+        save_scope_as = governorship_to_check_neighbors
+
+        capital_scope.region = {
+            every_region_governorship = {
+                limit = {
+                    NOT = {
+                        this = scope:governorship_to_check_neighbors
+                    }
+                }
+                add_to_local_variable_list = {
+                    name = potential_governorship_neighbors
+                    target = this
+                }
+            }
+            every_neighbor_region = {
+                every_region_governorship = {
+                    add_to_local_variable_list = {
+                        name = potential_governorship_neighbors
+                        target = this
+                    }
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                has_non_empty_local_variable_list = {
+                    name = potential_governorship_neighbors
+                }
+            }
+            every_in_local_list = {
+                variable = potential_governorship_neighbors
+                limit = {
+                    ruled_by_road_building_country = yes
+
+                    exists = capital_scope
+                    capital_scope.state = {
+                        state_contains_junction_of_its_area = yes
+                    }
+                    
+                    any_governorship_state = {
+                        count >= min_junctions_in_governorship_for_roads
+                        state_contains_junction_of_its_area = yes
+                    }
+
+                    any_governorship_state = {                        
+                        state_contains_junction_of_its_area = yes
+
+                        capital_scope = {
+                            has_non_empty_variable_list = {
+                                name = neighbor_states_for_road_building
+                            }
+                            any_in_list = {
+                                variable = neighbor_states_for_road_building
+                                governorship = scope:governorship_to_check_neighbors
+                                state_contains_junction_of_its_area = yes
+                            }
+                        }
+                    }
+                }
+                
+                save_scope_as = neighbor_governorship_to_connect
+                scope:governorship_to_check_neighbors.capital_scope = {
+                    add_to_variable_list = {
+                        name = neighbor_governorships_to_connect
+                        target = scope:neighbor_governorship_to_connect
+                    }
+                    add_to_local_variable_list = {
+                        name = governorships_to_connect_with_neighbors
+                        target = scope:governorship_to_check_neighbors
+                    }
+                }
+                clear_saved_scope = neighbor_governorship_to_connect
+            }
+        }
+
+        clear_local_variable_list = potential_governorship_neighbors
+
+        clear_saved_scope = governorship_to_check_neighbors
+    }
+}
+
 ai_fetch_principals_and_build_roads = {
     capital_scope.state = {
         save_scope_as = current_destination_principal
@@ -263,83 +372,42 @@ ai_fetch_principals_and_build_roads = {
 }
 
 ai_determine_principals_for_roads = {
-    region = {
-        ordered_neighbor_region = {
-            # Minimal filter so we don't check oceans etc.
-            limit = {
-                any_region_governorship = {
-                    count > 0
-                    exists = capital_scope
-                }
-            }
-            order_by = region_priority_by_id
+    capital_scope = {
+        ordered_in_list = {
+            variable = neighbor_governorships_to_connect
+            order_by = governorship_priority_by_closeness_to_capital
             min = 0
             max = 999999
             check_range_bounds = no
 
-            ordered_region_governorship = {
-                limit = {
-                    ruled_by_road_building_country = yes
-
-                    exists = capital_scope
-                    capital_scope.state = {
-                        state_contains_junction_of_its_area = yes
-                    }
-                    
-                    any_governorship_state = {
-                        count >= min_junctions_in_governorship_for_roads
-                        state_contains_junction_of_its_area = yes
-                    }
-
-                    any_governorship_state = {                        
-                        state_contains_junction_of_its_area = yes
-
-                        capital_scope = {
-                            has_non_empty_variable_list = {
-                                name = neighbor_states_for_road_building
-                            }
-                            any_in_list = {
-                                variable = neighbor_states_for_road_building
-                                governorship = scope:current_destination_principal.governorship
-                                state_contains_junction_of_its_area = yes
-                            }
-                        }
-                    }
-                }
-                order_by = governorship_priority_by_id
-                min = 0
-                max = 999999
-                check_range_bounds = no
-
-                capital_scope.state = {
-                    # Try connecting with this principal only if this pair wasn't processed before
-                    if = {
-                        limit = {
-                            NOR = {
-                                AND = {
-                                    has_non_empty_variable_list = {
-                                        name = already_processed_principals
-                                    }
-                                    is_target_in_variable_list = {
-                                        name = already_processed_principals
-                                        target = scope:current_destination_principal
-                                    }
+            capital_scope.state = {
+                # Try connecting with this principal only if this pair wasn't processed before
+                if = {
+                    limit = {
+                        NOR = {
+                            AND = {
+                                has_non_empty_variable_list = {
+                                    name = already_processed_principals
                                 }
-                                scope:current_destination_principal = {
-                                    has_non_empty_variable_list = {
-                                        name = already_processed_principals
-                                    }
-                                    is_target_in_variable_list = {
-                                        name = already_processed_principals
-                                        target = prev
-                                    }
+                                is_target_in_variable_list = {
+                                    name = already_processed_principals
+                                    target = scope:current_destination_principal
+                                }
+                            }
+                            scope:current_destination_principal = {
+                                has_non_empty_variable_list = {
+                                    name = already_processed_principals
+                                }
+                                is_target_in_variable_list = {
+                                    name = already_processed_principals
+                                    target = prev
                                 }
                             }
                         }
-                        add_to_local_variable_list = {
-                            name = principals_for_road_building
-                            target = this
-                        }
+                    }
+                    add_to_local_variable_list = {
+                        name = principals_for_road_building
+                        target = this
                     }
                 }
             }
@@ -431,23 +499,16 @@ ai_fetch_junctions_and_build_roads = {
             state = $state$
             processed = $processed$
         }
-        if = {
-            limit = {
-                has_non_empty_local_variable_list = {
-                    name = junctions_for_road_building
-                }
-            }
-            ai_determine_territory_depth_level = yes
-            ai_build_roads_between_junctions = yes
+        ai_determine_territory_depth_level = yes
+        ai_build_roads_between_junctions = yes
 
-            clear_local_variable_list = junctions_for_road_building
+        clear_local_variable_list = junctions_for_road_building
 
-            every_in_local_list = {
-                variable = clear_territory_depth_level
-                remove_variable = territory_depth_level
-            }
-            clear_local_variable_list = clear_territory_depth_level
+        every_in_local_list = {
+            variable = clear_territory_depth_level
+            remove_variable = territory_depth_level
         }
+        clear_local_variable_list = clear_territory_depth_level
 
         clear_saved_scope = current_destination_junction
     }

@@ -13,18 +13,16 @@
 
         save_scope_as = current_road_building_country
 
-        ai_determine_ruled_neighbor_states = yes
+        # Used in various priority values to check distance from junction to country capital
+        capital_scope = {
+            save_scope_as = target_province
+        }
 
-        ai_determine_junctions_of_own_areas = yes
+        ai_cache_required_ruled_states_data = yes
 
         set_local_variable = {
             name = ai_country_build_roads_price_cached
             value = ai_country_build_roads_price
-        }
-
-        # Used in various priority values to check distance from junction to country capital
-        capital_scope = {
-            save_scope_as = target_province
         }
 
         # Calculate state distance from capital in neighbour levels to use in priority value
@@ -133,21 +131,23 @@
     }
 }
 
-ai_determine_ruled_neighbor_states = {
+ai_cache_required_ruled_states_data = {
     every_country_state = {
-        ai_gather_ruled_neighbors_of_state = yes
+        ai_cache_ruled_neighbors_of_state = yes
+        ai_cache_state_junction_territory = yes
     }
     every_subject = {
         limit = {
-            is_permasubject = yes
+            is_permanent_subject = yes
         }
         every_country_state = {
-            ai_gather_ruled_neighbors_of_state = yes
+            ai_cache_ruled_neighbors_of_state = yes
+            ai_cache_state_junction_territory = yes
         }
     }
 }
 
-ai_gather_ruled_neighbors_of_state = {
+ai_cache_ruled_neighbors_of_state = {
     save_scope_as = state_to_check_neighbors
     area = {
         every_area_state = {
@@ -199,85 +199,40 @@ ai_gather_ruled_neighbors_of_state = {
     clear_saved_scope = state_to_check_neighbors
 }
 
-ai_determine_junctions_of_own_areas = {
-    every_country_state = {
-        area = {
-            ordered_area_province = {
-                limit = {
-                    territory_is_junction_of_its_area = yes
-                }
-                order_by = territory_priority_by_id
-                position = 0
-                
-                if = {
-                    limit = {
-                        NOT = {
-                            has_variable = territory_is_junction_of_its_area
-                        }
-                    }
-                    set_variable = territory_is_junction_of_its_area
-                }
-
-                if = {
-                    limit = {
-                        exists = state
-                    }
-                    save_scope_as = territory_determined_as_junction
-                    state.capital_scope = {
-                        set_variable = {
-                            name = state_contained_junction_territory
-                            value = scope:territory_determined_as_junction
-                        }
-                        add_to_local_variable_list = {
-                            name = clear_state_contained_junction_territory
-                            target = this
-                        }
-                    }
-                    clear_saved_scope = territory_determined_as_junction
-                }
+ai_cache_state_junction_territory = {
+    area = {
+        ordered_area_province = {
+            limit = {
+                territory_is_junction_of_its_area = yes
             }
-        }
-    }
-    every_subject = {
-        limit = {
-            is_permasubject = yes
-        }
-        every_country_state = {
-            area = {
-                ordered_area_province = {
-                    limit = {
-                        territory_is_junction_of_its_area = yes
-                    }
-                    order_by = territory_priority_by_id
-                    position = 0
-                    
-                    if = {
-                        limit = {
-                            NOT = {
-                                has_variable = territory_is_junction_of_its_area
-                            }
-                        }
-                        set_variable = territory_is_junction_of_its_area
-                    }
-
-                    if = {
-                        limit = {
-                            exists = state
-                        }
-                        save_scope_as = territory_determined_as_junction
-                        state.capital_scope = {
-                            set_variable = {
-                                name = state_contained_junction_territory
-                                value = scope:territory_determined_as_junction
-                            }
-                            add_to_local_variable_list = {
-                                name = clear_state_contained_junction_territory
-                                target = this
-                            }
-                        }
-                        clear_saved_scope = territory_determined_as_junction
+            order_by = territory_priority_by_id
+            position = 0
+            
+            if = {
+                limit = {
+                    NOT = {
+                        has_variable = territory_is_junction_of_its_area
                     }
                 }
+                set_variable = territory_is_junction_of_its_area
+            }
+
+            if = {
+                limit = {
+                    exists = state
+                }
+                save_scope_as = territory_determined_as_junction
+                state.capital_scope = {
+                    set_variable = {
+                        name = state_contained_junction_territory
+                        value = scope:territory_determined_as_junction
+                    }
+                    add_to_local_variable_list = {
+                        name = clear_state_contained_junction_territory
+                        target = this
+                    }
+                }
+                clear_saved_scope = territory_determined_as_junction
             }
         }
     }
@@ -410,10 +365,6 @@ ai_determine_junctions_for_roads = {
                     has_non_empty_variable_list = {
                         name = neighbor_states_for_road_building
                     }
-                    any_in_list = {
-                        variable = neighbor_states_for_road_building
-                        state_contains_junction_of_its_area = yes
-                    }
                 }
                 ordered_in_list = {
                     variable = neighbor_states_for_road_building
@@ -508,6 +459,9 @@ ai_build_roads_between_principals = {
         limit = {
             capital_scope = {
                 has_variable = state_depth_level
+                has_non_empty_variable_list = {
+                    name = neighbor_states_for_road_building
+                }
             }
         }
         order_by = state_priority_by_distance_from_capital

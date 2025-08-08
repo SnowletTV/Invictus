@@ -62,6 +62,85 @@
             limit = {
                 local_var:not_enough_gold_for_road_building = 0
             }
+            ordered_owned_province = {
+                limit = {
+                    OR = {
+                        is_state_capital = yes
+                        has_city_status = yes
+                        fort_level > 0
+                    }
+                    OR = {
+                        num_of_roads_towards_neighbors = 1
+                        AND = {
+                            num_of_roads_towards_neighbors = 2
+                            any_neighbor_province = {
+                                ruled_by_road_building_country = yes
+                                NOT = {
+                                    has_road_towards = prev
+                                }
+                                num_of_roads_towards_neighbors >= 3
+                            }
+                        }
+                    }
+                }
+                order_by = territory_priority_by_closeness_to_capital
+                min = 0
+                max = 999999
+                check_range_bounds = no
+
+                # Recheck of we haven't run out of money after previous road building
+                if = {
+                    limit = {
+                        local_var:not_enough_gold_for_road_building = 0
+                    }
+                    save_scope_as = current_road_building_territory
+                    
+                    ordered_neighbor_province = {
+                        limit = {
+                            ruled_by_road_building_country = yes
+                            NOT = {
+                                has_road_towards = scope:current_road_building_territory
+                            }
+                            num_of_roads_towards_neighbors >= 2
+                        }
+                        order_by = territory_priority_for_road_building
+                        position = 0
+                        check_range_bounds = no
+
+                        scope:current_road_building_territory = {
+                            add_road_towards = prev
+                        }
+                        scope:current_road_building_country = {
+                            add_treasury = {
+                                value = 0
+                                subtract = ai_country_build_roads_price
+                            }
+                        }
+
+                        if = {
+                            limit = {
+                                scope:current_road_building_country = {
+                                    ai_country_can_afford_to_build_10_roads = no
+                                }
+                            }
+                            # Script level flag that we ran out of money and should stop trying to build any roads
+                            set_local_variable = {
+                                name = not_enough_gold_for_road_building
+                                value = 1
+                            }
+                        }
+                    }
+
+                    clear_saved_scope = current_road_building_territory
+                }
+            }
+        }
+
+        # Recheck of we haven't run out of money after previous road building
+        if = {
+            limit = {
+                local_var:not_enough_gold_for_road_building = 0
+            }
             ordered_in_local_list = {
                 variable = states_to_connect_with_neighbors
                 order_by = state_priority_by_closeness_to_capital

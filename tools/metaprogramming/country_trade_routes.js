@@ -12,7 +12,7 @@ const cutoff = 9; // cutoff for linear evaluation
 function generateBinaryTree(start, end, good, type, indent = 12) {
   const space = ' '.repeat(indent);
   const mid = Math.floor((start + end) / 2);
-  if (start === end) return `${space}value = ${start}\n`;
+  if (start === end) return `${space}add = ${start}\n`;
 
   return (
     `${space}if = {\n` +
@@ -26,7 +26,7 @@ function generateBinaryTree(start, end, good, type, indent = 12) {
 }
 
 function generateTradeTree(type, funcName) {
-  let out = `${funcName} = {\n`;
+  let out = `${funcName} = {\n    value = 0\n`;
 
   for (const good of tradeGoods) {
     out += `    if = { limit = { country_trade_good_${type} = { target = ${good} value > 0 } }\n`;
@@ -34,7 +34,7 @@ function generateTradeTree(type, funcName) {
     // Fast early linear check for 1–9
     for (let i = 1; i <= cutoff; i++) {
       const keyword = i === 1 ? 'if' : 'else_if';
-      out += `        ${keyword} = { limit = { country_trade_good_${type} = { target = ${good} value = { ${i} ${i} } } } value = ${i} }\n`;
+      out += `        ${keyword} = { limit = { country_trade_good_${type} = { target = ${good} value = { ${i} ${i} } } } add = ${i} }\n`;
     }
 
     // Fallback to binary tree from 10–100

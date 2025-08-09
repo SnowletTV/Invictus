@@ -1,0 +1,1215 @@
+﻿ai_build_roads_with_custom_pathing = {
+    if = {
+        limit = {
+            is_ai = yes
+            has_land = yes
+            war = no
+            any_country_state = {
+                count > 1
+            }
+            ai_country_allowed_to_build_roads = yes
+            ai_country_can_afford_to_build_10_roads = yes
+        }
+
+        # Save road building country to check various data related to it layer
+        save_scope_as = current_road_building_country
+
+        # Used in various priority values to check distance_from_province, scope name must be exactly this
+        capital_scope = {
+            save_scope_as = target_province
+        }
+
+        ai_cache_required_ruled_states_data = yes
+
+        set_local_variable = {
+            name = ai_country_build_roads_price_cached
+            value = ai_country_build_roads_price
+        }
+
+        # Calculate state distance from capital in neighbour levels to use in priority value
+        capital_scope.state = {
+            ai_determine_state_depth_level = {
+                variable = state_capital_distance
+            }
+        }
+
+        set_local_variable = {
+            name = not_enough_gold_for_road_building
+            value = 0
+        }
+
+        ordered_in_local_list = {
+            variable = governorships_to_connect_with_neighbors
+            order_by = governorship_priority_by_closeness_to_capital
+            min = 0
+            max = 999999
+            check_range_bounds = no
+
+            # Recheck of we haven't run out of money after previous road building
+            if = {
+                limit = {
+                    local_var:not_enough_gold_for_road_building = 0
+                    capital_scope.var:state_contained_junction_territory = {
+                        num_of_roads_towards_neighbors < 3
+                    }
+                }
+                ai_fetch_principals_and_build_roads = yes
+            }
+        }
+
+        # Recheck of we haven't run out of money after previous road building
+        if = {
+            limit = {
+                local_var:not_enough_gold_for_road_building = 0
+            }
+            ordered_in_local_list = {
+                variable = states_to_connect_with_neighbors
+                order_by = state_priority_by_closeness_to_capital
+                min = 0
+                max = 999999
+                check_range_bounds = no
+
+                # Recheck of we haven't run out of money after previous road building
+                if = {
+                    limit = {
+                        local_var:not_enough_gold_for_road_building = 0
+                        capital_scope.var:state_contained_junction_territory = {
+                            num_of_roads_towards_neighbors < 3
+                        }
+                    }
+                    ai_fetch_junctions_and_build_roads = {
+                        destination = capital_scope.var:state_contained_junction_territory
+                        specific = 0
+                        state = scope:target_province.state
+                        processed = 0
+                    }
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                local_var:not_enough_gold_for_road_building = 0
+            }
+            ordered_in_local_list = {
+                variable = states_to_connect_with_neighbors
+                order_by = state_priority_by_closeness_to_capital
+                min = 0
+                max = 999999
+                check_range_bounds = no
+
+                # Recheck of we haven't run out of money after previous road building
+                if = {
+                    limit = {
+                        local_var:not_enough_gold_for_road_building = 0
+                        capital_scope.var:state_contained_junction_territory = {
+                            num_of_roads_towards_neighbors < 3
+                        }
+                    }
+
+                    ordered_state_province = {
+                        order_by = total_population
+                        limit = {
+                            territory_is_junction_of_its_area = no
+                            has_city_status = yes
+                        }
+                        position = 0
+                        check_range_bounds = no
+
+                        if = {
+                            limit = {
+                                territory_has_any_roads = no
+                            }
+                            
+                            ai_fetch_junctions_and_build_roads = {
+                                destination = this
+                                specific = 0
+                                state = scope:target_province.state
+                                processed = 0
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        # Clear state distance from capital
+        every_in_local_list = {
+            variable = clear_state_capital_distance
+            capital_scope = {
+                remove_variable = state_capital_distance
+            }
+        }
+        clear_local_variable_list = clear_state_capital_distance
+
+        every_in_local_list = {
+            variable = principals_with_processed_list
+            clear_variable_list = already_processed_principals
+        }
+        clear_local_variable_list = principals_with_processed_list
+
+        every_in_local_list = {
+            variable = junctions_with_processed_list
+            clear_variable_list = already_processed_junctions
+        }
+        clear_local_variable_list = junctions_with_processed_list
+
+        every_in_local_list = {
+            variable = clear_state_contained_junction_territory
+            remove_variable = state_contained_junction_territory
+        }
+        clear_local_variable_list = clear_state_contained_junction_territory
+
+        every_in_local_list = {
+            variable = states_to_connect_with_neighbors
+            capital_scope = {
+                clear_variable_list = neighbor_states_to_connect_with
+            }
+        }
+        clear_local_variable_list = states_to_connect_with_neighbors
+
+        every_in_local_list = {
+            variable = governorships_to_connect_with_neighbors
+            capital_scope = {
+                clear_variable_list = neighbor_governorships_to_connect_with
+            }
+        }
+        clear_local_variable_list = governorships_to_connect_with_neighbors
+
+        # Garbage collection
+        clear_saved_scope = current_road_building_country
+        remove_local_variable = ai_country_build_roads_price_cached
+        clear_saved_scope = target_province
+        remove_local_variable = not_enough_gold_for_road_building
+    }
+}
+
+ai_cache_required_ruled_states_data = {
+    every_country_state = {
+        ai_cache_state_junction_territory = yes
+    }
+    every_subject = {
+        limit = {
+            is_permanent_subject = yes
+        }
+        every_country_state = {
+            ai_cache_state_junction_territory = yes
+        }
+    }
+
+    every_country_state = {
+        ai_cache_ruled_neighbors_of_state = yes
+    }
+    every_subject = {
+        limit = {
+            is_permanent_subject = yes
+        }
+        every_country_state = {
+            ai_cache_ruled_neighbors_of_state = yes
+        }
+    }
+
+    every_governorships = {
+        ai_cache_governorships_to_connect = yes
+    }
+    every_subject = {
+        limit = {
+            is_permanent_subject = yes
+        }
+        every_governorships = {
+            ai_cache_governorships_to_connect = yes
+        }
+    }
+}
+
+ai_cache_state_junction_territory = {
+    area = {
+        ordered_area_province = {
+            limit = {
+                territory_is_junction_of_its_area = yes
+            }
+            order_by = territory_priority_by_id
+            position = 0
+            
+            if = {
+                limit = {
+                    NOT = {
+                        has_variable = territory_is_junction_of_its_area
+                    }
+                }
+                set_variable = territory_is_junction_of_its_area
+            }
+
+            if = {
+                limit = {
+                    exists = state
+                }
+                save_scope_as = territory_determined_as_junction
+                state.capital_scope = {
+                    set_variable = {
+                        name = state_contained_junction_territory
+                        value = scope:territory_determined_as_junction
+                    }
+                    add_to_local_variable_list = {
+                        name = clear_state_contained_junction_territory
+                        target = this
+                    }
+                }
+                clear_saved_scope = territory_determined_as_junction
+            }
+        }
+    }
+}
+
+ai_cache_ruled_neighbors_of_state = {
+    if = {
+        limit = {
+            state_contains_junction_of_its_area = yes
+        }
+        save_scope_as = state_to_check_neighbors
+
+        area = {
+            every_area_state = {
+                limit = {
+                    NOT = {
+                        this = scope:state_to_check_neighbors
+                    }
+                }
+                add_to_local_variable_list = {
+                    name = potential_state_neighbors
+                    target = this
+                }
+            }
+            every_neighbor_area = {
+                every_area_state = {
+                    add_to_local_variable_list = {
+                        name = potential_state_neighbors
+                        target = this
+                    }
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                has_non_empty_local_variable_list = {
+                    name = potential_state_neighbors
+                }
+            }
+            every_in_local_list = {
+                variable = potential_state_neighbors
+                limit = {
+                    ruled_by_road_building_country = yes
+                    state_contains_junction_of_its_area = yes
+                    state_is_neighbor_of = {
+                        state = scope:state_to_check_neighbors
+                    }
+                }
+                
+                save_scope_as = neighbor_state_to_connect
+                scope:state_to_check_neighbors.capital_scope = {
+                    add_to_variable_list = {
+                        name = neighbor_states_to_connect_with
+                        target = scope:neighbor_state_to_connect
+                    }
+                    add_to_local_variable_list = {
+                        name = states_to_connect_with_neighbors
+                        target = scope:state_to_check_neighbors
+                    }
+                }
+                clear_saved_scope = neighbor_state_to_connect
+            }
+        }
+
+        clear_local_variable_list = potential_state_neighbors
+
+        clear_saved_scope = state_to_check_neighbors
+    }
+}
+
+ai_cache_governorships_to_connect = {
+    if = {
+        limit = {
+            exists = capital_scope
+            capital_scope.state = {
+                state_is_target_for_road_building = yes
+            }
+
+            capital_scope.var:state_contained_junction_territory = {
+                num_of_roads_towards_neighbors < 3
+            }
+
+            any_governorship_state = {
+                count >= min_junctions_in_governorship_for_roads
+                state_is_target_for_road_building = yes
+            }
+        }
+        save_scope_as = governorship_to_check_neighbors
+
+        capital_scope.region = {
+            every_region_governorship = {
+                limit = {
+                    NOT = {
+                        this = scope:governorship_to_check_neighbors
+                    }
+                }
+                add_to_local_variable_list = {
+                    name = potential_governorship_neighbors
+                    target = this
+                }
+            }
+            every_neighbor_region = {
+                every_region_governorship = {
+                    add_to_local_variable_list = {
+                        name = potential_governorship_neighbors
+                        target = this
+                    }
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                has_non_empty_local_variable_list = {
+                    name = potential_governorship_neighbors
+                }
+            }
+            every_in_local_list = {
+                variable = potential_governorship_neighbors
+                limit = {
+                    ruled_by_road_building_country = yes
+
+                    exists = capital_scope
+                    capital_scope.state = {
+                        state_is_target_for_road_building = yes
+                    }
+                    
+                    any_governorship_state = {
+                        count >= min_junctions_in_governorship_for_roads
+                        state_is_target_for_road_building = yes
+                    }
+
+                    any_governorship_state = {
+                        state_is_target_for_road_building = yes
+
+                        capital_scope = {
+                            has_non_empty_variable_list = {
+                                name = neighbor_states_to_connect_with
+                            }
+                            any_in_list = {
+                                variable = neighbor_states_to_connect_with
+                                state_is_target_for_road_building = yes
+                                governorship = scope:governorship_to_check_neighbors
+                            }
+                        }
+                    }
+                }
+                
+                save_scope_as = neighbor_governorship_to_connect
+                scope:governorship_to_check_neighbors.capital_scope = {
+                    add_to_variable_list = {
+                        name = neighbor_governorships_to_connect_with
+                        target = scope:neighbor_governorship_to_connect
+                    }
+                    add_to_local_variable_list = {
+                        name = governorships_to_connect_with_neighbors
+                        target = scope:governorship_to_check_neighbors
+                    }
+                }
+                clear_saved_scope = neighbor_governorship_to_connect
+            }
+        }
+
+        clear_local_variable_list = potential_governorship_neighbors
+
+        clear_saved_scope = governorship_to_check_neighbors
+    }
+}
+
+ai_fetch_principals_and_build_roads = {
+    capital_scope.state = {
+        save_scope_as = current_destination_principal
+
+        ai_determine_principals_for_roads = yes
+        ai_determine_state_depth_level = {
+            variable = state_depth_level
+        }
+        ai_build_roads_between_principals = yes
+
+        clear_local_variable_list = principals_for_road_building
+
+        every_in_local_list = {
+            variable = clear_state_depth_level
+            capital_scope = {
+                remove_variable = state_depth_level
+            }
+        }
+        clear_local_variable_list = clear_state_depth_level
+
+        clear_saved_scope = current_destination_principal
+    }
+}
+
+ai_determine_principals_for_roads = {
+    capital_scope = {
+        ordered_in_list = {
+            variable = neighbor_governorships_to_connect_with
+            order_by = governorship_priority_by_closeness_to_capital
+            min = 0
+            max = 999999
+            check_range_bounds = no
+
+            capital_scope.state = {
+                # Try connecting with this principal only if this pair wasn't processed before
+                if = {
+                    limit = {
+                        NOR = {
+                            AND = {
+                                has_non_empty_variable_list = {
+                                    name = already_processed_principals
+                                }
+                                is_target_in_variable_list = {
+                                    name = already_processed_principals
+                                    target = scope:current_destination_principal
+                                }
+                            }
+                            scope:current_destination_principal = {
+                                has_non_empty_variable_list = {
+                                    name = already_processed_principals
+                                }
+                                is_target_in_variable_list = {
+                                    name = already_processed_principals
+                                    target = prev
+                                }
+                            }
+                        }
+                    }
+                    add_to_local_variable_list = {
+                        name = principals_for_road_building
+                        target = this
+                    }
+                }
+            }
+        }
+    }
+}
+
+ai_fetch_junctions_and_build_roads = {
+    $destination$ = {
+        save_scope_as = current_destination_junction
+
+        ai_determine_junctions_for_roads = {
+            specific = $specific$
+            state = $state$
+            processed = $processed$
+        }
+        ai_determine_territory_depth_level = yes
+        ai_build_roads_between_junctions = yes
+
+        clear_local_variable_list = junctions_for_road_building
+
+        every_in_local_list = {
+            variable = clear_territory_depth_level
+            remove_variable = territory_depth_level
+        }
+        clear_local_variable_list = clear_territory_depth_level
+
+        clear_saved_scope = current_destination_junction
+    }
+}
+
+ai_determine_junctions_for_roads = {
+    if = {
+        limit = {
+            $specific$ = 1
+        }
+        $state$ = {
+            ai_add_state_junction_to_road_list = {
+                processed = $processed$
+            }
+        }
+    }
+    else = {
+        state.capital_scope = {
+            if = {
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = neighbor_states_to_connect_with
+                    }
+                }
+                ordered_in_list = {
+                    variable = neighbor_states_to_connect_with
+                    order_by = state_priority_by_closeness_to_capital
+                    min = 0
+                    max = 999999
+                    check_range_bounds = no
+
+                    ai_add_state_junction_to_road_list = {
+                        processed = $processed$
+                    }
+                }
+            }
+        }
+    }
+}
+
+ai_add_state_junction_to_road_list = {
+    capital_scope.var:state_contained_junction_territory = {
+        # Try connecting with this junction only if this pair wasn't processed before
+        if = {
+            limit = {
+                OR = {
+                    $processed$ = 1
+                    NOR = {
+                        AND = {
+                            has_non_empty_variable_list = {
+                                name = already_processed_junctions
+                            }
+                            is_target_in_variable_list = {
+                                name = already_processed_junctions
+                                target = scope:current_destination_junction
+                            }
+                        }
+                        scope:current_destination_junction = {
+                            has_non_empty_variable_list = {
+                                name = already_processed_junctions
+                            }
+                            is_target_in_variable_list = {
+                                name = already_processed_junctions
+                                target = prev
+                            }
+                        }
+                    }
+                }
+            }
+            add_to_local_variable_list = {
+                name = junctions_for_road_building
+                target = this
+            }
+        }
+    }
+}
+
+ai_build_roads_between_principals = {
+    ordered_in_local_list = {
+        variable = principals_for_road_building
+        limit = {
+            capital_scope = {
+                has_variable = state_depth_level
+                has_non_empty_variable_list = {
+                    name = neighbor_states_to_connect_with
+                }
+            }
+        }
+        order_by = state_priority_by_closeness_to_capital
+        min = 0
+        max = 999999
+        check_range_bounds = no
+
+        # Recheck of we haven't run out of money after previous road building
+        if = {
+            limit = {
+                local_var:not_enough_gold_for_road_building = 0
+            }
+
+            # Start with the destination junction and find a path to current state junction
+            save_scope_as = current_road_building_state
+
+            # Save all processed states to a list so we wont't walk them more than once
+            capital_scope = {
+                set_variable = {
+                    name = order_of_road_building_in_state
+                    value = num_states_chosen_for_road_building
+                }
+            }
+            add_to_local_variable_list = {
+                name = states_chosen_for_road_building
+                target = this
+            }
+
+            # Emergency exist for edge cases to prevent while loop from going on 1000 times
+            set_local_variable = {
+                name = found_new_state_for_roads
+                value = 1
+            }
+
+            while = {
+                limit = {
+                    local_var:found_new_state_for_roads > 0
+                    scope:current_road_building_state = {
+                        state_depth_level_svalue > 0
+                    }
+                }
+
+                # Reset it to 0 on every iteration, update to 1 after finding new state
+                set_local_variable = {
+                    name = found_new_state_for_roads
+                    value = 0
+                }
+
+                # scope:current_road_building_state = {
+                #     debug_log = "current_road_building_state"
+                #     debug_log_scopes = yes
+                # }
+
+                scope:current_road_building_state.capital_scope = {
+                    ordered_in_list = {
+                        variable = neighbor_states_to_connect_with
+                        limit = {
+                            state_is_suitable_for_road_building = yes
+                        }
+                        order_by = state_priority_for_road_building
+                        position = 0
+                        check_range_bounds = no
+
+                        capital_scope = {
+                            set_variable = {
+                                name = order_of_road_building_in_state
+                                value = num_states_chosen_for_road_building
+                            }
+                        }
+                        
+                        # Save current state as previous to track pairs, then set this one as current
+                        scope:current_road_building_state = {
+                            save_scope_as = previous_road_building_state
+                        }
+                        save_scope_as = current_road_building_state
+
+                        # Mark that we were able to find some new state and while loop can continue
+                        set_local_variable = {
+                            name = found_new_state_for_roads
+                            value = 1
+                        }
+
+                        # Save all processed states to a list so we wont't walk them more than once
+                        add_to_local_variable_list = {
+                            name = states_chosen_for_road_building
+                            target = this
+                        }
+                    }
+                }
+
+                # if = {
+                #     limit = {
+                #         local_var:found_new_state_for_roads = 0
+                #     }
+                #     debug_log = "ROADS STATES COULDNT PATHFIND"
+                #     debug_log_scopes = yes
+                # }
+            }
+
+            if = {
+                limit = {
+                    local_var:found_new_state_for_roads > 0
+                }
+                ordered_in_local_list = {
+                    variable = states_chosen_for_road_building
+                    order_by = capital_scope.var:order_of_road_building_in_state
+                    min = 0
+                    max = 999999
+                    check_range_bounds = no
+
+                    if = {
+                        limit = {
+                            exists = scope:state_for_junction_connection
+                        }
+                        ai_fetch_junctions_and_build_roads = {
+                            destination = capital_scope.var:state_contained_junction_territory
+                            specific = 1
+                            state = scope:state_for_junction_connection
+                            processed = 1
+                        }
+                    }
+
+                    save_scope_as = state_for_junction_connection
+                }
+                clear_saved_scope = state_for_junction_connection
+            }
+            
+            every_in_local_list = {
+                variable = states_chosen_for_road_building
+                limit = {
+                    capital_scope = {
+                        has_variable = order_of_road_building_in_state
+                    }
+                }
+                capital_scope = {
+                    remove_variable = order_of_road_building_in_state
+                }
+            }
+
+
+
+            # Mark that we already (or rather will very soon) processed this pair of principals
+            add_to_variable_list = {
+                name = already_processed_principals
+                target = scope:current_destination_principal
+            }
+            scope:current_destination_principal = {
+                add_to_variable_list = {
+                    name = already_processed_principals
+                    target = prev
+                }
+            }
+            # Save it to list so we don't need to every_owned_province to clear already_processed_principals
+            add_to_local_variable_list = {
+                name = principals_with_processed_list
+                target = this
+            }
+            add_to_local_variable_list = {
+                name = principals_with_processed_list
+                target = scope:current_destination_principal
+            }
+
+
+
+
+            # Garbage collection
+            clear_saved_scope = current_road_building_state
+            clear_saved_scope = previous_road_building_state
+            clear_local_variable_list = states_chosen_for_road_building
+            remove_local_variable = found_new_state_for_roads
+        }
+    }
+}
+
+ai_build_roads_between_junctions = {
+    ordered_in_local_list = {
+        variable = junctions_for_road_building
+        limit = {
+            has_variable = territory_depth_level
+        }
+        order_by = territory_priority_by_closeness_to_capital
+        min = 0
+        max = 999999
+        check_range_bounds = no
+
+        # Recheck of we haven't run out of money after previous road building
+        if = {
+            limit = {
+                local_var:not_enough_gold_for_road_building = 0
+            }
+
+            # Start with the destination junction and find a path to current state junction
+            save_scope_as = current_road_building_territory
+
+            # Save all processed territories to a list so we wont't walk them more than once
+            add_to_local_variable_list = {
+                name = territories_chosen_for_road_building
+                target = this
+            }
+
+            # Emergency exist for edge cases to prevent while loop from going on 1000 times
+            set_local_variable = {
+                name = found_new_territory_for_road
+                value = 1
+            }
+
+            while = {
+                limit = {
+                    local_var:found_new_territory_for_road > 0
+                    scope:current_road_building_territory = {
+                        territory_depth_level_svalue > 0
+                    }
+                }
+
+                # Reset it to 0 on every iteration, update to 1 after finding new territory
+                set_local_variable = {
+                    name = found_new_territory_for_road
+                    value = 0
+                }
+
+                # scope:current_road_building_territory = {
+                #     debug_log = "current_road_building_territory"
+                #     debug_log_scopes = yes
+                # }
+
+                scope:current_road_building_territory = {
+                    ordered_neighbor_province = {
+                        limit = {
+                            territory_is_suitable_for_road_building = yes
+                        }
+                        order_by = territory_priority_for_road_building
+                        position = 0
+                        check_range_bounds = no
+
+                        if = {
+                            limit = {
+                                NOT = {
+                                    has_road_towards = scope:current_road_building_territory
+                                }
+                            }
+                            add_to_variable_list = {
+                                name = territories_to_build_roads_towards
+                                target = scope:current_road_building_territory
+                            }
+                        }
+                        
+                        # Save current territory as previous to track pairs, then set this one as current
+                        if = {
+                            limit = {
+                                exists = scope:previous_road_building_territory
+                            }
+                            scope:previous_road_building_territory = {
+                                save_scope_as = prevprev_road_building_territory
+                            }
+                        }
+                        scope:current_road_building_territory = {
+                            save_scope_as = previous_road_building_territory
+                        }
+                        save_scope_as = current_road_building_territory
+
+                        # Mark that we were able to find some new territory and while loop can continue
+                        set_local_variable = {
+                            name = found_new_territory_for_road
+                            value = 1
+                        }
+
+                        # Save all processed territories to a list so we wont't walk them more than once
+                        add_to_local_variable_list = {
+                            name = territories_chosen_for_road_building
+                            target = this
+                        }
+                    }
+                }
+
+                # if = {
+                #     limit = {
+                #         local_var:found_new_territory_for_road = 0
+                #     }
+                #     debug_log = "ROADS TERRITORIES COULDNT PATHFIND"
+                #     debug_log_scopes = yes
+                # }
+            }
+
+            if = {
+                limit = {
+                    scope:current_road_building_country = {
+                        ai_country_can_afford_to_build_planned_roads = yes
+                    }
+                }
+                every_in_local_list = {
+                    variable = territories_chosen_for_road_building
+                    limit = {
+                        has_non_empty_variable_list = {
+                            name = territories_to_build_roads_towards
+                        }
+                    }
+                    save_scope_as = territory_to_build_road_from
+                    every_in_list = {
+                        variable = territories_to_build_roads_towards
+                        scope:territory_to_build_road_from = {
+                            add_road_towards = prev
+                        }
+                        scope:current_road_building_country = {
+                            add_treasury = {
+                                value = 0
+                                subtract = ai_country_build_roads_price
+                            }
+                        }
+                    }
+                    clear_saved_scope = territory_to_build_road_from
+                }
+            }
+            else = {
+                # Script level flag that we ran out of money and should stop trying to build any roads
+                set_local_variable = {
+                    name = not_enough_gold_for_road_building
+                    value = 1
+                }
+            }
+
+            if = {
+                limit = {
+                    scope:current_road_building_country = {
+                        ai_country_can_afford_to_build_10_roads = no
+                    }
+                }
+                # Script level flag that we ran out of money and should stop trying to build any roads
+                set_local_variable = {
+                    name = not_enough_gold_for_road_building
+                    value = 1
+                }
+            }
+            
+            every_in_local_list = {
+                variable = territories_chosen_for_road_building
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = territories_to_build_roads_towards
+                    }
+                }
+                clear_variable_list = territories_to_build_roads_towards
+            }
+            
+            # Mark that we already (or rather will very soon) processed this pair of junctions
+            add_to_variable_list = {
+                name = already_processed_junctions
+                target = scope:current_destination_junction
+            }
+            scope:current_destination_junction = {
+                add_to_variable_list = {
+                    name = already_processed_junctions
+                    target = prev
+                }
+            }
+            # Save it to list so we don't need to every_owned_province to clear already_processed_junctions
+            add_to_local_variable_list = {
+                name = junctions_with_processed_list
+                target = this
+            }
+            add_to_local_variable_list = {
+                name = junctions_with_processed_list
+                target = scope:current_destination_junction
+            }
+
+            # Garbage collection
+            clear_saved_scope = current_road_building_territory
+            clear_saved_scope = previous_road_building_territory
+            clear_saved_scope = prevprev_road_building_territory
+            clear_local_variable_list = territories_chosen_for_road_building
+            remove_local_variable = found_new_territory_for_road
+        }
+    }
+}
+
+
+
+
+
+ai_determine_state_depth_level = {
+    # Initiate state depth calculations starting from destination junction
+    capital_scope = {
+        set_variable = {
+            name = $variable$
+            value = 0
+        }
+    }
+    add_to_local_variable_list = {
+        name = states_of_current_level
+        target = this
+    }
+
+    # Save it to list so we don't need to every_owned_province to clear state_depth_level
+    add_to_local_variable_list = {
+        name = clear_$variable$
+        target = this
+    }
+
+    # Track it separately in local variable to use it easily as while limit and to set new variables
+    set_local_variable = {
+        name = current_state_depth_level
+        value = 0
+    }
+
+    # Try all neigbours level by level, forming state depth map to use in pathfinding algorithm later
+    while = {
+        limit = {
+            local_var:current_state_depth_level < road_building_state_search_depth
+            has_non_empty_local_variable_list = {
+                name = states_of_current_level
+            }
+            has_non_empty_local_variable_list = {
+                name = principals_for_road_building
+            }
+            any_in_local_list = {
+                variable = principals_for_road_building
+                NOT = {
+                    has_variable = $variable$
+                }
+            }
+        }
+
+        ordered_in_local_list = {
+            variable = states_of_current_level
+            limit = {
+                capital_scope = {
+                    has_non_empty_variable_list = {
+                        name = neighbor_states_to_connect_with
+                    }
+                }
+            }
+            order_by = state_priority_by_id
+            min = 0
+            max = 999999
+            check_range_bounds = no
+
+            capital_scope = {
+                ordered_in_list = {
+                    variable = neighbor_states_to_connect_with
+                    limit = {
+                        NOT = {
+                            capital_scope = {
+                                has_variable = $variable$
+                            }
+                        }
+                    }
+
+                    order_by = state_priority_by_id
+                    min = 0
+                    max = 999999
+                    check_range_bounds = no
+
+                    # Set corresponding depth level as state variable
+                    capital_scope = {
+                        set_variable = {
+                            name = $variable$
+                            value = {
+                                value = local_var:current_state_depth_level
+                                add = 1
+                            }
+                        }
+                    }
+                    # Add to list of the states whose neighbours will be processed in the next iteration
+                    add_to_local_variable_list = {
+                        name = states_of_next_level
+                        target = this
+                    }
+                    # Save it to list so we don't need to every_owned_province to clear state_depth_level
+                    add_to_local_variable_list = {
+                        name = clear_$variable$
+                        target = this
+                    }
+                }
+            }
+        }
+
+        # Set next level states as current level for the next iteration 
+        clear_local_variable_list = states_of_current_level
+        every_in_local_list = {
+            variable = states_of_next_level
+            add_to_local_variable_list = {
+                name = states_of_current_level
+                target = this
+            }
+        }
+        clear_local_variable_list = states_of_next_level
+
+        # Increment local variable with current state depth level
+        change_local_variable = {
+            name = current_state_depth_level
+            add = 1
+        }
+    }
+
+    # Garbage collection
+    clear_local_variable_list = states_of_current_level
+    remove_local_variable = current_state_depth_level
+}
+
+ai_determine_territory_depth_level = {
+    # Initiate territory depth calculations starting from destination junction
+    set_variable = {
+        name = territory_depth_level
+        value = 0
+    }
+    add_to_local_variable_list = {
+        name = territories_of_current_level
+        target = this
+    }
+
+    # Save it to list so we don't need to every_owned_province to clear territory_depth_level
+    add_to_local_variable_list = {
+        name = clear_territory_depth_level
+        target = this
+    }
+
+    # Track it separately in local variable to use it easily as while limit and to set new variables
+    set_local_variable = {
+        name = current_territory_depth_level
+        value = 0
+    }
+
+    # Try all neigbours level by level, forming territory depth map to use in pathfinding algorithm later
+    while = {
+        limit = {
+            local_var:current_territory_depth_level < road_building_territory_search_depth
+            has_non_empty_local_variable_list = {
+                name = territories_of_current_level
+            }
+            has_non_empty_local_variable_list = {
+                name = junctions_for_road_building
+            }
+            any_in_local_list = {
+                variable = junctions_for_road_building
+                NOT = {
+                    has_variable = territory_depth_level
+                }
+            }
+        }
+
+        ordered_in_local_list = {
+            variable = territories_of_current_level
+            order_by = territory_priority_by_id
+            min = 0
+            max = 999999
+            check_range_bounds = no
+
+            ordered_neighbor_province = {
+                limit = {
+                    # Only land territories that armies can walk on
+                    is_water = no
+                    NOT = {
+                        terrain = impassable_terrain
+                    }
+                    # Not processed previously
+                    NOT = {
+                        has_variable = territory_depth_level
+                    }
+                    OR = {
+                        # Uncolonized and uninhabitable territories
+                        NOT = {
+                            exists = owner
+                        }
+                        # Must be owned either by the country itself or its subject with subject_can_cancel = no
+                        ruled_by_road_building_country = yes
+                    }
+                }
+                order_by = territory_priority_by_id
+                min = 0
+                max = 999999
+                check_range_bounds = no
+                
+                # Set corresponding depth level as territory variable
+                set_variable = {
+                    name = territory_depth_level
+                    value = {
+                        value = local_var:current_territory_depth_level
+                        add = 1
+                    }
+                }
+                # Add to list of the territories whose neighbours will be processed in the next iteration
+                add_to_local_variable_list = {
+                    name = territories_of_next_level
+                    target = this
+                }
+                # Save it to list so we don't need to every_owned_province to clear territory_depth_level
+                add_to_local_variable_list = {
+                    name = clear_territory_depth_level
+                    target = this
+                }
+            }
+        }
+
+        # Set next level territories as current level for the next iteration 
+        clear_local_variable_list = territories_of_current_level
+        every_in_local_list = {
+            variable = territories_of_next_level
+            add_to_local_variable_list = {
+                name = territories_of_current_level
+                target = this
+            }
+        }
+        clear_local_variable_list = territories_of_next_level
+
+        # Increment local variable with current territory depth level
+        change_local_variable = {
+            name = current_territory_depth_level
+            add = 1
+        }
+    }
+
+    # Garbage collection
+    clear_local_variable_list = territories_of_current_level
+    remove_local_variable = current_territory_depth_level
+}

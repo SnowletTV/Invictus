@@ -1,0 +1,393 @@
+﻿ai_country_allowed_to_build_roads = {
+    OR = {
+        has_military_bonus = latin_roman_path_4
+		civic_tech > 4
+    }
+    any_unit = {
+        ai_unit_qualifies_for_building_roads = yes
+    }
+}
+
+ai_unit_qualifies_for_building_roads = {
+    # Vanilla road_building unit ability requirements
+    is_army = yes
+    trigger_if = {
+        limit = {
+            unit_owner = {
+                has_military_bonus = latin_roman_path_4
+            }
+        }
+        unit_size >= 5
+    }
+    trigger_else = {
+        unit_size >= 10
+    }
+    in_combat = no
+    is_moving = no
+    is_exiled = no
+    trigger_if = {
+        limit = {
+            exists = commander
+        }
+        commander = {
+            loyalty > 33
+        }
+    }
+    # Additional requirement to filter tribes and minors
+    is_legion_unit = yes
+}
+
+ai_country_can_afford_to_build_1_road = {
+    trigger_if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
+        }
+        treasury >= ai_wartime_fund_and_1_road
+    }
+    trigger_else = {
+        treasury >= ai_minimal_buffer_and_1_road
+    }
+}
+
+ai_country_can_afford_to_build_10_roads = {
+    trigger_if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
+        }
+        treasury >= ai_wartime_fund_and_10_roads
+    }
+    trigger_else = {
+        treasury >= ai_minimal_buffer_and_10_roads
+    }
+}
+
+ai_country_can_afford_to_build_planned_roads = {
+    trigger_if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
+        }
+        treasury >= ai_wartime_fund_and_planned_roads
+    }
+    trigger_else = {
+        treasury >= ai_minimal_buffer_and_planned_roads
+    }
+}
+
+state_contains_junction_of_its_area = {
+    capital_scope = {
+        has_variable = state_contained_junction_territory
+    }
+    save_temporary_scope_as = state_that_might_contain
+    capital_scope.var:state_contained_junction_territory = {
+        exists = state
+        state = scope:state_that_might_contain
+    }
+}
+
+territory_has_any_roads = {
+    num_of_roads_towards_neighbors > 0
+}
+
+state_contains_junction_with_roads = {
+    state_contains_junction_of_its_area = yes
+    capital_scope.var:state_contained_junction_territory = {
+        territory_has_any_roads = yes
+    }
+}
+
+state_is_target_for_road_building = {
+    is_target_in_local_variable_list = {
+        name = states_to_connect_with_neighbors
+        target = this
+    }
+}
+
+ruled_by_road_building_country = {
+    exists = owner
+    owner = {
+        OR = {
+            this = scope:current_road_building_country
+            AND = {
+                is_subject_of = scope:current_road_building_country
+                is_permanent_subject = yes
+            }
+        }
+    }
+}
+
+is_permanent_subject = {
+    is_subject = yes
+    NOR = {
+        is_subject_type = vassal_tribe
+        is_subject_type = tributary
+    }
+}
+
+territory_is_junction_of_its_area = {
+    is_water = no
+    save_temporary_scope_as = evaluated_territory
+
+    # Variable based junction overrides everything
+    trigger_if = {
+        limit = {
+            area = {
+                any_area_province = {
+                    has_variable = territory_is_junction_of_its_area
+                }
+            }
+        }
+        has_variable = territory_is_junction_of_its_area
+    }
+    trigger_else = {
+        OR = {
+            is_island_territory = no
+            NOT = {
+                area = {
+                    any_area_province = {
+                        is_island_territory = no
+                    }
+                }
+            }
+        }
+
+        # For areas with a lot of pre-existing roads choose territory with the highest amount of them
+        trigger_if = {
+            limit = {
+                area = {
+                    any_area_province = {
+                        num_of_roads_towards_neighbors >= 4
+                    }
+                }
+            }
+            NOT = {
+                area = {
+                    any_area_province = {
+                        OR = {
+                            num_of_roads_towards_neighbors > scope:evaluated_territory.num_of_roads_towards_neighbors
+                            AND = {
+                                num_of_roads_towards_neighbors = scope:evaluated_territory.num_of_roads_towards_neighbors
+                                # Resolve draws by highest territory priority
+                                territory_priority_by_id > scope:evaluated_territory.territory_priority_by_id
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        # In most cases it must be a capital of a state with the highest junction priority
+        trigger_else_if = {
+            limit = {
+                area = {
+                    any_area_state = {
+                        count > 0
+                    }
+                }
+            }
+            exists = state
+            state = {
+                exists = capital_scope
+                capital_scope = scope:evaluated_territory
+                NOT = {
+                    area = {
+                        any_area_state = {
+                            NOT = {
+                                this = scope:evaluated_territory.state
+                            }
+                            state_priority_for_junction > scope:evaluated_territory.state.state_priority_for_junction
+                        }
+                    }
+                }
+            }
+        }
+        # As a fallback simply choose a territory with the highest population
+        trigger_else = {
+            NOT = {
+                area = {
+                    any_area_province = {
+                        OR = {
+                            total_population > scope:evaluated_territory.total_population
+                            AND = {
+                                total_population = scope:evaluated_territory.total_population
+                                # Resolve draws by highest territory priority
+                                territory_priority_by_id > scope:evaluated_territory.territory_priority_by_id
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+state_is_neighbor_of = {
+    NOT = {
+        this = $state$
+    }
+    any_state_province = {
+        any_neighbor_province = {
+            exists = state
+            state = $state$
+        }
+    }
+}
+
+state_is_suitable_for_road_building = {
+    state_is_eligible_for_road_building = yes
+
+    # Less depth means we are getting closer to a target which is always good
+    trigger_if = {
+        limit = {
+            has_less_depth_than_current_state = yes
+        }
+        always = yes
+    }
+
+    # Same depth means we are not progressing, but it can be allowed conditionally
+    trigger_else_if = {
+        limit = {
+            has_same_depth_as_current_state = yes
+        }
+
+        # Only allow this if it has road to current state in order to use existing ones better
+        state_contains_junction_with_roads = yes
+
+        # Only allow this if it's not the case for the previous pair, otherwise can make a circle
+        previous_state_has_same_depth_as_current = no
+    }
+
+    # Don't go back in depth because it may lead to zig-zaging and other fun stuff
+    trigger_else = {
+        always = no
+    }
+}
+
+state_is_eligible_for_road_building = {
+    state_depth_level_svalue > -1
+    NOT = {
+        is_target_in_local_variable_list = {
+            name = states_chosen_for_road_building
+            target = this
+        }
+    }
+}
+
+has_same_depth_as_current_state = {
+    state_depth_level_svalue > -1
+    state_depth_level_svalue = scope:current_road_building_state.state_depth_level_svalue
+}
+
+previous_state_has_same_depth_as_current = {
+    exists = scope:previous_road_building_state
+    scope:previous_road_building_state = {
+        has_same_depth_as_current_state = yes
+    }
+}
+
+has_less_depth_than_current_state = {
+    state_depth_level_svalue > -1
+    state_depth_level_svalue < scope:current_road_building_state.state_depth_level_svalue
+}
+
+territory_is_suitable_for_road_building = {
+    territory_is_eligible_for_road_building = yes
+
+    # Less depth means we are getting closer to a target which is always good
+    trigger_if = {
+        limit = {
+            has_less_depth_than_current_territory = yes
+        }
+        always = yes
+    }
+
+    # Same depth means we are not progressing, but it can be allowed conditionally
+    trigger_else_if = {
+        limit = {
+            has_same_depth_as_current_territory = yes
+        }
+
+        # Only allow this if it has road to current territory in order to use existing ones better
+        has_or_will_have_road_towards = {
+            territory = scope:current_road_building_territory
+        }
+
+        # Only allow this if it's not the case for the previous pair, otherwise can make a circle
+        OR = {
+            previous_territory_has_same_depth_as_current = no
+            prevprev_territory_has_same_depth_as_previous = no
+        }
+    }
+
+    # Don't go back in depth because it may lead to zig-zaging and other fun stuff
+    trigger_else = {
+        always = no
+    }
+}
+
+territory_is_eligible_for_road_building = {
+    has_variable = territory_depth_level
+    NOT = {
+        is_target_in_local_variable_list = {
+            name = territories_chosen_for_road_building
+            target = this
+        }
+    }
+}
+
+has_or_will_have_road_towards = {
+    OR = {
+        has_road_towards = $territory$
+        $territory$ = {
+            has_road_towards = prev
+        }
+        AND = {
+            has_non_empty_variable_list = {
+                name = territories_to_build_roads_towards
+            }
+            is_target_in_variable_list = {
+                name = territories_to_build_roads_towards
+                target = $territory$
+            }
+        }
+        $territory$ = {
+            has_non_empty_variable_list = {
+                name = territories_to_build_roads_towards
+            }
+            is_target_in_variable_list = {
+                name = territories_to_build_roads_towards
+                target = prev
+            }
+        }
+    }
+}
+
+has_same_depth_as_current_territory = {
+    has_variable = territory_depth_level
+    territory_depth_level_svalue = scope:current_road_building_territory.territory_depth_level_svalue
+}
+
+previous_territory_has_same_depth_as_current = {
+    exists = scope:previous_road_building_territory
+    scope:previous_road_building_territory = {
+        has_same_depth_as_current_territory = yes
+    }
+}
+
+prevprev_territory_has_same_depth_as_previous = {
+    exists = scope:previous_road_building_territory
+    exists = scope:prevprev_road_building_territory
+    scope:previous_road_building_territory.territory_depth_level_svalue = scope:prevprev_road_building_territory.territory_depth_level_svalue
+}
+
+has_less_depth_than_current_territory = {
+    has_variable = territory_depth_level
+    territory_depth_level_svalue < scope:current_road_building_territory.territory_depth_level_svalue
+}

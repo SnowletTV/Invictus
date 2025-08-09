@@ -1,253 +1,273 @@
 ﻿ai_build_roads_with_custom_pathing = {
-    # Save road building country to check various data related to it layer
-    save_scope_as = current_road_building_country
-
-    # Used in various priority values to check distance_from_province, scope name must be exactly this
-    capital_scope = {
-        save_scope_as = target_province
-    }
-
-    ai_cache_required_ruled_states_data = yes
-
-    set_local_variable = {
-        name = ai_country_build_roads_price_cached
-        value = ai_country_build_roads_price
-    }
-
-    # Calculate state distance from capital in neighbour levels to use in priority value
-    capital_scope.state = {
-        ai_determine_state_depth_level = {
-            variable = state_capital_distance
+    if = {
+        limit = {
+            is_ai = yes
+            has_land = yes
+            war = no
+            NOT = {
+                has_variable = ai_built_roads_with_custom_pathing
+            }
+            any_country_state = {
+                count > 1
+            }
+            ai_country_allowed_to_build_roads = yes
+            ai_country_can_afford_to_build_10_roads = yes
         }
-    }
+        set_variable = {
+            name = ai_built_roads_with_custom_pathing
+            days = 345 # 11.5 months - every year
+        }
 
-    set_local_variable = {
-        name = not_enough_gold_for_road_building
-        value = 0
-    }
+        # Save road building country to check various data related to it layer
+        save_scope_as = current_road_building_country
 
-    ordered_in_local_list = {
-        variable = governorships_to_connect_with_neighbors
-        order_by = governorship_priority_by_closeness_to_capital
-        min = 0
-        max = 999999
-        check_range_bounds = no
+        # Used in various priority values to check distance_from_province, scope name must be exactly this
+        capital_scope = {
+            save_scope_as = target_province
+        }
+
+        ai_cache_required_ruled_states_data = yes
+
+        set_local_variable = {
+            name = ai_country_build_roads_price_cached
+            value = ai_country_build_roads_price
+        }
+
+        # Calculate state distance from capital in neighbour levels to use in priority value
+        capital_scope.state = {
+            ai_determine_state_depth_level = {
+                variable = state_capital_distance
+            }
+        }
+
+        set_local_variable = {
+            name = not_enough_gold_for_road_building
+            value = 0
+        }
+
+        ordered_in_local_list = {
+            variable = governorships_to_connect_with_neighbors
+            order_by = governorship_priority_by_closeness_to_capital
+            min = 0
+            max = 999999
+            check_range_bounds = no
+
+            # Recheck of we haven't run out of money after previous road building
+            if = {
+                limit = {
+                    local_var:not_enough_gold_for_road_building = 0
+                    capital_scope.var:state_contained_junction_territory = {
+                        num_of_roads_towards_neighbors < 3
+                    }
+                }
+                ai_fetch_principals_and_build_roads = yes
+            }
+        }
 
         # Recheck of we haven't run out of money after previous road building
         if = {
             limit = {
                 local_var:not_enough_gold_for_road_building = 0
-                capital_scope.var:state_contained_junction_territory = {
-                    num_of_roads_towards_neighbors < 3
-                }
             }
-            ai_fetch_principals_and_build_roads = yes
-        }
-    }
-
-    # Recheck of we haven't run out of money after previous road building
-    if = {
-        limit = {
-            local_var:not_enough_gold_for_road_building = 0
-        }
-        ordered_owned_province = {
-            limit = {
-                OR = {
-                    is_state_capital = yes
-                    has_city_status = yes
-                    fort_level > 0
+            ordered_owned_province = {
+                limit = {
+                    OR = {
+                        is_state_capital = yes
+                        has_city_status = yes
+                        fort_level > 0
+                    }
+                    OR = {
+                        num_of_roads_towards_neighbors = 1
+                        AND = {
+                            num_of_roads_towards_neighbors = 2
+                            any_neighbor_province = {
+                                ruled_by_road_building_country = yes
+                                NOT = {
+                                    has_road_towards = prev
+                                }
+                                num_of_roads_towards_neighbors >= 3
+                            }
+                        }
+                    }
                 }
-                OR = {
-                    num_of_roads_towards_neighbors = 1
-                    AND = {
-                        num_of_roads_towards_neighbors = 2
-                        any_neighbor_province = {
+                order_by = territory_priority_by_closeness_to_capital
+                min = 0
+                max = 999999
+                check_range_bounds = no
+
+                # Recheck of we haven't run out of money after previous road building
+                if = {
+                    limit = {
+                        local_var:not_enough_gold_for_road_building = 0
+                    }
+                    save_scope_as = current_road_building_territory
+
+                    ordered_neighbor_province = {
+                        limit = {
                             ruled_by_road_building_country = yes
                             NOT = {
-                                has_road_towards = prev
+                                has_road_towards = scope:current_road_building_territory
                             }
-                            num_of_roads_towards_neighbors >= 3
+                            num_of_roads_towards_neighbors >= 2
                         }
-                    }
-                }
-            }
-            order_by = territory_priority_by_closeness_to_capital
-            min = 0
-            max = 999999
-            check_range_bounds = no
+                        order_by = territory_priority_for_road_building
+                        position = 0
+                        check_range_bounds = no
 
-            # Recheck of we haven't run out of money after previous road building
-            if = {
-                limit = {
-                    local_var:not_enough_gold_for_road_building = 0
-                }
-                save_scope_as = current_road_building_territory
-
-                ordered_neighbor_province = {
-                    limit = {
-                        ruled_by_road_building_country = yes
-                        NOT = {
-                            has_road_towards = scope:current_road_building_territory
+                        scope:current_road_building_territory = {
+                            add_road_towards = prev
                         }
-                        num_of_roads_towards_neighbors >= 2
-                    }
-                    order_by = territory_priority_for_road_building
-                    position = 0
-                    check_range_bounds = no
-
-                    scope:current_road_building_territory = {
-                        add_road_towards = prev
-                    }
-                    scope:current_road_building_country = {
-                        add_treasury = {
-                            value = 0
-                            subtract = ai_country_build_roads_price
-                        }
-                    }
-
-                    if = {
-                        limit = {
-                            scope:current_road_building_country = {
-                                ai_country_can_afford_to_build_10_roads = no
+                        scope:current_road_building_country = {
+                            add_treasury = {
+                                value = 0
+                                subtract = ai_country_build_roads_price
                             }
                         }
-                        # Script level flag that we ran out of money and should stop trying to build any roads
-                        set_local_variable = {
-                            name = not_enough_gold_for_road_building
-                            value = 1
+
+                        if = {
+                            limit = {
+                                scope:current_road_building_country = {
+                                    ai_country_can_afford_to_build_10_roads = no
+                                }
+                            }
+                            # Script level flag that we ran out of money and should stop trying to build any roads
+                            set_local_variable = {
+                                name = not_enough_gold_for_road_building
+                                value = 1
+                            }
                         }
                     }
-                }
 
-                clear_saved_scope = current_road_building_territory
-            }
-        }
-    }
-
-    # Recheck of we haven't run out of money after previous road building
-    if = {
-        limit = {
-            local_var:not_enough_gold_for_road_building = 0
-        }
-        ordered_in_local_list = {
-            variable = states_to_connect_with_neighbors
-            order_by = state_priority_by_closeness_to_capital
-            min = 0
-            max = 999999
-            check_range_bounds = no
-
-            # Recheck of we haven't run out of money after previous road building
-            if = {
-                limit = {
-                    local_var:not_enough_gold_for_road_building = 0
-                    capital_scope.var:state_contained_junction_territory = {
-                        num_of_roads_towards_neighbors < 3
-                    }
-                }
-                ai_fetch_junctions_and_build_roads = {
-                    destination = capital_scope.var:state_contained_junction_territory
-                    specific = 0
-                    state = scope:target_province.state
-                    processed = 0
+                    clear_saved_scope = current_road_building_territory
                 }
             }
         }
-    }
 
-    if = {
-        limit = {
-            local_var:not_enough_gold_for_road_building = 0
-        }
-        ordered_in_local_list = {
-            variable = states_to_connect_with_neighbors
-            order_by = state_priority_by_closeness_to_capital
-            min = 0
-            max = 999999
-            check_range_bounds = no
+        # Recheck of we haven't run out of money after previous road building
+        if = {
+            limit = {
+                local_var:not_enough_gold_for_road_building = 0
+            }
+            ordered_in_local_list = {
+                variable = states_to_connect_with_neighbors
+                order_by = state_priority_by_closeness_to_capital
+                min = 0
+                max = 999999
+                check_range_bounds = no
 
-            # Recheck of we haven't run out of money after previous road building
-            if = {
-                limit = {
-                    local_var:not_enough_gold_for_road_building = 0
-                    capital_scope.var:state_contained_junction_territory = {
-                        num_of_roads_towards_neighbors < 3
-                    }
-                }
-
-                ordered_state_province = {
-                    order_by = total_population
+                # Recheck of we haven't run out of money after previous road building
+                if = {
                     limit = {
-                        territory_is_junction_of_its_area = no
-                        has_city_status = yes
-                    }
-                    position = 0
-                    check_range_bounds = no
-
-                    if = {
-                        limit = {
-                            territory_has_any_roads = no
+                        local_var:not_enough_gold_for_road_building = 0
+                        capital_scope.var:state_contained_junction_territory = {
+                            num_of_roads_towards_neighbors < 3
                         }
-                        
-                        ai_fetch_junctions_and_build_roads = {
-                            destination = this
-                            specific = 0
-                            state = scope:target_province.state
-                            processed = 0
+                    }
+                    ai_fetch_junctions_and_build_roads = {
+                        destination = capital_scope.var:state_contained_junction_territory
+                        specific = 0
+                        state = scope:target_province.state
+                        processed = 0
+                    }
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                local_var:not_enough_gold_for_road_building = 0
+            }
+            ordered_in_local_list = {
+                variable = states_to_connect_with_neighbors
+                order_by = state_priority_by_closeness_to_capital
+                min = 0
+                max = 999999
+                check_range_bounds = no
+
+                # Recheck of we haven't run out of money after previous road building
+                if = {
+                    limit = {
+                        local_var:not_enough_gold_for_road_building = 0
+                        capital_scope.var:state_contained_junction_territory = {
+                            num_of_roads_towards_neighbors < 3
+                        }
+                    }
+
+                    ordered_state_province = {
+                        order_by = total_population
+                        limit = {
+                            territory_is_junction_of_its_area = no
+                            has_city_status = yes
+                        }
+                        position = 0
+                        check_range_bounds = no
+
+                        if = {
+                            limit = {
+                                territory_has_any_roads = no
+                            }
+                            
+                            ai_fetch_junctions_and_build_roads = {
+                                destination = this
+                                specific = 0
+                                state = scope:target_province.state
+                                processed = 0
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    # Clear state distance from capital
-    every_in_local_list = {
-        variable = clear_state_capital_distance
-        capital_scope = {
-            remove_variable = state_capital_distance
+        # Clear state distance from capital
+        every_in_local_list = {
+            variable = clear_state_capital_distance
+            capital_scope = {
+                remove_variable = state_capital_distance
+            }
         }
-    }
-    clear_local_variable_list = clear_state_capital_distance
+        clear_local_variable_list = clear_state_capital_distance
 
-    every_in_local_list = {
-        variable = principals_with_processed_list
-        clear_variable_list = already_processed_principals
-    }
-    clear_local_variable_list = principals_with_processed_list
-
-    every_in_local_list = {
-        variable = junctions_with_processed_list
-        clear_variable_list = already_processed_junctions
-    }
-    clear_local_variable_list = junctions_with_processed_list
-
-    every_in_local_list = {
-        variable = clear_state_contained_junction_territory
-        remove_variable = state_contained_junction_territory
-    }
-    clear_local_variable_list = clear_state_contained_junction_territory
-
-    every_in_local_list = {
-        variable = states_to_connect_with_neighbors
-        capital_scope = {
-            clear_variable_list = neighbor_states_to_connect_with
+        every_in_local_list = {
+            variable = principals_with_processed_list
+            clear_variable_list = already_processed_principals
         }
-    }
-    clear_local_variable_list = states_to_connect_with_neighbors
+        clear_local_variable_list = principals_with_processed_list
 
-    every_in_local_list = {
-        variable = governorships_to_connect_with_neighbors
-        capital_scope = {
-            clear_variable_list = neighbor_governorships_to_connect_with
+        every_in_local_list = {
+            variable = junctions_with_processed_list
+            clear_variable_list = already_processed_junctions
         }
-    }
-    clear_local_variable_list = governorships_to_connect_with_neighbors
+        clear_local_variable_list = junctions_with_processed_list
 
-    # Garbage collection
-    clear_saved_scope = current_road_building_country
-    remove_local_variable = ai_country_build_roads_price_cached
-    clear_saved_scope = target_province
-    remove_local_variable = not_enough_gold_for_road_building
+        every_in_local_list = {
+            variable = clear_state_contained_junction_territory
+            remove_variable = state_contained_junction_territory
+        }
+        clear_local_variable_list = clear_state_contained_junction_territory
+
+        every_in_local_list = {
+            variable = states_to_connect_with_neighbors
+            capital_scope = {
+                clear_variable_list = neighbor_states_to_connect_with
+            }
+        }
+        clear_local_variable_list = states_to_connect_with_neighbors
+
+        every_in_local_list = {
+            variable = governorships_to_connect_with_neighbors
+            capital_scope = {
+                clear_variable_list = neighbor_governorships_to_connect_with
+            }
+        }
+        clear_local_variable_list = governorships_to_connect_with_neighbors
+
+        # Garbage collection
+        clear_saved_scope = current_road_building_country
+        remove_local_variable = ai_country_build_roads_price_cached
+        clear_saved_scope = target_province
+        remove_local_variable = not_enough_gold_for_road_building
+    }
 }
 
 ai_cache_required_ruled_states_data = {

@@ -1,134 +1,175 @@
 ﻿ai_recruit_mercenaries = {
-    # Not so trivial calculations that will be repeated many times if we cycle through mercenaries
-    set_local_variable = {
-        name = ai_treasury_for_mercenaries_cached
-        value = ai_treasury_for_mercenaries
-    }
-    set_local_variable = {
-        name = navy_adjusted_maintenance_delta_cached
-        value = navy_adjusted_maintenance_delta
-    }
-    set_local_variable = {
-        name = ai_current_mercenary_maintenance_cached
-        value = ai_current_mercenary_maintenance
-    }
-
-    # Only recruit or bribe mercs if there's some monthly gold the country can spend on their maintenance
     if = {
         limit = {
-            ai_free_mercenary_maintenance > 0
-        }
-        save_scope_as = recruiting_country
-        # Used in ai_mercenary_priority to check distance_from_province between mercs and capital
-        capital_scope = {
-            save_scope_as = target_province
-        }
-
-        set_local_variable = {
-            name = recruited_a_mercenary
-            value = 0
-        }
-        # Entry trigger guaranteed to check only for limit + 1 as bribing requires, ensure we can recruit new mercs
-        if = {
-            limit = {
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
+            is_ai = yes
+            has_land = yes
+            war = yes
+            exists = c:MER
+            # Simple trigger to prevent broke countries from making performance impact
+            trigger_if = {
+                limit = {
+                    num_free_mercenary_slots_svalue > 0
+                }
+                treasury >= recruit_mercenary_cost_svalue
+            }
+            trigger_else = {
+                treasury >= 200 # Min value for bribing
+            }
+            # For comparable threat only recruit mercs normally, without bribing, which requires free slots
+            trigger_if = {
+                limit = {
+                    ai_is_facing_comparable_threat = yes
+                }
                 num_free_mercenary_slots_svalue > 0
             }
-            c:MER = {
-                ordered_character = {
-                    limit = {
-                        ai_can_recruit_mercenary = yes
-                    }
-                    # Get one mercs stack with highest priority
-                    order_by = ai_mercenary_priority
-                    position = 0
-                    check_range_bounds = no
-
-                    # Recruit them
-                    change_mercenary_employer = scope:recruiting_country
-                    scope:recruiting_country = {
-                        pay_price = recruit_mercenary
-                    }
-
-                    set_local_variable = {
-                        name = recruited_a_mercenary
-                        value = 1
-                    }
+            # For existential threat can also bribe mercs if needed, and bribing is allowed up until max stacks + 1
+            trigger_else_if = {
+                limit = {
+                    ai_is_facing_existential_threat = yes
                 }
+                num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
+            }
+            # If we are not feeling any threat, there's no point in spending a lot on money on mercs
+            trigger_else = {
+                always = no
             }
         }
 
-        # Try bribing only if wasn't able to recruit mercs and we are threatened enough to do it
+        # Not so trivial calculations that will be repeated many times if we cycle through mercenaries
+        set_local_variable = {
+            name = ai_treasury_for_mercenaries_cached
+            value = ai_treasury_for_mercenaries
+        }
+        set_local_variable = {
+            name = navy_adjusted_maintenance_delta_cached
+            value = navy_adjusted_maintenance_delta
+        }
+        set_local_variable = {
+            name = ai_current_mercenary_maintenance_cached
+            value = ai_current_mercenary_maintenance
+        }
+
+        # Only recruit or bribe mercs if there's some monthly gold the country can spend on their maintenance
         if = {
             limit = {
-                local_var:recruited_a_mercenary = 0
-                treasury >= 200 # Min value for bribing
-                ai_is_facing_existential_threat = yes
+                ai_free_mercenary_maintenance > 0
+            }
+            save_scope_as = recruiting_country
+            # Used in ai_mercenary_priority to check distance_from_province between mercs and capital
+            capital_scope = {
+                save_scope_as = target_province
             }
 
-            # Gather all the mercs that we can bribe including economy factors into a list
-            every_countries_at_war_with = {
-                every_character = {
-                    limit = {
-                        ai_can_bribe_mercenary = yes
-                    }
-                    add_to_local_variable_list = {
-                        name = mercenaries_to_bribe
-                        target = this
-                    }
-                }
+            set_local_variable = {
+                name = recruited_a_mercenary
+                value = 0
             }
+            # Entry trigger guaranteed to check only for limit + 1 as bribing requires, ensure we can recruit new mercs
             if = {
                 limit = {
-                    has_local_variable_list = mercenaries_to_bribe
-                    local_variable_list_size = {
-                        name = mercenaries_to_bribe
-                        value > 0
-                    }
+                    num_free_mercenary_slots_svalue > 0
                 }
-                ordered_in_local_list = {
-                    # Get one mercs stack with highest priority
-                    variable = mercenaries_to_bribe
-                    order_by = ai_mercenary_priority
-                    position = 0
-                    check_range_bounds = no
+                c:MER = {
+                    ordered_character = {
+                        limit = {
+                            ai_can_recruit_mercenary = yes
+                        }
+                        # Get one mercs stack with highest priority
+                        order_by = ai_mercenary_priority
+                        position = 0
+                        check_range_bounds = no
 
-                    save_scope_as = mercenary_to_bribe
+                        # Recruit them
+                        change_mercenary_employer = scope:recruiting_country
+                        scope:recruiting_country = {
+                            pay_price = recruit_mercenary
+                        }
 
-                    # Same effect as the one found on the bribing button
-                    scope:recruiting_country = {
-                        add_treasury = {
-                            value = 0
-                            subtract = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+                        set_local_variable = {
+                            name = recruited_a_mercenary
+                            value = 1
                         }
                     }
-                    set_variable = {
-                        name = merc_buyoff_cooldown
-                        days = 365
-                    }
-                    save_scope_as = target
-                    scope:recruiting_country = {
-                        save_scope_as = actor
-                    }
-                    employer = {
-                        trigger_event = {
-                            id = warfare.3
-                        }
-                    }
-
-                    clear_saved_scope = mercenary_to_bribe
                 }
-                clear_local_variable_list = mercenaries_to_bribe
             }
+
+            # Try bribing only if wasn't able to recruit mercs and we are threatened enough to do it
+            if = {
+                limit = {
+                    local_var:recruited_a_mercenary = 0
+                    treasury >= 200 # Min value for bribing
+                    ai_is_facing_existential_threat = yes
+                }
+
+                # Gather all the mercs that we can bribe including economy factors into a list
+                every_countries_at_war_with = {
+                    every_character = {
+                        limit = {
+                            ai_can_bribe_mercenary = yes
+                        }
+                        add_to_local_variable_list = {
+                            name = mercenaries_to_bribe
+                            target = this
+                        }
+                    }
+                }
+                if = {
+                    limit = {
+                        has_local_variable_list = mercenaries_to_bribe
+                        local_variable_list_size = {
+                            name = mercenaries_to_bribe
+                            value > 0
+                        }
+                    }
+                    ordered_in_local_list = {
+                        # Get one mercs stack with highest priority
+                        variable = mercenaries_to_bribe
+                        order_by = ai_mercenary_priority
+                        position = 0
+                        check_range_bounds = no
+
+                        save_scope_as = mercenary_to_bribe
+
+                        # Same effect as the one found on the bribing button
+                        scope:recruiting_country = {
+                            add_treasury = {
+                                value = 0
+                                subtract = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+                            }
+                        }
+                        set_variable = {
+                            name = merc_buyoff_cooldown
+                            days = 365
+                        }
+                        save_scope_as = target
+                        scope:recruiting_country = {
+                            save_scope_as = actor
+                        }
+                        employer = {
+                            trigger_event = {
+                                id = warfare.3
+                            }
+                        }
+
+                        clear_saved_scope = mercenary_to_bribe
+                    }
+                    clear_local_variable_list = mercenaries_to_bribe
+                }
+            }
+
+            clear_saved_scope = recruiting_country
+            clear_saved_scope = target_province
+            remove_local_variable = recruited_a_mercenary
         }
 
-        clear_saved_scope = recruiting_country
-        clear_saved_scope = target_province
-        remove_local_variable = recruited_a_mercenary
+        remove_local_variable = ai_treasury_for_mercenaries_cached
+        remove_local_variable = navy_adjusted_maintenance_delta_cached
+        remove_local_variable = ai_current_mercenary_maintenance_cached
     }
-
-    remove_local_variable = ai_treasury_for_mercenaries_cached
-    remove_local_variable = navy_adjusted_maintenance_delta_cached
-    remove_local_variable = ai_current_mercenary_maintenance_cached
 
     # Fix startup error log about deprecated game rule global variable
     if = {
@@ -140,11 +181,18 @@
 }
 
 ai_destroy_leftover_navies = {
-    every_navy = {
+    if = {
         limit = {
-            in_combat = no
-            is_mercenary_unit = no
+            is_ai = yes
+            war = no
+            num_of_ports <= 0
         }
-        destroy_unit = yes
+        every_navy = {
+            limit = {
+                in_combat = no
+                is_mercenary_unit = no
+            }
+            destroy_unit = yes
+        }
     }
 }

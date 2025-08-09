@@ -1,0 +1,506 @@
+﻿namespace = ai_pulse_events
+
+ai_pulse_events.1 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_advanced_ai_enabled = yes
+        NOT = {
+            has_global_variable = game_rule_advanced_ai_mercenaries
+        }
+        is_ai = yes
+        has_land = yes
+        war = yes
+        exists = c:MER
+        # Simple trigger to prevent broke countries from making performance impact
+        trigger_if = {
+            limit = {
+                num_free_mercenary_slots_svalue > 0
+            }
+            treasury >= recruit_mercenary_cost_svalue
+        }
+        trigger_else = {
+            treasury >= 200 # Min value for bribing
+        }
+        # For comparable threat only recruit mercs normally, without bribing, which requires free slots
+        trigger_if = {
+            limit = {
+                ai_is_facing_comparable_threat = yes
+            }
+            num_free_mercenary_slots_svalue > 0
+        }
+        # For existential threat can also bribe mercs if needed, and bribing is allowed up until max stacks + 1
+        trigger_else_if = {
+            limit = {
+                ai_is_facing_existential_threat = yes
+            }
+            num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
+        }
+        # If we are not feeling any threat, there's no point in spending a lot on money on mercs
+        trigger_else = {
+            always = no
+        }
+    }
+
+    immediate = {
+        ai_recruit_mercenaries = yes
+    }
+}
+
+ai_pulse_events.2 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_ai = yes
+        has_land = yes
+        NOT = {
+            has_variable = ai_revoked_free_hands
+        }
+    }
+
+    immediate = {
+        set_variable = {
+            name = ai_revoked_free_hands
+            days = 75 # 2.5 months - every quarter
+        }
+        ai_revoke_free_hands = yes
+    }
+}
+
+ai_pulse_events.3 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_ai = yes
+        has_land = yes
+        exists = current_ruler
+        NOT = {
+            has_variable = ai_fixed_character_loyalty
+        }
+    }
+
+    immediate = {
+        set_variable = {
+            name = ai_fixed_character_loyalty
+            days = 75 # 2.5 months - every quarter
+        }
+        ai_fix_character_loyalty = yes
+    }
+}
+
+ai_pulse_events.4 = {
+    type = country_event
+    hidden = yes
+
+    # Kept in effect because of else_if's
+    trigger = {}
+
+    immediate = {
+        ai_choose_and_enact_law = yes
+    }
+}
+
+ai_pulse_events.5 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_ai = yes
+        has_land = yes
+        NOT = {
+            has_variable = ai_performed_divine_sacrifice
+        }
+        can_pay_price = stability
+        OR = {
+            # Negative stability and not improving it already
+            AND = {
+                stability < 45
+                NOT = {
+                    has_country_modifier = stability_investment
+                }
+            }
+            # Has nothing better to do anyways
+            political_influence >= 500
+        }
+    }
+
+    immediate = {
+        set_variable = {
+            name = ai_performed_divine_sacrifice
+            days = 75 # 2.5 months - every quarter
+        }
+        perform_divine_sacrifice = yes
+    }
+}
+
+ai_pulse_events.6 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_advanced_ai_enabled = yes
+        NOT = {
+            has_global_variable = game_rule_advanced_ai_move_population
+        }
+        is_ai = yes
+        has_land = yes
+        war = no
+        NOT = {
+            has_variable = ai_manually_moved_pops_to_cities
+        }
+        # Care for wartime fund if custom mercenary recruitment is enabled
+        trigger_if = {
+            limit = {
+                NOT = {
+                    has_global_variable = game_rule_advanced_ai_mercenaries
+                }
+            }
+            treasury >= ai_wartime_fund_with_small_buffer
+        }
+        trigger_else = {
+            treasury >= 75
+        }
+    }
+
+    immediate = {
+        set_variable = {
+            name = ai_manually_moved_pops_to_cities
+            days = 345 # 11.5 months - every year
+        }
+        ai_manually_move_pops_to_cities = yes
+    }
+}
+
+ai_pulse_events.7 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_ai = yes
+        has_land = yes
+        war = no
+        NOT = {
+            has_variable = ai_tried_upgrading_city_to_metropolis
+        }
+        # Required for founding metropolises
+        NOT = {
+            has_law = nomadic_law_tribal
+        }
+        can_pay_price = price_found_metropolis
+        # Care for wartime fund if custom mercenary recruitment is enabled
+        trigger_if = {
+            limit = {
+                is_advanced_ai_enabled = yes
+                NOT = {
+                    has_global_variable = game_rule_advanced_ai_mercenaries
+                }
+            }
+            treasury >= ai_wartime_fund_with_large_buffer
+        }
+        trigger_else = {
+            always = yes
+        }
+    }
+
+    immediate = {
+        set_variable = {
+            name = ai_tried_upgrading_city_to_metropolis
+            days = 165 # 5.5 months - every half year
+        }
+        ai_try_upgrading_city_to_metropolis = yes
+    }
+}
+
+ai_pulse_events.8 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_ai = yes
+        has_land = yes
+        war = no
+        NOT = {
+            has_variable = ai_chose_territory_and_founded_city
+        }
+        ai_cities_allowed_per_country > 0
+        can_pay_price = price_found_city
+        # Care for wartime fund if custom mercenary recruitment is enabled
+        trigger_if = {
+            limit = {
+                is_advanced_ai_enabled = yes
+                NOT = {
+                    has_global_variable = game_rule_advanced_ai_mercenaries
+                }
+            }
+            treasury >= ai_wartime_fund_with_medium_buffer
+        }
+        trigger_else = {
+            always = yes
+        }
+    }
+
+    immediate = {
+        set_variable = {
+            name = ai_chose_territory_and_founded_city
+            days = 165 # 5.5 months - every half year
+        }
+        ai_choose_territory_and_found_city = yes
+    }
+}
+
+ai_pulse_events.9 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_ai = yes
+        has_land = yes
+        war = no
+        NOT = {
+            has_variable = ai_built_roads_with_custom_pathing
+        }
+        any_country_state = {
+            count > 1
+        }
+        ai_country_allowed_to_build_roads = yes
+        ai_country_can_afford_to_build_10_roads = yes
+    }
+
+    immediate = {
+        set_variable = {
+            name = ai_built_roads_with_custom_pathing
+            days = 345 # 11.5 months - every year
+        }
+        ai_build_roads_with_custom_pathing = yes
+    }
+}
+
+ai_pulse_events.10 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_advanced_ai_enabled = yes
+        NOT = {
+            has_global_variable = game_rule_advanced_ai_tribal_development
+        }
+        is_ai = yes
+        has_land = yes
+        NOT = {
+            has_variable = ai_pressed_hold_games_button
+        }
+        
+        # Care for wartime fund if custom mercenary recruitment is enabled
+        trigger_if = {
+            limit = {
+                NOT = {
+                    has_global_variable = game_rule_advanced_ai_mercenaries
+                }
+            }
+            treasury >= ai_wartime_fund_with_medium_buffer
+        }
+        trigger_else = {
+            always = yes
+        }
+        
+        # Ruler popularity is too low for reforming
+        exists = current_ruler
+        current_ruler = {
+            popularity < 80
+        }
+
+        # Validity requirements from hold_games_button
+        OR = {
+            is_monarchy = yes
+            is_tribal = yes
+        }
+        current_ruler = {
+            NOT = {
+                has_character_modifier = hold_games_modifier
+            }
+        }
+        current_ruler = {
+            wealth >= hold_games_svalue
+        }
+        current_ruler = {
+            is_adult = yes
+        }
+        can_pay_price = hold_games_price
+
+        # Copied from potential block of reforming decisions
+        num_of_cities >= 1
+        OR = {
+            government = tribal_kingdom
+            government = tribal_federation
+        }
+
+        # Copied from ai_is_allowed_to_reform_tribe with unimportant parts commented out
+        # stability >= 40
+        stability >= 30 # Lowered stability requirements due to long term effect of popularity
+        centralization >= 60
+        capital_scope = {
+            civilization_value >= 40
+            has_city_status = yes
+        }
+        # exists = current_ruler
+        # current_ruler = {
+        #     popularity >= 80
+        # }
+        # political_influence >= 100
+        # Artificial limitations to reduce the amount of reforming tribes
+        rank >= regional_power
+        # OR = {
+        #     AND = {
+        #         is_advanced_ai_enabled = yes
+        #         NOT = {
+        #             has_global_variable = game_rule_advanced_ai_tribal_development
+        #         }
+        #     }
+        #     capital_scope = {
+        #         has_province_modifier = tribal_civilization_pmod # tribal_civilization (Codify State Lands) decision
+        #     }
+        # }
+    }
+
+    immediate = {
+        set_variable = {
+            name = ai_pressed_hold_games_button
+            days = 75 # 2.5 months - every quarter
+        }
+        ai_press_hold_games_button = yes
+    }
+}
+
+ai_pulse_events.11 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_ai = yes
+        has_land = yes
+        war = no
+        NOT = {
+            has_variable = ai_chose_and_made_investment
+        }
+        OR = {
+            political_influence >= 125 # Political influence of 100 is often required in decisions + some buffer
+            AND = {
+                has_variable = free_investments
+                var:free_investments > 0
+            }
+        }
+    }
+
+    immediate = {
+        set_variable = {
+            name = ai_chose_and_made_investment
+            days = 165 # 5.5 months - every half year
+        }
+        ai_choose_and_make_investment = yes
+    }
+}
+
+ai_pulse_events.12 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        NOT = {
+            has_global_variable = ai_imported_food_into_states_in_need
+        }
+    }
+
+    immediate = {
+        set_global_variable = {
+            name = ai_imported_food_into_states_in_need
+            days = 365
+        }
+        ai_import_food_into_states_in_need = yes
+    }
+}
+
+ai_pulse_events.13 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        NOT = {
+            has_global_variable = ai_colonized_unowned_territories
+        }
+    }
+
+    immediate = {
+        set_global_variable = {
+            name = ai_colonized_unowned_territories
+            days = 365
+        }
+        ai_colonize_unowned_territories = yes
+    }
+}
+
+ai_pulse_events.14 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_ai = yes
+        # Some player gained social equality for themselves at some point, so now we are allowed as well
+        has_global_variable = enshrine_social_equity_used
+        # Copied from enshrine_social_equity potential
+        num_of_cities >= 1
+        gender_equality = no
+        OR = {
+            gender_rules = yes
+            has_global_variable = game_rule_gender_rules
+        }
+    }
+
+    immediate = {
+		set_gender_equality = yes
+    }
+}
+
+ai_pulse_events.15 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_ai = yes
+        war = no
+        num_of_ports <= 0
+    }
+
+    immediate = {
+        ai_destroy_leftover_navies = yes
+    }
+}
+
+ai_pulse_events.16 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        has_land = yes
+    }
+
+    immediate = {
+        cache_adjusted_research_efficiency = yes
+    }
+}
+
+ai_pulse_events.17 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        is_ai = yes
+        has_land = yes
+    }
+
+    immediate = {
+        ai_determine_economic_policies = yes
+    }
+}

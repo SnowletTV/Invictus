@@ -1,67 +1,35 @@
 ﻿ai_try_upgrading_city_to_metropolis = {
-    if = {
+    random_country_state = {
         limit = {
-            is_ai = yes
-            has_land = yes
-            war = no
-            NOT = {
-                has_variable = ai_tried_upgrading_city_to_metropolis
-            }
-            # Required for founding metropolises
-            NOT = {
-                has_law = nomadic_law_tribal
-            }
-            can_pay_price = price_found_metropolis
-            # Care for wartime fund if custom mercenary recruitment is enabled
-            trigger_if = {
-                limit = {
-                    is_advanced_ai_enabled = yes
-                    NOT = {
-                        has_global_variable = game_rule_advanced_ai_mercenaries
-                    }
-                }
-                treasury >= ai_wartime_fund_with_large_buffer
-            }
-            trigger_else = {
-                always = yes
-            }
-        }
-        set_variable = {
-            name = ai_tried_upgrading_city_to_metropolis
-            days = 165 # 5.5 months - every half year
-        }
-        random_country_state = {
-            limit = {
-                capital_scope = {
-                    is_state_capital = yes
-                    has_city_status = yes
-                    NOT = {
-                        has_province_rank = city_metropolis
-                    }
-                    NOT = {
-                        has_province_modifier = founding_metropolis_in_progress
-                    }
-                    total_population >= 80
-                }
-            }
-            weight = {
-                modifier = {
-                    factor = 1000
-                    is_capital_state = yes
-                }
-            }
             capital_scope = {
-                owner = {
-                    pay_price = price_found_metropolis
+                is_state_capital = yes
+                has_city_status = yes
+                NOT = {
+                    has_province_rank = city_metropolis
                 }
-                add_province_modifier = {
-                    name = founding_metropolis_in_progress
-                    duration = 730
+                NOT = {
+                    has_province_modifier = founding_metropolis_in_progress
                 }
-                trigger_event = {
-                    id = state_improvement.7
-                    days = 730
-                }
+                total_population >= 80
+            }
+        }
+        weight = {
+            modifier = {
+                factor = 1000
+                is_capital_state = yes
+            }
+        }
+        capital_scope = {
+            owner = {
+                pay_price = price_found_metropolis
+            }
+            add_province_modifier = {
+                name = founding_metropolis_in_progress
+                duration = 730
+            }
+            trigger_event = {
+                id = state_improvement.7
+                days = 730
             }
         }
     }
@@ -70,553 +38,535 @@
 ai_choose_territory_and_found_city = {
     if = {
         limit = {
-            is_ai = yes
-            has_land = yes
-            war = no
-            NOT = {
-                has_variable = ai_chose_territory_and_founded_city
+            capital_scope = {
+                has_city_status_or_founding_in_progress = no
             }
-            ai_cities_allowed_per_country > 0
-            can_pay_price = price_found_city
-            # Care for wartime fund if custom mercenary recruitment is enabled
-            trigger_if = {
-                limit = {
-                    is_advanced_ai_enabled = yes
-                    NOT = {
-                        has_global_variable = game_rule_advanced_ai_mercenaries
-                    }
-                }
-                treasury >= ai_wartime_fund_with_medium_buffer
-            }
-            trigger_else = {
-                always = yes
+            OR = {
+                ai_cities_allowed_per_country >= 2
+                num_of_cities_in_country_plus_1 <= ai_cities_allowed_per_country
             }
         }
-        set_variable = {
-            name = ai_chose_territory_and_founded_city
-            days = 165 # 5.5 months - every half year
+        pay_price = price_found_city
+        capital_scope = {
+            add_province_modifier = {
+                name = founding_city_in_progress
+                duration = 730
+            }
+            trigger_event = {
+                id = state_improvement.6
+                days = 730
+            }
+        }
+    }
+    else = {
+
+        # Looping through all territories is expensive, and doing it multiple times is even worse.
+        # Instead we loop through them once and save the information needed to local variables.
+        set_local_variable = {
+            name = num_of_cities
+            value = 0
+        }
+        set_local_variable = {
+            name = num_of_cities_with_2_or_more_free_slots
+            value = 0
+        }
+        every_owned_province = {
+            limit = {
+                has_city_status_or_founding_in_progress = yes
+            }
+            change_local_variable = {
+                name = num_of_cities
+                add = 1
+            }
+            if = {
+                limit = {
+                    free_building_slots >= 2
+                }
+                change_local_variable = {
+                    name = num_of_cities_with_2_or_more_free_slots
+                    add = 1
+                }
+            }
         }
 
         if = {
             limit = {
-                capital_scope = {
-                    has_city_status_or_founding_in_progress = no
-                }
-                OR = {
-                    ai_cities_allowed_per_country >= 2
-                    num_of_cities_in_country_plus_1 <= ai_cities_allowed_per_country
-                }
+                # Can make use of local_var:num_of_cities
+                num_of_cities_in_country_plus_1 <= ai_cities_allowed_per_country
+                # Don't build new cities until existing ones are developed
+                local_var:num_of_cities_with_2_or_more_free_slots = 0
             }
-            pay_price = price_found_city
-            capital_scope = {
-                add_province_modifier = {
-				    name = founding_city_in_progress
-                    duration = 730
-                }
-                trigger_event = {
-                    id = state_improvement.6
-                    days = 730
-                }
-            }
-        }
-        else = {
 
-            # Looping through all territories is expensive, and doing it multiple times is even worse.
-            # Instead we loop through them once and save the information needed to local variables.
-            set_local_variable = {
-                name = num_of_cities
-                value = 0
-            }
-            set_local_variable = {
-                name = num_of_cities_with_2_or_more_free_slots
-                value = 0
-            }
+            # This is fired rarely and has many additional computations, so don't merge it with the preemptive loop
             every_owned_province = {
                 limit = {
-                    has_city_status_or_founding_in_progress = yes
-                }
-                change_local_variable = {
-                    name = num_of_cities
-                    add = 1
-                }
-                if = {
-                    limit = {
-                        free_building_slots >= 2
+                    has_city_status_or_founding_in_progress = no
+                    NOT = {
+                        terrain = steppes
                     }
-                    change_local_variable = {
-                        name = num_of_cities_with_2_or_more_free_slots
-                        add = 1
-                    }
+                    num_of_cities_in_same_area_plus_1 <= ai_max_num_of_cities_in_same_area
+                    num_of_cities_in_same_state_plus_1 <= ai_max_num_of_cities_in_same_state
+                }
+                add_to_local_variable_list = {
+                    name = eligible_territories
+                    target = this
                 }
             }
 
             if = {
                 limit = {
-                    # Can make use of local_var:num_of_cities
-                    num_of_cities_in_country_plus_1 <= ai_cities_allowed_per_country
-                    # Don't build new cities until existing ones are developed
-                    local_var:num_of_cities_with_2_or_more_free_slots = 0
-                }
-
-                # This is fired rarely and has many additional computations, so don't merge it with the preemptive loop
-                every_owned_province = {
-                    limit = {
-                        has_city_status_or_founding_in_progress = no
-                        NOT = {
-                            terrain = steppes
-                        }
-                        num_of_cities_in_same_area_plus_1 <= ai_max_num_of_cities_in_same_area
-                        num_of_cities_in_same_state_plus_1 <= ai_max_num_of_cities_in_same_state
-                    }
-                    add_to_local_variable_list = {
+                    has_local_variable_list = eligible_territories
+                    local_variable_list_size = {
                         name = eligible_territories
-                        target = this
+                        value > 0
                     }
                 }
 
+                # Culture priority
+                # 1) nobles
+                # 2) citizen
+                # 3) freemen
+                # 4) else: unintegrated
                 if = {
                     limit = {
-                        has_local_variable_list = eligible_territories
-                        local_variable_list_size = {
-                            name = eligible_territories
-                            value > 0
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            is_dominant_territory_culture_rights_equal_to = {
+                                pop_type = nobles
+                            }
                         }
                     }
-
-                    # Culture priority
-                    # 1) nobles
-                    # 2) citizen
-                    # 3) freemen
-                    # 4) else: unintegrated
-                    if = {
+                    every_in_local_list = {
+                        variable = eligible_territories
                         limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
+                            NOT = {
                                 is_dominant_territory_culture_rights_equal_to = {
                                     pop_type = nobles
                                 }
                             }
                         }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOT = {
-                                    is_dominant_territory_culture_rights_equal_to = {
-                                        pop_type = nobles
-                                    }
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
-                        }
-                    }
-                    else_if = {
-                        limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
-                                is_dominant_territory_culture_rights_equal_to = {
-                                    pop_type = citizen
-                                }
-                            }
-                        }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOT = {
-                                    is_dominant_territory_culture_rights_equal_to = {
-                                        pop_type = citizen
-                                    }
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
-                        }
-                    }
-                    else_if = {
-                        limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
-                                is_dominant_territory_culture_rights_equal_to = {
-                                    pop_type = freemen
-                                }
-                            }
-                        }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOT = {
-                                    is_dominant_territory_culture_rights_equal_to = {
-                                        pop_type = freemen
-                                    }
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
-                        }
-                    }
-
-                    # Remove everything below top 25% by population to reduce number of cities with barely any pops
-                    set_local_variable = {
-                        name = eligible_territories_cutoff_by_pops
-                        value = {
-                            value = 0
-                            every_in_local_list = {
-                                variable = eligible_territories
-                                add = 1
-                            }
-                            multiply = 0.25
-                            round = yes
-                            min = 1
-                        }
-                    }
-                    ordered_in_local_list = {
-                        variable = eligible_territories
-                        order_by = total_population
-                        min = local_var:eligible_territories_cutoff_by_pops
-                        check_range_bounds = no # In case there's only 1 territory in list
                         remove_list_local_variable = {
                             name = eligible_territories
                             target = this
                         }
                     }
-                    remove_local_variable = eligible_territories_cutoff_by_pops
-
-                    # Resource priority:
-                    # 1) nor mine nor farm
-                    # 2) mine (we can still use it city)
-                    # 3) else: farm (lowest in prio so we don't lose food)
-                    if = {
-                        limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
-                                NOR = {
-                                    has_minable_trade_good_trigger = yes
-                                    has_food_trade_good_trigger = yes
-                                }
-                            }
-                        }
-                        every_in_local_list = {
+                }
+                else_if = {
+                    limit = {
+                        any_in_local_list = {
                             variable = eligible_territories
-                            limit = {
-                                OR = {
-                                    has_minable_trade_good_trigger = yes
-                                    has_food_trade_good_trigger = yes
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
+                            is_dominant_territory_culture_rights_equal_to = {
+                                pop_type = citizen
                             }
                         }
                     }
-                    else_if = {
+                    every_in_local_list = {
+                        variable = eligible_territories
                         limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
+                            NOT = {
+                                is_dominant_territory_culture_rights_equal_to = {
+                                    pop_type = citizen
+                                }
+                            }
+                        }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
+                        }
+                    }
+                }
+                else_if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            is_dominant_territory_culture_rights_equal_to = {
+                                pop_type = freemen
+                            }
+                        }
+                    }
+                    every_in_local_list = {
+                        variable = eligible_territories
+                        limit = {
+                            NOT = {
+                                is_dominant_territory_culture_rights_equal_to = {
+                                    pop_type = freemen
+                                }
+                            }
+                        }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
+                        }
+                    }
+                }
+
+                # Remove everything below top 25% by population to reduce number of cities with barely any pops
+                set_local_variable = {
+                    name = eligible_territories_cutoff_by_pops
+                    value = {
+                        value = 0
+                        every_in_local_list = {
+                            variable = eligible_territories
+                            add = 1
+                        }
+                        multiply = 0.25
+                        round = yes
+                        min = 1
+                    }
+                }
+                ordered_in_local_list = {
+                    variable = eligible_territories
+                    order_by = total_population
+                    min = local_var:eligible_territories_cutoff_by_pops
+                    check_range_bounds = no # In case there's only 1 territory in list
+                    remove_list_local_variable = {
+                        name = eligible_territories
+                        target = this
+                    }
+                }
+                remove_local_variable = eligible_territories_cutoff_by_pops
+
+                # Resource priority:
+                # 1) nor mine nor farm
+                # 2) mine (we can still use it city)
+                # 3) else: farm (lowest in prio so we don't lose food)
+                if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            NOR = {
                                 has_minable_trade_good_trigger = yes
-                            }
-                        }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                has_minable_trade_good_trigger = no
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
+                                has_food_trade_good_trigger = yes
                             }
                         }
                     }
-
-                    # Water priority:
-                    # 1) can have port
-                    # 2) major river
-                    # 3) minor river
-                    # 4) else: no water
-                    if = {
+                    every_in_local_list = {
+                        variable = eligible_territories
                         limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
+                            OR = {
+                                has_minable_trade_good_trigger = yes
+                                has_food_trade_good_trigger = yes
+                            }
+                        }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
+                        }
+                    }
+                }
+                else_if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            has_minable_trade_good_trigger = yes
+                        }
+                    }
+                    every_in_local_list = {
+                        variable = eligible_territories
+                        limit = {
+                            has_minable_trade_good_trigger = no
+                        }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
+                        }
+                    }
+                }
+
+                # Water priority:
+                # 1) can have port
+                # 2) major river
+                # 3) minor river
+                # 4) else: no water
+                if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            can_have_port = yes
+                        }
+                    }
+                    every_in_local_list = {
+                        variable = eligible_territories
+                        limit = {
+                            NOT = {
                                 can_have_port = yes
                             }
                         }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOT = {
-                                    can_have_port = yes
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
                         }
                     }
-                    else_if = {
+                }
+                else_if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            is_adjacent_to_major_river = yes
+                        }
+                    }
+                    every_in_local_list = {
+                        variable = eligible_territories
                         limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
+                            NOT = {
                                 is_adjacent_to_major_river = yes
                             }
                         }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOT = {
-                                    is_adjacent_to_major_river = yes
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
                         }
                     }
-                    else_if = {
+                }
+                else_if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            has_minor_river = yes
+                        }
+                    }
+                    every_in_local_list = {
+                        variable = eligible_territories
                         limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
+                            NOT = {
                                 has_minor_river = yes
                             }
                         }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOT = {
-                                    has_minor_river = yes
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
                         }
                     }
+                }
 
-                    # Terrain priority: 
-                    # 1) flood_plain
-                    # 2) farmland, oasis
-                    # 3) plains, hills
-                    # 4) forest, marsh
-                    # 5) jungle, desert_hills
-                    # 6) else: mountain, desert
-                    if = {
+                # Terrain priority: 
+                # 1) flood_plain
+                # 2) farmland, oasis
+                # 3) plains, hills
+                # 4) forest, marsh
+                # 5) jungle, desert_hills
+                # 6) else: mountain, desert
+                if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            terrain = flood_plain
+                        }
+                    }
+                    every_in_local_list = {
+                        variable = eligible_territories
                         limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
+                            NOT = {
                                 terrain = flood_plain
                             }
                         }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOT = {
-                                    terrain = flood_plain
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
                         }
                     }
-                    else_if = {
-                        limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
-                                OR = {
-                                    terrain = farmland
-                                    terrain = oasis
-                                }
-                            }
-                        }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOR = {
-                                    terrain = farmland
-                                    terrain = oasis
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
-                        }
-                    }
-                    else_if = {
-                        limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
-                                OR = {
-                                    terrain = plains
-                                    terrain = hills
-                                }
-                            }
-                        }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOR = {
-                                    terrain = plains
-                                    terrain = hills
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
-                        }
-                    }
-                    else_if = {
-                        limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
-                                OR = {
-                                    terrain = forest
-                                    terrain = marsh
-                                }
-                            }
-                        }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOR = {
-                                    terrain = forest
-                                    terrain = marsh
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
-                        }
-                    }
-                    else_if = {
-                        limit = {
-                            any_in_local_list = {
-                                variable = eligible_territories
-                                OR = {
-                                    terrain = jungle
-                                    terrain = desert_hills
-                                }
-                            }
-                        }
-                        every_in_local_list = {
-                            variable = eligible_territories
-                            limit = {
-                                NOR = {
-                                    terrain = jungle
-                                    terrain = desert_hills
-                                }
-                            }
-                            remove_list_local_variable = {
-                                name = eligible_territories
-                                target = this
-                            }
-                        }
-                    }
-
-                    # Create city in weighted random territory out of eligible
-                    random_in_local_list = {
-                        variable = eligible_territories
-                        weight = {
-                            modifier = {
-                                add = total_population
-                            }
-                            modifier = {
-                                factor = 1.5
-                                is_state_capital = yes
-                            }
-                        }
-                        root = {
-                            pay_price = price_found_city
-                        }
-                        add_province_modifier = {
-                            name = founding_city_in_progress
-                            duration = 730
-                        }
-                        trigger_event = {
-                            id = state_improvement.6
-                            days = 730
-                        }
-                    }
-
-                    clear_local_variable_list = eligible_territories
                 }
-            }
+                else_if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            OR = {
+                                terrain = farmland
+                                terrain = oasis
+                            }
+                        }
+                    }
+                    every_in_local_list = {
+                        variable = eligible_territories
+                        limit = {
+                            NOR = {
+                                terrain = farmland
+                                terrain = oasis
+                            }
+                        }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
+                        }
+                    }
+                }
+                else_if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            OR = {
+                                terrain = plains
+                                terrain = hills
+                            }
+                        }
+                    }
+                    every_in_local_list = {
+                        variable = eligible_territories
+                        limit = {
+                            NOR = {
+                                terrain = plains
+                                terrain = hills
+                            }
+                        }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
+                        }
+                    }
+                }
+                else_if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            OR = {
+                                terrain = forest
+                                terrain = marsh
+                            }
+                        }
+                    }
+                    every_in_local_list = {
+                        variable = eligible_territories
+                        limit = {
+                            NOR = {
+                                terrain = forest
+                                terrain = marsh
+                            }
+                        }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
+                        }
+                    }
+                }
+                else_if = {
+                    limit = {
+                        any_in_local_list = {
+                            variable = eligible_territories
+                            OR = {
+                                terrain = jungle
+                                terrain = desert_hills
+                            }
+                        }
+                    }
+                    every_in_local_list = {
+                        variable = eligible_territories
+                        limit = {
+                            NOR = {
+                                terrain = jungle
+                                terrain = desert_hills
+                            }
+                        }
+                        remove_list_local_variable = {
+                            name = eligible_territories
+                            target = this
+                        }
+                    }
+                }
 
-            # Garbage collection
-            remove_local_variable = num_of_cities
-            remove_local_variable = num_of_cities_with_2_or_more_free_slots
+                # Create city in weighted random territory out of eligible
+                random_in_local_list = {
+                    variable = eligible_territories
+                    weight = {
+                        modifier = {
+                            add = total_population
+                        }
+                        modifier = {
+                            factor = 1.5
+                            is_state_capital = yes
+                        }
+                    }
+                    root = {
+                        pay_price = price_found_city
+                    }
+                    add_province_modifier = {
+                        name = founding_city_in_progress
+                        duration = 730
+                    }
+                    trigger_event = {
+                        id = state_improvement.6
+                        days = 730
+                    }
+                }
+
+                clear_local_variable_list = eligible_territories
+            }
         }
 
+        # Garbage collection
+        remove_local_variable = num_of_cities
+        remove_local_variable = num_of_cities_with_2_or_more_free_slots
     }
 }
 
 # Performed exactly once a year by setting a global variable, the scope that calls it doesn't matter
 ai_colonize_unowned_territories = {
-    if = {
+    # Check all uncolonized territories in the world, prioritizing ones with higher population first
+    ordered_ownable_province = {
         limit = {
             NOT = {
-                has_global_variable = ai_colonized_unowned_territories
+                exists = owner
             }
         }
-        set_global_variable = {
-            name = ai_colonized_unowned_territories
-            days = 365
-        }
+        order_by = total_population
+        # Won't loop through all territories otherwise
+        min = 0
+        max = 999999
+        check_range_bounds = no
 
-        # Check all uncolonized territories in the world, prioritizing ones with higher population first
-        ordered_ownable_province = {
-            limit = {
-                NOT = {
-                    exists = owner
+        # Create list of AI territories that are eligible to colonize this one
+        every_neighbor_province = {
+            
+            # Neighbour land territories
+            if = {
+                limit = {
+                    is_water = no
                 }
-            }
-            order_by = total_population
-            # Won't loop through all territories otherwise
-            min = 0
-            max = 999999
-            check_range_bounds = no
-
-            # Create list of AI territories that are eligible to colonize this one
-            every_neighbor_province = {
-                
-                # Neighbour land territories
                 if = {
                     limit = {
-                        is_water = no
-                    }
-                    if = {
-                        limit = {
-                            NOT = {
-                                is_target_in_local_variable_list = {
-                                    name = territories_to_colonize_from
-                                    target = this
-                                }
+                        NOT = {
+                            is_target_in_local_variable_list = {
+                                name = territories_to_colonize_from
+                                target = this
                             }
                         }
-                        add_to_local_variable_list = {
-                            name = territories_to_colonize_from
-                            target = this
-                        }
+                    }
+                    add_to_local_variable_list = {
+                        name = territories_to_colonize_from
+                        target = this
                     }
                 }
-                
-                # One level deep over water
-                else = {
+            }
+            
+            # One level deep over water
+            else = {
 
-                    # Land territories one level deep over water
-                    every_neighbor_province = {
+                # Land territories one level deep over water
+                every_neighbor_province = {
+                    if = {
+                        limit = {
+                            is_water = no
+                        }
                         if = {
+                            limit = {
+                                NOT = {
+                                    is_target_in_local_variable_list = {
+                                        name = territories_to_colonize_from
+                                        target = this
+                                    }
+                                }
+                            }
+                            add_to_local_variable_list = {
+                                name = territories_to_colonize_from
+                                target = this
+                            }
+                        }
+                    }
+
+                    # Two levels deep over water
+                    else = {
+
+                        # Land territories two levels deep over water
+                        every_neighbor_province = {
                             limit = {
                                 is_water = no
                             }
@@ -635,144 +585,108 @@ ai_colonize_unowned_territories = {
                                 }
                             }
                         }
-
-                        # Two levels deep over water
-                        else = {
-
-                            # Land territories two levels deep over water
-                            every_neighbor_province = {
-                                limit = {
-                                    is_water = no
-                                }
-                                if = {
-                                    limit = {
-                                        NOT = {
-                                            is_target_in_local_variable_list = {
-                                                name = territories_to_colonize_from
-                                                target = this
-                                            }
-                                        }
-                                    }
-                                    add_to_local_variable_list = {
-                                        name = territories_to_colonize_from
-                                        target = this
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }
+        }
 
-            if = {
+        if = {
+            limit = {
+                has_local_variable_list = territories_to_colonize_from
+                local_variable_list_size = {
+                    name = territories_to_colonize_from
+                    value > 0
+                }
+            }
+            save_scope_as = territory_to_colonize
+            ordered_in_local_list = {
+                variable = territories_to_colonize_from
                 limit = {
-                    has_local_variable_list = territories_to_colonize_from
-                    local_variable_list_size = {
-                        name = territories_to_colonize_from
-                        value > 0
-                    }
+                    ai_can_colonize_from_this_territory = yes
                 }
-                save_scope_as = territory_to_colonize
-                ordered_in_local_list = {
-                    variable = territories_to_colonize_from
-                    limit = {
-                        ai_can_colonize_from_this_territory = yes
-                    }
-                    order_by = total_population
-                    position = 0
+                order_by = total_population
+                position = 0
 
-                    owner = {
-                        add_treasury = -10
-                    }
-                    random_pops_in_province = {
-                        limit = {
-                            NOT = {
-                                pop_type = slaves
-                            }
-                        }
-                        move_pop = scope:territory_to_colonize
-                    }
-                    scope:territory_to_colonize = {
-                        set_owned_by = prev.owner
-                    }
-                    set_variable = {
-                        name = ai_colonized_from_this_territory
-                        days = 365
-                    }
+                owner = {
+                    add_treasury = -10
                 }
-                clear_saved_scope = territory_to_colonize
-                clear_local_variable_list = territories_to_colonize_from
+                random_pops_in_province = {
+                    limit = {
+                        NOT = {
+                            pop_type = slaves
+                        }
+                    }
+                    move_pop = scope:territory_to_colonize
+                }
+                scope:territory_to_colonize = {
+                    set_owned_by = prev.owner
+                }
+                set_variable = {
+                    name = ai_colonized_from_this_territory
+                    days = 365
+                }
             }
+            clear_saved_scope = territory_to_colonize
+            clear_local_variable_list = territories_to_colonize_from
         }
     }
 }
 
 ai_manually_move_pops_to_cities = {
-    if = {
+    random_owned_province = {
         limit = {
-            is_advanced_ai_enabled = yes
-            NOT = {
-                has_global_variable = game_rule_advanced_ai_move_population
-            }
-            is_ai = yes
-            has_land = yes
-            war = no
-            NOT = {
-                has_variable = ai_manually_moved_pops_to_cities
-            }
-            # Care for wartime fund if custom mercenary recruitment is enabled
+            has_city_status = yes
+            # Target population is actually higher than this, see below
             trigger_if = {
                 limit = {
-                    NOT = {
-                        has_global_variable = game_rule_advanced_ai_mercenaries
+                    owner = {
+                        is_tribal = no
                     }
                 }
-                treasury >= ai_wartime_fund_with_small_buffer
+                total_population < population_cap_75_percent
             }
             trigger_else = {
-                treasury >= 75
+                total_population < population_cap_65_percent
+            }
+            # Moving slaves to cities will only make food issues worse
+            state = {
+                state_has_low_food = no
             }
         }
-        set_variable = {
-            name = ai_manually_moved_pops_to_cities
-            days = 345 # 11.5 months - every year
+        # Prefer territories with more room available to move pops in
+        weight = {
+            modifier = {
+                factor = territory_population_until_cap
+            }
         }
 
-        random_owned_province = {
+        save_scope_as = underpopulated_city
+
+        # Save all neighbour and same state territories into a list
+        every_neighbor_province = {
             limit = {
-                has_city_status = yes
-                # Target population is actually higher than this, see below
-                trigger_if = {
-                    limit = {
-                        owner = {
-                            is_tribal = no
-                        }
-                    }
-                    total_population < population_cap_75_percent
+                exists = owner
+                owner = {
+                    this = prev.owner
                 }
-                trigger_else = {
-                    total_population < population_cap_65_percent
-                }
-                # Moving slaves to cities will only make food issues worse
-                state = {
-                    state_has_low_food = no
-                }
+                ai_can_move_pops_from_territory = yes
             }
-            # Prefer territories with more room available to move pops in
-            weight = {
-                modifier = {
-                    factor = territory_population_until_cap
-                }
+            add_to_local_variable_list = {
+                name = territories_to_move_pops_from
+                target = this
             }
-
-            save_scope_as = underpopulated_city
-
-            # Save all neighbour and same state territories into a list
-            every_neighbor_province = {
+        }
+        state = {
+            every_state_province = {
                 limit = {
-                    exists = owner
-                    owner = {
-                        this = prev.owner
+                    NOT = {
+                        this = scope:underpopulated_city
+                    }
+                    NOT = {
+                        is_target_in_local_variable_list = {
+                            name = territories_to_move_pops_from
+                            target = this
+                        }
                     }
                     ai_can_move_pops_from_territory = yes
                 }
@@ -781,123 +695,103 @@ ai_manually_move_pops_to_cities = {
                     target = this
                 }
             }
-            state = {
-                every_state_province = {
-                    limit = {
-                        NOT = {
-                            this = scope:underpopulated_city
-                        }
-                        NOT = {
-                            is_target_in_local_variable_list = {
-                                name = territories_to_move_pops_from
-                                target = this
+        }
+
+        if = {
+            limit = {
+                has_non_empty_local_variable_list = {
+                    name = territories_to_move_pops_from
+                }
+            }
+
+            set_local_variable = {
+                name = num_pops_to_move
+                value = {
+                    # 10 percent more than entry trigger so we don't move 1 pop
+                    if = {
+                        limit = {
+                            owner = {
+                                is_tribal = no
                             }
                         }
+                        value = population_cap_85_percent
+                    }
+                    else = {
+                        value = population_cap_75_percent
+                    }
+                    subtract = total_population
+                    min = 3
+                    max = population_cap_40_percent
+                    round = yes
+                }
+            }
+
+            while = {
+                count = local_var:num_pops_to_move
+
+                random_in_local_list = {
+                    variable = territories_to_move_pops_from
+                    limit = {
+                        # Recheck if we still some money after previous moves
+                        owner = {
+                            treasury >= 10
+                        }
+                        # Ensure nothing weird happened and cap wasn't reached
+                        scope:underpopulated_city = {
+                            trigger_if = {
+                                limit = {
+                                    owner = {
+                                        is_tribal = no
+                                    }
+                                }
+                                total_population < population_cap_85_percent
+                            }
+                            trigger_else = {
+                                total_population < population_cap_75_percent
+                            }
+                        }
+                        # Recheck if the territory can still move pops away
                         ai_can_move_pops_from_territory = yes
                     }
-                    add_to_local_variable_list = {
-                        name = territories_to_move_pops_from
-                        target = this
+                    # Prefer territories with more pops living there
+                    weight = {
+                        modifier = {
+                            factor = total_population
+                        }
                     }
-                }
-            }
-
-            if = {
-                limit = {
-                    has_non_empty_local_variable_list = {
-                        name = territories_to_move_pops_from
-                    }
-                }
-
-                set_local_variable = {
-                    name = num_pops_to_move
-                    value = {
-                        # 10 percent more than entry trigger so we don't move 1 pop
+                    random_pops_in_province = {
+                        limit = {
+                            ai_pops_are_allowed_to_be_moved = yes
+                        }
                         if = {
                             limit = {
-                                owner = {
-                                    is_tribal = no
+                                pop_type = tribesmen
+                            }
+                            country = {
+                                add_treasury = {
+                                    value = 0
+                                    subtract = tribesmen_move_cost_svalue
                                 }
                             }
-                            value = population_cap_85_percent
                         }
                         else = {
-                            value = population_cap_75_percent
+                            country = {
+                                add_treasury = {
+                                    value = 0
+                                    subtract = slaves_move_cost_svalue
+                                }
+                            }
                         }
-                        subtract = total_population
-                        min = 3
-                        max = population_cap_40_percent
-                        round = yes
+                        move_pop = scope:underpopulated_city
                     }
                 }
-
-                while = {
-                    count = local_var:num_pops_to_move
-
-                    random_in_local_list = {
-                        variable = territories_to_move_pops_from
-                        limit = {
-                            # Recheck if we still some money after previous moves
-                            owner = {
-                                treasury >= 10
-                            }
-                            # Ensure nothing weird happened and cap wasn't reached
-                            scope:underpopulated_city = {
-                                trigger_if = {
-                                    limit = {
-                                        owner = {
-                                            is_tribal = no
-                                        }
-                                    }
-                                    total_population < population_cap_85_percent
-                                }
-                                trigger_else = {
-                                    total_population < population_cap_75_percent
-                                }
-                            }
-                            # Recheck if the territory can still move pops away
-                            ai_can_move_pops_from_territory = yes
-                        }
-                        # Prefer territories with more pops living there
-                        weight = {
-                            modifier = {
-								factor = total_population
-							}
-                        }
-                        random_pops_in_province = {
-                            limit = {
-                                ai_pops_are_allowed_to_be_moved = yes
-                            }
-                            if = {
-                                limit = {
-                                    pop_type = tribesmen
-                                }
-                                country = {
-                                    add_treasury = {
-                                        value = 0
-                                        subtract = tribesmen_move_cost_svalue
-                                    }
-                                }
-                            }
-                            else = {
-                                country = {
-                                    add_treasury = {
-                                        value = 0
-                                        subtract = slaves_move_cost_svalue
-                                    }
-                                }
-                            }
-                            move_pop = scope:underpopulated_city
-                        }
-                    }
-                }
-
-                remove_local_variable = num_pops_to_move
-
-                clear_local_variable_list = territories_to_move_pops_from
             }
 
-            clear_saved_scope = underpopulated_city
+            remove_local_variable = num_pops_to_move
+
+            clear_local_variable_list = territories_to_move_pops_from
         }
+
+        clear_saved_scope = underpopulated_city
     }
 }

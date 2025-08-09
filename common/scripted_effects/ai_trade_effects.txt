@@ -1,101 +1,89 @@
 ﻿# Note that this kinda steals goods due to add_trade_route simply creating it so it's limited to AI + AI
 ai_import_food_into_states_in_need = {
-    if = {
-        limit = {
-            NOT = {
-                has_global_variable = ai_imported_food_into_states_in_need
-            }
-        }
-        set_global_variable = {
-            name = ai_imported_food_into_states_in_need
-            days = 365
-        }
-
-        # Collect all the AI states worldwide that need importing, doesn't matter much how it's done
-        every_region = {
-            every_region_governorship = {
-                limit = {
-                    owner = {
-                        is_ai = yes
-                    }
-                }
-                every_governorship_state = {
-                    limit = {
-                        ai_state_in_need_to_import_food = yes
-                    }
-                    add_to_local_variable_list = {
-                        name = states_in_need_to_import_food
-                        target = this
-                    }
-                }
-            }
-        }
-
-        # Order them by amount of trade routes, basically how big of an impact importing can achieve
-        ordered_in_local_list = {
-            variable = states_in_need_to_import_food
-            order_by = trade_routes
-            min = 0
-            max = 999999
-            check_range_bounds = no
-
-            # ai_state_in_need_to_import_food has ai_can_reset_state_trade_routes trigger that changes while looping
-            # through this list, so we need to check it via if rather than list limit. Naturally, this will mean some
-            # states collected into the list initially may not end up receiving imports.
-            #
-            # The conflict boils down to the state either having unused trade routes or being allowed to reset them,
-            # so it's enough to re-check only this part of the trigger.
-            if = {
-                limit = {
-                    OR = {
-                        unused_trade_routes > 0
-                        ai_can_reset_state_trade_routes = yes
-                    }
-                }
-
-                # Check if state owner fetched data on which states they can import from and do it if hasn't yet
+    # Collect all the AI states worldwide that need importing, doesn't matter much how it's done
+    every_region = {
+        every_region_governorship = {
+            limit = {
                 owner = {
-                    if = {
-                        limit = {
-                            NOT = {
-                                has_variable = ai_combined_states_to_import_from
-                            }
-                        }
-                        set_variable = ai_combined_states_to_import_from
-                        
-                        save_scope_as = importing_country
-                        # For all countries we can trade with, cache in their scopes which of their states can export
-                        every_country = {
-                            limit = {
-                                ai_can_import_from_this_country = yes
-                            }
-                            ai_collect_states_that_can_export = yes
-                            # Copy these states into combined lists of all states the current country can import from
-                            ai_combine_states_to_import_from = yes
-                        }
-                        clear_saved_scope = importing_country
-                    }
+                    is_ai = yes
                 }
+            }
+            every_governorship_state = {
+                limit = {
+                    ai_state_in_need_to_import_food = yes
+                }
+                add_to_local_variable_list = {
+                    name = states_in_need_to_import_food
+                    target = this
+                }
+            }
+        }
+    }
 
-                # Check if we got any of these combined lists and thus we have some states to import from
+    # Order them by amount of trade routes, basically how big of an impact importing can achieve
+    ordered_in_local_list = {
+        variable = states_in_need_to_import_food
+        order_by = trade_routes
+        min = 0
+        max = 999999
+        check_range_bounds = no
+
+        # ai_state_in_need_to_import_food has ai_can_reset_state_trade_routes trigger that changes while looping
+        # through this list, so we need to check it via if rather than list limit. Naturally, this will mean some
+        # states collected into the list initially may not end up receiving imports.
+        #
+        # The conflict boils down to the state either having unused trade routes or being allowed to reset them,
+        # so it's enough to re-check only this part of the trigger.
+        if = {
+            limit = {
+                OR = {
+                    unused_trade_routes > 0
+                    ai_can_reset_state_trade_routes = yes
+                }
+            }
+
+            # Check if state owner fetched data on which states they can import from and do it if hasn't yet
+            owner = {
                 if = {
                     limit = {
-                        owner = {
-                            ai_has_states_to_import_food_from = yes
+                        NOT = {
+                            has_variable = ai_combined_states_to_import_from
                         }
                     }
-                    # Perform importing of various food goods into the current state
-                    ai_import_food_into_specific_state = yes
+                    set_variable = ai_combined_states_to_import_from
+                    
+                    save_scope_as = importing_country
+                    # For all countries we can trade with, cache in their scopes which of their states can export
+                    every_country = {
+                        limit = {
+                            ai_can_import_from_this_country = yes
+                        }
+                        ai_collect_states_that_can_export = yes
+                        # Copy these states into combined lists of all states the current country can import from
+                        ai_combine_states_to_import_from = yes
+                    }
+                    clear_saved_scope = importing_country
                 }
             }
+
+            # Check if we got any of these combined lists and thus we have some states to import from
+            if = {
+                limit = {
+                    owner = {
+                        ai_has_states_to_import_food_from = yes
+                    }
+                }
+                # Perform importing of various food goods into the current state
+                ai_import_food_into_specific_state = yes
+            }
         }
-
-        # Clear country scope lists with food trading states from exporting and importing perspectives
-        ai_discard_states_that_can_export = yes
-        ai_discard_states_to_import_from = yes
-
-        clear_local_variable_list = states_in_need_to_import_food
     }
+
+    # Clear country scope lists with food trading states from exporting and importing perspectives
+    ai_discard_states_that_can_export = yes
+    ai_discard_states_to_import_from = yes
+
+    clear_local_variable_list = states_in_need_to_import_food
 }
 
 # Save states to export from to variable lists in country scope. The reason is that there may be a lot of states that

@@ -232,6 +232,13 @@ state_is_neighbor_of = {
     NOT = {
         this = $state$
     }
+    area = {
+        any_neighbor_area = {
+            any_area_state = {
+                this = $state$
+            }
+        }
+    }
     any_state_province = {
         any_neighbor_province = {
             exists = state
@@ -244,23 +251,28 @@ state_is_neighbor_including_unowned_of = {
     NOT = {
         this = $state$
     }
+    area = {
+        any_neighbor_area = {
+            any_area_state = {
+                this = $state$
+            }
+        }
+    }
     save_temporary_scope_as = state_to_find_neighbors
     OR = {
-        AND = {
-            NOR = {
+        NOR = {
+            area = {
+                any_area_state = {
+                    NOT = {
+                        this = scope:state_to_find_neighbors
+                    }
+                }
+            }
+            $state$ = {
                 area = {
                     any_area_state = {
                         NOT = {
-                            this = scope:state_to_find_neighbors
-                        }
-                    }
-                }
-                $state$ = {
-                    area = {
-                        any_area_state = {
-                            NOT = {
-                                this = $state$
-                            }
+                            this = $state$
                         }
                     }
                 }
@@ -277,7 +289,12 @@ state_is_neighbor_including_unowned_of = {
                         NOT = {
                             exists = owner
                         }
+                        OR = {
+                            area = scope:state_to_find_neighbors.area
+                            area = $state$.area
+                        }
                         territory_has_walkable_terrain = yes
+                        save_temporary_scope_as = first_depth_neighbor
                         any_neighbor_province = {
                             OR = {
                                 AND = {
@@ -288,10 +305,82 @@ state_is_neighbor_including_unowned_of = {
                                     NOT = {
                                         exists = owner
                                     }
+                                    OR = {
+                                        area = scope:state_to_find_neighbors.area
+                                        area = $state$.area
+                                    }
                                     territory_has_walkable_terrain = yes
+                                    save_temporary_scope_as = second_depth_neighbor
                                     any_neighbor_province = {
-                                        exists = state
-                                        state = $state$
+                                        OR = {
+                                            AND = {
+                                                exists = state
+                                                state = $state$
+                                            }
+                                            AND = {
+                                                NOT = {
+                                                    this = scope:first_depth_neighbor
+                                                }
+                                                NOT = {
+                                                    exists = owner
+                                                }
+                                                OR = {
+                                                    area = scope:state_to_find_neighbors.area
+                                                    area = $state$.area
+                                                }
+                                                territory_has_walkable_terrain = yes
+                                                save_temporary_scope_as = third_depth_neighbor
+                                                any_neighbor_province = {
+                                                    OR = {
+                                                        AND = {
+                                                            exists = state
+                                                            state = $state$
+                                                        }
+                                                        AND = {
+                                                            NOR = {
+                                                                this = scope:first_depth_neighbor
+                                                                this = scope:second_depth_neighbor
+                                                            }
+                                                            NOT = {
+                                                                exists = owner
+                                                            }
+                                                            OR = {
+                                                                area = scope:state_to_find_neighbors.area
+                                                                area = $state$.area
+                                                            }
+                                                            territory_has_walkable_terrain = yes
+                                                            any_neighbor_province = {
+                                                                OR = {
+                                                                    AND = {
+                                                                        exists = state
+                                                                        state = $state$
+                                                                    }
+                                                                    AND = {
+                                                                        NOR = {
+                                                                            this = scope:first_depth_neighbor
+                                                                            this = scope:second_depth_neighbor
+                                                                            this = scope:third_depth_neighbor
+                                                                        }
+                                                                        NOT = {
+                                                                            exists = owner
+                                                                        }
+                                                                        OR = {
+                                                                            area = scope:state_to_find_neighbors.area
+                                                                            area = $state$.area
+                                                                        }
+                                                                        territory_has_walkable_terrain = yes
+                                                                        any_neighbor_province = {
+                                                                            exists = state
+                                                                            state = $state$
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }

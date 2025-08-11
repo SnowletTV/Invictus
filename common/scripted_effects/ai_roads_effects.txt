@@ -269,7 +269,7 @@ ai_build_roads_with_custom_pathing = {
                 local_var:not_enough_gold_for_road_building = 0
             }
 
-            # STEP 3: Connect roadless 2nd largest cities to junctions of neighbor states
+            # STEP 3: Connect 2nd largest cities to junctions of neighbor states
             ordered_in_local_list = {
                 variable = states_to_connect_with_neighbors
                 order_by = state_priority_by_closeness_to_capital
@@ -281,10 +281,6 @@ ai_build_roads_with_custom_pathing = {
                 if = {
                     limit = {
                         local_var:not_enough_gold_for_road_building = 0
-                        # Late game optimization - ignore states with a lot of roads built already
-                        capital_scope.var:junction_territory_in_state = {
-                            num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
-                        }
                     }
                     ordered_state_province = {
                         order_by = total_population
@@ -295,16 +291,32 @@ ai_build_roads_with_custom_pathing = {
                         position = 0
                         check_range_bounds = no
 
-                        # Only if has no connection at all, check here because could change after previous iterations
                         if = {
                             limit = {
-                                territory_has_any_roads = no
+                                # Late game optimization - ignore territories with a lot of roads built already
+                                num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
                             }
+                            # Connect with junction of own state
                             ai_fetch_junctions_and_build_roads = {
                                 origin = this
-                                specific = 0
-                                state = scope:target_province.state
+                                specific = 1
+                                state = capital_scope.var:junction_territory_in_state
                                 processed = 0
+                            }
+                            if = {
+                                limit = {
+                                    # Recheck if we haven't run out of money after previous road building
+                                    local_var:not_enough_gold_for_road_building = 0
+                                    # Late game optimization - ignore territories with a lot of roads built already
+                                    num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
+                                }
+                                # Connect with junctions of neighbor states
+                                ai_fetch_junctions_and_build_roads = {
+                                    origin = this
+                                    specific = 0
+                                    state = scope:target_province.state
+                                    processed = 0
+                                }
                             }
                         }
                     }

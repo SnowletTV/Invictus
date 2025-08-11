@@ -101,40 +101,6 @@ ai_build_roads_with_custom_pathing = {
 
             # STEP 1.5: Fix dead ends and increase efficiency by connecting nearby territories with many roads each
             ordered_owned_province = {
-                limit = {
-                    # OR = {
-                    #     AND = {
-                    #         num_of_roads_towards_neighbors = 1
-                    #         any_neighbor_province = {
-                    #             ruled_by_road_building_country = yes
-                    #             NOT = {
-                    #                 has_road_towards = prev
-                    #             }
-                    #             num_of_roads_towards_neighbors = 1
-                    #         }
-                    #     }
-                    #     AND = {
-                            OR = {
-                                is_state_capital = yes
-                                has_city_status = yes
-                                fort_level > 0
-                            }
-                            OR = {
-                                num_of_roads_towards_neighbors = 1
-                                AND = {
-                                    num_of_roads_towards_neighbors = 2
-                                    any_neighbor_province = {
-                                        ruled_by_road_building_country = yes
-                                        NOT = {
-                                            has_road_towards = prev
-                                        }
-                                        num_of_roads_towards_neighbors >= 3
-                                    }
-                                }
-                            }
-                    #     }
-                    # }
-                }
                 order_by = territory_priority_by_closeness_to_capital
                 min = 0
                 max = 999999
@@ -145,52 +111,121 @@ ai_build_roads_with_custom_pathing = {
                     limit = {
                         local_var:not_enough_gold_for_road_building = 0
                     }
-                    save_scope_as = current_road_building_territory
 
-                    ordered_neighbor_province = {
-                        limit = {
-                            ruled_by_road_building_country = yes
-                            NOT = {
-                                has_road_towards = scope:current_road_building_territory
-                            }
-                            # OR = {
-                            #     AND = {
-                            #         num_of_roads_towards_neighbors = 1
-                            #         scope:current_road_building_territory =  {
-                            #             num_of_roads_towards_neighbors = 1
-                            #         }
-                            #     }
-                                num_of_roads_towards_neighbors >= 2
-                            # }
-                        }
-                        order_by = territory_priority_for_road_building
-                        position = 0
-                        check_range_bounds = no
-
-                        scope:current_road_building_territory = {
-                            add_road_towards = prev
-                        }
-                        scope:current_road_building_country = {
-                            add_treasury = {
-                                value = 0
-                                subtract = ai_country_build_roads_price
-                            }
-                        }
-
-                        if = {
-                            limit = {
-                                scope:current_road_building_country = {
-                                    ai_country_can_afford_to_build_5_roads = no
+                    # Requirements for neighbor state
+                    set_local_variable = {
+                        name = must_have_at_least_this_many_roads
+                        value = {
+                            # Improve connection for important military targets
+                            if = {
+                                limit = {
+                                    OR = {
+                                        is_state_capital = yes
+                                        has_city_status = yes
+                                        fort_level > 0
+                                    }
+                                }
+                                # Dead ends between each other or dead end to well connected territory
+                                if = {
+                                    limit = {
+                                        num_of_roads_towards_neighbors = 1
+                                    }
+                                    value = 1
+                                }
+                                # Multiple well connected territories between each other for max efficiency
+                                else_if = {
+                                    limit = {
+                                        num_of_roads_towards_neighbors = 2
+                                    }
+                                    value = 3
+                                }
+                                else = {
+                                    value = -1
                                 }
                             }
-                            set_local_variable = {
-                                name = not_enough_gold_for_road_building
+                            else = {
+                                value = -1
+                            }
+                        }
+                    }
+                    set_local_variable = {
+                        name = must_have_exactly_this_many_roads
+                        value = {
+                            # For low value terrtiroies only dead ends between each other
+                            if = {
+                                limit = {
+                                    NOR = {
+                                        is_state_capital = yes
+                                        has_city_status = yes
+                                        fort_level > 0
+                                    }
+                                    num_of_roads_towards_neighbors = 1
+                                }
                                 value = 1
+                            }
+                            else = {
+                                value = -1
                             }
                         }
                     }
 
-                    clear_saved_scope = current_road_building_territory
+                    if = {
+                        limit = {
+                            OR = {
+                                local_var:must_have_at_least_this_many_roads > -1
+                                local_var:must_have_exactly_this_many_roads > -1
+                            }
+                        }
+                        save_scope_as = current_road_building_territory
+                        ordered_neighbor_province = {
+                            limit = {
+                                ruled_by_road_building_country = yes
+                                NOT = {
+                                    has_road_towards = scope:current_road_building_territory
+                                }
+                                OR = {
+                                    AND = {
+                                        local_var:must_have_at_least_this_many_roads > -1
+                                        local_var:must_have_at_least_this_many_roads <= num_of_roads_towards_neighbors
+                                    }
+                                    AND = {
+                                        local_var:must_have_exactly_this_many_roads > -1
+                                        local_var:must_have_at_least_this_many_roads = num_of_roads_towards_neighbors
+                                    }
+                                }
+                            }
+                            order_by = territory_priority_for_road_building
+                            position = 0
+                            check_range_bounds = no
+
+                            scope:current_road_building_territory = {
+                                add_road_towards = prev
+                            }
+                            scope:current_road_building_country = {
+                                add_treasury = {
+                                    value = 0
+                                    subtract = ai_country_build_roads_price
+                                }
+                            }
+
+                            if = {
+                                limit = {
+                                    scope:current_road_building_country = {
+                                        ai_country_can_afford_to_build_5_roads = no
+                                    }
+                                }
+                                set_local_variable = {
+                                    name = not_enough_gold_for_road_building
+                                    value = 1
+                                }
+                            }
+                        }
+
+                        clear_saved_scope = current_road_building_territory
+                    }
+
+                    remove_local_variable = must_have_at_least_this_many_roads
+                    remove_local_variable = must_have_exactly_this_many_roads
                 }
             }
         }

@@ -76,9 +76,12 @@ ai_build_roads_with_custom_pathing = {
             value = 0
         }
 
-        # STEP 1: Connect principals of all neighbouring governorships
+        # [OWNED] STEP 1: Connect principals of all neighbouring governorships
         ordered_in_local_list = {
             variable = governorships_to_connect_with_neighbors
+            limit = {
+                owner = scope:current_road_building_country
+            }
             order_by = governorship_priority_by_closeness_to_capital
             min = 0
             check_range_bounds = no
@@ -96,13 +99,12 @@ ai_build_roads_with_custom_pathing = {
             }
         }
 
+        # [OWNED] STEP 2: Fix dead ends and connect neighbor territories with many roads each
         # Recheck if we haven't run out of money after previous road building
         if = {
             limit = {
                 local_var:not_enough_gold_for_road_building = 0
             }
-
-            # STEP 1.5: Fix dead ends and increase efficiency by connecting nearby territories with many roads each
             ordered_owned_province = {
                 limit = {
                     # Requirements for initial territory boil down to this, so check it beforehand
@@ -127,142 +129,29 @@ ai_build_roads_with_custom_pathing = {
                     limit = {
                         local_var:not_enough_gold_for_road_building = 0
                     }
-
-                    # Requirements for neighbor states. Local variables are used to avoid double checking num of roads
-                    # first in any_neighbor_province for initial territory and then again in ordered_neighbor_province
-                    set_local_variable = {
-                        name = must_have_at_least_this_many_roads
-                        value = {
-                            # Improve connection for important military targets
-                            if = {
-                                limit = {
-                                    OR = {
-                                        is_state_capital = yes
-                                        has_city_status = yes
-                                        fort_level > 0
-                                    }
-                                }
-                                # Dead ends between each other or dead end to well connected territory
-                                if = {
-                                    limit = {
-                                        num_of_roads_towards_neighbors = 1
-                                    }
-                                    value = 1
-                                }
-                                # Multiple well connected territories between each other for max efficiency
-                                else_if = {
-                                    limit = {
-                                        num_of_roads_towards_neighbors = 2
-                                    }
-                                    value = 3
-                                }
-                                else = {
-                                    value = -1
-                                }
-                            }
-                            else = {
-                                value = -1
-                            }
-                        }
-                    }
-                    set_local_variable = {
-                        name = must_have_exactly_this_many_roads
-                        value = {
-                            # For low value terrtiroies only dead ends between each other
-                            if = {
-                                limit = {
-                                    NOR = {
-                                        is_state_capital = yes
-                                        has_city_status = yes
-                                        fort_level > 0
-                                    }
-                                    num_of_roads_towards_neighbors = 1
-                                }
-                                value = 1
-                            }
-                            else = {
-                                value = -1
-                            }
-                        }
-                    }
-
-                    if = {
-                        limit = {
-                            OR = {
-                                local_var:must_have_at_least_this_many_roads > -1
-                                local_var:must_have_exactly_this_many_roads > -1
-                            }
-                        }
-                        save_scope_as = current_road_building_territory
-
-                        # We were not checking if such a neighbor exist beforehand so this may result in nothing
-                        ordered_neighbor_province = {
-                            limit = {
-                                ruled_by_road_building_country = yes
-                                NOT = {
-                                    has_road_towards = scope:current_road_building_territory
-                                }
-                                OR = {
-                                    AND = {
-                                        local_var:must_have_at_least_this_many_roads > -1
-                                        local_var:must_have_at_least_this_many_roads <= num_of_roads_towards_neighbors
-                                    }
-                                    AND = {
-                                        local_var:must_have_exactly_this_many_roads > -1
-                                        local_var:must_have_exactly_this_many_roads = num_of_roads_towards_neighbors
-                                    }
-                                }
-                            }
-                            order_by = territory_priority_for_road_building
-                            position = 0
-                            check_range_bounds = no
-
-                            ai_build_road_towards_territory = {
-                                territory = scope:current_road_building_territory
-                            }
-                            
-                            # If we can't afford any serious amount of roads after this, change the variable as well
-                            if = {
-                                limit = {
-                                    scope:current_road_building_country = {
-                                        ai_country_can_afford_to_build_5_roads = no
-                                    }
-                                }
-                                set_local_variable = {
-                                    name = not_enough_gold_for_road_building
-                                    value = 1
-                                }
-                            }
-                        }
-
-                        clear_saved_scope = current_road_building_territory
-                    }
-
-                    remove_local_variable = must_have_at_least_this_many_roads
-                    remove_local_variable = must_have_exactly_this_many_roads
+                    ai_improve_road_interconnectivity = yes
                 }
             }
         }
 
+        # [RULED] STEP 1: Connect principals of all neighbouring governorships
         # Recheck if we haven't run out of money after previous road building
         if = {
             limit = {
                 local_var:not_enough_gold_for_road_building = 0
-
-                # Check game rules for lowering AI road building density
-                NOR = {
-                    has_global_variable = game_rule_ai_road_building_low_density
-                    AND = {
-                        has_global_variable = game_rule_ai_road_building_scaling_density
-                        years_passed_since_game_start < 200
-                    }
+                any_subject = {
+                    is_permanent_subject = yes
                 }
             }
-
-            # STEP 2: Connect junctions of all neighbouring states
             ordered_in_local_list = {
-                variable = states_to_connect_with_neighbors
-                order_by = state_priority_by_closeness_to_capital
+                variable = governorships_to_connect_with_neighbors
+                limit = {
+                    owner = {
+                        is_subject_of = scope:current_road_building_country
+                        is_permanent_subject = yes
+                    }
+                }
+                order_by = governorship_priority_by_closeness_to_capital
                 min = 0
                 check_range_bounds = no
 
@@ -275,22 +164,57 @@ ai_build_roads_with_custom_pathing = {
                             num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
                         }
                     }
-                    ai_fetch_junctions_and_build_roads = {
-                        origin = capital_scope.var:junction_territory_in_state
-                        specific = 0
-                        state = scope:target_province.state
-                        processed = 0
+                    ai_fetch_principals_and_build_roads = yes
+                }
+            }
+        }
+
+        # [RULED] STEP 2: Fix dead ends and connect neighbor territories with many roads each
+        # Recheck if we haven't run out of money after previous road building
+        if = {
+            limit = {
+                local_var:not_enough_gold_for_road_building = 0
+                any_subject = {
+                    is_permanent_subject = yes
+                }
+            }
+            every_subject = {
+                limit = {
+                    is_permanent_subject = yes
+                }
+                ordered_owned_province = {
+                    limit = {
+                        # Requirements for initial territory boil down to this, so check it beforehand
+                        OR = {
+                            num_of_roads_towards_neighbors = 1
+                            AND = {
+                                num_of_roads_towards_neighbors = 2
+                                OR = {
+                                    is_state_capital = yes
+                                    has_city_status = yes
+                                    fort_level > 0
+                                }
+                            }
+                        }
+                    }
+                    order_by = territory_priority_by_closeness_to_capital
+                    min = 0
+                    check_range_bounds = no
+
+                    # Recheck if we haven't run out of money after previous road building
+                    if = {
+                        limit = {
+                            local_var:not_enough_gold_for_road_building = 0
+                        }
+                        ai_improve_road_interconnectivity = yes
                     }
                 }
             }
         }
 
-        # Recheck if we haven't run out of money after previous road building
+        # Check game rules for lowering AI road building density
         if = {
             limit = {
-                local_var:not_enough_gold_for_road_building = 0
-                
-                # Check game rules for lowering AI road building density
                 NOR = {
                     has_global_variable = game_rule_ai_road_building_low_density
                     AND = {
@@ -300,37 +224,172 @@ ai_build_roads_with_custom_pathing = {
                 }
             }
 
-            # STEP 3: Connect roadless 2nd largest cities to junctions of their states
-            ordered_in_local_list = {
-                variable = states_to_connect_with_neighbors
-                order_by = state_priority_by_closeness_to_capital
-                min = 0
-                check_range_bounds = no
-
-                # Recheck if we haven't run out of money after previous road building
-                if = {
+            # [OWNED] STEP 3: Connect junctions of all neighbouring states
+            # Recheck if we haven't run out of money after previous road building
+            if = {
+                limit = {
+                    local_var:not_enough_gold_for_road_building = 0
+                }
+                ordered_in_local_list = {
+                    variable = states_to_connect_with_neighbors
                     limit = {
-                        local_var:not_enough_gold_for_road_building = 0
+                        owner = scope:current_road_building_country
                     }
-                    ordered_state_province = {
-                        order_by = total_population
-                        limit = {
-                            territory_is_junction_of_its_area = no
-                            has_city_status = yes
-                        }
-                        position = 0
-                        check_range_bounds = no
+                    order_by = state_priority_by_closeness_to_capital
+                    min = 0
+                    check_range_bounds = no
 
-                        # If it's roadless, connect with junction of own state
-                        if = {
-                            limit = {
-                                territory_has_any_roads = no
+                    # Recheck if we haven't run out of money after previous road building
+                    if = {
+                        limit = {
+                            local_var:not_enough_gold_for_road_building = 0
+                            # Late game optimization - ignore states with a lot of roads built already
+                            capital_scope.var:junction_territory_in_state = {
+                                num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
                             }
-                            ai_fetch_junctions_and_build_roads = {
-                                origin = this
-                                specific = 1
-                                state = state
-                                processed = 0
+                        }
+                        ai_fetch_junctions_and_build_roads = {
+                            origin = capital_scope.var:junction_territory_in_state
+                            specific = 0
+                            state = scope:target_province.state
+                            processed = 0
+                        }
+                    }
+                }
+            }
+
+            # [OWNED] STEP 4: Connect roadless 2nd largest cities to junctions of their states
+            # Recheck if we haven't run out of money after previous road building
+            if = {
+                limit = {
+                    local_var:not_enough_gold_for_road_building = 0
+                }
+                ordered_in_local_list = {
+                    variable = states_to_connect_with_neighbors
+                    limit = {
+                        owner = scope:current_road_building_country
+                    }
+                    order_by = state_priority_by_closeness_to_capital
+                    min = 0
+                    check_range_bounds = no
+
+                    # Recheck if we haven't run out of money after previous road building
+                    if = {
+                        limit = {
+                            local_var:not_enough_gold_for_road_building = 0
+                        }
+                        ordered_state_province = {
+                            order_by = total_population
+                            limit = {
+                                territory_is_junction_of_its_area = no
+                                has_city_status = yes
+                            }
+                            position = 0
+                            check_range_bounds = no
+
+                            # If it's roadless, connect with junction of own state
+                            if = {
+                                limit = {
+                                    territory_has_any_roads = no
+                                }
+                                ai_fetch_junctions_and_build_roads = {
+                                    origin = this
+                                    specific = 1
+                                    state = state
+                                    processed = 0
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            # [RULED] STEP 3: Connect junctions of all neighbouring states
+            # Recheck if we haven't run out of money after previous road building
+            if = {
+                limit = {
+                    local_var:not_enough_gold_for_road_building = 0
+                    any_subject = {
+                        is_permanent_subject = yes
+                    }
+                }
+                ordered_in_local_list = {
+                    variable = states_to_connect_with_neighbors
+                    limit = {
+                        owner = {
+                            is_subject_of = scope:current_road_building_country
+                            is_permanent_subject = yes
+                        }
+                    }
+                    order_by = state_priority_by_closeness_to_capital
+                    min = 0
+                    check_range_bounds = no
+
+                    # Recheck if we haven't run out of money after previous road building
+                    if = {
+                        limit = {
+                            local_var:not_enough_gold_for_road_building = 0
+                            # Late game optimization - ignore states with a lot of roads built already
+                            capital_scope.var:junction_territory_in_state = {
+                                num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
+                            }
+                        }
+                        ai_fetch_junctions_and_build_roads = {
+                            origin = capital_scope.var:junction_territory_in_state
+                            specific = 0
+                            state = scope:target_province.state
+                            processed = 0
+                        }
+                    }
+                }
+            }
+
+            # [RULED] STEP 4: Connect roadless 2nd largest cities to junctions of their states
+            # Recheck if we haven't run out of money after previous road building
+            if = {
+                limit = {
+                    local_var:not_enough_gold_for_road_building = 0
+                    any_subject = {
+                        is_permanent_subject = yes
+                    }
+                }
+                ordered_in_local_list = {
+                    variable = states_to_connect_with_neighbors
+                    limit = {
+                        owner = {
+                            is_subject_of = scope:current_road_building_country
+                            is_permanent_subject = yes
+                        }
+                    }
+                    order_by = state_priority_by_closeness_to_capital
+                    min = 0
+                    check_range_bounds = no
+
+                    # Recheck if we haven't run out of money after previous road building
+                    if = {
+                        limit = {
+                            local_var:not_enough_gold_for_road_building = 0
+                        }
+                        ordered_state_province = {
+                            order_by = total_population
+                            limit = {
+                                territory_is_junction_of_its_area = no
+                                has_city_status = yes
+                            }
+                            position = 0
+                            check_range_bounds = no
+
+                            # If it's roadless, connect with junction of own state
+                            if = {
+                                limit = {
+                                    territory_has_any_roads = no
+                                }
+                                ai_fetch_junctions_and_build_roads = {
+                                    origin = this
+                                    specific = 1
+                                    state = state
+                                    processed = 0
+                                }
                             }
                         }
                     }
@@ -670,6 +729,120 @@ ai_cache_governorships_to_connect = {
 
         clear_saved_scope = governorship_to_check_neighbors
     }
+}
+
+ai_improve_road_interconnectivity = {
+    # Save requirements to neighbor states into local variables as an alternative to checking any_neighbor_province
+    set_local_variable = {
+        name = must_have_at_least_this_many_roads
+        value = {
+            # Improve connection for important military targets
+            if = {
+                limit = {
+                    OR = {
+                        is_state_capital = yes
+                        has_city_status = yes
+                        fort_level > 0
+                    }
+                }
+                # Dead ends between each other or dead end to well connected territory
+                if = {
+                    limit = {
+                        num_of_roads_towards_neighbors = 1
+                    }
+                    value = 1
+                }
+                # Multiple well connected territories between each other for max efficiency
+                else_if = {
+                    limit = {
+                        num_of_roads_towards_neighbors = 2
+                    }
+                    value = 3
+                }
+                else = {
+                    value = -1
+                }
+            }
+            else = {
+                value = -1
+            }
+        }
+    }
+    set_local_variable = {
+        name = must_have_exactly_this_many_roads
+        value = {
+            # For low value terrtiroies only dead ends between each other
+            if = {
+                limit = {
+                    NOR = {
+                        is_state_capital = yes
+                        has_city_status = yes
+                        fort_level > 0
+                    }
+                    num_of_roads_towards_neighbors = 1
+                }
+                value = 1
+            }
+            else = {
+                value = -1
+            }
+        }
+    }
+
+    if = {
+        limit = {
+            OR = {
+                local_var:must_have_at_least_this_many_roads > -1
+                local_var:must_have_exactly_this_many_roads > -1
+            }
+        }
+        save_scope_as = current_road_building_territory
+
+        # We were not checking if such a neighbor exist beforehand so this may result in nothing
+        ordered_neighbor_province = {
+            limit = {
+                ruled_by_road_building_country = yes
+                NOT = {
+                    has_road_towards = scope:current_road_building_territory
+                }
+                OR = {
+                    AND = {
+                        local_var:must_have_at_least_this_many_roads > -1
+                        local_var:must_have_at_least_this_many_roads <= num_of_roads_towards_neighbors
+                    }
+                    AND = {
+                        local_var:must_have_exactly_this_many_roads > -1
+                        local_var:must_have_exactly_this_many_roads = num_of_roads_towards_neighbors
+                    }
+                }
+            }
+            order_by = territory_priority_for_road_building
+            position = 0
+            check_range_bounds = no
+
+            ai_build_road_towards_territory = {
+                territory = scope:current_road_building_territory
+            }
+            
+            # If we can't afford any serious amount of roads after this, change the variable as well
+            if = {
+                limit = {
+                    scope:current_road_building_country = {
+                        ai_country_can_afford_to_build_5_roads = no
+                    }
+                }
+                set_local_variable = {
+                    name = not_enough_gold_for_road_building
+                    value = 1
+                }
+            }
+        }
+
+        clear_saved_scope = current_road_building_territory
+    }
+
+    remove_local_variable = must_have_at_least_this_many_roads
+    remove_local_variable = must_have_exactly_this_many_roads
 }
 
 ai_fetch_principals_and_build_roads = {

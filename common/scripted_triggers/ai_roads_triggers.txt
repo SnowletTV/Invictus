@@ -37,20 +37,20 @@ ai_unit_qualifies_for_building_roads = {
     is_legion_unit = yes
 }
 
-ai_country_can_afford_to_build_1_road = {
-    trigger_if = {
-        limit = {
-            is_advanced_ai_enabled = yes
-            NOT = {
-                has_global_variable = game_rule_advanced_ai_mercenaries
-            }
-        }
-        treasury >= ai_wartime_fund_and_1_road
-    }
-    trigger_else = {
-        treasury >= ai_minimal_buffer_and_1_road
-    }
-}
+# ai_country_can_afford_to_build_1_road = {
+#     trigger_if = {
+#         limit = {
+#             is_advanced_ai_enabled = yes
+#             NOT = {
+#                 has_global_variable = game_rule_advanced_ai_mercenaries
+#             }
+#         }
+#         treasury >= ai_wartime_fund_and_1_road
+#     }
+#     trigger_else = {
+#         treasury >= ai_minimal_buffer_and_1_road
+#     }
+# }
 
 ai_country_can_afford_to_build_5_roads = {
     trigger_if = {
@@ -84,10 +84,10 @@ ai_country_can_afford_to_build_planned_roads = {
 
 state_contains_junction_of_its_area = {
     capital_scope = {
-        has_variable = state_contained_junction_territory
+        has_variable = junction_territory_in_state
     }
     save_temporary_scope_as = state_that_might_contain
-    capital_scope.var:state_contained_junction_territory = {
+    capital_scope.var:junction_territory_in_state = {
         exists = state
         state = scope:state_that_might_contain
     }
@@ -99,7 +99,7 @@ territory_has_any_roads = {
 
 state_contains_junction_with_roads = {
     state_contains_junction_of_its_area = yes
-    capital_scope.var:state_contained_junction_territory = {
+    capital_scope.var:junction_territory_in_state = {
         territory_has_any_roads = yes
     }
 }
@@ -148,6 +148,8 @@ territory_is_junction_of_its_area = {
         has_variable = territory_is_junction_of_its_area
     }
     trigger_else = {
+
+        # Not an island unless it's impossible
         OR = {
             is_island_territory = no
             NOT = {
@@ -183,6 +185,7 @@ territory_is_junction_of_its_area = {
                 }
             }
         }
+
         # In most cases it must be a capital of a state with the highest junction priority
         trigger_else_if = {
             limit = {
@@ -208,6 +211,7 @@ territory_is_junction_of_its_area = {
                 }
             }
         }
+
         # As a fallback simply choose a territory with the highest population
         trigger_else = {
             NOT = {
@@ -247,7 +251,8 @@ state_is_neighbor_of = {
     }
 }
 
-state_is_neighbor_including_unowned_of = {
+# States of neighbor areas that can be connected by unowned territories
+state_is_neighbor_of_including_unowned = {
     NOT = {
         this = $state$
     }
@@ -260,6 +265,8 @@ state_is_neighbor_including_unowned_of = {
     }
     save_temporary_scope_as = state_to_find_neighbors
     OR = {
+
+        # Both areas have no other states but are neighboring, means states are neighboring as well by rules above
         NOR = {
             area = {
                 any_area_state = {
@@ -278,7 +285,11 @@ state_is_neighbor_including_unowned_of = {
                 }
             }
         }
+
+        # Zero depth, no need to save scope and check - it has state so doesn't qualify by NOT = { exists = owner }
         any_state_province = {
+
+            # First depth
             any_neighbor_province = {
                 OR = {
                     AND = {
@@ -286,15 +297,19 @@ state_is_neighbor_including_unowned_of = {
                         state = $state$
                     }
                     AND = {
+                        # Unowned territory that can be used for moving
                         NOT = {
                             exists = owner
                         }
+                        territory_has_walkable_terrain = yes
+                        # The whole path must be contained in one or the another area
                         OR = {
                             area = scope:state_to_find_neighbors.area
                             area = $state$.area
                         }
-                        territory_has_walkable_terrain = yes
+
                         save_temporary_scope_as = first_depth_neighbor
+                        # Second depth
                         any_neighbor_province = {
                             OR = {
                                 AND = {
@@ -305,12 +320,14 @@ state_is_neighbor_including_unowned_of = {
                                     NOT = {
                                         exists = owner
                                     }
+                                    territory_has_walkable_terrain = yes
                                     OR = {
                                         area = scope:state_to_find_neighbors.area
                                         area = $state$.area
                                     }
-                                    territory_has_walkable_terrain = yes
+
                                     save_temporary_scope_as = second_depth_neighbor
+                                    # Third depth
                                     any_neighbor_province = {
                                         OR = {
                                             AND = {
@@ -318,18 +335,21 @@ state_is_neighbor_including_unowned_of = {
                                                 state = $state$
                                             }
                                             AND = {
+                                                # Check depth-2 because neighbor of neighbor
                                                 NOT = {
                                                     this = scope:first_depth_neighbor
                                                 }
                                                 NOT = {
                                                     exists = owner
                                                 }
+                                                territory_has_walkable_terrain = yes
                                                 OR = {
                                                     area = scope:state_to_find_neighbors.area
                                                     area = $state$.area
                                                 }
-                                                territory_has_walkable_terrain = yes
+
                                                 save_temporary_scope_as = third_depth_neighbor
+                                                # Fourth depth
                                                 any_neighbor_province = {
                                                     OR = {
                                                         AND = {
@@ -337,6 +357,7 @@ state_is_neighbor_including_unowned_of = {
                                                             state = $state$
                                                         }
                                                         AND = {
+                                                            # Check depth-2 because neighbor of neighbor
                                                             NOR = {
                                                                 this = scope:first_depth_neighbor
                                                                 this = scope:second_depth_neighbor
@@ -344,11 +365,13 @@ state_is_neighbor_including_unowned_of = {
                                                             NOT = {
                                                                 exists = owner
                                                             }
+                                                            territory_has_walkable_terrain = yes
                                                             OR = {
                                                                 area = scope:state_to_find_neighbors.area
                                                                 area = $state$.area
                                                             }
-                                                            territory_has_walkable_terrain = yes
+
+                                                            # Fifth depth
                                                             any_neighbor_province = {
                                                                 OR = {
                                                                     AND = {
@@ -356,6 +379,7 @@ state_is_neighbor_including_unowned_of = {
                                                                         state = $state$
                                                                     }
                                                                     AND = {
+                                                                        # Check depth-2 because neighbor of neighbor
                                                                         NOR = {
                                                                             this = scope:first_depth_neighbor
                                                                             this = scope:second_depth_neighbor
@@ -364,11 +388,13 @@ state_is_neighbor_including_unowned_of = {
                                                                         NOT = {
                                                                             exists = owner
                                                                         }
+                                                                        territory_has_walkable_terrain = yes
                                                                         OR = {
                                                                             area = scope:state_to_find_neighbors.area
                                                                             area = $state$.area
                                                                         }
-                                                                        territory_has_walkable_terrain = yes
+
+                                                                        # That's enough depth for most cases
                                                                         any_neighbor_province = {
                                                                             exists = state
                                                                             state = $state$
@@ -392,28 +418,38 @@ state_is_neighbor_including_unowned_of = {
     }
 }
 
+# Any terrain type except water and impassable
 territory_has_walkable_terrain = {
-    OR = {
-        terrain = oasis
-        terrain = desert_hills
-        terrain = flood_plain
-        terrain = steppes
-        terrain = plains
-        terrain = mountain
-        terrain = hills
-        terrain = desert
-        terrain = marsh
-        terrain = jungle
-        terrain = farmland
-        terrain = forest
+    NOR = {
         terrain = ocean
+        terrain = coastal_terrain
+        terrain = riverine_terrain
+        terrain = impassable_terrain
     }
 }
+
+# Note: previously "suitable" triggers contained guarantees for all cases that neighbor of chosen state/territory will
+# have neighbor that will also be suitable, but I came to a conclusion that this is guaranteed by default so it's just
+# a waste of performance.
+#
+# Here's the logic: guarantee boils down to having neighbor that has lower depth level and wasn't processed before, but:
+# 1. Every N depth state/territory is guaranteed to have N-1 neighbor by algorithm, because depth level goes from 0, so
+#    in order to have e.g. depth 5 there must have been depth 4 state/territory that added this one to next level list
+#    during depth level calculations, and all of this stuff is static so they are still neighbors.
+# 2. The N-1 is guaranteed to not be processed before because my pathfinding is never allowed to go back in depth, only
+#    to same depth neighbors, so if you are at e.g. depth 5 it means no depth 4 state/territory was processed before as
+#    we go from destination to origin, so from higher depth to lower.
+#
+# The combination of these means if you are at e.g. depth 5 state/territory, it is guaranteed to have depth 4 neighbor
+# that wasn't processed by default, so we don't need to check if there's one.
+#
+# To clarify, this stuff is important for pathfinding to work in 100% of cases, meaning that it always can find a next
+# state/territory, so if we feed some data to the algorithm, we can be sure it will give a result.
 
 state_is_suitable_for_road_building = {
     state_is_eligible_for_road_building = yes
 
-    # Less depth means we are getting closer to a target which is always good
+    # Less depth means we are getting closer to origin which is always good
     trigger_if = {
         limit = {
             has_less_depth_than_current_state = yes
@@ -427,14 +463,14 @@ state_is_suitable_for_road_building = {
             has_same_depth_as_current_state = yes
         }
 
-        # Only allow this if it has road to current state in order to use existing ones better
+        # Only allow this if its junction has roads, which is cheaper and leads to more connections
         state_contains_junction_with_roads = yes
 
-        # Only allow this if it's not the case for the previous pair, otherwise can make a circle
+        # Only allow this if it's not the case for the previous pair, otherwise gaps between roads become too big
         previous_state_has_same_depth_as_current = no
     }
 
-    # Don't go back in depth because it may lead to zig-zaging and other fun stuff
+    # Don't go back in depth because it's complex, performance intseive, may lead to zig-zaging and other fun stuff
     trigger_else = {
         always = no
     }
@@ -470,7 +506,7 @@ has_less_depth_than_current_state = {
 territory_is_suitable_for_road_building = {
     territory_is_eligible_for_road_building = yes
 
-    # Less depth means we are getting closer to a target which is always good
+    # Less depth means we are getting closer to origin which is always good
     trigger_if = {
         limit = {
             has_less_depth_than_current_territory = yes
@@ -489,14 +525,14 @@ territory_is_suitable_for_road_building = {
             territory = scope:current_road_building_territory
         }
 
-        # Only allow this if it's not the case for the previous pair, otherwise can make a circle
+        # Only allow this if it's not the case for the previous pairs, otherwise gaps between roads become too big
         OR = {
             previous_territory_has_same_depth_as_current = no
             prevprev_territory_has_same_depth_as_previous = no
         }
     }
 
-    # Don't go back in depth because it may lead to zig-zaging and other fun stuff
+    # Don't go back in depth because it's complex, performance intseive, may lead to zig-zaging and other fun stuff
     trigger_else = {
         always = no
     }

@@ -101,6 +101,20 @@ ai_build_roads_with_custom_pathing = {
 
             # STEP 1.5: Fix dead ends and increase efficiency by connecting nearby territories with many roads each
             ordered_owned_province = {
+                limit = {
+                    # Requirements for initial territory boil down to this, so check it beforehand
+                    OR = {
+                        num_of_roads_towards_neighbors = 1
+                        AND = {
+                            num_of_roads_towards_neighbors = 2
+                            OR = {
+                                is_state_capital = yes
+                                has_city_status = yes
+                                fort_level > 0
+                            }
+                        }
+                    }
+                }
                 order_by = territory_priority_by_closeness_to_capital
                 min = 0
                 max = 999999
@@ -112,7 +126,8 @@ ai_build_roads_with_custom_pathing = {
                         local_var:not_enough_gold_for_road_building = 0
                     }
 
-                    # Requirements for neighbor state
+                    # Requirements for neighbor states. Local variables are used to avoid double checking num of roads
+                    # first in any_neighbor_province for initial territory and then again in ordered_neighbor_province
                     set_local_variable = {
                         name = must_have_at_least_this_many_roads
                         value = {
@@ -177,6 +192,8 @@ ai_build_roads_with_custom_pathing = {
                             }
                         }
                         save_scope_as = current_road_building_territory
+
+                        # We were not checking if such a neighbor exist beforehand so this may result in nothing
                         ordered_neighbor_province = {
                             limit = {
                                 ruled_by_road_building_country = yes
@@ -190,7 +207,7 @@ ai_build_roads_with_custom_pathing = {
                                     }
                                     AND = {
                                         local_var:must_have_exactly_this_many_roads > -1
-                                        local_var:must_have_at_least_this_many_roads = num_of_roads_towards_neighbors
+                                        local_var:must_have_exactly_this_many_roads = num_of_roads_towards_neighbors
                                     }
                                 }
                             }
@@ -209,7 +226,8 @@ ai_build_roads_with_custom_pathing = {
                                     subtract = ai_country_build_roads_price
                                 }
                             }
-
+                            
+                            # If we can't afford any serious amount of roads after this, change the variable as well
                             if = {
                                 limit = {
                                     scope:current_road_building_country = {

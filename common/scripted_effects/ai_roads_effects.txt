@@ -53,17 +53,17 @@ ai_build_roads_with_custom_pathing = {
         # Cache junctions in country states, neighbouring states and governorships to connect with roads
         ai_cache_country_road_building_data = yes
 
-        # Used potentially a lot of times and checks country units, so it's better to cache this
-        set_local_variable = {
-            name = ai_country_build_roads_price_cached
-            value = ai_country_build_roads_price
-        }
-
         # Calculate state distance from capital in levels, used in various priority values
         capital_scope.state = {
             ai_determine_state_depth_level = {
                 variable = state_capital_distance
             }
+        }
+
+        # Used potentially a lot of times and checks country units, so it's better to cache this
+        set_local_variable = {
+            name = ai_country_build_roads_price_cached
+            value = ai_country_build_roads_price
         }
 
         # Script level flag that we ran out of money and should stop trying to build any roads
@@ -200,7 +200,9 @@ ai_build_roads_with_custom_pathing = {
 
                             scope:current_road_building_territory = {
                                 add_road_towards = prev
+                                ai_increment_roads_towards_neighbors = yes
                             }
+                            ai_increment_roads_towards_neighbors = yes
                             scope:current_road_building_country = {
                                 add_treasury = {
                                     value = 0
@@ -324,6 +326,19 @@ ai_build_roads_with_custom_pathing = {
             }
         }
 
+        # Clear num of roads cached on territory level
+        every_owned_province = {
+            remove_variable = num_of_roads_towards_neighbors_cached
+        }
+        every_subject = {
+            limit = {
+                is_permanent_subject = yes
+            }
+            every_owned_province = {
+                remove_variable = num_of_roads_towards_neighbors_cached
+            }
+        }
+
         # Clear junctions cached on state level
         every_in_local_list = {
             variable = clear_junction_territory_in_state
@@ -383,6 +398,16 @@ ai_build_roads_with_custom_pathing = {
 }
 
 ai_cache_country_road_building_data = {
+    every_owned_province = {
+        ai_cache_roads_towards_neighbors = yes
+    }
+    every_subject = {
+        limit = {
+            is_permanent_subject = yes
+        }
+        ai_cache_roads_towards_neighbors = yes
+    }
+
     every_country_state = {
         ai_cache_state_junction_territory = yes
     }
@@ -401,6 +426,13 @@ ai_cache_country_road_building_data = {
 
     every_governorships = {
         ai_cache_governorships_to_connect = yes
+    }
+}
+
+ai_cache_roads_towards_neighbors = {
+    set_variable = {
+        name = num_of_roads_towards_neighbors_cached
+        value = num_of_roads_towards_neighbors
     }
 }
 
@@ -1106,7 +1138,9 @@ ai_build_roads_between_junctions = {
                         variable = territories_to_build_roads_towards
                         scope:territory_to_build_road_from = {
                             add_road_towards = prev
+                            ai_increment_roads_towards_neighbors = yes
                         }
+                        ai_increment_roads_towards_neighbors = yes
                         scope:current_road_building_country = {
                             add_treasury = {
                                 value = 0
@@ -1430,4 +1464,16 @@ ai_determine_territory_depth_level = {
     # Garbage collection
     clear_local_variable_list = territories_of_current_level
     remove_local_variable = current_territory_depth_level
+}
+
+ai_increment_roads_towards_neighbors = {
+    if = {
+        limit = {
+            has_variable = num_of_roads_towards_neighbors_cached
+        }
+        change_variable = {
+            name = num_of_roads_towards_neighbors_cached
+            add = 1
+        }
+    }                     
 }

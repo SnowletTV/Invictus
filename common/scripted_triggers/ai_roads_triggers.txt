@@ -82,6 +82,16 @@ ai_country_can_afford_to_build_planned_roads = {
     }
 }
 
+can_only_build_low_density_roads = {
+    OR = {
+        has_global_variable = game_rule_ai_road_building_low_density
+        AND = {
+            has_global_variable = game_rule_ai_road_building_scaling_density
+            years_passed_since_game_start < 200
+        }
+    }
+}
+
 state_contains_junction_of_its_area = {
     capital_scope = {
         has_variable = junction_territory_in_state
@@ -138,6 +148,35 @@ should_build_roads_in_ruled_state = {
         owner = scope:current_road_building_country
         capital_scope = {
             has_variable = state_capital_distance
+        }
+    }
+}
+
+should_build_roads_in_ruled_governorship = {
+    exists = capital_scope
+    capital_scope.state = {
+        state_is_target_for_road_building = yes
+    }
+    
+    # At least 50% of region states are ruled by us and considered worth building roads in
+    trigger_if = {
+        limit = {
+            can_only_build_low_density_roads = yes
+        }
+        save_temporary_scope_as = evaluated_ruled_governorship
+        capital_scope.region = {
+            any_region_state = {
+                percent >= 0.50
+                governorship = scope:evaluated_ruled_governorship
+                state_is_target_for_road_building = yes
+            }
+        }
+    }
+    # Has at least 2 states that are worth building roads in
+    trigger_else = {
+        any_governorship_state = {
+            count >= 2
+            state_is_target_for_road_building = yes
         }
     }
 }

@@ -582,7 +582,9 @@ ai_find_spots_to_build_roads_step_2 = {
 
         if = {
             limit = {
-                has_non_empty_local_variable_list = territories_for_road_building_step_2
+                has_non_empty_local_variable_list = {
+                    name = territories_for_road_building_step_2
+                }
             }
             ordered_in_local_list = {
                 variable = territories_for_road_building_step_2
@@ -595,7 +597,7 @@ ai_find_spots_to_build_roads_step_2 = {
                     limit = {
                         local_var:not_enough_gold_for_road_building = 0
                     }
-                    
+
                     # Save requirements into local variables as an alternative to checking any_neighbor_province
                     set_local_variable = {
                         name = must_have_at_least_this_many_roads
@@ -771,7 +773,7 @@ ai_find_spots_to_build_roads_step_3 = {
     }
 }
 
-# STEP 4: Connect roadless 2nd largest cities to junctions of their states
+# STEP 4: Connect roadless largest cities to junctions of their states
 ai_find_spots_to_build_roads_step_4 = {
     if = {
         limit = {
@@ -785,61 +787,89 @@ ai_find_spots_to_build_roads_step_4 = {
                 }
             }
         }
-        ordered_in_local_list = {
-            variable = states_to_connect_with_neighbors
+        if = {
             limit = {
-                OR = {
-                    AND = {
-                        $owned$ = 1
-                        owner = scope:current_road_building_country
-                    }
-                    AND = {
-                        $ruled$ = 1
-                        owner = {
-                            is_subject_of = scope:current_road_building_country
-                            is_permanent_subject = yes
-                        }
-                    }
-                }
-                should_build_roads_in_ruled_state = yes
+                $owned$ = 1
             }
-            order_by = state_priority_by_closeness_to_capital
-            min = 0
-            check_range_bounds = no
-
-            # Recheck if we haven't run out of money after previous road building
-            if = {
+            every_country_state = {
                 limit = {
-                    local_var:not_enough_gold_for_road_building = 0
+                    should_build_roads_in_ruled_state = yes
                 }
-                save_scope_as = state_with_junction_of_area
-                area = {
-                    ordered_area_province = {
-                        limit = {
-                            ruled_by_road_building_country = yes
-                            territory_is_junction_of_its_area = no
-                            has_city_status = yes
-                        }
-                        order_by = total_population
-                        position = 0
-                        check_range_bounds = no
+                add_to_local_variable_list = {
+                    name = states_for_road_building_step_4
+                    target = this
+                }
+            }
+        }
+        if = {
+            limit = {
+                $ruled$ = 1
+            }
+            every_subject = {
+                limit = {
+                    is_permanent_subject = yes
+                }
+                every_country_state = {
+                    limit = {
+                        should_build_roads_in_ruled_state = yes
+                    }
+                    add_to_local_variable_list = {
+                        name = states_for_road_building_step_4
+                        target = this
+                    }
+                }
+            }
+        }
 
-                        # If it's roadless, connect with junction of own state
-                        if = {
+        if = {
+            limit = {
+                has_non_empty_local_variable_list = {
+                    name = states_for_road_building_step_4
+                }
+            }
+            ordered_in_local_list = {
+                variable = states_for_road_building_step_4
+                order_by = state_priority_by_closeness_to_capital
+                min = 0
+                check_range_bounds = no
+
+                # Recheck if we haven't run out of money after previous road building
+                if = {
+                    limit = {
+                        local_var:not_enough_gold_for_road_building = 0
+                    }
+                    save_scope_as = state_with_junction_of_area
+                    area = {
+                        ordered_area_province = {
                             limit = {
-                                territory_has_any_roads = no
+                                ruled_by_road_building_country = yes
+                                territory_is_junction_of_its_area = no
+                                has_city_status = yes
                             }
-                            ai_fetch_junctions_and_build_roads = {
-                                origin = this
-                                specific = 1
-                                state = scope:state_with_junction_of_area
-                                processed = 0
+                            order_by = total_population
+                            min = 0
+                            max = max_cities_to_connect_to_junction
+                            check_range_bounds = no
+
+                            # If it's roadless, connect with junction of own state
+                            if = {
+                                limit = {
+                                    territory_has_any_roads = no
+                                }
+                                ai_fetch_junctions_and_build_roads = {
+                                    origin = this
+                                    specific = 1
+                                    state = scope:state_with_junction_of_area
+                                    processed = 0
+                                }
                             }
                         }
                     }
+                    clear_saved_scope = state_with_junction_of_area
                 }
-                clear_saved_scope = state_with_junction_of_area
             }
+
+            clear_local_variable_list = states_for_road_building_step_4
         }
     }
 }

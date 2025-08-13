@@ -335,13 +335,78 @@ governorship_priority_by_closeness_to_capital = {
     subtract = governorship_priority_by_distance_from_capital
 }
 
-state_priority_for_junction = {
-    value = state_priority_by_id
-    every_state_province = {
-        # Priority by having more territories
-        add = 50
-        # Having 50 more population is equal to having 1 more territory
-        add = total_population
+territory_priority_for_junction = {
+    value = territory_priority_by_id
+
+    # If area already has a junction territory, choose it, as junctions are assigned for lifetime
+    if = {
+        limit = {
+            area = {
+                any_area_province = {
+                    has_variable = territory_is_junction_of_its_area
+                }
+            }
+        }
+        if = {
+            limit = {
+                has_variable = territory_is_junction_of_its_area
+            }
+            add = 100000
+        }
+    }
+
+    # Otherwise choose a junction based on importance, note that only one condition goes through due to else_if
+    else = {
+
+        # For areas with a lot of pre-existing roads choose territory with the highest amount of them
+        if = {
+            limit = {
+                num_of_roads_towards_neighbors >= 4
+            }
+            add = {
+                value = 100000
+                multiply = num_of_roads_towards_neighbors
+                max = 999999
+            }
+        }
+        
+        # In most cases it must be a capital of a state with the highest priority
+        else_if = {
+            limit = {
+                exists = state
+                this = state.capital_scope
+            }
+            add = {
+                value = 10000
+                state = {
+                    every_state_province = {
+                        add = {
+                            # Priority by having more territories
+                            add = 50
+                            # Having 50 more population is equal to having 1 more territory
+                            add = total_population
+                        }
+                    }
+                }
+                max = 99999
+            }
+        }
+
+        # As a fallback simply choose a territory with the highest population
+        else = {
+            add = {
+                value = total_population
+                max = 9999
+            }
+        }
+
+        # Island territories always go after non-island ones by value guaranteed to be in negative
+        if = {
+            limit = {
+                is_island_territory = yes
+            }
+            subtract = 1000000
+        }
     }
 }
 

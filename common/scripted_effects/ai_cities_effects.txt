@@ -981,3 +981,73 @@ cache_border_states = {
         }
     }
 }
+
+ai_move_state_capitals_to_optimal = {
+    if = {
+        limit = {
+            is_ai = yes
+            has_land = yes
+            war = no
+            OR = {
+                $periodic$ = 0
+                NOT = {
+                    has_variable = ai_moved_state_capitals_to_optimal
+                }
+            }
+        }
+        set_variable = {
+            name = ai_moved_state_capitals_to_optimal
+            days = 1825 # 5 years cooldown
+        }
+
+        every_country_state = {
+            limit = {
+                # Vanilla requirements for moving state capital
+                is_capital_state = no
+                capital_scope.state_loyalty >= 50
+                # Additional requirements to not ruin state loyalty
+                OR = {
+                    AND = {
+                        capital_scope.state_loyalty >= 70
+                        monthly_state_loyalty_without_policy >= 0
+                    }
+                    AND = {
+                        capital_scope.state_loyalty >= 80
+                        monthly_state_loyalty_without_policy >= -0.05
+                    }
+                    AND = {
+                        capital_scope.state_loyalty >= 90
+                        monthly_state_loyalty_without_policy >= -0.10
+                    }
+                }
+                # Current capital is not the one we moved to recently
+                NOT = {
+                    capital_scope = {
+                        has_variable = ai_moved_state_capital_to_this
+                    }
+                }
+            }
+            ordered_state_province = {
+                order_by = territory_priority_for_state_capital
+                position = 0
+                
+                if = {
+                    limit = {
+                        is_state_capital = no
+                    }
+                    add_state_loyalty = {
+                        value = province_capital_price_svalue
+                        multiply = -1
+                    }
+                    state = {
+                        set_state_capital = prev
+                    }
+                    set_variable = {
+                        name = ai_moved_state_capital_to_this
+                        days = 1825 # 5 years cooldown
+                    }
+                }
+            }
+        }
+    }
+}

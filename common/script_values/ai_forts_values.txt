@@ -17,3 +17,127 @@ country_fortress_building_cost = {
         add = modifier:fortress_building_cost
     }
 }
+
+state_fort_limit_svalue = {
+    value = define:NCountry|BASE_FORT_LIMIT_PER_STATE
+    capital_scope = {
+        add = modifier:local_fort_limit
+    }
+    owner = {
+        add = modifier:fort_limit
+    }
+}
+
+state_fort_limit_used = {
+    value = 0
+    every_state_province = {
+        limit = {
+            fort_level > 0
+        }
+        add = define:NCountry|FIRST_FORT_COST_IN_POINTS
+        subtract = 1
+        min = 0
+        add = fort_level
+    }
+}
+
+# Scope is territory where 1 more level will be built
+state_fort_limit_with_1_more_level = {
+    value = state.state_fort_limit_used
+    if = {
+        limit = {
+            fort_level > 0
+        }
+        add = 1
+    }
+    else_if = {
+        add = define:NCountry|FIRST_FORT_COST_IN_POINTS
+    }
+}
+
+territory_priority_for_state_capital = {
+    # Resolve draws by being state capital currently, then by population, then by territory ID
+    value = territory_priority_by_id
+    add = total_population
+    max = 499
+    if = {
+        limit = {
+            is_state_capital = yes
+        }
+        add = 500
+    }
+
+    # 1000000 x1 for city, x2 for state capital city, x3 for metropolis, x4 for state capital metropolis
+    if = {
+        limit = {
+            has_city_status = yes
+        }
+        add = 1000000
+        if = {
+            limit = {
+                is_state_capital = yes
+            }
+            add = 1000000
+        }
+        if = {
+            limit = {
+                has_province_rank = city_metropolis
+            }
+            add = 2000000
+        }
+    }
+
+    # 100000 x1-x4 for fort levels, additional x5 if state capital
+    if = {
+        limit = {
+            fort_level_including_construction > 0
+        }
+        add = {
+            value = 100000
+            multiply = {
+                value = fort_level_including_construction
+                max = 4
+            }
+        }
+        if = {
+            limit = {
+                is_state_capital = yes
+            }
+            add = 500000
+        }
+    }
+
+    # 10000 x1 for Mountain Passes, additional x1 if state capital
+    if = {
+        limit = {
+            has_province_modifier = lesser_pass_modifier
+        }
+        add = 10000
+        if = {
+            limit = {
+                is_state_capital = yes
+            }
+            add = 10000
+        }
+    }
+
+    # 1000 x1 if holy site, x2 if of country religion, additional x2 if state capital
+    if = {
+        limit = {
+            is_holy_site = yes
+        }
+        add = 1000
+        if = {
+            limit = {
+                is_holy_site_of_religion = owner.religion
+            }
+            add = 1000
+        }
+        if = {
+            limit = {
+                is_state_capital = yes
+            }
+            add = 2000
+        }
+    }
+}

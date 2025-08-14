@@ -39,6 +39,18 @@ ai_cache_if_state_is_borderland = {
             save_temporary_scope_as = evaluated_state
             OR = {
                 any_state_province = {
+                    has_city_status = yes
+                }
+                area = {
+                    any_area_province = {
+                        percent > 0.3333
+                        exists = state
+                        state = scope:evaluated_state
+                    }
+                }
+            }
+            OR = {
+                any_state_province = {
                     OR = {
                         is_coastal = yes
                         is_adjacent_to_major_river = yes
@@ -128,30 +140,73 @@ ai_optimize_forts = {
             }
             every_state_province = {
                 limit = {
-                    is_capital = no
+                    ai_wants_high_level_fort_in_territory = no
                 }
                 while = {
                     limit = {
-                        num_of_fortress_building > 0
+                        trigger_if = {
+                            limit = {
+                                ai_wants_low_level_fort_in_territory = yes
+                            }
+                            fort_level_including_construction > 1
+                        }
+                        trigger_else = {
+                            fort_level_including_construction > 0
+                        }
+                    }
+
+                    if = {
+                        limit = {
+                            has_specific_construction = fortress_building
+                        }
+                        cancel_building_construction = fortress_building
                     }
                     remove_building_level = fortress_building
-                    owner = {
-                        if = {
-                            limit = {
-                                has_non_empty_variable_list = {
-                                    name = country_border_states
-                                }
+
+                    if = {
+                        limit = {
+                            fort_level_including_construction = 0
+                            owner = {
                                 treasury >= country_fortress_building_cost
                             }
-                            random_in_list = {
-                                variable = country_border_states
+                        }
+                        owner = {
+                            if = {
                                 limit = {
-                                    state_is_disloyal = no
                                     capital_scope = {
                                         fort_level_including_construction <= 0
+                                        free_building_slots > 0
                                     }
                                 }
-                                start_building_construction = fortress_building
+                                capital_scope = {
+                                    start_building_construction = fortress_building
+                                }
+                            }
+                            else_if = {
+                                limit = {
+                                    has_non_empty_variable_list = {
+                                        name = country_border_states
+                                    }
+                                }
+                                random_in_list = {
+                                    variable = country_border_states
+                                    limit = {
+                                        state_is_disloyal = no
+                                        any_state_province = {
+                                            fort_level_including_construction <= 0
+                                            free_building_slots > 0
+                                            ai_wants_low_level_fort_in_territory = yes
+                                        }
+                                    }
+                                    random_state_province = {
+                                        limit = {
+                                            fort_level_including_construction <= 0
+                                            free_building_slots > 0
+                                            ai_wants_low_level_fort_in_territory = yes
+                                        }
+                                        start_building_construction = fortress_building
+                                    }
+                                }
                             }
                         }
                     }
@@ -163,32 +218,58 @@ ai_optimize_forts = {
         else = {
             every_state_province = {
                 limit = {
-                    is_state_capital = no
+                    ai_wants_high_level_fort_in_territory = no
                 }
                 while = {
                     limit = {
-                        num_of_fortress_building > 0
+                        trigger_if = {
+                            limit = {
+                                ai_wants_low_level_fort_in_territory = yes
+                            }
+                            fort_level_including_construction > 1
+                        }
+                        trigger_else = {
+                            fort_level_including_construction > 0
+                        }
+                    }
+
+                    if = {
+                        limit = {
+                            has_specific_construction = fortress_building
+                        }
+                        cancel_building_construction = fortress_building
                     }
                     remove_building_level = fortress_building
                 }
-                if = {
-                    limit = {
-                        has_specific_construction = fortress_building
-                    }
-                    cancel_building_construction = fortress_building
-                }
             }
+
             if = {
                 limit = {
-                    capital_scope = {
-                        fort_level_including_construction <= 0
-                    }
                     owner = {
                         treasury >= country_fortress_building_cost
                     }
                 }
-                capital_scope = {
-                    start_building_construction = fortress_building
+                if = {
+                    limit = {
+                        capital_scope = {
+                            fort_level_including_construction <= 0
+                            free_building_slots > 0
+                            ai_wants_low_level_fort_in_territory = yes
+                        }
+                    }
+                    capital_scope = {
+                        start_building_construction = fortress_building
+                    }
+                }
+                else = {
+                    random_state_province = {
+                        limit = {
+                            fort_level_including_construction <= 0
+                            free_building_slots > 0
+                            ai_wants_low_level_fort_in_territory = yes
+                        }
+                        start_building_construction = fortress_building
+                    }
                 }
             }
         }

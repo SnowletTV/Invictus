@@ -1,0 +1,196 @@
+﻿# Mega effect because all this stuff is highly interdependent and uses every_country_state which so better to combine
+ai_handle_forts_and_state_capitals = {
+    if = {
+        limit = {
+            OR = {
+                $periodic$ = 0
+                NOT = {
+                    has_variable = cached_border_states
+                }
+            }
+            has_land = yes
+        }
+        set_variable = {
+            name = cached_border_states
+            days = 710 # 1 year + 11.5 months - every 2 years
+        }
+
+        clear_variable_list = country_border_states
+        every_country_state = {
+            ai_cache_if_state_is_borderland = yes
+        }
+
+        if = {
+            limit = {
+                is_ai = yes
+                war = no
+            }
+            every_country_state = {
+                ai_move_state_capitals_to_optimal = yes
+                ai_optimize_forts = yes
+            }
+        }
+    }
+}
+
+ai_cache_if_state_is_borderland = {
+    if = {
+        limit = {
+            save_temporary_scope_as = evaluated_state
+            OR = {
+                any_state_province = {
+                    OR = {
+                        is_coastal = yes
+                        is_adjacent_to_major_river = yes
+                    }
+                }
+                area = {
+                    state_is_border_based_on_area = yes
+                }
+                area = {
+                    any_neighbor_area = {
+                        state_is_border_based_on_area = yes
+                    }
+                }
+            }
+        }
+        owner = {
+            add_to_variable_list = {
+                name = country_border_states
+                target = prev
+            }
+        }
+    }
+}
+
+ai_move_state_capitals_to_optimal = {
+    if = {
+        limit = {
+            # Vanilla requirements for moving state capital
+            is_capital_state = no
+            capital_scope.state_loyalty >= 50
+            # Additional requirements to not ruin state loyalty
+            OR = {
+                AND = {
+                    capital_scope.state_loyalty >= 70
+                    monthly_state_loyalty_without_policy >= 0
+                }
+                AND = {
+                    capital_scope.state_loyalty >= 80
+                    monthly_state_loyalty_without_policy >= -0.05
+                }
+                AND = {
+                    capital_scope.state_loyalty >= 90
+                    monthly_state_loyalty_without_policy >= -0.10
+                }
+            }
+            # Current capital is not the one we moved to recently
+            NOT = {
+                capital_scope = {
+                    has_variable = ai_moved_state_capital_to_this
+                }
+            }
+        }
+        ordered_state_province = {
+            order_by = territory_priority_for_state_capital
+            position = 0
+            
+            if = {
+                limit = {
+                    is_state_capital = no
+                }
+                add_state_loyalty = {
+                    value = province_capital_price_svalue
+                    multiply = -1
+                }
+                state = {
+                    set_state_capital = prev
+                }
+                set_variable = {
+                    name = ai_moved_state_capital_to_this
+                    days = 1825 # 5 years cooldown
+                }
+            }
+        }
+    }
+}
+
+ai_optimize_forts = {
+    if = {
+        limit = {
+            state_is_disloyal = no
+        }
+
+        # Remove all forts in non-border states, except country capital territory
+        if = {
+            limit = {
+                state_is_border = no
+            }
+            every_state_province = {
+                limit = {
+                    is_capital = no
+                }
+                while = {
+                    limit = {
+                        num_of_fortress_building > 0
+                    }
+                    remove_building_level = fortress_building
+                    owner = {
+                        if = {
+                            limit = {
+                                has_non_empty_variable_list = {
+                                    name = country_border_states
+                                }
+                                treasury >= country_fortress_building_cost
+                            }
+                            random_in_list = {
+                                variable = country_border_states
+                                limit = {
+                                    state_is_disloyal = no
+                                    capital_scope = {
+                                        fort_level_including_construction <= 0
+                                    }
+                                }
+                                start_building_construction = fortress_building
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        # In border states remove all forts in non-capital territories and build fort in capital
+        else = {
+            every_state_province = {
+                limit = {
+                    is_state_capital = no
+                }
+                while = {
+                    limit = {
+                        num_of_fortress_building > 0
+                    }
+                    remove_building_level = fortress_building
+                }
+                if = {
+                    limit = {
+                        has_specific_construction = fortress_building
+                    }
+                    cancel_building_construction = fortress_building
+                }
+            }
+            if = {
+                limit = {
+                    capital_scope = {
+                        fort_level_including_construction <= 0
+                    }
+                    owner = {
+                        treasury >= country_fortress_building_cost
+                    }
+                }
+                capital_scope = {
+                    start_building_construction = fortress_building
+                }
+            }
+        }
+    }
+}

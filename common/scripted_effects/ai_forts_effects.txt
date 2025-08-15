@@ -179,79 +179,101 @@ ai_optimize_forts = {
         limit = {
             state_is_disloyal = no
         }
-
-        # Remove all forts in non-border states, except country capital territory
-        if = {
+        ordered_state_province = {
             limit = {
-                state_is_border = no
+                ai_fort_level_is_higher_than_wanted = yes
             }
-            every_state_province = {
-                while = {
+            order_by = {
+                # Start from lower lvl forts, as first level eats up a lot of limit
+                value = 0
+                subtract = fort_level_including_construction
+                # Prefer cancelling ongoing constructions over removing existing forts
+                if = {
                     limit = {
-                        trigger_if = {
-                            limit = {
-                                ai_wants_giga_fort_in_territory = yes
-                            }
-                            fort_level_including_construction > level_of_gige_fort_wanted
-                        }
-                        trigger_else_if = {
-                            limit = {
-                                ai_wants_mega_fort_in_territory = yes
-                            }
-                            fort_level_including_construction > level_of_mega_fort_wanted
-                        }
-                        trigger_else_if = {
-                            limit = {
-                                ai_wants_single_fort_in_territory = yes
-                            }
-                            fort_level_including_construction > 1
-                        }
-                        trigger_else = {
-                            fort_level_including_construction > 0
-                        }
+                        has_specific_construction = fortress_building
                     }
+                    add = 1000
+                }
+            }
+            min = 0
 
-                    if = {
+            while = {
+                limit = {
+                    ai_fort_level_is_higher_than_wanted = yes
+                    # Only remove fort if can immediately start building another one to keep num of them consistent
+                    trigger_if = {
                         limit = {
                             has_specific_construction = fortress_building
                         }
-                        cancel_building_construction = fortress_building
+                        owner = {
+                            treasury_after_cancelling_fort >= country_fortress_building_cost
+                        }
                     }
-                    remove_building_level = fortress_building
+                    trigger_else = {
+                        owner = {
+                            treasury_after_removing_fort >= country_fortress_building_cost
+                        }
+                    }
+                }
 
+                if = {
+                    limit = {
+                        has_specific_construction = fortress_building
+                    }
+                    cancel_building_construction = fortress_building
+                }
+                else = {
+                    remove_building_level = fortress_building
+                }
+
+                # Try building a fort to replace it, starting from the same state
+                state = {
                     if = {
                         limit = {
-                            # fort_level_including_construction = 0
-                            owner = {
-                                treasury >= country_fortress_building_cost
+                            any_state_province = {
+                                ai_can_rebuild_fort_to_territory = yes
                             }
                         }
+                        if = {
+                            limit = {
+                                capital_scope = {
+                                    ai_can_rebuild_fort_to_territory = yes
+                                }
+                            }
+                            capital_scope = {
+                                start_building_construction = fortress_building
+                            }
+                        }
+                        else = {
+                            random_state_province = {
+                                limit = {
+                                    ai_can_rebuild_fort_to_territory = yes
+                                }
+                                start_building_construction = fortress_building
+                            }
+                        }
+                    }
+                    # If same state doesn't fit, search for it country wide
+                    else = {
                         owner = {
+                            # First check capital TERRITORY so it's never defenseless
                             if = {
                                 limit = {
                                     capital_scope = {
-                                        fort_level_including_construction <= 0
-                                        free_building_slots > 0
+                                        ai_can_rebuild_fort_to_territory = yes
                                     }
                                 }
                                 capital_scope = {
                                     start_building_construction = fortress_building
                                 }
                             }
+                            # Otherwise go for other states, preferring border
                             else = {
                                 random_country_state = {
-                                    # variable = country_border_states
                                     limit = {
                                         state_is_disloyal = no
-                                        NOT = {
-                                            any_state_province = {
-                                                fort_level_including_construction > 0
-                                            }
-                                        }
                                         any_state_province = {
-                                            fort_level_including_construction <= 0
-                                            free_building_slots > 0
-                                            ai_wants_single_fort_in_territory = yes
+                                            ai_can_rebuild_fort_to_territory = yes
                                         }
                                     }
                                     weight = {
@@ -262,89 +284,13 @@ ai_optimize_forts = {
                                     }
                                     random_state_province = {
                                         limit = {
-                                            fort_level_including_construction <= 0
-                                            free_building_slots > 0
-                                            ai_wants_single_fort_in_territory = yes
+                                            ai_can_rebuild_fort_to_territory = yes
                                         }
                                         start_building_construction = fortress_building
                                     }
                                 }
                             }
                         }
-                    }
-                }
-            }
-        }
-
-        # In border states remove all forts in non-capital territories and build fort in capital
-        else = {
-            every_state_province = {
-                while = {
-                    limit = {
-                        trigger_if = {
-                            limit = {
-                                ai_wants_giga_fort_in_territory = yes
-                            }
-                            fort_level_including_construction > level_of_gige_fort_wanted
-                        }
-                        trigger_else_if = {
-                            limit = {
-                                ai_wants_mega_fort_in_territory = yes
-                            }
-                            fort_level_including_construction > level_of_mega_fort_wanted
-                        }
-                        trigger_else_if = {
-                            limit = {
-                                ai_wants_single_fort_in_territory = yes
-                            }
-                            fort_level_including_construction > 1
-                        }
-                        trigger_else = {
-                            fort_level_including_construction > 0
-                        }
-                    }
-
-                    if = {
-                        limit = {
-                            has_specific_construction = fortress_building
-                        }
-                        cancel_building_construction = fortress_building
-                    }
-                    remove_building_level = fortress_building
-                }
-            }
-
-            if = {
-                limit = {
-                    NOT = {
-                        any_state_province = {
-                            fort_level_including_construction > 0
-                        }
-                    }
-                    owner = {
-                        treasury >= country_fortress_building_cost
-                    }
-                }
-                if = {
-                    limit = {
-                        capital_scope = {
-                            fort_level_including_construction <= 0
-                            free_building_slots > 0
-                            ai_wants_single_fort_in_territory = yes
-                        }
-                    }
-                    capital_scope = {
-                        start_building_construction = fortress_building
-                    }
-                }
-                else = {
-                    random_state_province = {
-                        limit = {
-                            fort_level_including_construction <= 0
-                            free_building_slots > 0
-                            ai_wants_single_fort_in_territory = yes
-                        }
-                        start_building_construction = fortress_building
                     }
                 }
             }

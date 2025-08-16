@@ -1,4 +1,24 @@
-﻿state_is_border = {
+﻿territory_is_ownable = {
+    # Hard to oversell how much faster this is compared to the other way
+    trigger_if = {
+        limit = {
+            has_non_empty_global_variable_list = {
+                name = ownable_territories
+            }
+        }
+        is_target_in_global_variable_list = {
+            name = ownable_territories
+            target = this
+        }
+    }
+    trigger_else = {
+        any_ownable_province = {
+            this = prev
+        }
+    }
+}
+
+state_is_border = {
     owner = {
         has_non_empty_variable_list = {
             name = country_border_states
@@ -66,25 +86,6 @@ ai_wants_giga_fort_in_territory = {
 }
 
 ai_wants_mega_fort_in_territory = {
-    exists = state
-    state = {
-        state_is_border = yes
-    }
-    OR = {
-        AND = {
-            ai_territory_is_good_for_defense = yes
-            OR = {
-                is_state_capital = yes
-                has_city_status = yes
-            }
-        }
-
-        AND = {
-            has_city_status = yes
-            total_population >= 60
-        }
-    }
-
     # In capital state reserve at least 5 of fort limit for capital territory to have at least lvl 3 fort
     OR = {
         state = {
@@ -93,87 +94,29 @@ ai_wants_mega_fort_in_territory = {
         is_capital = yes
         state.state_fort_limit_svalue >= 10
     }
-}
 
-ai_wants_single_fort_in_territory = {
+    # Only build mega forts on border as they are a huge budget drain
+    exists = state
+    state = {
+        state_is_border = yes
+    }
+
     OR = {
+        # A highly populated state capital city
         AND = {
-            exists = state
-            state = {
-                state_is_border = yes
-            }
-            OR = {
-
-                # Only allow territories other than state capitals if it can't have a fort
-                trigger_if = {
-                    limit = {
-                        state.capital_scope = {
-                            ai_territory_can_have_fort = no
-                        }
-                    }
-                    # If there are other territories having fort already, go for highest priority one
-                    trigger_if = {
-                        limit = {
-                            state = {
-                                any_state_province = {
-                                    fort_level_including_construction > 0
-                                }
-                            }
-                        }
-                        fort_level_including_construction > 0
-                        # Territory must be highest in priority for potentially becoming state capital
-                        save_temporary_scope_as = evaluated_territory
-                        NOT = {
-                            state = {
-                                any_state_province = {
-                                    NOT = {
-                                        this = scope:evaluated_territory
-                                    }
-                                    is_state_capital = no
-                                    fort_level_including_construction > 0
-                                    territory_priority_for_state_capital > scope:evaluated_territory.territory_priority_for_state_capital
-                                }
-                            }
-                        }
-                    }
-                    # If there are no forts in state, choose highest priority territory that can have it
-                    trigger_else = {
-                        ai_territory_can_have_fort = yes
-                        # Territory must be highest in priority for potentially becoming state capital
-                        save_temporary_scope_as = evaluated_territory
-                        NOT = {
-                            state = {
-                                any_state_province = {
-                                    NOT = {
-                                        this = scope:evaluated_territory
-                                    }
-                                    is_state_capital = no
-                                    ai_territory_can_have_fort = yes
-                                    territory_priority_for_state_capital > scope:evaluated_territory.territory_priority_for_state_capital
-                                }
-                            }
-                        }
-                    }
-                }
-                trigger_else = {
-                    is_state_capital = yes
-                }
-
-                ai_territory_is_good_for_defense = yes
-
-                AND = {
-                    has_city_status = yes
-                    total_population >= 40
-                }
-            }
-        }
-
-        AND = {
+            is_state_capital = yes
             has_city_status = yes
             total_population >= 60
         }
-    }
 
+        # State capital or just decently populated city that makes a good fort
+        ai_territory_is_good_for_defense = {
+            mega = 1
+        }
+    }
+}
+
+ai_wants_single_fort_in_territory = {
     # In capital state reserve at least 5 of fort limit for capital territory to have at least lvl 3 fort
     OR = {
         state = {
@@ -181,6 +124,120 @@ ai_wants_single_fort_in_territory = {
         }
         is_capital = yes
         state.state_fort_limit_svalue >= 8
+    }
+
+    trigger_if = {
+        limit = {
+            exists = state
+            state = {
+                state_is_border = yes
+            }
+        }
+        OR = {
+            # A decently populated city
+            AND = {
+                has_city_status = yes
+                total_population >= 40
+            }
+
+            # Makes a good fort due to map setup reasons
+            ai_territory_is_good_for_defense = {
+                mega = 0
+            }
+
+            # Capital of every border state
+            trigger_if = {
+                limit = {
+                    state.capital_scope = {
+                        ai_territory_can_have_fort = yes
+                    }
+                }
+                is_state_capital = yes
+            }
+            # Only allow territories other than state capitals if it can't have a fort
+            trigger_else = {
+                
+                # If there are any state territories that want a fort due to other conditions, go for them
+                trigger_if = {
+                    limit = {
+                        state = {
+                            any_state_province = {
+                                is_state_capital = no
+                                ai_territory_can_have_fort = yes
+
+                                OR = {
+                                    # A decently populated city
+                                    AND = {
+                                        has_city_status = yes
+                                        total_population >= 40
+                                    }
+
+                                    # Makes a good fort due to map setup reasons
+                                    ai_territory_is_good_for_defense = {
+                                        mega = 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    always = no
+                }
+
+                # If there are other territories having fort already, go for highest priority one
+                trigger_else_if = {
+                    limit = {
+                        state = {
+                            any_state_province = {
+                                fort_level_including_construction > 0
+                            }
+                        }
+                    }
+                    fort_level_including_construction > 0
+                    # Territory must be highest in priority for potentially becoming state capital
+                    save_temporary_scope_as = evaluated_territory
+                    NOT = {
+                        state = {
+                            any_state_province = {
+                                NOT = {
+                                    this = scope:evaluated_territory
+                                }
+                                is_state_capital = no
+                                fort_level_including_construction > 0
+                                territory_priority_for_state_capital > scope:evaluated_territory.territory_priority_for_state_capital
+                            }
+                        }
+                    }
+                }
+
+                # If there are no forts in state, choose highest priority territory that can have it
+                trigger_else = {
+                    ai_territory_can_have_fort = yes
+                    # Territory must be highest in priority for potentially becoming state capital
+                    save_temporary_scope_as = evaluated_territory
+                    NOT = {
+                        state = {
+                            any_state_province = {
+                                NOT = {
+                                    this = scope:evaluated_territory
+                                }
+                                is_state_capital = no
+                                ai_territory_can_have_fort = yes
+                                territory_priority_for_state_capital > scope:evaluated_territory.territory_priority_for_state_capital
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    trigger_else = {
+        
+        # A decently populated state capital city
+        AND = {
+            is_state_capital = yes
+            has_city_status = yes
+            total_population >= 40
+        }
     }
 }
 
@@ -252,7 +309,7 @@ ai_can_rebuild_fort_to_territory = {
 }
 
 # Covers gates, mountain passes, their desert alternatives, and probably various modifiers from missions etc.
-ai_territory_is_good_for_defense = {
+ai_territory_is_deadly_to_armies = {
     OR = {
         modifier:attrition > 0
         modifier:local_hostile_attrition > 0
@@ -264,18 +321,40 @@ ai_territory_is_good_for_defense = {
     }
 }
 
-territory_is_ownable = {
-    # Hard to oversell how much faster this is compared to the other way
-    if = {
-        limit = {
-            has_non_empty_global_variable_list = {
-                name = ownable_territories
-            }
+ai_territory_is_good_for_defense = {
+    OR = {
+        $mega$ = 0
+        is_state_capital = yes
+        AND = {
+            has_city_status = yes
+            total_population >= 30
         }
     }
-    else = {
-        any_ownable_province = {
-            this = prev
+    OR = {
+        ai_territory_is_deadly_to_armies = yes
+        AND = {
+            save_temporary_scope_as = evaluated_mega_fort_territory
+            any_neighbor_province = {
+                ai_territory_is_deadly_to_armies = yes
+                territory_is_ownable = no
+                NOT = {
+                    any_neighbor_province = {
+                        NOT = {
+                            this = scope:evaluated_mega_fort_territory
+                        }
+                        owner = scope:evaluated_mega_fort_territory.owner
+                        OR = {
+                            $mega$ = 0
+                            is_state_capital = yes
+                            AND = {
+                                has_city_status = yes
+                                total_population >= 30
+                            }
+                        }
+                        territory_priority_by_id > scope:evaluated_mega_fort_territory.territory_priority_by_id
+                    }
+                }
+            }
         }
     }
 }

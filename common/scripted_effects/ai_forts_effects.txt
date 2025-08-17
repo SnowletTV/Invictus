@@ -329,80 +329,80 @@ ai_optimize_positioning_of_forts = {
                             num_of_fortress_building_projected <= 0
                         }
                     }
-                    # Try building a fort to replace it, starting from the same state
-                    state = {
-                        if = {
+
+                    save_scope_as = territory_with_removed_fort
+
+                    owner = {
+                        ordered_country_state = {
                             limit = {
-                                any_state_province = {
-                                    ai_can_rebuild_fort_to_territory = yes
-                                }
-                            }
-                            if = {
-                                limit = {
+                                state_is_disloyal = no
+                                OR = {
+                                    # Check capital TERRITORY first for performance as usually forts are there
                                     capital_scope = {
                                         ai_can_rebuild_fort_to_territory = yes
                                     }
-                                }
-                                capital_scope = {
-                                    start_building_construction = fortress_building
-                                }
-                            }
-                            else = {
-                                random_state_province = {
-                                    limit = {
+                                    # Check if any state territory is eligible for fort rebuilding
+                                    any_state_province = {
                                         ai_can_rebuild_fort_to_territory = yes
                                     }
-                                    start_building_construction = fortress_building
                                 }
                             }
-                        }
-                        # If same state doesn't fit, search for it country wide
-                        else = {
-                            owner = {
-                                random_country_state = {
+                            order_by = {
+                                value = state_priority_by_id
+
+                                # Country capital state always being built first
+                                if = {
                                     limit = {
-                                        state_is_disloyal = no
-                                        OR = {
-                                            # Check capital TERRITORY first for performance as usually forts are there
-                                            capital_scope = {
-                                                ai_can_rebuild_fort_to_territory = yes
-                                            }
-                                            # Check if any state territory is eligible for fort rebuilding
-                                            any_state_province = {
-                                                ai_can_rebuild_fort_to_territory = yes
-                                            }
-                                        }
+                                        is_capital_state = yes
                                     }
-                                    weight = {
-                                        # Soft guarantee capital state always being built first
-                                        modifier = {
-                                            add = 1000000
-                                            is_capital_state = yes
-                                        }
-                                        # Heavily prefer filling all perimeter main forts first
-                                        modifier = {
-                                            add = 1000
-                                            state_is_perimeter_of_its_country = yes
-                                            ai_state_main_fort_territory_has_it = no
-                                        }
+                                    add = 10000
+                                }
+
+                                # Next up is rebuilding in the same state
+                                if = {
+                                    limit = {
+                                        this = scope:territory_with_removed_fort.state
                                     }
-                                    random_state_province = {
+                                    add = 1000
+                                }
+
+                                # Heavily prefer states without main fort 
+                                if = {
+                                    limit = {
+                                        ai_state_main_fort_territory_has_it = no
+                                    }
+                                    add = 100
+                                }
+
+                                # Prefer filling all perimeter main forts first
+                                if = {
+                                    limit = {
+                                        state_is_perimeter_of_its_country = yes
+                                    }
+                                    add = 10
+                                }
+                            }
+                            min = 0
+
+                            ordered_state_province = {
+                                limit = {
+                                    ai_can_rebuild_fort_to_territory = yes
+                                }
+                                order_by = {
+                                    value = territory_priority_by_id
+                                    if = {
                                         limit = {
-                                            ai_can_rebuild_fort_to_territory = yes
+                                            ai_territory_for_state_main_fort = yes
                                         }
-                                        weight = {
-                                            # Soft guarantee main forts always being built first
-                                            modifier = {
-                                                add = 1000000
-                                                ai_territory_for_state_main_fort = yes
-                                            }
-                                        }
-                                        start_building_construction = fortress_building
+                                        add = 10
                                     }
                                 }
+                                start_building_construction = fortress_building
                             }
                         }
                     }
+
+                    clear_saved_scope = territory_with_removed_fort
                 }
             }
         }

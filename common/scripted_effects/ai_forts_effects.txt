@@ -61,7 +61,9 @@ ai_handle_forts_and_state_capitals = {
                     war = no
                 }
                 every_country_state = {
-                    ai_optimize_positioning_of_forts = yes
+                    ai_optimize_positioning_of_forts = {
+                        periodic = $periodic$
+                    }
                 }
             }
         }
@@ -245,19 +247,25 @@ ai_optimize_positioning_of_forts = {
                             }
                         }
                     }
-                    
-                    # Only remove fort if can immediately start building another one to keep num of them consistent
-                    trigger_if = {
-                        limit = {
-                            has_specific_construction = fortress_building
+                    OR = {
+                        # For executions where we could gain land assume high level forts weren't country's decision
+                        AND = {
+                            $periodic$ = 0
+                            num_of_fortress_building_projected > 1
                         }
-                        owner = {
-                            treasury_after_cancelling_fort >= country_fortress_building_cost
+                        # Only remove fort if can immediately start building another one to keep num of them consistent
+                        trigger_if = {
+                            limit = {
+                                has_specific_construction = fortress_building
+                            }
+                            owner = {
+                                treasury_after_cancelling_fort >= country_fortress_building_cost
+                            }
                         }
-                    }
-                    trigger_else = {
-                        owner = {
-                            treasury_after_removing_fort >= country_fortress_building_cost
+                        trigger_else = {
+                            owner = {
+                                treasury_after_removing_fort >= country_fortress_building_cost
+                            }
                         }
                     }
                 }
@@ -272,37 +280,22 @@ ai_optimize_positioning_of_forts = {
                     remove_building_level = fortress_building
                 }
 
-                # Try building a fort to replace it, starting from the same state
-                state = {
-                    if = {
-                        limit = {
-                            any_state_province = {
-                                ai_can_rebuild_fort_to_territory = yes
-                            }
-                        }
-                        if = {
-                            limit = {
-                                capital_scope = {
-                                    ai_can_rebuild_fort_to_territory = yes
-                                }
-                            }
-                            capital_scope = {
-                                start_building_construction = fortress_building
-                            }
-                        }
-                        else = {
-                            random_state_province = {
-                                limit = {
-                                    ai_can_rebuild_fort_to_territory = yes
-                                }
-                                start_building_construction = fortress_building
-                            }
+                # For executions where we could gain land assume high level forts weren't country's decision
+                if = {
+                    limit = {
+                        OR = {
+                            $periodic$ = 1
+                            num_of_fortress_building_projected <= 0
                         }
                     }
-                    # If same state doesn't fit, search for it country wide
-                    else = {
-                        owner = {
-                            # First check capital TERRITORY so it's never defenseless
+                    # Try building a fort to replace it, starting from the same state
+                    state = {
+                        if = {
+                            limit = {
+                                any_state_province = {
+                                    ai_can_rebuild_fort_to_territory = yes
+                                }
+                            }
                             if = {
                                 limit = {
                                     capital_scope = {
@@ -313,26 +306,50 @@ ai_optimize_positioning_of_forts = {
                                     start_building_construction = fortress_building
                                 }
                             }
-                            # Otherwise go for other states, preferring perimeter
                             else = {
-                                random_country_state = {
+                                random_state_province = {
                                     limit = {
-                                        state_is_disloyal = no
-                                        any_state_province = {
+                                        ai_can_rebuild_fort_to_territory = yes
+                                    }
+                                    start_building_construction = fortress_building
+                                }
+                            }
+                        }
+                        # If same state doesn't fit, search for it country wide
+                        else = {
+                            owner = {
+                                # First check capital TERRITORY so it's never defenseless
+                                if = {
+                                    limit = {
+                                        capital_scope = {
                                             ai_can_rebuild_fort_to_territory = yes
                                         }
                                     }
-                                    weight = {
-                                        modifier = {
-                                            add = 100
-                                            state_is_perimeter_of_its_country = yes
-                                        }
-                                    }
-                                    random_state_province = {
-                                        limit = {
-                                            ai_can_rebuild_fort_to_territory = yes
-                                        }
+                                    capital_scope = {
                                         start_building_construction = fortress_building
+                                    }
+                                }
+                                # Otherwise go for other states, preferring perimeter
+                                else = {
+                                    random_country_state = {
+                                        limit = {
+                                            state_is_disloyal = no
+                                            any_state_province = {
+                                                ai_can_rebuild_fort_to_territory = yes
+                                            }
+                                        }
+                                        weight = {
+                                            modifier = {
+                                                add = 100
+                                                state_is_perimeter_of_its_country = yes
+                                            }
+                                        }
+                                        random_state_province = {
+                                            limit = {
+                                                ai_can_rebuild_fort_to_territory = yes
+                                            }
+                                            start_building_construction = fortress_building
+                                        }
                                     }
                                 }
                             }

@@ -398,6 +398,7 @@ ai_territory_is_redoubt_of_state = {
         is_state_capital = yes
     }
     trigger_else = {
+        is_state_capital = no
         ai_territory_can_have_fort = yes
         save_temporary_scope_as = potential_redoubt_territory
         NOT = {
@@ -410,6 +411,51 @@ ai_territory_is_redoubt_of_state = {
                     ai_territory_can_have_fort = yes
                     territory_priority_for_state_redoubt > scope:potential_redoubt_territory.territory_priority_for_state_redoubt
                 }
+            }
+        }
+    }
+}
+
+ai_territory_is_outwork_of_state = {
+    # State capital is always redoubt if it can have fort
+    is_state_capital = no
+    ai_territory_can_have_fort = yes
+
+    save_temporary_scope_as = potential_outwork_territory
+
+    # If state capital is redoubt, non-capital territory with highest redoubt priority becomes outwork
+    trigger_if = {
+        limit = {
+            state.capital_scope = {
+                ai_territory_is_redoubt_of_state = yes
+            }
+        }
+        NOT = {
+            state = {
+                any_state_province = {
+                    NOT = {
+                        this = scope:potential_outwork_territory
+                    }
+                    is_state_capital = no
+                    ai_territory_can_have_fort = yes
+                    territory_priority_for_state_redoubt > scope:potential_outwork_territory.territory_priority_for_state_redoubt
+                }
+            }
+        }
+    }
+
+    # Otherwise non-capital territory with second highest redoubt priority becomes outwork
+    trigger_else = {
+        state = {
+            any_state_province = {
+                # There's specifically 1 territory with higher priority, which becomes redoubt
+                count = 1
+                NOT = {
+                    this = scope:potential_outwork_territory
+                }
+                is_state_capital = no
+                ai_territory_can_have_fort = yes
+                territory_priority_for_state_redoubt > scope:potential_outwork_territory.territory_priority_for_state_redoubt
             }
         }
     }
@@ -434,5 +480,13 @@ ai_state_redoubt_territory_has_fort = {
             num_of_fortress_building_projected > 0
             ai_territory_is_redoubt_of_state = yes
         }
+    }
+}
+
+ai_state_outwork_territory_has_fort = {
+    any_state_province = {
+        is_state_capital = no
+        num_of_fortress_building_projected > 0
+        ai_territory_is_outwork_of_state = yes
     }
 }

@@ -1,4 +1,5 @@
-﻿create_list_of_ownable_territories = {
+﻿# To use in territory_is_ownable trigger, as checking presence in global list is blazing fast
+create_list_of_ownable_territories = {
     if = {
         limit = {
             NOT = {
@@ -33,9 +34,13 @@ ai_handle_forts_and_state_capitals = {
             days = 710 # 1 year + 11.5 months - every 2 years
         }
 
+        # In first round of state effects gather country wide data and prepare states for fort manipulation
         clear_variable_list = country_perimeter_states
         every_country_state = {
+
+            # Do this for players too to prevent issues when switching between countries
             ai_cache_if_state_is_on_perimeter = yes
+
             if = {
                 limit = {
                     owner = {
@@ -43,7 +48,7 @@ ai_handle_forts_and_state_capitals = {
                         war = no
                     }
                     state_is_disloyal = no
-                }
+                }            
                 ai_move_state_capital_to_optimal = yes
                 every_state_province = {
                     ai_free_building_slots_for_forts = yes
@@ -51,19 +56,23 @@ ai_handle_forts_and_state_capitals = {
             }
         }
 
+        # In the second round of state effects perform destroying, cancelling, rebuilding of forts on various levels
         if = {
             limit = {
                 is_ai = yes
             }
+
+            # Fix capital state being over fort limit. Do it even during wars, otherwise vanilla AI nukes capital fort
             ai_consolidate_capital_state_forts = yes
+
             if = {
                 limit = {
                     war = no
                 }
                 ordered_country_state = {
-                    # Prefer non-perimeter states to rebuild their forts in perimeter states
                     order_by = {
                         value = state_priority_by_id
+                        # Prefer non-perimeter states first so they rebuild their forts in perimeter states
                         if = {
                             limit = {
                                 state_is_perimeter_of_its_country = no
@@ -86,6 +95,8 @@ ai_cache_if_state_is_on_perimeter = {
     if = {
         limit = {
             save_temporary_scope_as = potential_perimeter_state
+
+            # State must have any kind of significance to be a part of country's defense perimeter
             OR = {
                 any_state_province = {
                     OR = {
@@ -101,6 +112,7 @@ ai_cache_if_state_is_on_perimeter = {
                     }
                 }
             }
+
             OR = {
                 # Navigable waters nearby means state must always be protected
                 any_state_province = {
@@ -109,6 +121,7 @@ ai_cache_if_state_is_on_perimeter = {
                         is_adjacent_to_major_river = yes
                     }
                 }
+
                 # Any state in same area neighboring to evaluated is not ruled by us
                 area = {
                     any_area_state = {
@@ -122,6 +135,7 @@ ai_cache_if_state_is_on_perimeter = {
                         }
                     }
                 }
+
                 # Any state in neighbor areas neighboring to evaluated is not ruled by us
                 area = {
                     any_neighbor_area = {
@@ -164,22 +178,12 @@ ai_move_state_capital_to_optimal = {
         limit = {
             # Vanilla requirements for moving state capital
             is_capital_state = no
-            capital_scope.state_loyalty >= 50
-            # Additional requirements to not ruin state loyalty
-            OR = {
-                AND = {
-                    capital_scope.state_loyalty >= 70
-                    monthly_state_loyalty_without_policy >= 0
-                }
-                AND = {
-                    capital_scope.state_loyalty >= 80
-                    monthly_state_loyalty_without_policy >= -0.05
-                }
-                AND = {
-                    capital_scope.state_loyalty >= 90
-                    monthly_state_loyalty_without_policy >= -0.10
-                }
-            }
+            # state_level_loyalty >= 50 # Commented out because we are checking the same thing later
+
+            # Additional requirements to not make state disloyal
+            state_level_loyalty >= 65
+            monthly_state_loyalty_without_policy >= monthly_state_loyalty_to_move_capital
+
             # Current capital is not the one we moved to recently
             NOT = {
                 capital_scope = {
@@ -187,10 +191,13 @@ ai_move_state_capital_to_optimal = {
                 }
             }
         }
+
+        # Try all state provinces without filtering out current capital to check if it's highest by priority
         ordered_state_province = {
             order_by = territory_priority_for_state_capital
             position = 0
             
+            # If it's not, then change state capital
             if = {
                 limit = {
                     is_state_capital = no

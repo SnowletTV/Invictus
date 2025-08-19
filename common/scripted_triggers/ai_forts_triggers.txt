@@ -27,7 +27,7 @@ ai_allowed_to_build_fort_in_territory = {
             }
             ai_territory_is_redoubt_of_state = yes
         }
-        # Allow to build in territories other than capital state redoubt only if it has fort or cannot have it
+        # Allow to build in territories other than capital state redoubt only if it has fort
         owner = {
             capital_scope.state = {
                 ai_state_redoubt_territory_has_fort = yes
@@ -36,9 +36,9 @@ ai_allowed_to_build_fort_in_territory = {
     }
 
     OR = {
-        # Is redoubt territory of state so we build prioritize building fort here if there's none
+        # Is redoubt territory of state so we prioritize building fort here if there's none
         ai_territory_is_redoubt_of_state = yes
-        # Allow to build in territories other than state redoubt only if it has fort or cannot have it
+        # Allow to build in territories other than state redoubt only if it has fort
         state = {
             ai_state_redoubt_territory_has_fort = yes
         }
@@ -61,7 +61,7 @@ ai_allowed_to_build_fort_in_territory = {
         }
     }
 
-    # Building outside of redoubts is allowed only if all high tier forts are built, and they are limited to redoubts
+    # Building outside of redoubts is allowed only if all high tier forts are built, and those are limited to redoubts
     OR = {
         ai_territory_is_redoubt_of_state = yes
         owner = {
@@ -75,6 +75,10 @@ ai_wants_giga_fort_in_territory = {
 }
 
 ai_wants_mega_fort_in_territory = {
+    NOT = {
+        ai_wants_giga_fort_in_territory = yes
+    }
+
     # Only build mega forts in capital state and on perimeter as they are a huge budget drain
     exists = state
     state = {
@@ -84,12 +88,17 @@ ai_wants_mega_fort_in_territory = {
         }
     }
 
-    # Only build mega forts in redoubt because otherwise it's not worth the investment
+    # Only build mega forts in redoubts with high fort importance, otherwise it's not worth the investment
     territory_priority_for_having_fort >= priority_threshold_for_mega_fort
     ai_territory_is_redoubt_of_state = yes
 }
 
 ai_wants_single_fort_in_territory = {
+    NOR = {
+        ai_wants_giga_fort_in_territory = yes
+        ai_wants_mega_fort_in_territory = yes
+    }
+
     # Build forts in capital state and all perimeter ones to defend country border
     trigger_if = {
         limit = {
@@ -101,7 +110,7 @@ ai_wants_single_fort_in_territory = {
                 }
             }
         }
-        # Either redoubt, or outwork of high fort value
+        # Either redoubt, or outwork with high fort importance
         OR = {
             ai_territory_is_redoubt_of_state = yes
             AND = {
@@ -111,25 +120,32 @@ ai_wants_single_fort_in_territory = {
         }
     }
     trigger_else = {
-        # For non-perimeter states it must be redoubt of high fort value
+        # For non-perimeter states it must be redoubt with high fort importance
         territory_priority_for_having_fort >= priority_threshold_for_single_fort
         ai_territory_is_redoubt_of_state = yes
     }
-    
+
     # Reserve at least 5 of fort limit for redoubt it it wants mega or giga fort
     trigger_if = {
         limit = {
+            ai_territory_is_redoubt_of_state = no
             state = {
-                OR = {
-                    # Check capital TERRITORY first for performance as usually redoubt is there
+                # Check capital TERRITORY first for performance as usually redoubt is there
+                trigger_if = {
+                    limit = {
+                        capital_scope = {
+                            ai_territory_is_redoubt_of_state = yes
+                        }
+                    }
                     capital_scope = {
-                        ai_territory_is_redoubt_of_state = yes
                         OR = {
                             ai_wants_giga_fort_in_territory = yes
                             ai_wants_mega_fort_in_territory = yes
                         }
                     }
-                    # Check all state territories to find redoubt
+                }
+                # Check all state territories to find redoubt
+                trigger_else = {
                     any_state_province = {
                         ai_territory_is_redoubt_of_state = yes
                         OR = {
@@ -140,13 +156,7 @@ ai_wants_single_fort_in_territory = {
                 }
             }
         }
-        OR = {
-            is_capital = yes
-            owner.capital_scope = {
-                ai_territory_can_have_fort = no
-            }
-            state.state_fort_limit_svalue >= 8
-        }
+        state.state_fort_limit_svalue >= 8
     }
     trigger_else = {
         always = yes

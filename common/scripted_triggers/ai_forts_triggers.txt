@@ -19,6 +19,11 @@
 }
 
 ai_allowed_to_build_fort_in_territory = {
+    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
+    state = {
+        cache_redoubt_of_state_for_trigger = yes
+    }
+    
     OR = {
         # Is redoubt territory of capital state so we prioritize building fort here if there's none
         AND = {
@@ -75,10 +80,6 @@ ai_wants_giga_fort_in_territory = {
 }
 
 ai_wants_mega_fort_in_territory = {
-    NOT = {
-        ai_wants_giga_fort_in_territory = yes
-    }
-
     # Only build mega forts in capital state and on perimeter as they are a huge budget drain
     exists = state
     state = {
@@ -94,11 +95,6 @@ ai_wants_mega_fort_in_territory = {
 }
 
 ai_wants_single_fort_in_territory = {
-    NOR = {
-        ai_wants_giga_fort_in_territory = yes
-        ai_wants_mega_fort_in_territory = yes
-    }
-
     # Build forts in capital state and all perimeter ones to defend country border
     trigger_if = {
         limit = {
@@ -129,26 +125,7 @@ ai_wants_single_fort_in_territory = {
     trigger_if = {
         limit = {
             ai_territory_is_redoubt_of_state = no
-            state = {
-                # Check capital TERRITORY first for performance as usually redoubt is there
-                trigger_if = {
-                    limit = {
-                        capital_scope = {
-                            ai_territory_is_redoubt_of_state = yes
-                        }
-                    }
-                    capital_scope = {
-                        ai_wants_high_tier_fort_in_territory = yes
-                    }
-                }
-                # Check all state territories to find redoubt
-                trigger_else = {
-                    any_state_province = {
-                        ai_territory_is_redoubt_of_state = yes
-                        ai_wants_high_tier_fort_in_territory = yes
-                    }
-                }
-            }
+            ai_state_redoubt_wants_high_tier_fort = yes
         }
         state.state_fort_limit_svalue >= 8
     }
@@ -158,13 +135,34 @@ ai_wants_single_fort_in_territory = {
 }
 
 ai_wants_high_tier_fort_in_territory = {
+    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
+    state = {
+        cache_redoubt_of_state_for_trigger = yes
+    }
+
     OR = {
         ai_wants_giga_fort_in_territory = yes
         ai_wants_mega_fort_in_territory = yes
     }
 }
 
+ai_state_redoubt_wants_high_tier_fort = {
+    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
+    state = {
+        cache_redoubt_of_state_for_trigger = yes
+    }
+
+    scope:cached_redoubt_of_state_for_trigger = {
+        ai_wants_high_tier_fort_in_territory = yes
+    }
+}
+
 ai_fort_level_is_higher_than_wanted = {
+    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
+    state = {
+        cache_redoubt_of_state_for_trigger = yes
+    }
+
     trigger_if = {
         limit = {
             ai_wants_giga_fort_in_territory = yes
@@ -189,6 +187,11 @@ ai_fort_level_is_higher_than_wanted = {
 }
 
 ai_fort_level_is_lower_than_wanted = {
+    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
+    state = {
+        cache_redoubt_of_state_for_trigger = yes
+    }
+
     trigger_if = {
         limit = {
             ai_wants_giga_fort_in_territory = yes
@@ -212,6 +215,46 @@ ai_fort_level_is_lower_than_wanted = {
     }
 }
 
+ai_has_enough_building_slots_for_fort = {
+    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
+    state = {
+        cache_redoubt_of_state_for_trigger = yes
+    }
+    
+    # We count mega forts same as giga here for simplicity and giga being more of an extra than necessity
+    trigger_if = {
+        limit = {
+            ai_wants_high_tier_fort_in_territory = yes
+        }
+        trigger_if = {
+            limit = {
+                $and_some_more$ = 1
+            }
+            free_building_slots > building_slots_required_for_mega_fort
+        }
+        trigger_else = {
+            free_building_slots >= building_slots_required_for_mega_fort
+        }
+    }
+    trigger_else_if = {
+        limit = {
+            ai_wants_single_fort_in_territory = yes
+        }
+        trigger_if = {
+            limit = {
+                $and_some_more$ = 1
+            }
+            free_building_slots > building_slots_required_for_single_fort
+        }
+        trigger_else = {
+            free_building_slots >= building_slots_required_for_single_fort
+        }
+    }
+    trigger_else = {
+        always = yes
+    }
+}
+
 ai_territory_can_have_fort = {
     # Ensure nothing weird happened and there are any slots at all
     num_of_total_building_slots > 0
@@ -224,6 +267,7 @@ ai_territory_can_have_fort = {
     }
 }
 
+# If it's already cached and it's of the same state, it does nothing, so it's safe to spam it in the same trigger chain
 cache_redoubt_of_state_for_trigger = {
     trigger_if = {
         limit = {

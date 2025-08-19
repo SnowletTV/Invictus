@@ -18,83 +18,6 @@
     }
 }
 
-state_is_perimeter_of_its_country = {
-    owner = {
-        has_non_empty_variable_list = {
-            name = country_perimeter_states
-        }
-        is_target_in_variable_list = {
-            name = country_perimeter_states
-            target = prev
-        }
-    }
-}
-
-all_perimeter_states_have_redoubt_fort = {
-    has_non_empty_variable_list = {
-        name = country_perimeter_states
-    }
-    NOT = {
-        any_in_list = {
-            variable = country_perimeter_states
-            ai_state_redoubt_territory_has_fort = no
-        }
-    }
-}
-
-all_perimeter_states_have_any_forts = {
-    trigger_if = {
-        limit = {
-            has_local_variable = all_perimeter_states_have_any_forts
-        }
-        local_var:all_perimeter_states_have_any_forts = 1
-    }
-    trigger_else = {
-        has_non_empty_variable_list = {
-            name = country_perimeter_states
-        }
-        NOT = {
-            any_in_list = {
-                variable = country_perimeter_states
-                NOT = {
-                    any_state_province = {
-                        num_of_fortress_building_projected > 0
-                    }
-                }
-            }
-        }
-    }
-}
-
-all_wanted_high_tier_forts_are_built = {
-    NOR = {
-        capital_scope.state = {
-            any_state_province = {
-                OR = {
-                    ai_wants_giga_fort_in_territory = yes
-                    ai_wants_mega_fort_in_territory = yes
-                }
-                num_of_fortress_building_projected < level_of_mega_fort_wanted
-            }
-        }
-        AND = {
-            has_non_empty_variable_list = {
-                name = country_perimeter_states
-            }
-            any_in_list = {
-                variable = country_perimeter_states
-                any_state_province = {
-                    OR = {
-                        ai_wants_giga_fort_in_territory = yes
-                        ai_wants_mega_fort_in_territory = yes
-                    }
-                    num_of_fortress_building_projected < level_of_mega_fort_wanted
-                }
-            }
-        }
-    }
-}
-
 ai_allowed_to_build_fort_in_territory = {
     OR = {
         # Is redoubt territory of capital state so we prioritize building fort here if there's none
@@ -230,18 +153,6 @@ ai_wants_single_fort_in_territory = {
     }
 }
 
-ai_territory_can_have_fort = {
-    # Ensure nothing weird happened and there are any slots at all
-    num_of_total_building_slots > 0
-    OR = {
-        # If it has fort already, it probably can have it?
-        num_of_fortress_building_projected > 0
-        # Ports are not occupying all building slots - they are higher in priority
-        can_have_port = no
-        port_level_including_construction < num_of_total_building_slots
-    }
-}
-
 ai_fort_level_is_higher_than_wanted = {
     trigger_if = {
         limit = {
@@ -290,82 +201,15 @@ ai_fort_level_is_lower_than_wanted = {
     }
 }
 
-# This and ai_can_rebuild_fort_to_territory can't be true simultaneously for a given territory, incl with 1 less fort
-ai_should_reduce_territory_fort = {
+ai_territory_can_have_fort = {
+    # Ensure nothing weird happened and there are any slots at all
+    num_of_total_building_slots > 0
     OR = {
-        # Territory has more fort levels that we want it to have
-        ai_fort_level_is_higher_than_wanted = yes
-        AND = {
-            # Only do this sort of optimization if basic country defense is set up
-            owner = {
-                all_perimeter_states_have_any_forts = yes
-            }
-            # This is non-redoubt territory with fort, while redoubt doesn't have it
-            num_of_fortress_building_projected > 0
-            ai_territory_is_redoubt_of_state = no
-            state = {
-                ai_state_redoubt_territory_has_fort = no
-            }
-        }
-    }
-}
-
-# This and ai_should_reduce_territory_fort can't be true simultaneously for a given territory, incl with 1 less fort
-# Requires local_var:all_perimeter_states_have_any_forts to be set for performance
-ai_can_rebuild_fort_to_territory = {
-    # There's no fort yet and there are free slots to build it
-    free_building_slots > 0
-    num_of_fortress_building_projected < 1
-    # Check regular trigger for allowing to build fort in territory
-    ai_allowed_to_build_fort_in_territory = yes
-    # We won't exceed state fort limit by building it here
-    state.state_fort_limit_svalue >= state_fort_limit_with_1_more_level
-    # Only rebuild in redoubt territories, unless basic country defense is set up and state redoubt territory has fort
-    OR = {
-        ai_territory_is_redoubt_of_state = yes
-        AND = {
-            owner = {
-                all_perimeter_states_have_any_forts = yes
-            }
-            state = {
-                ai_state_redoubt_territory_has_fort = yes
-            }
-        }
-    }
-}
-
-# Covers gates, mountain passes, their desert alternatives, and probably various modifiers from missions etc.
-ai_territory_is_deadly_to_armies = {
-    OR = {
-        modifier:attrition > 0
-        modifier:local_hostile_attrition > 0
-    }
-    OR = {
-        modifier:supply_limit < 0
-        modifier:supply_limit_modifier < 0
-        modifier:local_combat_width_modifier < 0
-    }
-}
-
-ai_territory_is_good_for_defense = {
-    OR = {
-        ai_territory_is_deadly_to_armies = yes
-        AND = {
-            save_temporary_scope_as = potential_defense_territory
-            any_neighbor_province = {
-                ai_territory_is_deadly_to_armies = yes
-                territory_is_ownable = no
-                NOT = {
-                    any_neighbor_province = {
-                        NOT = {
-                            this = scope:potential_defense_territory
-                        }
-                        owner = scope:potential_defense_territory.owner
-                        territory_priority_by_population > scope:potential_defense_territory.territory_priority_by_population
-                    }
-                }
-            }
-        }
+        # If it has fort already, it probably can have it?
+        num_of_fortress_building_projected > 0
+        # Ports are not occupying all building slots - they are higher in priority
+        can_have_port = no
+        port_level_including_construction < num_of_total_building_slots
     }
 }
 
@@ -469,5 +313,161 @@ ai_state_outwork_territory_has_fort = {
         is_state_capital = no
         num_of_fortress_building_projected > 0
         ai_territory_is_outwork_of_state = yes
+    }
+}
+
+state_is_perimeter_of_its_country = {
+    owner = {
+        has_non_empty_variable_list = {
+            name = country_perimeter_states
+        }
+        is_target_in_variable_list = {
+            name = country_perimeter_states
+            target = prev
+        }
+    }
+}
+
+all_perimeter_states_have_redoubt_fort = {
+    has_non_empty_variable_list = {
+        name = country_perimeter_states
+    }
+    NOT = {
+        any_in_list = {
+            variable = country_perimeter_states
+            ai_state_redoubt_territory_has_fort = no
+        }
+    }
+}
+
+all_perimeter_states_have_any_forts = {
+    trigger_if = {
+        limit = {
+            has_local_variable = all_perimeter_states_have_any_forts
+        }
+        local_var:all_perimeter_states_have_any_forts = 1
+    }
+    trigger_else = {
+        has_non_empty_variable_list = {
+            name = country_perimeter_states
+        }
+        NOT = {
+            any_in_list = {
+                variable = country_perimeter_states
+                NOT = {
+                    any_state_province = {
+                        num_of_fortress_building_projected > 0
+                    }
+                }
+            }
+        }
+    }
+}
+
+all_wanted_high_tier_forts_are_built = {
+    NOR = {
+        capital_scope.state = {
+            any_state_province = {
+                OR = {
+                    ai_wants_giga_fort_in_territory = yes
+                    ai_wants_mega_fort_in_territory = yes
+                }
+                num_of_fortress_building_projected < level_of_mega_fort_wanted
+            }
+        }
+        AND = {
+            has_non_empty_variable_list = {
+                name = country_perimeter_states
+            }
+            any_in_list = {
+                variable = country_perimeter_states
+                any_state_province = {
+                    OR = {
+                        ai_wants_giga_fort_in_territory = yes
+                        ai_wants_mega_fort_in_territory = yes
+                    }
+                    num_of_fortress_building_projected < level_of_mega_fort_wanted
+                }
+            }
+        }
+    }
+}
+
+# This and ai_can_rebuild_fort_to_territory can't be true simultaneously for a given territory, incl with 1 less fort
+ai_should_reduce_territory_fort = {
+    OR = {
+        # Territory has more fort levels that we want it to have
+        ai_fort_level_is_higher_than_wanted = yes
+        AND = {
+            # Only do this sort of optimization if basic country defense is set up
+            owner = {
+                all_perimeter_states_have_any_forts = yes
+            }
+            # This is non-redoubt territory with fort, while redoubt doesn't have it
+            num_of_fortress_building_projected > 0
+            ai_territory_is_redoubt_of_state = no
+            state = {
+                ai_state_redoubt_territory_has_fort = no
+            }
+        }
+    }
+}
+
+# This and ai_should_reduce_territory_fort can't be true simultaneously for a given territory, incl with 1 less fort
+# Requires local_var:all_perimeter_states_have_any_forts to be set for performance
+ai_can_rebuild_fort_to_territory = {
+    # There's no fort yet and there are free slots to build it
+    free_building_slots > 0
+    num_of_fortress_building_projected < 1
+    # Check regular trigger for allowing to build fort in territory
+    ai_allowed_to_build_fort_in_territory = yes
+    # We won't exceed state fort limit by building it here
+    state.state_fort_limit_svalue >= state_fort_limit_with_1_more_level
+    # Only rebuild in redoubt territories, unless basic country defense is set up and state redoubt territory has fort
+    OR = {
+        ai_territory_is_redoubt_of_state = yes
+        AND = {
+            owner = {
+                all_perimeter_states_have_any_forts = yes
+            }
+            state = {
+                ai_state_redoubt_territory_has_fort = yes
+            }
+        }
+    }
+}
+
+# Covers gates, mountain passes, their desert alternatives, and probably various modifiers from missions etc.
+ai_territory_is_deadly_to_armies = {
+    OR = {
+        modifier:attrition > 0
+        modifier:local_hostile_attrition > 0
+    }
+    OR = {
+        modifier:supply_limit < 0
+        modifier:supply_limit_modifier < 0
+        modifier:local_combat_width_modifier < 0
+    }
+}
+
+ai_territory_is_good_for_defense = {
+    OR = {
+        ai_territory_is_deadly_to_armies = yes
+        AND = {
+            save_temporary_scope_as = potential_defense_territory
+            any_neighbor_province = {
+                ai_territory_is_deadly_to_armies = yes
+                territory_is_ownable = no
+                NOT = {
+                    any_neighbor_province = {
+                        NOT = {
+                            this = scope:potential_defense_territory
+                        }
+                        owner = scope:potential_defense_territory.owner
+                        territory_priority_by_population > scope:potential_defense_territory.territory_priority_by_population
+                    }
+                }
+            }
+        }
     }
 }

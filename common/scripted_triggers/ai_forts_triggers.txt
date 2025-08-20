@@ -588,35 +588,34 @@ all_redoubt_high_tier_forts_are_built = {
 }
 
 # This and ai_can_rebuild_fort_to_territory can't be true simultaneously for a given territory, incl with 1 less fort
-ai_should_reduce_territory_fort = {
-    OR = {
-        # Territory has more fort levels that we want it to have
-        ai_fort_level_is_higher_than_wanted = yes
-        AND = {
-            # Only do this sort of optimization if basic country defense is set up
-            owner = {
-                all_perimeter_states_have_any_forts = yes
-            }
-            # This is non-redoubt territory with fort, while redoubt doesn't have it
-            num_of_fortress_building_projected > 0
-            ai_territory_is_redoubt_of_state = no
-            state = {
-                ai_state_redoubt_has_fort_or_can_not = no
-            }
-        }
+# Expects local_var:all_perimeter_states_have_any_forts to be set for performance
+ai_should_rebuild_territory_fort = {
+    # Only do this sort of optimization if basic country defense is set up
+    owner = {
+        all_perimeter_states_have_any_forts = yes
+    }
+    # This is non-redoubt territory with fort, while redoubt doesn't have it
+    num_of_fortress_building_projected > 0
+    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
+    state = {
+        cache_redoubt_of_state_for_trigger = yes
+    }
+    ai_territory_is_redoubt_of_state = no
+    state = {
+        ai_state_redoubt_has_fort_or_can_not = no
     }
 }
 
-# This and ai_should_reduce_territory_fort can't be true simultaneously for a given territory, incl with 1 less fort
-# Requires local_var:all_perimeter_states_have_any_forts to be set for performance
+# This and ai_should_rebuild_territory_fort can't be true simultaneously for a given territory, incl with 1 less fort
+# Expects local_var:all_perimeter_states_have_any_forts to be set for performance
 ai_can_rebuild_fort_to_territory = {
     # There's no fort yet and there are free slots to build it
     free_building_slots > 0
     num_of_fortress_building_projected < 1
-    # Check regular trigger for allowing to build fort in territory
-    ai_allowed_to_build_fort_in_territory = yes
     # We won't exceed state fort limit by building it here
     state.state_fort_limit_svalue >= state_fort_limit_with_1_more_level
+    # Check regular trigger for allowing to build fort in territory
+    ai_allowed_to_build_fort_in_territory = yes
     # Only rebuild in redoubt territories, unless basic country defense is set up and state redoubt territory has fort
     OR = {
         ai_territory_is_redoubt_of_state = yes

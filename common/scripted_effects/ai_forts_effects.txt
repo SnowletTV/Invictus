@@ -82,9 +82,7 @@ ai_handle_forts_and_state_capitals = {
                     }
                     min = 0
                     
-                    ai_optimize_positioning_of_forts = {
-                        periodic = $periodic$
-                    }
+                    ai_optimize_positioning_of_forts = yes
                 }
             }
         }
@@ -493,9 +491,7 @@ ai_optimize_positioning_of_forts = {
         }
 
         ordered_state_province = {
-            limit = {
-                ai_should_reduce_territory_fort = yes
-            }
+            # Don't filter by limit here because we will check it in while loop anyways
             order_by = {
                 # Start from lower lvl forts, as first level eats up a lot of limit
                 value = 0
@@ -536,14 +532,19 @@ ai_optimize_positioning_of_forts = {
                 limit = {
                     local_var:previous_free_building_slots < free_building_slots
 
-                    ai_should_reduce_territory_fort = yes
-                    OR = {
-                        # For executions where we could gain land assume high level forts weren't country's decision
-                        AND = {
-                            $periodic$ = 0
-                            num_of_fortress_building_projected > 1
+                    # Territory has more fort levels that we want it to have
+                    trigger_if = {
+                        limit = {
+                            ai_fort_level_is_higher_than_wanted = yes
                         }
-                        # Only remove fort if can immediately start building another one to keep num of them consistent
+                        always = yes
+                    }
+                    # Territory fort has value, but we would rather rebuild it to other territory
+                    trigger_else_if = {
+                        limit = {
+                            ai_should_rebuild_territory_fort = yes
+                        }
+                        # For this case guarantee that we would end up with enough money for rebuilding
                         trigger_if = {
                             limit = {
                                 has_specific_construction = fortress_building
@@ -575,13 +576,13 @@ ai_optimize_positioning_of_forts = {
                     remove_building_level = fortress_building
                 }
 
-                # For executions where we could gain land assume high level forts weren't country's decision
+                # Always rebuild forts if possible to keep num of them consistent with what vanilla AI decided
                 if = {
                     limit = {
+                        # Fort was actually cancelled or removed
                         local_var:previous_free_building_slots < free_building_slots
-                        OR = {
-                            $periodic$ = 1
-                            num_of_fortress_building_projected <= 0
+                        owner = {
+                            treasury >= country_fortress_building_cost
                         }
                     }
 

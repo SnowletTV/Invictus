@@ -29,6 +29,7 @@ ai_handle_forts_and_state_capitals = {
             }
             has_land = yes
         }
+        # Base fort build time is 720 days, so wouldn't expect changes more often than that for periodic
         set_variable = {
             name = ai_handled_forts_and_state_capitals
             days = 710 # 1 year + 11.5 months - every 2 years
@@ -40,6 +41,7 @@ ai_handle_forts_and_state_capitals = {
 
             # Do this for players too to prevent issues when switching between countries
             ai_cache_if_state_is_on_perimeter = yes
+            cache_state_redoubts_and_outworks = yes
 
             if = {
                 limit = {
@@ -49,9 +51,6 @@ ai_handle_forts_and_state_capitals = {
                     }
                     state_is_disloyal = no
                 }
-                cache_redoubt_of_state_in_effects = yes
-                cache_outwork_of_state_in_effects = yes
-
                 ai_move_state_capital_to_optimal = yes
                 every_state_province = {
                     ai_free_building_slots_for_forts = yes
@@ -86,22 +85,6 @@ ai_handle_forts_and_state_capitals = {
                     min = 0
                     
                     ai_optimize_positioning_of_forts = yes
-                }
-            }
-        }
-
-        if = {
-            limit = {
-                is_ai = yes
-                war = no
-            }
-            every_country_state = {
-                limit = {
-                    state_is_disloyal = no
-                }
-                capital_scope = {
-                    remove_variable = cached_redoubt_of_state_in_effects
-                    remove_variable = cached_outwork_of_state_in_effects
                 }
             }
         }
@@ -186,6 +169,82 @@ ai_cache_if_state_is_on_perimeter = {
                 name = country_perimeter_states
                 target = prev
             }
+        }
+    }
+}
+
+cache_state_redoubts_and_outworks = {
+    remove_variable = cached_redoubt_territory_of_state
+    remove_variable = cached_outwork_territory_of_state
+
+    ordered_state_province = {
+        limit = {
+            ai_territory_can_have_fort = yes
+        }
+        order_by = territory_priority_for_state_redoubt
+        min = 0
+        max = 2
+        check_range_bounds = no
+        
+        save_scope_as = upcoming_fort_territory
+        if = {
+            limit = {
+                NOT = {
+                    prev = {
+                        has_variable = cached_redoubt_territory_of_state
+                    }
+                }
+            }
+            prev = {
+                set_variable = {
+                    name = cached_redoubt_territory_of_state
+                    value = scope:upcoming_fort_territory
+                    days = 730
+                }
+            }
+        }
+        else_if = {
+            limit = {
+                NOT = {
+                    prev = {
+                        has_variable = cached_outwork_territory_of_state
+                    }
+                }
+            }
+            prev = {
+                set_variable = {
+                    name = cached_outwork_territory_of_state
+                    value = scope:upcoming_fort_territory
+                    days = 730
+                }
+            }
+        }
+        clear_saved_scope = upcoming_fort_territory
+    }
+
+    if = {
+        limit = {
+            NOT = {
+                has_variable = cached_redoubt_territory_of_state
+            }
+        }
+        set_variable = {
+            name = cached_redoubt_territory_of_state
+            value = capital_scope
+        }
+    }
+
+    # There's no outwork, which is quite possible
+    if = {
+        limit = {
+            NOT = {
+                has_variable = cached_outwork_territory_of_state
+            }
+        }
+        # Country capital can never be outwork, so use it as marker that it doesn't exist
+        set_variable = {
+            name = cached_outwork_territory_of_state
+            value = owner.capital_scope
         }
     }
 }
@@ -485,94 +544,6 @@ ai_consolidate_capital_state_forts = {
     }
 }
 
-# If it's already cached and it's of the same state, it does nothing, so it's safe to spam it in the same effect chain
-cache_redoubt_of_state_in_effects = {
-    if = {
-        limit = {
-            NOT = {
-                capital_scope = {
-                    has_variable = cached_redoubt_of_state_in_effects
-                }
-            }
-        }
-        # Check state capital first for performance as usually redoubt is there
-        if = {
-            limit = {
-                capital_scope = {
-                    ai_territory_is_redoubt_of_state = yes
-                }
-            }
-            capital_scope = {
-                set_variable = {
-                    name = cached_redoubt_of_state_in_effects
-                    value = this
-                }
-            }
-        }
-        # Check all state territories to find redoubt
-        else = {
-            ordered_state_province = {
-                limit = {
-                    ai_territory_is_redoubt_of_state = yes
-                }
-                position = 0
-                save_scope_as = cached_redoubt_of_state_in_effects
-                state.capital_scope = {
-                    set_variable = {
-                        name = cached_redoubt_of_state_in_effects
-                        value = scope:cached_redoubt_of_state_in_effects
-                    }
-                }
-                clear_saved_scope = cached_redoubt_of_state_in_effects
-            }
-        }
-    }
-}
-
-# If it's already cached and it's of the same state, it does nothing, so it's safe to spam it in the same effect chain
-cache_outwork_of_state_in_effects = {
-    if = {
-        limit = {
-            NOT = {
-                capital_scope = {
-                    has_variable = cached_outwork_of_state_in_effects
-                }
-            }
-        }
-        ordered_state_province = {
-            limit = {
-                ai_territory_is_outwork_of_state = yes
-            }
-            position = 0
-            save_scope_as = cached_outwork_of_state_in_effects
-            state.capital_scope = {
-                set_variable = {
-                    name = cached_outwork_of_state_in_effects
-                    value = scope:cached_outwork_of_state_in_effects
-                }
-            }
-            clear_saved_scope = cached_outwork_of_state_in_effects
-        }
-        # There's no outwork, which is quite possible
-        if = {
-            limit = {
-                NOT = {
-                    capital_scope = {
-                        has_variable = cached_outwork_of_state_in_effects
-                    }
-                }
-            }
-            # Country capital can never be outwork, so use it as marker that it doesn't exist
-            capital_scope = {
-                set_variable = {
-                    name = cached_outwork_of_state_in_effects
-                    value = owner.capital_scope
-                }
-            }
-        }
-    }
-}
-
 ai_optimize_positioning_of_forts = {
     if = {
         limit = {
@@ -598,7 +569,10 @@ ai_optimize_positioning_of_forts = {
         }
 
         ordered_state_province = {
-            # Don't filter by limit here because we will check it in while loop anyways
+            # Simple limit by having fort, most conditions are checked in while loop
+            limit = {
+                num_of_fortress_building_projected > 0
+            }
             order_by = {
                 # Start from lower lvl forts, as first level eats up a lot of limit
                 value = 0

@@ -35,11 +35,6 @@ ai_allowed_to_build_fort_in_territory = {
         ai_territory_is_redoubt_of_state = yes
     }
     trigger_else = {
-        # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
-        state = {
-            cache_redoubt_of_state_in_triggers = yes
-        }
-
         # Allow to build in territories other than state redoubt only if it has fort
         trigger_if = {
             limit = {
@@ -91,7 +86,6 @@ ai_allowed_to_build_fort_in_territory = {
             }
             trigger_else = {
                 owner = {
-                    # Overwrites state redoubt cache, so should be last in order
                     all_redoubt_high_tier_forts_are_built = yes
                 }
             }
@@ -204,34 +198,27 @@ ai_wants_single_fort_in_territory = {
 }
 
 ai_wants_high_tier_fort_in_territory = {
-    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
-    state = {
-        cache_redoubt_of_state_in_triggers = yes
-    }
-
     OR = {
         ai_wants_giga_fort_in_territory = yes
         ai_wants_mega_fort_in_territory = yes
     }
 }
 
-ai_state_redoubt_wants_high_tier_fort = {
-    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
-    state = {
-        cache_redoubt_of_state_in_triggers = yes
+ai_state_redoubt_wants_high_tier_fort = {   
+    trigger_if = {
+        limit = {
+            has_variable = cached_redoubt_territory_of_state
+        }
+        var:cached_redoubt_territory_of_state = {
+            ai_wants_high_tier_fort_in_territory = yes
+        }
     }
-
-    scope:cached_redoubt_of_state_in_triggers = {
-        ai_wants_high_tier_fort_in_territory = yes
+    trigger_else = {
+        always = no
     }
 }
 
 ai_fort_level_is_higher_than_wanted = {
-    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
-    state = {
-        cache_redoubt_of_state_in_triggers = yes
-    }
-
     trigger_if = {
         limit = {
             ai_wants_giga_fort_in_territory = yes
@@ -256,11 +243,6 @@ ai_fort_level_is_higher_than_wanted = {
 }
 
 ai_fort_level_is_lower_than_wanted = {
-    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
-    state = {
-        cache_redoubt_of_state_in_triggers = yes
-    }
-
     trigger_if = {
         limit = {
             ai_wants_giga_fort_in_territory = yes
@@ -284,12 +266,7 @@ ai_fort_level_is_lower_than_wanted = {
     }
 }
 
-ai_has_enough_building_slots_for_fort = {
-    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
-    state = {
-        cache_redoubt_of_state_in_triggers = yes
-    }
-    
+ai_has_enough_building_slots_for_fort = {    
     # We count mega forts same as giga here for simplicity and giga being more of an extra than necessity
     trigger_if = {
         limit = {
@@ -339,290 +316,62 @@ ai_territory_can_have_fort = {
 ai_territory_is_redoubt_of_state = {
     trigger_if = {
         limit = {
-            state.capital_scope = {
-                has_variable = cached_redoubt_of_state_in_effects
-            }
-        }
-        this = state.capital_scope.var:cached_redoubt_of_state_in_effects
-    }
-    trigger_else_if = {
-        limit = {
-            exists = scope:cached_redoubt_of_state_in_triggers
-            state = scope:cached_redoubt_of_state_in_triggers.state
-        }
-        this = scope:cached_redoubt_of_state_in_triggers
-    }
-    trigger_else_if = {
-        limit = {
             state = {
-                OR = {
-                    capital_scope = {
-                        ai_territory_can_have_fort = yes
-                    }
-                    NOT = {
-                        any_state_province = {
-                            is_state_capital = no
-                            ai_territory_can_have_fort = yes
-                        }
-                    }
-                }
+                has_variable = cached_redoubt_territory_of_state
             }
         }
-        is_state_capital = yes
+        this = state.var:cached_redoubt_territory_of_state
     }
     trigger_else = {
-        is_state_capital = no
-        ai_territory_can_have_fort = yes
-        save_temporary_scope_as = potential_redoubt_territory
-        NOT = {
-            state = {
-                any_state_province = {
-                    NOT = {
-                        this = scope:potential_redoubt_territory
-                    }
-                    is_state_capital = no
-                    ai_territory_can_have_fort = yes
-                    territory_priority_for_state_redoubt > scope:potential_redoubt_territory.territory_priority_for_state_redoubt
-                }
-            }
-        }
+        always = no
     }
 }
 
 ai_territory_is_outwork_of_state = {
     trigger_if = {
         limit = {
-            state.capital_scope = {
-                has_variable = cached_outwork_of_state_in_effects
-            }
-        }
-        trigger_if = {
-            limit = {
-                # Marker for state outwork not existing at all
-                state.capital_scope.var:cached_outwork_of_state_in_effects = owner.capital_scope
-            }
-            always = no
-        }
-        trigger_else = {
-            this = state.capital_scope.var:cached_outwork_of_state_in_effects
-        }
-    }
-    # trigger_else_if = {
-    #     limit = {
-    #         exists = scope:cached_outwork_of_state_in_triggers
-    #         state = scope:cached_outwork_of_state_in_triggers.state
-    #     }
-    #     this = scope:cached_outwork_of_state_in_triggers
-    # }
-    trigger_else_if = {
-        # State capital is always redoubt if it can have fort
-        is_state_capital = no
-        ai_territory_can_have_fort = yes
-
-        save_temporary_scope_as = potential_outwork_territory
-
-        # If state capital is redoubt, non-capital territory with highest outwork priority becomes outwork
-        trigger_if = {
-            limit = {
-                state.capital_scope = {
-                    ai_territory_is_redoubt_of_state = yes
-                }
-            }
-            NOT = {
-                state = {
-                    any_state_province = {
-                        NOT = {
-                            this = scope:potential_outwork_territory
-                        }
-                        is_state_capital = no
-                        ai_territory_can_have_fort = yes
-                        territory_priority_for_state_outwork > scope:potential_outwork_territory.territory_priority_for_state_outwork
-                    }
-                }
-            }
-        }
-
-        # Otherwise non-capital territory with second highest outwork priority becomes outwork
-        trigger_else = {
             state = {
-                any_state_province = {
-                    # There's specifically 1 territory with higher priority, which becomes redoubt
-                    count = 1
-                    NOT = {
-                        this = scope:potential_outwork_territory
-                    }
-                    is_state_capital = no
-                    ai_territory_can_have_fort = yes
-                    territory_priority_for_state_outwork > scope:potential_outwork_territory.territory_priority_for_state_outwork
-                }
+                has_variable = cached_outwork_territory_of_state
             }
         }
+        this = state.var:cached_outwork_territory_of_state
+    }
+    trigger_else = {
+        always = no
     }
 }
-
-# If it's already cached and it's of the same state, it does nothing, so it's safe to spam it in the same trigger chain
-cache_redoubt_of_state_in_triggers = {
-    OR = {
-        trigger_if = {
-            limit = {
-                OR = {
-                    NOT = {
-                        exists = scope:cached_redoubt_of_state_in_triggers
-                    }
-                    NOT = {
-                        this = scope:cached_redoubt_of_state_in_triggers.state
-                    }
-                }
-            }
-            # Check if it was already cached in effects so we can just copy it over
-            trigger_if = {
-                limit = {
-                    capital_scope = {
-                        has_variable = cached_redoubt_of_state_in_effects
-                    }
-                }
-                capital_scope.var:cached_redoubt_of_state_in_effects = {
-                    save_temporary_scope_as = cached_redoubt_of_state_in_triggers
-                }
-            }
-            # Check state capital first for performance as usually redoubt is there
-            trigger_else_if = {
-                limit = {
-                    capital_scope = {
-                        ai_territory_is_redoubt_of_state = yes
-                    }
-                }
-                capital_scope = {
-                    save_temporary_scope_as = cached_redoubt_of_state_in_triggers
-                }
-            }
-            # Check all state territories to find redoubt
-            trigger_else = {
-                any_state_province = {
-                    ai_territory_is_redoubt_of_state = yes
-                    save_temporary_scope_as = cached_redoubt_of_state_in_triggers
-                }
-            }
-        }
-        always = yes
-    }
-}
-
-# If it's already cached and it's of the same state, it does nothing, so it's safe to spam it in the same trigger chain
-# cache_outwork_of_state_in_triggers = {
-#     OR = {
-#         trigger_if = {
-#             limit = {
-#                 OR = {
-#                     NOT = {
-#                         exists = scope:cached_outwork_of_state_in_triggers
-#                     }
-#                     NOT = {
-#                         this = scope:cached_outwork_of_state_in_triggers.state
-#                     }
-#                 }
-#             }
-#             # Check if it was already cached in effects so we can just copy it over
-#             trigger_if = {
-#                 limit = {
-#                     capital_scope = {
-#                         has_variable = cached_outwork_of_state_in_effects
-#                     }
-#                 }
-#                 capital_scope.var:cached_outwork_of_state_in_effects = {
-#                     save_temporary_scope_as = cached_outwork_of_state_in_triggers
-#                 }
-#             }
-#             trigger_else = {
-#                 # Check all state territories to find outwork
-#                 any_state_province = {
-#                     ai_territory_is_outwork_of_state = yes
-#                     save_temporary_scope_as = cached_outwork_of_state_in_triggers
-#                 }
-#             }
-#             # There's no outwork, which is quite possible
-#             trigger_if = {
-#                 limit = {
-#                     OR = {
-#                         NOT = {
-#                             exists = scope:cached_outwork_of_state_in_triggers
-#                         }
-#                         NOT = {
-#                             this = scope:cached_outwork_of_state_in_triggers.state
-#                         }
-#                     }
-#                 }
-#                 # Country capital can never be outwork, so use it as marker that it doesn't exist
-#                 owner.capital_scope = {
-#                     save_temporary_scope_as = cached_outwork_of_state_in_triggers
-#                 }
-#             }
-#         }
-#         always = yes
-#     }
-# }
 
 ai_state_redoubt_has_fort_or_can_not = {
     trigger_if = {
         limit = {
-            capital_scope = {
-                has_variable = cached_redoubt_of_state_in_effects
-            }
+            has_variable = cached_redoubt_territory_of_state
         }
-        capital_scope.var:cached_redoubt_of_state_in_effects = {
+        var:cached_redoubt_territory_of_state = {
             OR = {
                 num_of_fortress_building_projected > 0
                 ai_territory_can_have_fort = no
             }
         }
     }
-    trigger_else_if = {
-        limit = {
-            exists = scope:cached_redoubt_of_state_in_triggers
-            this = scope:cached_redoubt_of_state_in_triggers.state
-        }
-        scope:cached_redoubt_of_state_in_triggers = {
-            OR = {
-                num_of_fortress_building_projected > 0
-                ai_territory_can_have_fort = no
-            }
-        }
-    }
-    # Check state capital first because usually redoubt is there
-    trigger_else_if = {
-        limit = {
-            capital_scope = {
-                ai_territory_is_redoubt_of_state = yes
-            }
-        }
-        capital_scope = {
-            OR = {
-                num_of_fortress_building_projected > 0
-                ai_territory_can_have_fort = no
-            }
-        }
-    }
-    # Otherwise loop through all state province if it's not capital
     trigger_else = {
-        any_state_province = {
-            is_state_capital = no
-            OR = {
-                num_of_fortress_building_projected > 0
-                ai_territory_can_have_fort = no
-            }
-            ai_territory_is_redoubt_of_state = yes
-        }
+        always = yes
     }
 }
 
 # ai_state_outwork_has_fort_or_can_not = {
-#     any_state_province = {
-#         is_state_capital = no
-#         OR = {
-#             num_of_fortress_building_projected > 0
-#             ai_territory_can_have_fort = no
+#     trigger_if = {
+#         limit = {
+#             has_variable = cached_outwork_territory_of_state
 #         }
-#         ai_territory_is_outwork_of_state = yes
+#         var:cached_outwork_territory_of_state = {
+#             OR = {
+#                 num_of_fortress_building_projected > 0
+#                 ai_territory_can_have_fort = no
+#             }
+#         }
+#     }
+#     trigger_else = {
+#         always = yes
 #     }
 # }
 
@@ -708,10 +457,6 @@ ai_should_rebuild_territory_fort = {
     }
     # This is non-redoubt territory with fort, while redoubt doesn't have it
     num_of_fortress_building_projected > 0
-    # Cache redoubt to make ai_territory_is_redoubt_of_state just a fast scope comparison
-    state = {
-        cache_redoubt_of_state_in_triggers = yes
-    }
     ai_territory_is_redoubt_of_state = no
     state = {
         ai_state_redoubt_has_fort_or_can_not = no

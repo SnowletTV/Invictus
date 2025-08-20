@@ -39,17 +39,12 @@ ai_allowed_to_build_fort_in_territory = {
             ai_fort_level_is_lower_than_wanted = yes
         }
 
-        # Allow to build in territories other than state redoubt only if it has fort
-        OR = {
-            ai_territory_is_redoubt_of_state = yes
-            state = {
-                ai_state_redoubt_has_fort_or_can_not = yes
-            }
-        }
-
-        # Building more than level 1 is allowed only in capital redoubt or if all perimeter states have forts
         trigger_if = {
             limit = {
+                ai_territory_is_redoubt_of_state = yes
+            }
+            # Building more than level 1 is allowed only in capital redoubt or if all perimeter redoubts have forts
+            OR = {
                 trigger_if = {
                     limit = {
                         state = {
@@ -62,38 +57,30 @@ ai_allowed_to_build_fort_in_territory = {
                 trigger_else = {
                     num_of_fortress_building_projected < 1
                 }
-            }
-            always = yes
-        }
-        trigger_else = {
-            owner = {
-                all_perimeter_states_have_redoubt_fort = yes
+                owner = {
+                    all_perimeter_states_have_redoubt_fort = yes
+                }
             }
         }
-
-        # Building outside of redoubts is allowed only if all redoubt high tier forts are built
-        trigger_if = {
+        
+        # Allow to build in outwork only if:
+        trigger_else_if = {
             limit = {
-                ai_territory_is_redoubt_of_state = yes
+                ai_territory_is_outwork_of_state = yes
             }
-            always = yes
-        }
-        trigger_else = {
+            # 1) State redoubt has fort of wanted level, be it single or high tier fort
+            state = {
+                ai_state_redoubt_has_wanted_fort = yes
+            }
+            # 2) Country wide wanted high tier forts in state redoubts are already built
             owner = {
                 all_redoubt_high_tier_forts_are_built = yes
             }
         }
 
-        # Reserve fort limit for redoubt it it wants mega or giga fort
-        trigger_if = {
-            limit = {
-                ai_territory_is_redoubt_of_state = no
-                ai_state_redoubt_wants_high_tier_fort = yes
-            }
-            state.state_fort_limit_svalue >= fort_limit_for_mega_and_single_forts
-        }
+        # Never build forts outside of redoubts and outworks
         trigger_else = {
-            always = yes
+            always = no
         }
     }
 
@@ -352,6 +339,23 @@ ai_state_redoubt_has_fort_or_can_not = {
     }
 }
 
+ai_state_redoubt_has_wanted_fort = {
+    trigger_if = {
+        limit = {
+            has_variable = cached_redoubt_territory_of_state
+        }
+        var:cached_redoubt_territory_of_state = {
+            OR = {
+                ai_territory_can_have_fort = no
+                ai_fort_level_is_lower_than_wanted = no
+            }
+        }
+    }
+    trigger_else = {
+        always = yes
+    }
+}
+
 # ai_state_outwork_has_fort_or_can_not = {
 #     trigger_if = {
 #         limit = {
@@ -382,13 +386,24 @@ state_is_perimeter_of_its_country = {
 }
 
 all_perimeter_states_have_redoubt_fort = {
-    has_non_empty_variable_list = {
-        name = country_perimeter_states
-    }
-    NOT = {
-        any_in_list = {
-            variable = country_perimeter_states
-            ai_state_redoubt_has_fort_or_can_not = no
+    NOR = {
+        capital_scope.state = {
+            has_variable = cached_redoubt_territory_of_state
+            var:cached_redoubt_territory_of_state = {
+                ai_state_redoubt_has_fort_or_can_not = no
+            }
+        }
+        AND = {
+            has_non_empty_variable_list = {
+                name = country_perimeter_states
+            }
+            any_in_list = {
+                variable = country_perimeter_states
+                has_variable = cached_redoubt_territory_of_state
+                var:cached_redoubt_territory_of_state = {
+                    ai_state_redoubt_has_fort_or_can_not = no
+                }
+            }
         }
     }
 }
@@ -400,16 +415,25 @@ all_perimeter_states_have_any_forts = {
         }
         local_var:all_perimeter_states_have_any_forts = 1
     }
-    trigger_else = {
-        has_non_empty_variable_list = {
-            name = country_perimeter_states
-        }
-        NOT = {
-            any_in_list = {
-                variable = country_perimeter_states
+    trigger_else = {        
+        NOR = {
+            capital_scope.state = {
                 NOT = {
                     any_state_province = {
                         num_of_fortress_building_projected > 0
+                    }
+                }
+            }
+            AND = {
+                has_non_empty_variable_list = {
+                    name = country_perimeter_states
+                }
+                any_in_list = {
+                    variable = country_perimeter_states
+                    NOT = {
+                        any_state_province = {
+                            num_of_fortress_building_projected > 0
+                        }
                     }
                 }
             }

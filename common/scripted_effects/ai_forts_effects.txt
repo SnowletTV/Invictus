@@ -48,7 +48,10 @@ ai_handle_forts_and_state_capitals = {
                         war = no
                     }
                     state_is_disloyal = no
-                }            
+                }
+                cache_redoubt_of_state_in_effects = yes
+                cache_outwork_of_state_in_effects = yes
+
                 ai_move_state_capital_to_optimal = yes
                 every_state_province = {
                     ai_free_building_slots_for_forts = yes
@@ -83,6 +86,22 @@ ai_handle_forts_and_state_capitals = {
                     min = 0
                     
                     ai_optimize_positioning_of_forts = yes
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                is_ai = yes
+                war = no
+            }
+            every_country_state = {
+                limit = {
+                    state_is_disloyal = no
+                }
+                capital_scope = {
+                    remove_variable = cached_redoubt_of_state_in_effects
+                    remove_variable = cached_outwork_of_state_in_effects
                 }
             }
         }
@@ -460,6 +479,94 @@ ai_consolidate_capital_state_forts = {
                         }
                     }
                     start_building_construction = fortress_building
+                }
+            }
+        }
+    }
+}
+
+# If it's already cached and it's of the same state, it does nothing, so it's safe to spam it in the same effect chain
+cache_redoubt_of_state_in_effects = {
+    if = {
+        limit = {
+            NOT = {
+                state.capital_scope = {
+                    has_variable = cached_redoubt_of_state_in_effects
+                }
+            }
+        }
+        # Check state capital first for performance as usually redoubt is there
+        if = {
+            limit = {
+                capital_scope = {
+                    ai_territory_is_redoubt_of_state = yes
+                }
+            }
+            capital_scope = {
+                set_variable = {
+                    name = cached_redoubt_of_state_in_effects
+                    value = this
+                }
+            }
+        }
+        # Check all state territories to find redoubt
+        else = {
+            ordered_state_province = {
+                limit = {
+                    ai_territory_is_redoubt_of_state = yes
+                }
+                position = 0
+                save_scope_as = cached_redoubt_of_state_in_effects
+                state.capital_scope = {
+                    set_variable = {
+                        name = cached_redoubt_of_state_in_effects
+                        value = scope:cached_redoubt_of_state_in_effects
+                    }
+                }
+                clear_saved_scope = cached_redoubt_of_state_in_effects
+            }
+        }
+    }
+}
+
+# If it's already cached and it's of the same state, it does nothing, so it's safe to spam it in the same effect chain
+cache_outwork_of_state_in_effects = {
+    if = {
+        limit = {
+            NOT = {
+                state.capital_scope = {
+                    has_variable = cached_outwork_of_state_in_effects
+                }
+            }
+        }
+        ordered_state_province = {
+            limit = {
+                ai_territory_is_outwork_of_state = yes
+            }
+            position = 0
+            save_scope_as = cached_outwork_of_state_in_effects
+            state.capital_scope = {
+                set_variable = {
+                    name = cached_outwork_of_state_in_effects
+                    value = scope:cached_outwork_of_state_in_effects
+                }
+            }
+            clear_saved_scope = cached_outwork_of_state_in_effects
+        }
+        # There's no outwork, which is quite possible
+        if = {
+            limit = {
+                NOT = {
+                    state.capital_scope = {
+                        has_variable = cached_outwork_of_state_in_effects
+                    }
+                }
+            }
+            # Country capital can never be outwork, so use it as marker that it doesn't exist
+            state.capital_scope = {
+                set_variable = {
+                    name = cached_outwork_of_state_in_effects
+                    value = owner.capital_scope
                 }
             }
         }

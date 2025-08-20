@@ -23,10 +23,8 @@ ai_allowed_to_build_fort_in_territory = {
     # Allow to build in territories other than capital state redoubt only if it has fort
     trigger_if = {
         limit = {
-            owner = {
-                capital_scope.state = {
-                    ai_state_redoubt_has_fort_or_can_not = no
-                }
+            owner.capital_scope.state = {
+                ai_state_redoubt_has_fort_or_can_not = no
             }
         }
         state = {
@@ -34,65 +32,73 @@ ai_allowed_to_build_fort_in_territory = {
         }
         ai_territory_is_redoubt_of_state = yes
     }
-    trigger_else = {
+
+    # Territory hasn't reached its target for num of forts
+    trigger_else_if = {
+        limit = {
+            ai_fort_level_is_lower_than_wanted = yes
+        }
+
         # Allow to build in territories other than state redoubt only if it has fort
+        OR = {
+            ai_territory_is_redoubt_of_state = yes
+            state = {
+                ai_state_redoubt_has_fort_or_can_not = yes
+            }
+        }
+
+        # Building more than level 1 is allowed only in capital redoubt or if all perimeter states have forts
         trigger_if = {
             limit = {
-                state = {
-                    ai_state_redoubt_has_fort_or_can_not = no
+                trigger_if = {
+                    limit = {
+                        state = {
+                            is_capital_state = yes
+                        }
+                        ai_territory_is_redoubt_of_state = yes
+                    }
+                    num_of_fortress_building_projected < level_of_mega_fort_wanted
+                }
+                trigger_else = {
+                    num_of_fortress_building_projected < 1
                 }
             }
-            ai_territory_is_redoubt_of_state = yes
+            always = yes
+        }
+        trigger_else = {
+            owner = {
+                all_perimeter_states_have_redoubt_fort = yes
+            }
+        }
+
+        # Building outside of redoubts is allowed only if all redoubt high tier forts are built
+        trigger_if = {
+            limit = {
+                ai_territory_is_redoubt_of_state = yes
+            }
+            always = yes
+        }
+        trigger_else = {
+            owner = {
+                all_redoubt_high_tier_forts_are_built = yes
+            }
+        }
+
+        # Reserve fort limit for redoubt it it wants mega or giga fort
+        trigger_if = {
+            limit = {
+                ai_territory_is_redoubt_of_state = no
+                ai_state_redoubt_wants_high_tier_fort = yes
+            }
+            state.state_fort_limit_svalue >= fort_limit_for_mega_and_single_forts
         }
         trigger_else = {
             always = yes
         }
+    }
 
-        # Territory hasn't reached its target for num of forts
-        trigger_if = {
-            limit = {
-                ai_fort_level_is_lower_than_wanted = yes
-            }
-            # Building more than level 1 is allowed only in capital redoubt or if all perimeter states have forts
-            trigger_if = {
-                limit = {
-                    trigger_if = {
-                        limit = {
-                            state = {
-                                is_capital_state = yes
-                            }
-                            ai_territory_is_redoubt_of_state = yes
-                        }
-                        num_of_fortress_building_projected < level_of_mega_fort_wanted
-                    }
-                    trigger_else = {
-                        num_of_fortress_building_projected < 1
-                    }
-                }
-                always = yes
-            }
-            trigger_else = {
-                owner = {
-                    all_perimeter_states_have_redoubt_fort = yes
-                }
-            }
-
-            # Building outside of redoubts is allowed only if all redoubt high tier forts are built
-            trigger_if = {
-                limit = {
-                    ai_territory_is_redoubt_of_state = yes
-                }
-                always = yes
-            }
-            trigger_else = {
-                owner = {
-                    all_redoubt_high_tier_forts_are_built = yes
-                }
-            }
-        }
-        trigger_else = {
-            always = no
-        }
+    trigger_else = {
+        always = no
     }
 }
 
@@ -149,8 +155,8 @@ ai_wants_mega_fort_in_territory = {
             }
         }
         # Only build mega forts in redoubts with high fort importance, otherwise it's not worth the investment
-        territory_priority_for_having_fort >= priority_threshold_for_mega_fort
         ai_territory_is_redoubt_of_state = yes
+        territory_priority_for_having_fort >= priority_threshold_for_mega_fort
     }
     trigger_else = {
         always = no
@@ -173,27 +179,15 @@ ai_wants_single_fort_in_territory = {
         OR = {
             ai_territory_is_redoubt_of_state = yes
             AND = {
-                territory_priority_for_having_fort >= priority_threshold_for_single_fort
                 ai_territory_is_outwork_of_state = yes
+                territory_priority_for_having_fort >= priority_threshold_for_single_fort
             }
         }
     }
     trigger_else = {
         # For non-perimeter states it must be redoubt with high fort importance
-        territory_priority_for_having_fort >= priority_threshold_for_single_fort
         ai_territory_is_redoubt_of_state = yes
-    }
-
-    # Reserve fort limit for redoubt it it wants mega or giga fort
-    trigger_if = {
-        limit = {
-            ai_territory_is_redoubt_of_state = no
-            ai_state_redoubt_wants_high_tier_fort = yes
-        }
-        state.state_fort_limit_svalue >= fort_limit_for_mega_and_single_forts
-    }
-    trigger_else = {
-        always = yes
+        territory_priority_for_having_fort >= priority_threshold_for_single_fort
     }
 }
 
@@ -455,20 +449,38 @@ ai_should_rebuild_territory_fort = {
     owner = {
         all_perimeter_states_have_any_forts = yes
     }
-    # This is non-redoubt territory with fort, while redoubt doesn't have it
+    # This is non-redoubt territory with fort, while redoubt...
     num_of_fortress_building_projected > 0
     ai_territory_is_redoubt_of_state = no
     state = {
-        ai_state_redoubt_has_fort_or_can_not = no
+        OR = {
+            # ...either doesn't have any forts at all...
+            ai_state_redoubt_has_fort_or_can_not = no
+            # ...or won't be able to build wanted level with current limit
+            AND = {
+                ai_state_redoubt_wants_high_tier_fort = yes
+                state_fort_limit_svalue < fort_limit_for_mega_and_single_forts
+            }
+        }
     }
 }
 
 # This and ai_should_rebuild_territory_fort can't be true simultaneously for a given territory, incl with 1 less fort
 # Expects local_var:all_perimeter_states_have_any_forts to be set for performance
 ai_can_rebuild_fort_to_territory = {
-    # There's no fort yet and there are free slots to build it
+    # There are free slots to build more forts
     free_building_slots > 0
-    num_of_fortress_building_projected < 1
+    OR = {
+        # Either there's no fort yet...
+        num_of_fortress_building_projected < 1
+        # ...or it's redoubt of same state that want mega fort
+        AND = {
+            num_of_fortress_building_projected < level_of_mega_fort_wanted
+            state = scope:territory_with_removed_fort.state
+            ai_territory_is_redoubt_of_state = yes
+            ai_wants_mega_fort_in_territory = yes
+        }
+    }
     # We won't exceed state fort limit by building it here
     state.state_fort_limit_svalue >= state_fort_limit_with_1_more_level
     # Check regular trigger for allowing to build fort in territory

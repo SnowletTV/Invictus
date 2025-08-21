@@ -47,48 +47,54 @@ ai_handle_forts_and_state_capitals = {
                 limit = {
                     owner = {
                         is_ai = yes
-                        war = no
                     }
                     state_is_disloyal = no
                 }
-                ai_move_state_capital_to_optimal = yes
-                every_state_province = {
-                    ai_free_building_slots_for_forts = yes
+                ai_cache_fort_optimization_data = yes
+                if = {
+                    limit = {
+                        owner = {
+                            war = no
+                        }
+                    }
+                    ai_move_state_capital_to_optimal = yes
+                    every_state_province = {
+                        ai_free_building_slots_for_forts = yes
+                    }
                 }
             }
         }
 
-        # In the second round of state effects perform destroying, cancelling, rebuilding of forts on various levels
+        # In the second round of state effects perform destroying, cancelling, rebuilding of forts
         if = {
             limit = {
                 is_ai = yes
             }
-
-            # Fix capital state being over fort limit. Do it even during wars, otherwise vanilla AI nukes capital fort
-            ai_consolidate_capital_state_forts = yes
-
-            if = {
+            ordered_country_state = {
                 limit = {
-                    war = no
+                    state_is_disloyal = no
                 }
-                ordered_country_state = {
-                    limit = {
-                        state_is_disloyal = no
-                    }
-                    order_by = {
-                        value = state_priority_by_id
-                        # Prefer non-perimeter states first so they rebuild their forts in perimeter states
-                        if = {
-                            limit = {
-                                state_is_perimeter_of_its_country = no
-                            }
-                            add = 1000
+                order_by = {
+                    value = state_priority_by_id
+                    # Prefer non-perimeter states first so they rebuild their forts in perimeter states
+                    if = {
+                        limit = {
+                            state_is_perimeter_of_its_country = no
                         }
+                        add = 1000
                     }
-                    min = 0
-                    
-                    ai_optimize_positioning_of_forts = yes
                 }
+                min = 0
+                
+                ai_optimize_positioning_of_forts = yes
+            }
+
+            every_country_state = {
+                limit = {
+                    state_is_disloyal = no
+                }
+                remove_variable = state_fort_limit_was_exceeded
+                remove_variable = state_is_occupied_or_under_attack
             }
         }
     }
@@ -490,85 +496,78 @@ ai_free_building_slots_for_forts = {
     }
 }
 
-# Fixes issues like when Carthage integrates a subject with higher fort level in the area of its capital, causing fort
-# overcap, and then vanilla AI deletes forts proportionally, causing capital to have no forts in favor of non-capital
-ai_consolidate_capital_state_forts = {
-    capital_scope = {
-        if = {
-            limit = {
-                # Capital must have already built up forts, ongoing construction doesn't count
-                num_of_fortress_building > 0
-            }
-            set_local_variable = {
-                name = did_cancel_or_remove_fort
+ai_cache_fort_optimization_data = {
+    set_variable = {
+        name = state_fort_limit_was_exceeded
+        value = {
+            if = {
+                limit = {
+                    state_fort_limit_used > state_fort_limit_svalue
+                }
                 value = 1
             }
-
-            state = {
-                while = {
-                    limit = {
-                        local_var:did_cancel_or_remove_fort = 1
-                        state_fort_limit_used > state_fort_limit_plus_1
+            else = {
+                value = 0
+            }
+        }
+    }
+        
+    set_variable = {
+        name = state_is_occupied_or_under_attack
+        value = {
+            if = {
+                limit = {
+                    # BLocking trigger because otherwise we won't proceed with the state anyways
+                    var:state_fort_limit_was_exceeded = 1
+                    owner = {
+                        war = yes
                     }
-                    set_local_variable = {
-                        name = did_cancel_or_remove_fort
-                        value = 0
-                    }
-            
-                    ordered_state_province = {
-                        limit = {
-                            # Fix limit by removing non-capital forts, preventing vanilla AI from messing up capital
-                            is_capital = no
-
-                            # Can be executed while at war, so check if not under siege or occupied
-                            has_siege = no
+                    OR = {
+                        # Check capital first for performance as it's targeted the most often
+                        capital_scope = {
                             OR = {
-                                NOT = {
+                                has_siege = yes
+                                AND = {
+                                    exists = owner
                                     exists = controller
+                                    NOT = {
+                                        owner = controller
+                                    }
                                 }
-                                controller = owner
-                            }
-                        }
-                        order_by = num_of_fortress_building_projected
-                        position = 0
-                        check_range_bounds = no
-
-                        if = {
-                            limit = {
-                                has_specific_construction = fortress_building
-                            }
-                            cancel_building_construction = fortress_building
-                        }
-                        else = {
-                            remove_building_level = fortress_building
-                        }
-                        set_local_variable = {
-                            name = did_cancel_or_remove_fort
-                            value = 1
-                        }
-
-                        # If has enough money and want to have more forts in capital territory, start construction
-                        if = {
-                            limit = {
-                                owner = {
-                                    treasury >= country_fortress_building_cost
-                                    capital_scope = {
-                                        NOT = {
-                                            has_specific_construction = fortress_building
-                                        }
-                                        free_building_slots > 0
-                                        ai_fort_level_is_lower_than_wanted = yes
-                                        state.state_fort_limit_svalue >= state_fort_limit_with_1_more_level
+                                any_unit_in_province = {
+                                    unit_owner = {
+                                        war_with = prev.unit_location.owner
                                     }
                                 }
                             }
-                            start_building_construction = fortress_building
+                        }
+                        any_state_province = {
+                            NOT = {
+                                is_state_capital = yes
+                            }
+                            OR = {
+                                has_siege = yes
+                                AND = {
+                                    exists = owner
+                                    exists = controller
+                                    NOT = {
+                                        owner = controller
+                                    }
+                                }
+                                any_unit_in_province = {
+                                    unit_owner = {
+                                        war_with = prev.unit_location.owner
+                                    }
+                                }
+                            }
                         }
                     }
                 }
+                value = 1
             }
-
-            remove_local_variable = did_cancel_or_remove_fort
+            else = {
+                value = 0
+            }
         }
     }
 }
@@ -577,6 +576,15 @@ ai_optimize_positioning_of_forts = {
     if = {
         limit = {
             state_is_disloyal = no
+            OR = {
+                owner = {
+                    war = no
+                }
+                AND = {
+                    var:state_fort_limit_was_exceeded = 1
+                    var:state_is_occupied_or_under_attack = 0
+                }
+            }
         }
 
         # Cache this so we don't do country wide territory check in every state territory
@@ -664,6 +672,11 @@ ai_optimize_positioning_of_forts = {
                                 }
                             }
                         }
+
+                        state = {
+                            var:state_fort_limit_was_exceeded = 1
+                            state_fort_limit_used > state_fort_limit_svalue
+                        }
                     }
                 }
 
@@ -698,6 +711,16 @@ ai_optimize_positioning_of_forts = {
                         ordered_country_state = {
                             limit = {
                                 state_is_disloyal = no
+
+                                OR = {
+                                    owner = {
+                                        war = no
+                                    }
+                                    AND = {
+                                        is_capital_state = yes
+                                        var:state_is_occupied_or_under_attack = 0
+                                    }
+                                }
                                 
                                 # Can only (re)build forts in redoubts and outworks
                                 OR = {

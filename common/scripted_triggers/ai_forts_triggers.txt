@@ -508,7 +508,6 @@ all_redoubt_high_tier_forts_are_built = {
     }
 }
 
-# This and ai_can_rebuild_fort_to_territory can't be true simultaneously for a given territory, incl with 1 less fort
 # Expects local_var:all_perimeter_states_have_any_forts to be set for performance
 ai_should_rebuild_territory_fort = {
     # Mandatory checks for fort decision making to rule out error log spam in edge cases
@@ -529,48 +528,47 @@ ai_should_rebuild_territory_fort = {
             }
         }
     }
+
     # Only do this sort of optimization if basic country defense is set up
     owner = {
         all_perimeter_states_have_any_forts = yes
     }
 }
 
-# This and ai_should_rebuild_territory_fort can't be true simultaneously for a given territory, incl with 1 less fort
-# Expects local_var:all_perimeter_states_have_any_forts to be set for performance
 ai_can_rebuild_fort_to_territory = {
     # Mandatory checks for fort decision making to rule out error log spam in edge cases
     exists = owner
     exists = state
 
+    # Rule out rebuilding to the same territory
+    NOT = {
+        this = scope:territory_with_removed_fort
+    }
+
     # There are free slots to build more forts
     free_building_slots > 0
-    OR = {
-        # Either there's no fort yet...
-        num_of_fortress_building_projected < 1
-        # ...or it's redoubt of same state that want mega fort
-        AND = {
-            num_of_fortress_building_projected < level_of_mega_fort_wanted
+
+    # Rebuilding inside the same state
+    trigger_if = {
+        limit = {
             state = scope:territory_with_removed_fort.state
+        }
+        # Both redoubts and outworks to their desired levels, ai_allowed_to_build_fort_in_territory narrows it down
+        OR = {
             ai_territory_is_redoubt_of_state = yes
-            ai_wants_mega_fort_in_territory = yes
+            ai_territory_is_outwork_of_state = yes
         }
     }
 
-    # Check regular trigger for allowing to build fort in territory
-    ai_allowed_to_build_fort_in_territory = yes
-
-    # Only rebuild in redoubt territories, unless basic country defense is set up and state redoubt territory has fort
-    OR = {
+    # Rebuilding country wide between states
+    trigger_else = {
+        # Only to redoubts that have no fort whatsoever
         ai_territory_is_redoubt_of_state = yes
-        AND = {
-            state = {
-                ai_state_redoubt_has_fort_or_can_not = yes
-            }
-            owner = {
-                all_perimeter_states_have_any_forts = yes
-            }
-        }
+        num_of_fortress_building_projected < 1
     }
+
+    # Check regular trigger for allowing to build fort in territory, which includes fort level lower than wanted etc.
+    ai_allowed_to_build_fort_in_territory = yes
 }
 
 # Covers gates, mountain passes, their desert alternatives, and probably various modifiers from missions etc.

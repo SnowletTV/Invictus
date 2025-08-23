@@ -103,6 +103,8 @@ ai_handle_forts_and_state_capitals = {
                 remove_variable = state_fort_limit_was_exceeded
                 remove_variable = state_is_occupied_or_under_attack
             }
+
+            clear_local_variable_list = territories_allowed_to_build_fort
         }
     }
 }
@@ -551,6 +553,32 @@ ai_cache_fort_optimization_data = {
             }
         }
     }
+
+    if = {
+        limit = {
+            ai_state_has_redoubt_territory = yes
+            var:cached_redoubt_territory_of_state = {
+                ai_allowed_to_build_fort_in_territory = yes
+            }
+        }
+        add_to_local_variable_list = {
+            name = territories_allowed_to_build_fort
+            target = var:cached_redoubt_territory_of_state
+        }
+    }
+    
+    if = {
+        limit = {
+            ai_state_has_outwork_territory = yes
+            var:cached_outwork_territory_of_state = {
+                ai_allowed_to_build_fort_in_territory = yes
+            }
+        }
+        add_to_local_variable_list = {
+            name = territories_allowed_to_build_fort
+            target = var:cached_outwork_territory_of_state
+        }
+    }
 }
 
 ai_optimize_positioning_of_forts = {
@@ -690,93 +718,73 @@ ai_optimize_positioning_of_forts = {
 
                     save_scope_as = territory_with_removed_fort
 
-                    owner = {
-                        ordered_country_state = {
-                            limit = {
-                                state_is_disloyal = no
-                                
-                                # Can only (re)build forts in redoubts and outworks
-                                OR = {
-                                    AND = {
-                                        ai_state_has_redoubt_territory = yes
-                                        var:cached_redoubt_territory_of_state = {
-                                            ai_can_rebuild_fort_to_territory = yes
-                                        }
-                                    }
-                                    AND = {
-                                        ai_state_has_outwork_territory = yes
-                                        var:cached_outwork_territory_of_state = {
-                                            ai_can_rebuild_fort_to_territory = yes
-                                        }
-                                    }
-                                }
-                            }
-                            order_by = {
-                                value = state_priority_by_id
+                    ordered_in_local_list = {
+                        variable = territories_allowed_to_build_fort
+                        limit = {
+                            ai_can_rebuild_fort_to_territory = yes
+                        }
+                        order_by = {
+                            value = state_priority_by_id
 
-                                # Country capital state always being built first
-                                if = {
-                                    limit = {
-                                        is_capital_state = yes
-                                    }
-                                    add = 10000
-                                }
-
-                                # Next up is rebuilding in the same state
-                                if = {
-                                    limit = {
-                                        this = scope:territory_with_removed_fort.state
-                                    }
-                                    add = 1000
-                                }
-
-                                # Heavily prefer states without redoubt fort
-                                if = {
-                                    limit = {
-                                        ai_state_redoubt_has_any_fort = no
-                                    }
-                                    add = 100
-                                }
-
-                                # Prefer filling all perimeter redoubts first
-                                if = {
-                                    limit = {
-                                        state_is_perimeter_of_its_country = yes
-                                    }
-                                    add = 10
-                                }
-                            }
-                            min = 0
-                            
+                            # Country capital always being built first
                             if = {
                                 limit = {
-                                    owner = {
-                                        treasury >= treasury_for_rebuilding_more_forts
-                                    }
+                                    is_capital = yes
                                 }
+                                add = 10000
+                            }
 
-                                if = {
-                                    limit = {
-                                        ai_state_has_redoubt_territory = yes
-                                        var:cached_redoubt_territory_of_state = {
-                                            ai_can_rebuild_fort_to_territory = yes
-                                        }
-                                    }
-                                    var:cached_redoubt_territory_of_state = {
-                                        start_building_construction = fortress_building
+                            # Country capital state following closely
+                            if = {
+                                limit = {
+                                    staet = {
+                                        is_capital_state = yes
                                     }
                                 }
-                                else_if = {
-                                    limit = {
-                                        ai_state_has_outwork_territory = yes
-                                        var:cached_outwork_territory_of_state = {
-                                            ai_can_rebuild_fort_to_territory = yes
-                                        }
-                                    }
-                                    var:cached_outwork_territory_of_state = {
-                                        start_building_construction = fortress_building
+                                add = 10000
+                            }
+
+                            # Next up is rebuilding in the same state
+                            if = {
+                                limit = {
+                                    state = scope:territory_with_removed_fort.state
+                                }
+                                add = 1000
+                            }
+
+                            # Heavily prefer states without redoubt fort
+                            if = {
+                                limit = {
+                                    ai_territory_is_redoubt_of_state = yes
+                                    num_of_fortress_building_projected < 1
+                                    ai_fort_level_is_lower_than_wanted = yes
+                                }
+                                add = 100
+                            }
+
+                            # Prefer filling all perimeter redoubts first
+                            if = {
+                                limit = {
+                                    state = {
+                                        state_is_perimeter_of_its_country = yes
                                     }
                                 }
+                                add = 10
+                            }
+                        }
+                        min = 0
+                            
+                        if = {
+                            limit = {
+                                owner = {
+                                    treasury >= treasury_for_rebuilding_more_forts
+                                }
+                            }
+                            start_building_construction = fortress_building
+                            
+                            remove_list_local_variable = {
+                                name = territories_allowed_to_build_fort
+                                target = this
                             }
                         }
                     }

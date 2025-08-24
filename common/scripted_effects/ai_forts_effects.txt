@@ -27,6 +27,7 @@ ai_handle_forts_and_state_capitals = {
                     has_variable = ai_handled_forts_and_state_capitals
                 }
             }
+            is_ai = yes
             has_land = yes
         }
         # Base fort build time is 720 days, so wouldn't expect changes more often than that for periodic
@@ -35,85 +36,147 @@ ai_handle_forts_and_state_capitals = {
             days = 710 # 1 year + 11.5 months - every 2 years
         }
 
-        # In first round of state effects gather country wide data and prepare states for fort manipulation
+        # In first round of state effects gather country wide data and prepare states for fort optimization
         clear_variable_list = country_perimeter_states
         every_country_state = {
-
-            # Do this for players too to prevent issues when switching between countries
-            cache_if_perimeter_state_of_owner = yes
-            cache_state_redoubt_and_outwork = yes
-
+            limit = {
+                state_is_disloyal = no
+            }
+            ai_cache_fort_optimization_data = yes
             if = {
                 limit = {
                     owner = {
-                        is_ai = yes
+                        war = no
                     }
-                    state_is_disloyal = no
                 }
-                ai_cache_fort_optimization_data = yes
-                if = {
-                    limit = {
-                        owner = {
-                            war = no
-                        }
-                    }
-                    ai_move_state_capital_to_optimal = yes
-                    every_state_province = {
-                        ai_free_building_slots_for_forts = yes
-                    }
+                ai_move_state_capital_to_optimal = yes
+                every_state_province = {
+                    ai_free_building_slots_for_forts = yes
                 }
             }
         }
 
         # In the second round of state effects perform destroying, cancelling, rebuilding of forts
-        if = {
-            limit = {
-                is_ai = yes
-            }
-            set_local_variable = {
-                name = num_rebuilt_forts_this_iteration
-                value = 0
-            }
-
-            ordered_country_state = {
-                limit = {
-                    state_is_disloyal = no
-                }
-                order_by = {
-                    value = state_priority_by_id
-                    # Prefer non-perimeter states first so they rebuild their forts in perimeter states
-                    if = {
-                        limit = {
-                            state_is_perimeter_of_its_country = no
-                        }
-                        add = 1000
-                    }
-                }
-                min = 0
-                
-                ai_optimize_positioning_of_forts = yes
-            }
-
-            remove_local_variable = num_rebuilt_forts_this_iteration
-
-            every_country_state = {
-                limit = {
-                    state_is_disloyal = no
-                }
-                remove_variable = state_fort_limit_was_exceeded
-                remove_variable = state_is_occupied_or_under_attack
-            }
-
-            every_in_local_list = {
-                variable = territories_allowed_to_build_fort
-                remove_variable = territory_priority_for_rebuilding_fort
-            }
-            clear_local_variable_list = territories_allowed_to_build_fort
+        set_local_variable = {
+            name = num_rebuilt_forts_this_iteration
+            value = 0
         }
+
+        ordered_country_state = {
+            limit = {
+                state_is_disloyal = no
+            }
+            order_by = {
+                value = state_priority_by_id
+                # Prefer non-perimeter states first so they rebuild their forts in perimeter states
+                if = {
+                    limit = {
+                        state_is_perimeter_of_its_country = no
+                    }
+                    add = 1000
+                }
+            }
+            min = 0
+            
+            ai_optimize_positioning_of_forts = yes
+        }
+
+        remove_local_variable = num_rebuilt_forts_this_iteration
+
+        # Clear everything cached in ai_cache_fort_optimization_data
+        every_country_state = {
+            limit = {
+                state_is_disloyal = no
+            }
+            remove_variable = state_fort_limit_was_exceeded
+            remove_variable = state_is_occupied_or_under_attack
+            remove_variable = cached_redoubt_territory_of_state
+            remove_variable = cached_outwork_territory_of_state
+        }
+        clear_variable_list = country_perimeter_states
+        every_in_local_list = {
+            variable = territories_allowed_to_build_fort
+            remove_variable = territory_priority_for_rebuilding_fort
+        }
+        clear_local_variable_list = territories_allowed_to_build_fort
     }
 }
 
-cache_if_perimeter_state_of_owner = {
+ai_cache_fort_optimization_data = {
+    set_variable = {
+        name = state_fort_limit_was_exceeded
+        value = {
+            if = {
+                limit = {
+                    state_fort_limit_used > state_fort_limit_svalue
+                }
+                value = 1
+            }
+            else = {
+                value = 0
+            }
+        }
+    }
+        
+    set_variable = {
+        name = state_is_occupied_or_under_attack
+        value = {
+            if = {
+                limit = {
+                    # BLocking trigger because otherwise we won't proceed with the state anyways
+                    var:state_fort_limit_was_exceeded = 1
+                    owner = {
+                        war = yes
+                    }
+                    OR = {
+                        # Check capital first for performance as it's targeted the most often
+                        capital_scope = {
+                            OR = {
+                                has_siege = yes
+                                AND = {
+                                    exists = owner
+                                    exists = controller
+                                    NOT = {
+                                        owner = controller
+                                    }
+                                }
+                                any_unit_in_province = {
+                                    unit_owner = {
+                                        war_with = prev.unit_location.owner
+                                    }
+                                }
+                            }
+                        }
+                        any_state_province = {
+                            NOT = {
+                                is_state_capital = yes
+                            }
+                            OR = {
+                                has_siege = yes
+                                AND = {
+                                    exists = owner
+                                    exists = controller
+                                    NOT = {
+                                        owner = controller
+                                    }
+                                }
+                                any_unit_in_province = {
+                                    unit_owner = {
+                                        war_with = prev.unit_location.owner
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                value = 1
+            }
+            else = {
+                value = 0
+            }
+        }
+    }
+
     if = {
         limit = {
             OR = {
@@ -198,11 +261,6 @@ cache_if_perimeter_state_of_owner = {
             }
         }
     }
-}
-
-cache_state_redoubt_and_outwork = {
-    remove_variable = cached_redoubt_territory_of_state
-    remove_variable = cached_outwork_territory_of_state
 
     ordered_state_province = {
         limit = {
@@ -247,6 +305,46 @@ cache_state_redoubt_and_outwork = {
             }
         }
         clear_saved_scope = upcoming_fort_territory
+    }
+
+    if = {
+        limit = {
+            ai_state_has_redoubt_territory = yes
+            var:cached_redoubt_territory_of_state = {
+                ai_allowed_to_build_fort_in_territory = yes
+            }
+        }
+        add_to_local_variable_list = {
+            name = territories_allowed_to_build_fort
+            target = var:cached_redoubt_territory_of_state
+        }
+        # Cache priority so it's not calculated for every rebuilding
+        var:cached_redoubt_territory_of_state = {
+            set_variable = {
+                name = territory_priority_for_rebuilding_fort
+                value = territory_priority_for_rebuilding_fort
+            }
+        }
+    }
+    
+    if = {
+        limit = {
+            ai_state_has_outwork_territory = yes
+            var:cached_outwork_territory_of_state = {
+                ai_allowed_to_build_fort_in_territory = yes
+            }
+        }
+        add_to_local_variable_list = {
+            name = territories_allowed_to_build_fort
+            target = var:cached_outwork_territory_of_state
+        }
+        # Cache priority so it's not calculated for every rebuilding
+        var:cached_outwork_territory_of_state = {
+            set_variable = {
+                name = territory_priority_for_rebuilding_fort
+                value = territory_priority_for_rebuilding_fort
+            }
+        }
     }
 }
 
@@ -483,122 +581,6 @@ ai_free_building_slots_for_forts = {
     }
 }
 
-ai_cache_fort_optimization_data = {
-    set_variable = {
-        name = state_fort_limit_was_exceeded
-        value = {
-            if = {
-                limit = {
-                    state_fort_limit_used > state_fort_limit_svalue
-                }
-                value = 1
-            }
-            else = {
-                value = 0
-            }
-        }
-    }
-        
-    set_variable = {
-        name = state_is_occupied_or_under_attack
-        value = {
-            if = {
-                limit = {
-                    # BLocking trigger because otherwise we won't proceed with the state anyways
-                    var:state_fort_limit_was_exceeded = 1
-                    owner = {
-                        war = yes
-                    }
-                    OR = {
-                        # Check capital first for performance as it's targeted the most often
-                        capital_scope = {
-                            OR = {
-                                has_siege = yes
-                                AND = {
-                                    exists = owner
-                                    exists = controller
-                                    NOT = {
-                                        owner = controller
-                                    }
-                                }
-                                any_unit_in_province = {
-                                    unit_owner = {
-                                        war_with = prev.unit_location.owner
-                                    }
-                                }
-                            }
-                        }
-                        any_state_province = {
-                            NOT = {
-                                is_state_capital = yes
-                            }
-                            OR = {
-                                has_siege = yes
-                                AND = {
-                                    exists = owner
-                                    exists = controller
-                                    NOT = {
-                                        owner = controller
-                                    }
-                                }
-                                any_unit_in_province = {
-                                    unit_owner = {
-                                        war_with = prev.unit_location.owner
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                value = 1
-            }
-            else = {
-                value = 0
-            }
-        }
-    }
-
-    if = {
-        limit = {
-            ai_state_has_redoubt_territory = yes
-            var:cached_redoubt_territory_of_state = {
-                ai_allowed_to_build_fort_in_territory = yes
-            }
-        }
-        add_to_local_variable_list = {
-            name = territories_allowed_to_build_fort
-            target = var:cached_redoubt_territory_of_state
-        }
-        # Cache priority so it's not calculated for every rebuilding
-        var:cached_redoubt_territory_of_state = {
-            set_variable = {
-                name = territory_priority_for_rebuilding_fort
-                value = territory_priority_for_rebuilding_fort
-            }
-        }
-    }
-    
-    if = {
-        limit = {
-            ai_state_has_outwork_territory = yes
-            var:cached_outwork_territory_of_state = {
-                ai_allowed_to_build_fort_in_territory = yes
-            }
-        }
-        add_to_local_variable_list = {
-            name = territories_allowed_to_build_fort
-            target = var:cached_outwork_territory_of_state
-        }
-        # Cache priority so it's not calculated for every rebuilding
-        var:cached_outwork_territory_of_state = {
-            set_variable = {
-                name = territory_priority_for_rebuilding_fort
-                value = territory_priority_for_rebuilding_fort
-            }
-        }
-    }
-}
-
 ai_optimize_positioning_of_forts = {
     if = {
         limit = {
@@ -759,8 +741,9 @@ ai_optimize_positioning_of_forts = {
                             }
                         }
                         order_by = {
-                            value = territory_priority_for_rebuilding_fort
-                            # Rebuilding in the same state
+                            # Cached version of priority script value
+                            value = var:territory_priority_for_rebuilding_fort
+                            # Higher priority for building in the same state
                             if = {
                                 limit = {
                                     state = scope:territory_under_fort_optimization.state
@@ -778,6 +761,7 @@ ai_optimize_positioning_of_forts = {
                             }
                             start_building_construction = fortress_building
                             
+                            # Rebuild only once in any given territory
                             remove_list_local_variable = {
                                 name = territories_allowed_to_build_fort
                                 target = this

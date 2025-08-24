@@ -654,18 +654,21 @@ ai_optimize_positioning_of_forts = {
                     subtract = 1
                 }
             }
+            save_scope_as = territory_under_fort_optimization
 
             while = {
                 limit = {
                     local_var:previous_free_building_slots < free_building_slots
 
                     OR = {
-                        # Territory has more fort levels that we want it to have
-                        ai_fort_level_is_higher_than_wanted = yes
-
-                        # Territory fort has value, but we would rather rebuild it to other territory
                         AND = {
-                            ai_should_rebuild_territory_fort = yes
+                            OR = {
+                                # Territory has more fort levels that we want it to have
+                                ai_fort_level_is_higher_than_wanted = yes
+                                # Territory fort has value, but we would rather rebuild it to other territory
+                                ai_should_rebuild_territory_fort = yes
+                            }
+
                             # For this case guarantee that we would end up with enough money for rebuilding
                             trigger_if = {
                                 limit = {
@@ -679,6 +682,15 @@ ai_optimize_positioning_of_forts = {
                                 owner = {
                                     treasury_after_removing_fort >= treasury_for_rebuilding_more_forts
                                 }
+                            }
+
+                            # And that there's a territory where we can rebuild fort to
+                            has_non_empty_local_variable_list = {
+                                name = territories_allowed_to_build_fort
+                            }
+                            any_in_local_list = {
+                                variable = territories_allowed_to_build_fort
+                                ai_can_rebuild_fort_to_territory = yes
                             }
                         }
 
@@ -707,6 +719,9 @@ ai_optimize_positioning_of_forts = {
                 # Rebuild forts if possible to keep num of them consistent with what vanilla AI decided
                 if = {
                     limit = {
+                        has_non_empty_local_variable_list = {
+                            name = territories_allowed_to_build_fort
+                        }
                         # Fort was actually cancelled or removed
                         local_var:previous_free_building_slots < free_building_slots
                         owner = {
@@ -716,28 +731,26 @@ ai_optimize_positioning_of_forts = {
                         }
                     }
 
-                    save_scope_as = territory_with_removed_fort
-
                     ordered_in_local_list = {
                         variable = territories_allowed_to_build_fort
                         limit = {
                             ai_can_rebuild_fort_to_territory = yes
                         }
                         order_by = {
-                            value = state_priority_by_id
+                            value = territory_priority_by_id
 
                             # Country capital always being built first
                             if = {
                                 limit = {
                                     is_capital = yes
                                 }
-                                add = 10000
+                                add = 100000
                             }
 
                             # Country capital state following closely
                             if = {
                                 limit = {
-                                    staet = {
+                                    state = {
                                         is_capital_state = yes
                                     }
                                 }
@@ -747,7 +760,7 @@ ai_optimize_positioning_of_forts = {
                             # Next up is rebuilding in the same state
                             if = {
                                 limit = {
-                                    state = scope:territory_with_removed_fort.state
+                                    state = scope:territory_under_fort_optimization.state
                                 }
                                 add = 1000
                             }
@@ -788,12 +801,11 @@ ai_optimize_positioning_of_forts = {
                             }
                         }
                     }
-
-                    clear_saved_scope = territory_with_removed_fort
                 }
             }
 
             remove_local_variable = previous_free_building_slots
+            clear_saved_scope = territory_under_fort_optimization
         }
 
         remove_local_variable = all_perimeter_states_have_any_forts

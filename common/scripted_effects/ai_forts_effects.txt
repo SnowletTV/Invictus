@@ -104,6 +104,10 @@ ai_handle_forts_and_state_capitals = {
                 remove_variable = state_is_occupied_or_under_attack
             }
 
+            every_in_local_list = {
+                variable = territories_allowed_to_build_fort
+                remove_variable = territory_priority_for_rebuilding_fort
+            }
             clear_local_variable_list = territories_allowed_to_build_fort
         }
     }
@@ -565,6 +569,13 @@ ai_cache_fort_optimization_data = {
             name = territories_allowed_to_build_fort
             target = var:cached_redoubt_territory_of_state
         }
+        # Cache priority so it's not calculated for every rebuilding
+        var:cached_redoubt_territory_of_state = {
+            set_variable = {
+                name = territory_priority_for_rebuilding_fort
+                value = territory_priority_for_rebuilding_fort
+            }
+        }
     }
     
     if = {
@@ -577,6 +588,13 @@ ai_cache_fort_optimization_data = {
         add_to_local_variable_list = {
             name = territories_allowed_to_build_fort
             target = var:cached_outwork_territory_of_state
+        }
+        # Cache priority so it's not calculated for every rebuilding
+        var:cached_outwork_territory_of_state = {
+            set_variable = {
+                name = territory_priority_for_rebuilding_fort
+                value = territory_priority_for_rebuilding_fort
+            }
         }
     }
 }
@@ -690,7 +708,9 @@ ai_optimize_positioning_of_forts = {
                             }
                             any_in_local_list = {
                                 variable = territories_allowed_to_build_fort
-                                ai_can_rebuild_fort_to_territory = yes
+                                NOT = {
+                                    this = scope:territory_under_fort_optimization
+                                }
                             }
                         }
 
@@ -734,55 +754,18 @@ ai_optimize_positioning_of_forts = {
                     ordered_in_local_list = {
                         variable = territories_allowed_to_build_fort
                         limit = {
-                            ai_can_rebuild_fort_to_territory = yes
+                            NOT = {
+                                this = scope:territory_under_fort_optimization
+                            }
                         }
                         order_by = {
-                            value = territory_priority_by_id
-
-                            # Country capital always being built first
-                            if = {
-                                limit = {
-                                    is_capital = yes
-                                }
-                                add = 100000
-                            }
-
-                            # Country capital state following closely
-                            if = {
-                                limit = {
-                                    state = {
-                                        is_capital_state = yes
-                                    }
-                                }
-                                add = 10000
-                            }
-
-                            # Next up is rebuilding in the same state
+                            value = territory_priority_for_rebuilding_fort
+                            # Rebuilding in the same state
                             if = {
                                 limit = {
                                     state = scope:territory_under_fort_optimization.state
                                 }
-                                add = 1000
-                            }
-
-                            # Heavily prefer states without redoubt fort
-                            if = {
-                                limit = {
-                                    ai_territory_is_redoubt_of_state = yes
-                                    num_of_fortress_building_projected < 1
-                                    ai_fort_level_is_lower_than_wanted = yes
-                                }
-                                add = 100
-                            }
-
-                            # Prefer filling all perimeter redoubts first
-                            if = {
-                                limit = {
-                                    state = {
-                                        state_is_perimeter_of_its_country = yes
-                                    }
-                                }
-                                add = 10
+                                add = 10000000
                             }
                         }
                         min = 0
@@ -799,6 +782,7 @@ ai_optimize_positioning_of_forts = {
                                 name = territories_allowed_to_build_fort
                                 target = this
                             }
+                            remove_variable = territory_priority_for_rebuilding_fort
                         }
                     }
                 }

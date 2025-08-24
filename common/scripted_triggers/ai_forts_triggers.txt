@@ -495,30 +495,113 @@ all_perimeter_redoubts_have_wanted_fort = {
     }
 }
 
+ai_should_reduce_territory_fort = {
+    OR = {
+        AND = {
+            ai_territory_is_redoubt_of_state = no
+            ai_territory_is_outwork_of_state = no
+            state = {
+                OR = {
+                    AND = {
+                        ai_state_has_redoubt_territory = yes
+                        var:cached_redoubt_territory_of_state = {
+                            num_of_fortress_building_projected > 0
+                        }
+                    }
+                    AND = {
+                        ai_state_has_outwork_territory = yes
+                        var:cached_outwork_territory_of_state = {
+                            num_of_fortress_building_projected > 0
+                        }
+                    }
+                }
+            }
+        }
+        state = {
+            var:state_fort_limit_was_exceeded = 1
+            state_fort_limit_used > state_fort_limit_svalue
+        }
+    }
+}
+
 # Expects local_var:all_perimeter_states_have_any_forts to be set for performance
 ai_should_rebuild_territory_fort = {
     # Mandatory checks for fort decision making to rule out error log spam in edge cases
     exists = owner
     exists = state
 
-    # This is outwork territory with fort, while redoubt...
-    num_of_fortress_building_projected > 0
-    ai_territory_is_outwork_of_state = yes
-    state = {
-        OR = {
-            # ...either doesn't have any forts at all...
-            ai_state_redoubt_has_any_fort = no
-            # ...or won't be able to build wanted level with current limit
-            AND = {
-                ai_state_redoubt_wants_high_tier_fort = yes
-                state_fort_limit_svalue < fort_limit_for_mega_and_single_forts
+    OR = {
+        AND = {
+            ai_territory_is_redoubt_of_state = no
+            ai_fort_level_is_higher_than_wanted = yes
+        }
+        AND = {
+            # This is non-redoubt territory with fort, while redoubt...
+            num_of_fortress_building_projected > 0
+            ai_territory_is_redoubt_of_state = no
+            state = {
+                OR = {
+                    # ...either doesn't have any forts at all...
+                    ai_state_redoubt_has_any_fort = no
+                    # ...or won't be able to build wanted level with current limit
+                    AND = {
+                        ai_state_redoubt_wants_high_tier_fort = yes
+                        state_fort_limit_svalue < fort_limit_for_mega_and_single_forts
+                    }
+                }
+            }
+
+            # Only do this sort of optimization if basic country defense is set up
+            owner = {
+                all_perimeter_states_have_any_forts = yes
             }
         }
     }
 
-    # Only do this sort of optimization if basic country defense is set up
-    owner = {
-        all_perimeter_states_have_any_forts = yes
+    # Guarantee that we would end up with enough money for rebuilding
+    trigger_if = {
+        limit = {
+            has_specific_construction = fortress_building
+        }
+        owner = {
+            treasury_after_cancelling_fort >= treasury_for_rebuilding_more_forts
+        }
+    }
+    trigger_else = {
+        owner = {
+            treasury_after_removing_fort >= treasury_for_rebuilding_more_forts
+        }
+    }
+
+    # And that there's a territory where we can rebuild fort to
+    has_non_empty_local_variable_list = {
+        name = territories_allowed_to_build_fort
+    }
+    any_in_local_list = {
+        variable = territories_allowed_to_build_fort
+        ai_can_rebuild_fort_to_territory = yes
+    }
+}
+
+ai_can_rebuild_fort_to_territory = {
+    NOT = {
+        this = scope:territory_under_fort_optimization
+    }
+
+    trigger_if = {
+        limit = {
+            OR = {
+                state = {
+                    is_capital_state = yes
+                    ai_territory_is_redoubt_of_state = yes
+                }
+                state = scope:territory_under_fort_optimization.state
+            }
+        }
+        num_of_fortress_building_projected < ai_wants_mega_fort_in_territory
+    }
+    trigger_else = {
+        num_of_fortress_building_projected < 1
     }
 }
 

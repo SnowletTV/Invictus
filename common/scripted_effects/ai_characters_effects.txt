@@ -1,8 +1,16 @@
 ﻿ai_fix_character_loyalty = {
     if = {
         limit = {
+            NOT = {
+                has_variable = ai_fixed_character_loyalty
+            }
             is_ai = yes
+            has_land = yes
             exists = current_ruler
+        }
+        set_variable = {
+            name = ai_fixed_character_loyalty
+            days = 75 # 2.5 months - every quarter
         }
 
         # Required by character interaction triggers and effects
@@ -51,7 +59,7 @@
         # Urgent: deal with brewing and ongoing civil wars
         else = {
 
-            # Remove powerful disloyal ruler rival if Advanced AI is on
+            # Remove powerful disloyal ruler rival if Advanced AI is enabled
             if = {
                 limit = {
                     is_advanced_ai_enabled = yes
@@ -128,7 +136,15 @@
             # If couldn't bribe 3 characters, give free hands to eligible character with highest power base
             if = {
                 limit = {
-                    local_var:loyalty_fixes_done < 3
+                    OR = {
+                        local_var:loyalty_fixes_done < 3
+                        AND = {
+                            is_advanced_ai_enabled = yes
+                            NOT = {
+                                has_global_variable = game_rule_advanced_ai_character_loyalty
+                            }
+                        }
+                    }
                 }
                 ordered_character = {
                     limit = {
@@ -171,7 +187,15 @@
             # If couldn't fix anyone's loyalty at all, give stipends to eligible character with highest power base
             if = {
                 limit = {
-                    local_var:loyalty_fixes_done = 0
+                    OR = {
+                        local_var:loyalty_fixes_done = 0
+                        AND = {
+                            is_advanced_ai_enabled = yes
+                            NOT = {
+                                has_global_variable = game_rule_advanced_ai_character_loyalty
+                            }
+                        }
+                    }
                 }
                 ordered_character = {
                     limit = {
@@ -210,6 +234,118 @@
                 }
             }
 
+            # Try to befriend disloyal character with highest power base if Advanced AI is enabled
+            if = {
+                limit = {
+                    is_advanced_ai_enabled = yes
+                    NOT = {
+                        has_global_variable = game_rule_advanced_ai_character_loyalty
+                    }
+                }
+                ordered_character = {
+                    limit = {
+                        # Character conditions we want to match
+                        character_is_disloyal = yes
+                        character_is_powerful = yes
+                        character_is_eligible_for_urgent_loyalty_fixing = yes
+                        # Required by character interaction triggers
+                        save_temporary_scope_as = target
+                        # Check eligibility for the interaction
+                        character_is_eligible_for_befriending = yes
+                    }
+                    # Highest character by power base
+                    order_by = power_base
+                    position = 0
+                    # Don't print error if there is no such character
+                    check_range_bounds = no
+                    # Required by character interaction effects
+                    save_scope_as = target
+                    # Perform interaction
+                    befriend_effect = yes
+                    change_local_variable = {
+                        name = loyalty_fixes_done
+                        add = 1
+                    }
+                    # Garbage collection
+                    clear_saved_scope = target
+                }
+            }
+
+            # Grant goldings to disloyal character with highest power base if Advanced AI is enabled
+            if = {
+                limit = {
+                    is_advanced_ai_enabled = yes
+                    NOT = {
+                        has_global_variable = game_rule_advanced_ai_character_loyalty
+                    }
+                    possible_holdings > 1
+                }
+                ordered_character = {
+                    limit = {
+                        # Character conditions we want to match
+                        character_is_disloyal = yes
+                        character_is_powerful = yes
+                        character_is_eligible_for_urgent_loyalty_fixing = yes
+                        # Required by character interaction triggers
+                        save_temporary_scope_as = target
+                        # Check eligibility for the interaction
+                        character_is_eligible_for_granting_holding = yes
+                        # This will actually have impact on loyalty
+						can_add_entire_loyalty_bonus = granted_holding_l
+                        # Is not being befriended by ruler from previous step
+                        OR = {
+                            NOT = {
+                                has_variable = being_befriended
+                            }
+                            NOT = {
+                                var:being_befriended = scope:actor.current_ruler
+                            }
+                        }
+                    }
+                    # Highest character by power base
+                    order_by = power_base
+                    position = 0
+                    # Don't print error if there is no such character
+                    check_range_bounds = no
+                    # Required by character interaction effects
+                    save_scope_as = target
+                    # Perform interaction
+                    scope:actor = {
+                        ordered_owned_province = {
+                            limit = {
+                                grant_holding_province_actor_trigger = yes
+                            }
+                            # Grant holdings until loyalty is fixed starting with lowest population ones
+                            order_by = {
+                                value = 0
+                                subtract = total_population
+                            }
+                            min = 0
+                            max = 4 # 5 loyalty per holding with 20 max
+                            check_range_bounds = no
+                            # We are giving out multiple holdings so need to re-check conditions
+                            if = {
+                                limit = {
+                                    scope:target = {
+                                        # Character is still disloyal
+                                        character_is_disloyal = yes
+                                        # Haven't run out of money or something
+                                        character_is_eligible_for_granting_holding = yes
+                                        # This will actually have impact on loyalty
+                                        can_add_entire_loyalty_bonus = granted_holding_l
+                                    }
+                                }
+                                save_scope_as = recipient
+                                grant_holding_effect = yes
+                                clear_saved_scope = recipient
+                            }
+                        }
+                    }
+                    # Garbage collection
+                    clear_saved_scope = target
+                }
+            }
+
             # Garbage collection
             remove_local_variable = loyalty_fixes_done
         }
@@ -236,7 +372,15 @@ bribe_or_persuade_character = {
 ai_revoke_free_hands = {
     if = {
         limit = {
+            NOT = {
+                has_variable = ai_revoked_free_hands
+            }
             is_ai = yes
+            has_land = yes
+        }
+        set_variable = {
+            name = ai_revoked_free_hands
+            days = 165 # 5.5 months - every half year
         }
 
         # Required by character interaction triggers and effects
@@ -297,10 +441,16 @@ ai_enshrine_social_equity = {
 ai_press_hold_games_button = {
     if = {
         limit = {
+            NOT = {
+                has_variable = ai_pressed_hold_games_button
+            }
             is_advanced_ai_enabled = yes
             NOT = {
                 has_global_variable = game_rule_advanced_ai_tribal_development
             }
+            is_ai = yes
+            has_land = yes
+            
             # Care for wartime fund if custom mercenary recruitment is enabled
             trigger_if = {
                 limit = {
@@ -313,7 +463,6 @@ ai_press_hold_games_button = {
             trigger_else = {
                 always = yes
             }
-            is_ai = yes
             
             # Ruler popularity is too low for reforming
             exists = current_ruler
@@ -373,6 +522,11 @@ ai_press_hold_games_button = {
             #     }
             # }
         }
+        set_variable = {
+            name = ai_pressed_hold_games_button
+            days = 75 # 2.5 months - every quarter
+        }
+
         # Effect from hold_games_button
         pay_price = hold_games_price
 		current_ruler = {

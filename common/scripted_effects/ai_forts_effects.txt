@@ -1,0 +1,817 @@
+﻿# To use in territory_is_ownable trigger, as checking presence in global list is blazing fast
+create_list_of_ownable_territories = {
+    if = {
+        limit = {
+            NOT = {
+                has_non_empty_global_variable_list = {
+                    name = ownable_territories
+                }
+            }
+        }
+        every_ownable_province = {
+            add_to_global_variable_list = {
+                name = ownable_territories
+                target = this
+            }
+        }
+    }
+}
+
+# Mega effect because all this stuff is highly interdependent and uses every_country_state which so better to combine
+ai_handle_forts_and_state_capitals = {
+    if = {
+        limit = {
+            OR = {
+                $periodic$ = 0
+                NOT = {
+                    has_variable = ai_handled_forts_and_state_capitals
+                }
+            }
+            has_land = yes
+        }
+        # Base fort build time is 720 days, so wouldn't expect changes more often than that for periodic
+        set_variable = {
+            name = ai_handled_forts_and_state_capitals
+            days = 710 # 1 year + 11.5 months - every 2 years
+        }
+
+        # In first round of state effects gather country wide data and prepare states for fort manipulation
+        clear_variable_list = country_perimeter_states
+        every_country_state = {
+
+            # Do this for players too to prevent issues when switching between countries
+            cache_if_perimeter_state_of_owner = yes
+            cache_state_redoubt_and_outwork = yes
+
+            if = {
+                limit = {
+                    owner = {
+                        is_ai = yes
+                    }
+                    state_is_disloyal = no
+                }
+                ai_cache_fort_optimization_data = yes
+                if = {
+                    limit = {
+                        owner = {
+                            war = no
+                        }
+                    }
+                    ai_move_state_capital_to_optimal = yes
+                    every_state_province = {
+                        ai_free_building_slots_for_forts = yes
+                    }
+                }
+            }
+        }
+
+        # In the second round of state effects perform destroying, cancelling, rebuilding of forts
+        if = {
+            limit = {
+                is_ai = yes
+            }
+            set_local_variable = {
+                name = num_rebuilt_forts_this_iteration
+                value = 0
+            }
+
+            ordered_country_state = {
+                limit = {
+                    state_is_disloyal = no
+                }
+                order_by = {
+                    value = state_priority_by_id
+                    # Prefer non-perimeter states first so they rebuild their forts in perimeter states
+                    if = {
+                        limit = {
+                            state_is_perimeter_of_its_country = no
+                        }
+                        add = 1000
+                    }
+                }
+                min = 0
+                
+                ai_optimize_positioning_of_forts = yes
+            }
+
+            remove_local_variable = num_rebuilt_forts_this_iteration
+
+            every_country_state = {
+                limit = {
+                    state_is_disloyal = no
+                }
+                remove_variable = state_fort_limit_was_exceeded
+                remove_variable = state_is_occupied_or_under_attack
+            }
+        }
+    }
+}
+
+cache_if_perimeter_state_of_owner = {
+    if = {
+        limit = {
+            OR = {
+                is_capital_state = yes
+                AND = {
+                    save_temporary_scope_as = potential_perimeter_state
+
+                    # State must have any kind of significance to be a part of country's defense perimeter
+                    OR = {
+                        any_state_province = {
+                            OR = {
+                                has_city_status = yes
+                                ai_territory_is_good_for_defense = yes
+                            }
+                        }
+                        area = {
+                            any_area_province = {
+                                percent >= 0.3333
+                                exists = state
+                                state = scope:potential_perimeter_state
+                            }
+                        }
+                    }
+
+                    OR = {
+                        # Navigable waters nearby means state must always be protected
+                        any_state_province = {
+                            OR = {
+                                is_coastal = yes
+                                is_adjacent_to_major_river = yes
+                            }
+                        }
+
+                        # Any state in same area neighboring to evaluated is not ruled by us
+                        area = {
+                            any_area_state = {
+                                NOT = {
+                                    ruled_by_country = {
+                                        ruler = scope:potential_perimeter_state.owner
+                                    }
+                                }
+                                state_is_neighbor_of_including_unowned = {
+                                    state = scope:potential_perimeter_state
+                                }
+                            }
+                        }
+
+                        # Any state in neighbor areas neighboring to evaluated is not ruled by us
+                        area = {
+                            any_neighbor_area = {
+                                OR = {
+                                    any_area_state = {
+                                        NOT = {
+                                            ruled_by_country = {
+                                                ruler = scope:potential_perimeter_state.owner
+                                            }
+                                        }
+                                        state_is_neighbor_of_including_unowned = {
+                                            state = scope:potential_perimeter_state
+                                        }
+                                    }
+                                    # Neighbor area is fully unowned but can be used for army movement
+                                    AND = {
+                                        any_area_state = {
+                                            count = 0
+                                        }
+                                        any_area_province = {
+                                            is_water = no
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        owner = {
+            add_to_variable_list = {
+                name = country_perimeter_states
+                target = prev
+            }
+        }
+    }
+}
+
+cache_state_redoubt_and_outwork = {
+    remove_variable = cached_redoubt_territory_of_state
+    remove_variable = cached_outwork_territory_of_state
+
+    ordered_state_province = {
+        limit = {
+            ai_territory_can_have_fort = yes
+        }
+        order_by = territory_priority_for_state_redoubt
+        min = 0
+        max = 2
+        check_range_bounds = no
+        
+        save_scope_as = upcoming_fort_territory
+        if = {
+            limit = {
+                NOT = {
+                    prev = {
+                        has_variable = cached_redoubt_territory_of_state
+                    }
+                }
+            }
+            prev = {
+                set_variable = {
+                    name = cached_redoubt_territory_of_state
+                    value = scope:upcoming_fort_territory
+                    days = 730
+                }
+            }
+        }
+        else_if = {
+            limit = {
+                NOT = {
+                    prev = {
+                        has_variable = cached_outwork_territory_of_state
+                    }
+                }
+            }
+            prev = {
+                set_variable = {
+                    name = cached_outwork_territory_of_state
+                    value = scope:upcoming_fort_territory
+                    days = 730
+                }
+            }
+        }
+        clear_saved_scope = upcoming_fort_territory
+    }
+
+    # If either of them doesn't exist, place some ocean province here as an mark of that
+    if = {
+        limit = {
+            NOT = {
+                has_variable = cached_redoubt_territory_of_state
+            }
+        }
+        set_variable = {
+            name = cached_redoubt_territory_of_state
+            value = p:5020
+        }
+    }
+    if = {
+        limit = {
+            NOT = {
+                has_variable = cached_outwork_territory_of_state
+            }
+        }
+        set_variable = {
+            name = cached_outwork_territory_of_state
+            value = p:5020
+        }
+    }
+}
+
+ai_move_state_capital_to_optimal = {
+    if = {
+        limit = {
+            # Vanilla requirements for moving state capital
+            is_capital_state = no
+            # state_level_loyalty >= 50 # Commented out because we are checking the same thing later
+
+            # Additional requirements to not make state disloyal
+            state_level_loyalty >= 65
+            monthly_state_loyalty_without_policy >= monthly_state_loyalty_to_move_capital
+
+            # Current capital is not the one we moved to recently
+            NOT = {
+                capital_scope = {
+                    has_variable = ai_moved_state_capital_to_this
+                }
+            }
+        }
+
+        # Try all state provinces without filtering out current capital to check if it's highest by priority
+        ordered_state_province = {
+            order_by = territory_priority_for_state_capital
+            position = 0
+            
+            # If it's not, then change state capital
+            if = {
+                limit = {
+                    is_state_capital = no
+                }
+                add_state_loyalty = {
+                    value = province_capital_price_territory_scope
+                    multiply = -1
+                }
+                state = {
+                    set_state_capital = prev
+                }
+                set_variable = {
+                    name = ai_moved_state_capital_to_this
+                    days = 1825 # 5 years cooldown
+                }
+            }
+        }
+    }
+}
+
+# For cities it must be done through a script, because setting negative building weight leads to mass destroying
+ai_free_building_slots_for_forts = {
+    if = {
+        limit = {
+            has_city_status = yes
+            state = {
+                state_is_disloyal = no
+            }
+        }
+
+        set_local_variable = {
+            name = previous_free_building_slots
+            value = {
+                value = free_building_slots
+                subtract = 1
+            }
+        }
+
+        while = {
+            limit = {
+                local_var:previous_free_building_slots < free_building_slots
+                NOT = {
+                    ai_has_enough_building_slots_for_fort = {
+                        and_some_more = 0
+                    }
+                }
+            }
+
+            set_local_variable = {
+                name = previous_free_building_slots
+                value = free_building_slots
+            }
+
+            # Cancel ongoing construction if a random modifier building
+            if = {
+                limit = {
+                    OR = {
+                        has_specific_construction = library_building
+                        has_specific_construction = commerce_building
+                        has_specific_construction = military_building
+                        has_specific_construction = town_hall_building
+                    }
+                }
+                random_list = {
+                    25 = {
+                        trigger = {
+                            has_specific_construction = library_building
+                        }
+                        cancel_building_construction = library_building
+                    }
+                    25 = {
+                        trigger = {
+                            has_specific_construction = commerce_building
+                        }
+                        cancel_building_construction = commerce_building
+                    }
+                    25 = {
+                        trigger = {
+                            has_specific_construction = military_building
+                        }
+                        cancel_building_construction = military_building
+                    }
+                    25 = {
+                        trigger = {
+                            has_specific_construction = town_hall_building
+                        }
+                        cancel_building_construction = town_hall_building
+                    }
+                }
+            }
+
+            # Cancel ongoing construction if a random ratio building
+            else_if = {
+                limit = {
+                    OR = {
+                        has_specific_construction = academy_building
+                        has_specific_construction = court_building
+                        has_specific_construction = forum_building
+                        has_specific_construction = workshop_building
+                    }
+                }
+                random_list = {
+                    25 = {
+                        trigger = {
+                            has_specific_construction = academy_building
+                        }
+                        cancel_building_construction = academy_building
+                    }
+                    25 = {
+                        trigger = {
+                            has_specific_construction = court_building
+                        }
+                        cancel_building_construction = court_building
+                    }
+                    25 = {
+                        trigger = {
+                            has_specific_construction = forum_building
+                        }
+                        cancel_building_construction = forum_building
+                    }
+                    25 = {
+                        trigger = {
+                            has_specific_construction = workshop_building
+                        }
+                        cancel_building_construction = workshop_building
+                    }
+                }
+            }
+
+            # Destroy random existing modifier building
+            else_if = {
+                limit = {
+                    OR = {
+                        num_of_library_building > 0
+                        num_of_commerce_building > 0
+                        num_of_military_building > 0
+                        num_of_town_hall_building > 0
+                    }
+                }
+                random_list = {
+                    25 = {
+                        trigger = {
+                            num_of_library_building > 0
+                        }
+                        remove_building_level = library_building
+                    }
+                    25 = {
+                        trigger = {
+                            num_of_commerce_building > 0
+                        }
+                        remove_building_level = commerce_building
+                    }
+                    25 = {
+                        trigger = {
+                            num_of_military_building > 0
+                        }
+                        remove_building_level = military_building
+                    }
+                    25 = {
+                        trigger = {
+                            num_of_town_hall_building > 0
+                        }
+                        remove_building_level = town_hall_building
+                    }
+                }
+            }
+
+            # Destroy random existing ratio building
+            else_if = {
+                limit = {
+                    OR = {
+                        num_of_academy_building > 0
+                        num_of_court_building > 0
+                        num_of_forum_building > 0
+                        num_of_workshop_building > 0
+                    }
+                }
+                random_list = {
+                    25 = {
+                        trigger = {
+                            num_of_academy_building > 0
+                        }
+                        remove_building_level = academy_building
+                    }
+                    25 = {
+                        trigger = {
+                            num_of_court_building > 0
+                        }
+                        remove_building_level = court_building
+                    }
+                    25 = {
+                        trigger = {
+                            num_of_forum_building > 0
+                        }
+                        remove_building_level = forum_building
+                    }
+                    25 = {
+                        trigger = {
+                            num_of_workshop_building > 0
+                        }
+                        remove_building_level = workshop_building
+                    }
+                }
+            }
+        }
+    }
+}
+
+ai_cache_fort_optimization_data = {
+    set_variable = {
+        name = state_fort_limit_was_exceeded
+        value = {
+            if = {
+                limit = {
+                    state_fort_limit_used > state_fort_limit_svalue
+                }
+                value = 1
+            }
+            else = {
+                value = 0
+            }
+        }
+    }
+        
+    set_variable = {
+        name = state_is_occupied_or_under_attack
+        value = {
+            if = {
+                limit = {
+                    # BLocking trigger because otherwise we won't proceed with the state anyways
+                    var:state_fort_limit_was_exceeded = 1
+                    owner = {
+                        war = yes
+                    }
+                    OR = {
+                        # Check capital first for performance as it's targeted the most often
+                        capital_scope = {
+                            OR = {
+                                has_siege = yes
+                                AND = {
+                                    exists = owner
+                                    exists = controller
+                                    NOT = {
+                                        owner = controller
+                                    }
+                                }
+                                any_unit_in_province = {
+                                    unit_owner = {
+                                        war_with = prev.unit_location.owner
+                                    }
+                                }
+                            }
+                        }
+                        any_state_province = {
+                            NOT = {
+                                is_state_capital = yes
+                            }
+                            OR = {
+                                has_siege = yes
+                                AND = {
+                                    exists = owner
+                                    exists = controller
+                                    NOT = {
+                                        owner = controller
+                                    }
+                                }
+                                any_unit_in_province = {
+                                    unit_owner = {
+                                        war_with = prev.unit_location.owner
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                value = 1
+            }
+            else = {
+                value = 0
+            }
+        }
+    }
+}
+
+ai_optimize_positioning_of_forts = {
+    if = {
+        limit = {
+            state_is_disloyal = no
+            OR = {
+                owner = {
+                    war = no
+                }
+                AND = {
+                    var:state_fort_limit_was_exceeded = 1
+                    var:state_is_occupied_or_under_attack = 0
+                }
+            }
+        }
+
+        # Cache this so we don't do country wide territory check in every state territory
+        set_local_variable = {
+            name = all_perimeter_states_have_any_forts
+            value = {
+                if = {
+                    limit = {
+                        owner = {
+                            all_perimeter_states_have_any_forts = yes
+                        }
+                    }
+                    value = 1
+                }
+                else = {
+                    value = 0
+                }
+            }
+        }
+
+        ordered_state_province = {
+            # Simple limit by having fort, most conditions are checked in while loop
+            limit = {
+                num_of_fortress_building_projected > 0
+            }
+            order_by = {
+                # Start from lower lvl forts, as first level eats up a lot of limit
+                value = 0
+                subtract = num_of_fortress_building_projected
+                # Prefer cancelling ongoing constructions over removing existing forts
+                if = {
+                    limit = {
+                        has_specific_construction = fortress_building
+                    }
+                    add = 1000
+                }
+                # Prefer removing forts from territories other than redoubt first
+                if = {
+                    limit = {
+                        ai_territory_is_redoubt_of_state = no
+                    }
+                    add = 100
+                }
+                # Prefer removing forts from territories other than outwork first
+                if = {
+                    limit = {
+                        ai_territory_is_outwork_of_state = no
+                    }
+                    add = 10
+                }
+            }
+            min = 0
+
+            set_local_variable = {
+                name = previous_free_building_slots
+                value = {
+                    value = free_building_slots
+                    subtract = 1
+                }
+            }
+
+            while = {
+                limit = {
+                    local_var:previous_free_building_slots < free_building_slots
+
+                    OR = {
+                        # Territory has more fort levels that we want it to have
+                        ai_fort_level_is_higher_than_wanted = yes
+
+                        # Territory fort has value, but we would rather rebuild it to other territory
+                        AND = {
+                            ai_should_rebuild_territory_fort = yes
+                            # For this case guarantee that we would end up with enough money for rebuilding
+                            trigger_if = {
+                                limit = {
+                                    has_specific_construction = fortress_building
+                                }
+                                owner = {
+                                    treasury_after_cancelling_fort >= treasury_for_rebuilding_more_forts
+                                }
+                            }
+                            trigger_else = {
+                                owner = {
+                                    treasury_after_removing_fort >= treasury_for_rebuilding_more_forts
+                                }
+                            }
+                        }
+
+                        state = {
+                            var:state_fort_limit_was_exceeded = 1
+                            state_fort_limit_used > state_fort_limit_svalue
+                        }
+                    }
+                }
+
+                set_local_variable = {
+                    name = previous_free_building_slots
+                    value = free_building_slots
+                }
+
+                if = {
+                    limit = {
+                        has_specific_construction = fortress_building
+                    }
+                    cancel_building_construction = fortress_building
+                }
+                else = {
+                    remove_building_level = fortress_building
+                }
+
+                # Rebuild forts if possible to keep num of them consistent with what vanilla AI decided
+                if = {
+                    limit = {
+                        # Fort was actually cancelled or removed
+                        local_var:previous_free_building_slots < free_building_slots
+                        owner = {
+                            # Don't rebuild during wars to not exhaust treasury and because it's too long
+                            war = no
+                            treasury >= treasury_for_rebuilding_more_forts
+                        }
+                    }
+
+                    save_scope_as = territory_with_removed_fort
+
+                    owner = {
+                        ordered_country_state = {
+                            limit = {
+                                state_is_disloyal = no
+                                
+                                # Can only (re)build forts in redoubts and outworks
+                                OR = {
+                                    AND = {
+                                        ai_state_has_redoubt_territory = yes
+                                        var:cached_redoubt_territory_of_state = {
+                                            ai_can_rebuild_fort_to_territory = yes
+                                        }
+                                    }
+                                    AND = {
+                                        ai_state_has_outwork_territory = yes
+                                        var:cached_outwork_territory_of_state = {
+                                            ai_can_rebuild_fort_to_territory = yes
+                                        }
+                                    }
+                                }
+                            }
+                            order_by = {
+                                value = state_priority_by_id
+
+                                # Country capital state always being built first
+                                if = {
+                                    limit = {
+                                        is_capital_state = yes
+                                    }
+                                    add = 10000
+                                }
+
+                                # Next up is rebuilding in the same state
+                                if = {
+                                    limit = {
+                                        this = scope:territory_with_removed_fort.state
+                                    }
+                                    add = 1000
+                                }
+
+                                # Heavily prefer states without redoubt fort
+                                if = {
+                                    limit = {
+                                        ai_state_redoubt_has_any_fort = no
+                                    }
+                                    add = 100
+                                }
+
+                                # Prefer filling all perimeter redoubts first
+                                if = {
+                                    limit = {
+                                        state_is_perimeter_of_its_country = yes
+                                    }
+                                    add = 10
+                                }
+                            }
+                            min = 0
+                            
+                            if = {
+                                limit = {
+                                    owner = {
+                                        treasury >= treasury_for_rebuilding_more_forts
+                                    }
+                                }
+
+                                if = {
+                                    limit = {
+                                        ai_state_has_redoubt_territory = yes
+                                        var:cached_redoubt_territory_of_state = {
+                                            ai_can_rebuild_fort_to_territory = yes
+                                        }
+                                    }
+                                    var:cached_redoubt_territory_of_state = {
+                                        start_building_construction = fortress_building
+                                    }
+                                }
+                                else_if = {
+                                    limit = {
+                                        ai_state_has_outwork_territory = yes
+                                        var:cached_outwork_territory_of_state = {
+                                            ai_can_rebuild_fort_to_territory = yes
+                                        }
+                                    }
+                                    var:cached_outwork_territory_of_state = {
+                                        start_building_construction = fortress_building
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    clear_saved_scope = territory_with_removed_fort
+                }
+            }
+
+            remove_local_variable = previous_free_building_slots
+        }
+
+        remove_local_variable = all_perimeter_states_have_any_forts
+    }
+}

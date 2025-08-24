@@ -1,0 +1,555 @@
+﻿# Assume 50000 of territory IDs which should be more than safe
+assumed_territory_id_limit = 50000
+
+# Assume max distance between territories of 50000 which should be more than safe
+assumed_max_territory_distance = 50000
+
+ai_country_build_roads_price = {
+    if = {
+        limit = {
+            has_local_variable = ai_country_build_roads_price_cached
+        }
+        value = local_var:ai_country_build_roads_price_cached
+    }
+    else = {
+        if = {
+            limit = {
+                has_military_bonus = latin_roman_path_4
+            }
+            if = {
+                limit = {
+                    any_unit = {
+                        ai_unit_qualifies_for_building_roads = yes
+                        has_reduced_roadbuilding_cost = yes
+                    }
+                }
+                value = 10
+                multiply = {
+                    value = 1.00
+                    add = modifier:build_roads_engineers_cost_modifier
+                }
+            }
+            else = {
+                value = 25
+                multiply = {
+                    value = 1.00
+                    add = modifier:build_roads_cost_modifier
+                }
+            }
+        }
+        else = {
+            if = {
+                limit = {
+                    any_unit = {
+                        ai_unit_qualifies_for_building_roads = yes
+                        has_reduced_roadbuilding_cost = yes
+                    }
+                }
+                value = 10
+                multiply = {
+                    value = 1.00
+                    add = modifier:build_roads_engineers_cost_modifier
+                }
+                # Road building without Roman tradition increases maintenance, so we simulate it, 1 road = 1 month
+                add = ai_abstract_engineer_road_maintenance
+            }
+            else = {
+                value = 50
+                multiply = {
+                    value = 1.00
+                    add = modifier:build_expensive_roads_cost_modifier
+                }
+                # Road building without Roman tradition increases maintenance, so we simulate it, 1 road = 1 month
+                add = ai_abstract_non_engineer_road_maintenance
+            }
+        }
+        min = 0
+    }
+}
+
+ai_abstract_non_engineer_road_maintenance = {
+    value = 0
+    # 9 LI
+    add = {
+        value = 8
+        multiply = 9
+    }
+    # 1 ST
+    add = 20
+    # Monthly maintenance
+    divide = 48
+    # civilian_road_building gives +120% maintenance
+    multiply = 1.20
+}
+
+ai_abstract_engineer_road_maintenance = {
+    value = 0
+    # 8 LI
+    add = {
+        value = 8
+        multiply = 8
+    }
+    # 1 ST
+    add = 20
+    # 1 EN
+    add = 40
+    # Monthly maintenance
+    divide = 48
+    # civilian_road_building gives +120% maintenance
+    multiply = 1.20
+}
+
+# ai_country_build_1_road_price = {
+#     value = ai_country_build_roads_price
+# }
+
+ai_country_build_5_roads_price = {
+    value = ai_country_build_roads_price
+    multiply = 5
+}
+
+# ai_wartime_fund_and_1_road = {
+#     value = ai_wartime_fund_desired
+#     add = ai_country_build_1_road_price
+# }
+
+ai_wartime_fund_and_5_roads = {
+    value = ai_wartime_fund_desired
+    add = ai_country_build_5_roads_price
+}
+
+ai_wartime_fund_and_planned_roads = {
+    value = ai_wartime_fund_desired
+    add = cumulated_cost_of_planned_roads
+}
+
+# ai_minimal_buffer_and_1_road = {
+#     value = 150
+#     add = ai_country_build_1_road_price
+# }
+
+ai_minimal_buffer_and_5_roads = {
+    value = 150
+    add = ai_country_build_5_roads_price
+}
+
+ai_minimal_buffer_and_planned_roads = {
+    value = 150
+    add = cumulated_cost_of_planned_roads
+}
+
+cumulated_cost_of_planned_roads = {
+    value = 0
+    every_in_local_list = {
+        variable = territories_chosen_for_road_building
+        limit = {
+            has_non_empty_variable_list = {
+                name = territories_to_build_roads_towards
+            }
+        }
+        every_in_list = {
+            variable = territories_to_build_roads_towards
+            add = scope:current_road_building_country.ai_country_build_roads_price
+        }
+    }
+}
+
+road_building_territory_search_depth = 20
+
+num_of_roads_towards_neighbors = {
+    if = {
+        limit = {
+            has_variable = num_of_roads_towards_neighbors_cached
+        }
+        value = var:num_of_roads_towards_neighbors_cached
+    }
+    else = {
+        value = 0
+        every_neighbor_province = {
+            limit = {
+                has_road_towards = prev
+            }
+            add = 1
+        }
+    }
+}
+
+no_road_building_if_has_this_many_roads = 3
+
+max_cities_to_connect_to_junction = {
+    if = {
+        limit = {
+            scope:state_with_junction_of_area.owner = {
+                any_country_state = {
+                    count = 1
+                }
+            }
+        }
+        value = 99
+    }
+    else_if = {
+        limit = {
+            scope:state_with_junction_of_area.owner = {
+                rank <= local_power
+            }
+        }
+        value = 3
+    }
+    else_if = {
+        limit = {
+            scope:state_with_junction_of_area.owner = {
+                rank <= regional_power
+            }
+        }
+        value = 2
+    }
+    else = {
+        value = 1
+    }
+}
+
+# Reverse of ordering by ID because we want lower IDs to be prioritized
+territory_priority_by_id = {
+    value = assumed_territory_id_limit
+    subtract = province_id
+    divide = assumed_territory_id_limit
+}
+
+state_priority_by_id = {
+    value = capital_scope.territory_priority_by_id
+}
+
+# area_priority_by_id = {
+#     value = 0
+#     every_area_province = {
+#         add = territory_priority_by_id
+#     }
+#     divide = {
+#         value = 0
+#         every_area_province = {
+#             add = 1
+#         }
+#         min = 1
+#     }
+# }
+
+# region_priority_by_id = {
+#     value = 0
+#     every_region_area = {
+#         add = area_priority_by_id
+#     }
+#     divide = {
+#         value = 0
+#         every_region_area = {
+#             add = 1
+#         }
+#         min = 1
+#     }
+# }
+
+# governorship_priority_by_id = {
+#     value = capital_scope.territory_priority_by_id
+# }
+
+territory_priority_by_distance_from_capital = {
+    if = {
+        limit = {
+            this = scope:current_road_building_country.capital_scope
+        }
+        value = 0
+    }
+    else = {
+        # Draws are decided by IDs
+        value = territory_priority_by_id
+
+        # Draws by state depth are decided by plain distance
+        add = distance_from_province
+
+        # Main factor should be distance in depth levels if specified
+        if = {
+            limit = {
+                exists = state
+                state.capital_scope = {
+                    has_variable = state_capital_distance
+                }
+            }
+            state.capital_scope = {
+                value = var:state_capital_distance
+                multiply = assumed_max_territory_distance
+            }
+        }
+    }
+}
+
+state_priority_by_distance_from_capital = {
+    value = capital_scope.territory_priority_by_distance_from_capital
+}
+
+# area_priority_by_distance_from_capital = {
+#     if = {
+#         limit = {
+#             any_area_state = {
+#                 count > 0
+#             }
+#         }
+#         ordered_area_state = {
+#             order_by = state_priority_by_distance_from_capital
+#             position = 0
+#             check_range_bounds = no
+
+#             add = state_priority_by_distance_from_capital
+#         }
+#     }
+#     else = {
+#         ordered_area_province = {
+#             order_by = territory_priority_by_distance_from_capital
+#             position = 0
+#             check_range_bounds = no
+
+#             add = territory_priority_by_distance_from_capital
+#         }
+#     }
+# }
+
+governorship_priority_by_distance_from_capital = {
+    value = capital_scope.territory_priority_by_distance_from_capital
+}
+
+territory_priority_by_closeness_to_capital = {
+    value = 0
+    subtract = territory_priority_by_distance_from_capital
+}
+
+state_priority_by_closeness_to_capital = {
+    value = 0
+    subtract = state_priority_by_distance_from_capital
+}
+
+# area_priority_by_closeness_to_capital = {
+#     value = 0
+#     subtract = area_priority_by_distance_from_capital
+# }
+
+governorship_priority_by_closeness_to_capital = {
+    value = 0
+    subtract = governorship_priority_by_distance_from_capital
+}
+
+territory_priority_for_junction = {
+    value = territory_priority_by_id
+
+    # If area already has a junction territory, choose it, as junctions are assigned for lifetime
+    if = {
+        limit = {
+            area = {
+                any_area_province = {
+                    has_variable = territory_is_junction_of_its_area
+                }
+            }
+        }
+        if = {
+            limit = {
+                has_variable = territory_is_junction_of_its_area
+            }
+            add = 100000
+        }
+    }
+
+    # Otherwise choose a junction based on importance, note that only one condition goes through due to else_if
+    else = {
+
+        # For areas with a lot of pre-existing roads choose territory with the highest amount of them
+        if = {
+            limit = {
+                num_of_roads_towards_neighbors >= 4
+            }
+            add = {
+                value = 100000
+                multiply = num_of_roads_towards_neighbors
+                max = 999999
+            }
+        }
+        
+        # In most cases it must be a capital of a state with the highest priority
+        else_if = {
+            limit = {
+                exists = state
+                this = state.capital_scope
+            }
+            add = {
+                value = 10000
+                state = {
+                    every_state_province = {
+                        add = {
+                            # Priority by having more territories
+                            add = 50
+                            # Having 50 more population is equal to having 1 more territory
+                            add = total_population
+                        }
+                    }
+                }
+                max = 99999
+            }
+        }
+
+        # As a fallback simply choose a territory with the highest population
+        else = {
+            add = {
+                value = total_population
+                max = 9999
+            }
+        }
+
+        # Island territories always go after non-island ones by value guaranteed to be in negative
+        if = {
+            limit = {
+                is_island_territory = yes
+            }
+            subtract = 1000000
+        }
+    }
+}
+
+territory_priority_for_road_building = {
+    # Draws are decided by IDs
+    value = territory_priority_by_id
+    # Already having a road is the most important thing, reducing parallel ones and not wasting money
+    if = {
+        limit = {
+            has_road_towards = scope:current_road_building_territory
+        }
+        add = 100000
+    }
+    # City territories are prioritized as they are important military targets
+    if = {
+        limit = {
+            has_city_status = yes
+        }
+        add = 10000
+        if = {
+            limit = {
+                has_province_rank = city_metropolis
+            }
+            add = 10000
+        }
+    }
+    if = {
+        limit = {
+            fort_level >= 1
+        }
+        add = 1000
+    }
+    # Prefer territories that make us closer to a destination
+    if = {
+        limit = {
+            has_less_depth_than_current_territory = yes
+        }
+        add = 100
+    }
+    # Prefer our own territories more than subject ones
+    if = {
+        limit = {
+            owner = scope:current_road_building_country
+        }
+        add = 10
+    }
+    # Prefer territories with more roads
+    add = {
+        value = num_of_roads_towards_neighbors
+        max = 9
+    }
+}
+
+state_priority_for_road_building = {
+    # Draws are decided by IDs
+    value = state_priority_by_id
+    # Already having roads is the most important thing, reducing parallel ones and not wasting money
+    if = {
+        limit = {
+            state_contains_junction_with_roads = yes
+        }
+        add = 100000
+    }
+    # City junctions are prioritized as they are important military targets
+    if = {
+        limit = {
+            capital_scope.var:junction_territory_in_state = {
+                has_city_status = yes
+            }
+        }
+        add = 10000
+        if = {
+            limit = {
+                capital_scope.var:junction_territory_in_state = {
+                    has_province_rank = city_metropolis
+                }
+            }
+            add = 10000
+        }
+    }
+    # Prefer states that make us closer to a destination
+    if = {
+        limit = {
+            has_less_depth_than_current_state = yes
+        }
+        add = 1000
+    }
+    # Also prefer our own states more than subject ones
+    if = {
+        limit = {
+            owner = scope:current_road_building_country
+        }
+        add = 100
+    }
+    # Prefer junctions with more roads
+    add = {
+        value = capital_scope.var:junction_territory_in_state.num_of_roads_towards_neighbors
+        max = 9
+    }
+}
+
+territory_depth_level_svalue = {
+    value = var:territory_depth_level
+}
+
+state_depth_level_svalue = {
+    if = {
+        limit = {
+            exists = capital_scope
+            capital_scope = {
+                has_variable = state_depth_level
+            }
+        }
+        value = capital_scope.var:state_depth_level
+    }
+    else = {
+        value = -1
+    }
+}
+
+num_states_chosen_for_road_building = {
+    value = 0
+    if = {
+        limit = {
+            has_non_empty_local_variable_list = {
+                name = states_chosen_for_road_building
+            }
+        }
+        every_in_local_list = {
+            variable = states_chosen_for_road_building
+            add = 1
+        }
+    }
+}
+
+days_passed_since_game_start = {
+    value = current_date
+    subtract = game_start_date
+    divide = 24
+    min = 0
+}
+
+years_passed_since_game_start = {
+    value = days_passed_since_game_start
+    divide = 365
+}

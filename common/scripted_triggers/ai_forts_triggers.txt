@@ -444,25 +444,6 @@ all_perimeter_redoubts_have_wanted_fort = {
     }
 }
 
-ai_should_reduce_territory_fort = {
-    OR = {
-        # Not redoubt while it has a fort already, so there's no critical rebuilding
-        AND = {
-            ai_territory_is_redoubt_of_state = no
-            state = {
-                ai_state_has_redoubt_territory = yes
-                var:cached_redoubt_territory_of_state = {
-                    num_of_fortress_building_projected > 0
-                }
-            }
-        }
-        state = {
-            var:state_fort_limit_was_exceeded = 1
-            state_fort_limit_used > state_fort_limit_svalue
-        }
-    }
-}
-
 # Expects local_var:all_perimeter_states_have_any_forts to be set for performance
 ai_should_rebuild_territory_fort = {
     # Mandatory checks for fort decision making to rule out error log spam in edge cases
@@ -500,6 +481,36 @@ ai_should_rebuild_territory_fort = {
     any_in_local_list = {
         variable = territories_allowed_to_build_fort
         ai_can_rebuild_fort_to_territory = yes
+    }
+}
+
+# Is checked only if rebuilding trigger is false
+ai_should_reduce_territory_fort = {
+    OR = {
+        AND = {
+            ai_territory_is_redoubt_of_state = no
+            save_temporary_scope_as = fort_reduction_territory
+            state = {
+                OR = {
+                    AND = {
+                        ai_state_has_redoubt_territory = yes
+                        var:cached_redoubt_territory_of_state = {
+                            num_of_fortress_building_projected > 0
+                        }
+                    }
+                    any_state_province = {
+                        NOT = {
+                            this = scope:fort_reduction_territory
+                        }
+                        num_of_fortress_building_projected > 0
+                    }
+                }
+            }
+        }
+        state = {
+            var:state_fort_limit_was_exceeded = 1
+            state_fort_limit_used > state_fort_limit_svalue
+        }
     }
 }
 

@@ -255,32 +255,63 @@ fort_limit_for_mega_and_single_forts = {
     add = fort_limit_per_mega_fort
 }
 
-territory_fort_limit_for_wanted_fort = {
+ai_fort_level_wanted_in_territory = {
     value = 0
     if = {
         limit = {
-            ai_wants_giga_fort_in_territory = yes
+            exists = state
         }
-        add = fort_limit_per_giga_fort
-    }
-    else_if = {
-        limit = {
-            ai_wants_mega_fort_in_territory = yes
+        state = {
+            if = {
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = ai_territories_to_build_giga_fort
+                    }
+                    is_target_in_variable_list = {
+                        name = ai_territories_to_build_giga_fort
+                        target = prev
+                    }
+                }
+                add = level_of_giga_fort_wanted
+            }
+            else_if = {
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = ai_territories_to_build_mega_fort
+                    }
+                    is_target_in_variable_list = {
+                        name = ai_territories_to_build_mega_fort
+                        target = prev
+                    }
+                }
+                add = level_of_mega_fort_wanted
+            }
+            else_if = {
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = ai_territories_to_build_single_fort
+                    }
+                    is_target_in_variable_list = {
+                        name = ai_territories_to_build_single_fort
+                        target = prev
+                    }
+                }
+                add = 1
+            }
         }
-        add = fort_limit_per_mega_fort
-    }
-    else_if = {
-        limit = {
-            ai_wants_single_fort_in_territory = yes
-        }
-        add = fort_limit_per_single_fort
     }
 }
 
 state_fort_limit_for_wanted_forts = {
     value = 0
-    every_state_province = {
-        add = territory_fort_limit_for_wanted_fort
+    # Only redoubts can want forts so we don't need to check other territories
+    if = {
+        limit = {
+            ai_state_has_redoubt_territory = yes
+        }
+        var:cached_redoubt_territory_of_state = {
+            add = ai_fort_level_wanted_in_territory
+        }
     }
 }
 
@@ -340,6 +371,59 @@ territory_priority_for_state_redoubt = {
                 max = 9
             }
         }
+    }
+
+    add = territory_priority_for_having_fort
+}
+
+territory_priority_for_rebuilding_fort = {
+    # First priority is getting capital redoubt to mega if it wants that
+    if = {
+        limit = {
+            state = {
+                is_capital_state = yes
+            }
+            ai_territory_is_redoubt_of_state = yes
+        }
+        if = {
+            limit = {
+                num_of_fortress_building_projected < 1
+            }
+            add = 40000000
+        }
+        else_if = {
+            limit = {
+                num_of_fortress_building_projected < level_of_mega_fort_wanted
+            }
+            add = 10000000
+        }
+    }
+
+    # Next up is rebuilding in the same state
+    # This value is cached, so this priority is applied in order_by
+    # if = {
+    #     limit = {
+    #         state = scope:territory_under_fort_optimization.state
+    #     }
+    #     add = 20000000
+    # }
+
+    # Prefer filling all perimeter states before others
+    if = {
+        limit = {
+            state = {
+                state_is_perimeter_of_its_country = yes
+            }
+        }
+        add = 2000000
+    }
+
+    # Prefer territories that have no forts
+    if = {
+        limit = {
+            num_of_fortress_building_projected < 1
+        }
+        add = 1000000
     }
 
     add = territory_priority_for_having_fort
@@ -487,3 +571,13 @@ territory_priority_for_having_fort = {
 priority_threshold_for_single_fort = 4000
 
 priority_threshold_for_mega_fort = 110000
+
+# Each next rebuilding in same iteration has higher treasury requirements
+treasury_for_rebuilding_more_forts = {
+    value = country_fortress_building_cost
+    add = {
+        value = local_var:num_rebuilt_forts_this_iteration
+        multiply = 2
+        multiply = country_fortress_building_cost
+    }
+}

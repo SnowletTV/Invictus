@@ -739,6 +739,9 @@ ai_manually_move_pops_to_cities = {
         random_owned_province = {
             limit = {
                 has_city_status = yes
+                NOT = {
+                    has_variable = ai_manually_moved_pops_to_this_city
+                }
                 # Target population is actually higher than this, see below
                 trigger_if = {
                     limit = {
@@ -763,14 +766,33 @@ ai_manually_move_pops_to_cities = {
                 }
             }
 
+            # Cooldown for moving pops into same city in the near future
+            set_variable = {
+                name = ai_manually_moved_pops_to_this_city
+                days = 1825 # 5 years
+            }
+
             save_scope_as = underpopulated_city
+
+            # Save country integrated cultures into a list for pop culture checks
+            owner = {
+                every_country_culture = {
+                    limit = {
+                        is_integrated = yes
+                    }
+                    add_to_local_variable_list = {
+                        name = country_integrated_cultures
+                        target = culture
+                    }
+                }
+            }
 
             # Save all neighbour and same state territories into a list
             every_neighbor_province = {
                 limit = {
                     exists = owner
                     owner = {
-                        this = prev.owner
+                        this = scope:underpopulated_city.owner
                     }
                     ai_can_move_pops_from_territory = yes
                 }
@@ -834,60 +856,76 @@ ai_manually_move_pops_to_cities = {
                 while = {
                     count = local_var:num_pops_to_move
 
-                    random_in_local_list = {
-                        variable = territories_to_move_pops_from
+                    if = {
                         limit = {
+                            # There are still territories that can move pops away
+                            has_non_empty_local_variable_list = {
+                                name = territories_to_move_pops_from
+                            }
                             # Recheck if we still some money after previous moves
                             owner = {
                                 treasury >= 10
                             }
                             # Ensure nothing weird happened and cap wasn't reached
-                            scope:underpopulated_city = {
-                                trigger_if = {
+                            trigger_if = {
+                                limit = {
+                                    owner = {
+                                        is_tribal = no
+                                    }
+                                }
+                                total_population < population_cap_85_percent
+                            }
+                            trigger_else = {
+                                total_population < population_cap_75_percent
+                            }
+                        }
+
+                        random_in_local_list = {
+                            variable = territories_to_move_pops_from
+
+                            # Prefer territories with more pops living there
+                            weight = {
+                                modifier = {
+                                    factor = total_population
+                                }
+                            }
+
+                            random_pops_in_province = {
+                                limit = {
+                                    ai_pops_are_allowed_to_be_moved = yes
+                                }
+                                if = {
                                     limit = {
-                                        owner = {
-                                            is_tribal = no
+                                        pop_type = tribesmen
+                                    }
+                                    country = {
+                                        add_treasury = {
+                                            value = 0
+                                            subtract = tribesmen_move_cost_svalue
                                         }
                                     }
-                                    total_population < population_cap_85_percent
                                 }
-                                trigger_else = {
-                                    total_population < population_cap_75_percent
+                                else = {
+                                    country = {
+                                        add_treasury = {
+                                            value = 0
+                                            subtract = slaves_move_cost_svalue
+                                        }
+                                    }
                                 }
+                                move_pop = scope:underpopulated_city
                             }
-                            # Recheck if the territory can still move pops away
-                            ai_can_move_pops_from_territory = yes
-                        }
-                        # Prefer territories with more pops living there
-                        weight = {
-                            modifier = {
-								factor = total_population
-							}
-                        }
-                        random_pops_in_province = {
-                            limit = {
-                                ai_pops_are_allowed_to_be_moved = yes
-                            }
+
+                            # Recheck if the territory can still move pops away for future iterations
                             if = {
                                 limit = {
-                                    pop_type = tribesmen
+                                    ai_can_move_pops_from_territory = no
                                 }
-                                country = {
-                                    add_treasury = {
-                                        value = 0
-                                        subtract = tribesmen_move_cost_svalue
-                                    }
+                                remove_list_local_variable = {
+                                    name = territories_to_move_pops_from
+                                    target = this
                                 }
                             }
-                            else = {
-                                country = {
-                                    add_treasury = {
-                                        value = 0
-                                        subtract = slaves_move_cost_svalue
-                                    }
-                                }
-                            }
-                            move_pop = scope:underpopulated_city
                         }
                     }
                 }
@@ -898,6 +936,7 @@ ai_manually_move_pops_to_cities = {
             }
 
             clear_saved_scope = underpopulated_city
+            clear_local_variable_list = country_integrated_cultures
         }
     }
 }

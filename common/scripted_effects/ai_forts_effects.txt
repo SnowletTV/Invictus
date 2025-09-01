@@ -17,6 +17,47 @@ create_list_of_ownable_territories = {
     }
 }
 
+ai_mark_acquired_fort_territory = {
+    if = {
+        limit = {
+            # Sanity checks just in case
+            exists = owner
+            exists = state
+
+            # There's a fort waiting to get optimized
+            num_of_fortress_building > 0
+
+            # Is territory of AI country
+            owner = {
+                is_ai = yes
+                has_land = yes
+            }
+
+            # Is not in an ongoing war with a country that the territory was taken away from
+            save_temporary_scope_as = territory_with_changed_owner
+            NOT = {
+                owner = {
+                    any_countries_at_war_with = {
+                        scope:territory_with_changed_owner = {
+                            is_previous_owner = prev
+                        }
+                    }
+                }
+            }
+        }
+        set_variable = {
+            name = ai_acquired_territory_with_fort
+            days = 30
+        }
+        state = {
+            set_variable = {
+                name = ai_has_acquired_fort_territory
+                days = 30
+            }
+        }
+    }
+}
+
 # Mega effect because all this stuff is highly interdependent and uses every_country_state which so better to combine
 ai_handle_forts_and_state_capitals = {
     if = {
@@ -37,6 +78,7 @@ ai_handle_forts_and_state_capitals = {
 
         # In first round of state effects gather country wide data and prepare states for fort optimization
         every_country_state = {
+
             if = {
                 limit = {
                     state_is_disloyal = no
@@ -47,7 +89,9 @@ ai_handle_forts_and_state_capitals = {
                 }
                 ai_move_state_capital_to_optimal = yes
             }
+
             ai_cache_fort_optimization_data = yes
+
             if = {
                 limit = {
                     state_is_disloyal = no
@@ -58,6 +102,24 @@ ai_handle_forts_and_state_capitals = {
                 }
                 every_state_province = {
                     ai_free_building_slots_for_forts = yes
+                }
+            }
+
+            # If there are newly acquired territories with forts, cache budget data if hasn't yet
+            if = {
+                limit = {
+                    has_variable = ai_has_acquired_fort_territory
+                    OR = {
+                        NOT = {
+                            has_local_variable = country_tax_income_without_modifiers
+                        }
+                        NOT = {
+                            has_local_variable = fort_maintenance_without_modifiers
+                        }
+                    }
+                }
+                owner = {
+                    ai_cache_tax_income_and_fort_budget = yes
                 }
             }
         }
@@ -74,10 +136,20 @@ ai_handle_forts_and_state_capitals = {
 
             ordered_country_state = {
                 limit = {
-                    state_is_disloyal = no
+                    OR = {
+                        state_is_disloyal = no
+                        has_variable = ai_has_acquired_fort_territory
+                    }
                 }
                 order_by = {
                     value = state_priority_by_id
+                    # Prefer states with newly acquired territories with forts as the most urgent ones
+                    if = {
+                        limit = {
+                            has_variable = ai_has_acquired_fort_territory
+                        }
+                        add = 10000
+                    }
                     # Prefer non-perimeter states first so they rebuild their forts in perimeter states
                     if = {
                         limit = {
@@ -99,6 +171,14 @@ ai_handle_forts_and_state_capitals = {
             remove_variable = state_fort_limit_was_exceeded
             remove_variable = state_is_occupied_or_under_attack
             remove_variable = cached_redoubt_territory_of_state
+            if = {
+                limit = {
+                    has_variable = ai_has_acquired_fort_territory
+                }
+                every_state_province = {
+                    remove_variable = ai_acquired_territory_with_fort
+                }
+            }
         }
         clear_variable_list = country_perimeter_states
         every_in_local_list = {
@@ -106,13 +186,18 @@ ai_handle_forts_and_state_capitals = {
             remove_variable = territory_priority_for_rebuilding_fort
         }
         clear_local_variable_list = territories_allowed_to_build_fort
+        remove_local_variable = country_tax_income_without_modifiers
+        remove_local_variable = fort_maintenance_without_modifiers
     }
 }
 
 ai_cache_fort_optimization_data = {
     if = {
         limit = {
-            state_is_disloyal = no
+            OR = {
+                state_is_disloyal = no
+                has_variable = ai_has_acquired_fort_territory
+            }
             owner = {
                 is_ai = yes
             }
@@ -137,8 +222,11 @@ ai_cache_fort_optimization_data = {
             value = {
                 if = {
                     limit = {
-                        # BLocking trigger because otherwise we won't proceed with the state anyways
-                        var:state_fort_limit_was_exceeded = 1
+                        # Blocking trigger because otherwise we won't proceed with the state anyways
+                        OR = {
+                            var:state_fort_limit_was_exceeded = 1
+                            has_variable = ai_has_acquired_fort_territory
+                        }
                         owner = {
                             war = yes
                         }
@@ -365,6 +453,68 @@ ai_cache_fort_optimization_data = {
         }
 
         clear_saved_scope = redoubt_territory_of_state
+    }
+}
+
+ai_cache_tax_income_and_fort_budget = {
+    set_local_variable = {
+        name = country_tax_income_without_modifiers
+        value = modifier:global_tax_income
+    }
+    set_local_variable = {
+        name = fort_maintenance_without_modifiers
+        value = 0
+    }
+
+    every_country_state = {
+        set_local_variable = {
+            name = state_fort_maintenance_multiplier
+            value = {
+                value = 1
+                add = {
+                    value = state_fort_limit_used
+                    subtract = state_fort_limit_svalue
+                    min = 0
+                    multiply = 0.25
+                }
+            }
+        }
+
+        every_state_province = {
+            owner = {
+                change_local_variable = {
+                    name = country_tax_income_without_modifiers
+                    add = prev.modifier:tax_income
+                }
+            }
+
+            if = {
+                limit = {
+                    num_of_fortress_building > 0
+                }
+                owner = {
+                    change_local_variable = {
+                        name = fort_maintenance_without_modifiers
+                        add = {
+                            value = prev.num_of_fortress_building
+                            if = {
+                                limit = {
+                                    prev = {
+                                        is_capital = yes
+                                    }
+                                }
+                                subtract = 1
+                                min = 0
+                            }
+                            multiply = define:NCountry|FORT_MAINTENANCE
+                            multiply = local_var:state_fort_maintenance_multiplier
+                        }
+                    }
+                }
+            }
+        }
+
+        remove_local_variable = state_fort_maintenance_multiplier
     }
 }
 
@@ -604,13 +754,19 @@ ai_free_building_slots_for_forts = {
 ai_optimize_positioning_of_forts = {
     if = {
         limit = {
-            state_is_disloyal = no
+            OR = {
+                state_is_disloyal = no
+                has_variable = ai_has_acquired_fort_territory
+            }
             OR = {
                 owner = {
                     war = no
                 }
                 AND = {
-                    var:state_fort_limit_was_exceeded = 1
+                    OR = {
+                        var:state_fort_limit_was_exceeded = 1
+                        has_variable = ai_has_acquired_fort_territory
+                    }
                     var:state_is_occupied_or_under_attack = 0
                 }
             }
@@ -625,6 +781,13 @@ ai_optimize_positioning_of_forts = {
                 # Start from lower lvl forts, as first level eats up a lot of limit
                 value = 0
                 subtract = num_of_fortress_building_projected
+                # Prefer newly acquired territories with forts as the most urgent ones
+                if = {
+                    limit = {
+                        has_variable = ai_acquired_territory_with_fort
+                    }
+                    add = 10000
+                }
                 # Prefer cancelling ongoing constructions over removing existing forts
                 if = {
                     limit = {
@@ -694,6 +857,16 @@ ai_optimize_positioning_of_forts = {
                     }
                     else = {
                         remove_building_level = fortress_building
+                        # Primitive for now, maybe should include proper calculations later?
+                        if = {
+                            limit = {
+                                has_local_variable = fort_maintenance_without_modifiers
+                            }
+                            change_local_variable = {
+                                name = fort_maintenance_without_modifiers
+                                subtract = define:NCountry|FORT_MAINTENANCE
+                            }
+                        }
                     }
                 }
 
@@ -747,147 +920,6 @@ ai_optimize_positioning_of_forts = {
 
             remove_local_variable = previous_free_building_slots
             clear_saved_scope = territory_under_fort_optimization
-        }
-    }
-}
-
-ai_optimize_newly_conquered_forts = {
-    if = {
-        limit = {
-            # Is territory of AI country
-            owner = {
-                is_ai = yes
-                has_land = yes
-            }
-            # Is not in an ongoing war with a country that the territory was taken away from
-            save_temporary_scope_as = territory_with_changed_owner
-            NOT = {
-                owner = {
-                    any_countries_at_war_with = {
-                        scope:territory_with_changed_owner = {
-                            is_previous_owner = prev
-                        }
-                    }
-                }
-            }
-            # Territory is not actively endangered right now
-            NOR = {
-                has_siege = yes
-                AND = {
-                    exists = owner
-                    exists = controller
-                    NOT = {
-                        owner = controller
-                    }
-                }
-                any_unit_in_province = {
-                    unit_owner = {
-                        war_with = prev.unit_location.owner
-                    }
-                }
-            }
-        }
-
-        # Cache owner data to calculate if they are over fort budget, if hasn't recently
-        owner = {
-            cache_tax_income_and_fort_budget = yes
-        }
-
-        if = {
-            limit = {
-                owner = {
-                    var:fort_maintenance_without_modifiers > country_fort_maintenance_budget
-                }
-            }
-            while = {
-                limit = {
-                    num_of_fortress_building > 1
-                }
-                remove_building_level = fortress_building
-                # Primitive for now, maybe should include proper calculations later?
-                owner = {
-                    change_variable = {
-                        name = fort_maintenance_without_modifiers
-                        subtract = define:NCountry|FORT_MAINTENANCE
-                    }
-                }
-            }
-        }
-    }
-}
-
-cache_tax_income_and_fort_budget = {
-    if = {
-        limit = {
-            OR = {
-                NOT = {
-                    has_variable = country_tax_income_without_modifiers
-                }
-                NOT = {
-                    has_variable = fort_maintenance_without_modifiers
-                }
-            }
-        }
-        set_variable = {
-            name = country_tax_income_without_modifiers
-            value = modifier:global_tax_income
-            days = 90 # Quarter
-        }
-        set_variable = {
-            name = fort_maintenance_without_modifiers
-            value = 0
-            days = 90 # Quarter
-        }
-
-        every_country_state = {
-            set_local_variable = {
-                name = state_fort_maintenance_multiplier
-                value = {
-                    value = 1
-                    add = {
-                        value = state_fort_limit_used
-                        subtract = state_fort_limit_svalue
-                        min = 0
-                        multiply = 0.25
-                    }
-                }
-            }
-
-            every_state_province = {
-                owner = {
-                    change_variable = {
-                        name = country_tax_income_without_modifiers
-                        add = prev.modifier:tax_income
-                    }
-                }
-
-                if = {
-                    limit = {
-                        num_of_fortress_building > 0
-                    }
-                    owner = {
-                        change_variable = {
-                            name = fort_maintenance_without_modifiers
-                            add = {
-                                value = prev.num_of_fortress_building
-                                if = {
-                                    limit = {
-                                        prev = {
-                                            is_capital = yes
-                                        }
-                                    }
-                                    subtract = 1
-                                    min = 0
-                                }
-                                multiply = define:NCountry|FORT_MAINTENANCE
-                                multiply = local_var:state_fort_maintenance_multiplier
-                            }
-                        }
-                    }
-                }
-            }
-
-            remove_local_variable = state_fort_maintenance_multiplier
         }
     }
 }

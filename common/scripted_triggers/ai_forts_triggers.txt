@@ -464,7 +464,7 @@ ai_should_rebuild_territory_fort = {
 
     # Don't rebuild forts from territories we just acquired
     NOT = {
-        has_variable = ai_has_acquired_fort_territory
+        has_variable = ai_acquired_territory_with_fort
     }
 
     # There's a territory where we can rebuild fort to
@@ -500,9 +500,11 @@ ai_should_rebuild_territory_fort = {
     }
 }
 
-# Is checked only if rebuilding trigger is false
+# Is checked only if rebuilding trigger is false, prioritization is done via ordered_state_province
 ai_should_reduce_territory_fort = {
     OR = {
+
+        # Non-redoubt territories while some other state territory has non-projected fort
         AND = {
             ai_territory_is_redoubt_of_state = no
             save_temporary_scope_as = fort_reduction_territory
@@ -511,31 +513,27 @@ ai_should_reduce_territory_fort = {
                     AND = {
                         ai_state_has_redoubt_territory = yes
                         var:cached_redoubt_territory_of_state = {
-                            num_of_fortress_building_projected > 0
+                            num_of_fortress_building > 0
                         }
                     }
                     any_state_province = {
                         NOT = {
                             this = scope:fort_reduction_territory
                         }
-                        num_of_fortress_building_projected > 0
+                        num_of_fortress_building > 0
                     }
                 }
             }
         }
+
+        # Newly acquired high level fort while country fort maintenance is above the budget
         AND = {
-            has_variable = ai_has_acquired_fort_territory
+            has_variable = ai_acquired_territory_with_fort
+            num_of_fortress_building > 1
             local_var:fort_maintenance_without_modifiers > country_fort_maintenance_budget
-            trigger_if = {
-                limit = {
-                    ai_territory_is_redoubt_of_state = yes
-                }
-                num_of_fortress_building > 1
-            }
-            trigger_else = {
-                num_of_fortress_building > 0
-            }
         }
+
+        # State is above fort limit
         state = {
             var:state_fort_limit_was_exceeded = 1
             state_fort_limit_used > state_fort_limit_svalue

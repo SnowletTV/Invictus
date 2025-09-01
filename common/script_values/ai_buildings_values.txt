@@ -9,12 +9,44 @@
 # ------------------- #
 
 brc_fortress_ramparts = {
-    value = 0
+    # Don't build and destroy if exists
+    if = {
+        limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
+        }
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
+            OR = {
+                ai_prohibited_to_build_in_city = yes
+                is_capital = yes
+                num_of_fortress_building < 3
+            }
+        }
+        value = 0
+    }
+    else = {
+        value = brc_territory_importance
+        multiply = brc_90
+    }
 }
 
 brc_port = {
-    # Don't build and destroy if exists
+    # Safeguard, destroy any port that somehow got build in a non-port province
     if = {
+        limit = {
+            can_have_port = no
+        }
+        value = -1
+    }
+    # Don't build and destroy if exists
+    else_if = {
         limit = {
             # State borders change very rapidly in the first years
             current_date >= 460.1.1
@@ -49,7 +81,7 @@ brc_port = {
                 }
                 # Tier >=2 ports in countries that don't want any mega ports
                 AND = {
-                    territory_port_level_including_construction >= 2
+                    port_level_including_construction >= 2
                     owner = {
                         num_of_mega_ports_wanted = 0
                         num_of_giga_ports_wanted = 0
@@ -57,7 +89,7 @@ brc_port = {
                 }
                 # Tier 2 ports that won't turn mega anytime soon but are taking up building slots
                 AND = {
-                    territory_port_level_including_construction = 2
+                    port_level_including_construction = 2
                     owner = {
                         has_wanted_num_of_high_tier_ports = {
                             tier = mega
@@ -69,7 +101,7 @@ brc_port = {
                 }
                 # Tier 4 ports that won't turn giga anytime soon but are taking up building slots
                 AND = {
-                    territory_port_level_including_construction = 4
+                    port_level_including_construction = 4
                     owner = {
                         has_wanted_num_of_high_tier_ports = {
                             tier = giga
@@ -82,8 +114,8 @@ brc_port = {
                     save_temporary_scope_as = current_territory
                     trigger_if = {
                         limit = {
-                            territory_port_level_including_construction >= 2
-                            territory_port_level_including_construction <= 3
+                            port_level_including_construction >= 2
+                            port_level_including_construction <= 3
                         }
                         owner.capital_scope.state.region = {
                             any_region_province = {
@@ -97,7 +129,7 @@ brc_port = {
                     }
                     trigger_else_if = {
                         limit = {
-                            territory_port_level_including_construction >= 4
+                            port_level_including_construction >= 4
                         }
                         owner.capital_scope.state.region = {
                             any_region_province = {
@@ -116,6 +148,14 @@ brc_port = {
             }
         }
         value = -1
+    }
+    else_if = {
+        limit = {
+            owner = {
+                ai_treasury_is_enough_for_building = no
+            }
+        }
+        value = 0
     }
     # Build... unless?
     else = {
@@ -979,7 +1019,7 @@ population_cap_minus_10 = {
 	subtract = 5
 }
 
-territory_port_level_including_construction = {
+port_level_including_construction = {
     if = {
         limit = {
             can_have_port = no
@@ -994,6 +1034,16 @@ territory_port_level_including_construction = {
             }
             add = 1
         }
+    }
+}
+
+num_of_fortress_building_projected = {
+    value = num_of_fortress_building
+    if = {
+        limit = {
+            has_specific_construction = fortress_building
+        }
+        add = 1
     }
 }
 
@@ -1146,12 +1196,12 @@ num_of_mega_ports_wanted = {
 
 port_levels_to_giga_tier = {
     value = owner.level_of_giga_port_wanted
-    subtract = territory_port_level_including_construction
+    subtract = port_level_including_construction
 }
 
 port_levels_to_mega_tier = {
     value = owner.level_of_mega_port_wanted
-    subtract = territory_port_level_including_construction
+    subtract = port_level_including_construction
 }
 
 port_tier_enum_mega = 1

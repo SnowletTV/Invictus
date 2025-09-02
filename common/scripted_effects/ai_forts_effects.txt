@@ -168,7 +168,7 @@ ai_handle_forts_and_state_capitals = {
 
         # Clear everything cached in ai_cache_fort_optimization_data except persistent cache
         every_country_state = {
-            remove_variable = state_fort_limit_was_exceeded
+            remove_variable = cached_state_fort_limit_used
             remove_variable = state_is_occupied_or_under_attack
             remove_variable = cached_redoubt_territory_of_state
             if = {
@@ -203,18 +203,8 @@ ai_cache_fort_optimization_data = {
             }
         }
         set_variable = {
-            name = state_fort_limit_was_exceeded
-            value = {
-                if = {
-                    limit = {
-                        state_fort_limit_used > state_fort_limit_svalue
-                    }
-                    value = 1
-                }
-                else = {
-                    value = 0
-                }
-            }
+            name = cached_state_fort_limit_used
+            value = state_fort_limit_used
         }
             
         set_variable = {
@@ -224,7 +214,7 @@ ai_cache_fort_optimization_data = {
                     limit = {
                         # Blocking trigger because otherwise we won't proceed with the state anyways
                         OR = {
-                            var:state_fort_limit_was_exceeded = 1
+                            state_fort_limit_used > state_fort_limit_svalue
                             has_variable = ai_has_acquired_fort_territory
                         }
                         owner = {
@@ -406,12 +396,12 @@ ai_cache_fort_optimization_data = {
         position = 0
         check_range_bounds = no
         
-        save_scope_as = redoubt_territory_of_state
+        save_scope_as = new_redoubt_territory_of_state
 
         state = {
             set_variable = {
                 name = cached_redoubt_territory_of_state
-                value = scope:redoubt_territory_of_state
+                value = scope:new_redoubt_territory_of_state
                 days = 730
             }
         }
@@ -424,7 +414,7 @@ ai_cache_fort_optimization_data = {
             state = {
                 add_to_variable_list = {
                     name = ai_territories_to_build_giga_fort
-                    target = scope:redoubt_territory_of_state
+                    target = scope:new_redoubt_territory_of_state
                 }
             }
         }
@@ -435,7 +425,7 @@ ai_cache_fort_optimization_data = {
             state = {
                 add_to_variable_list = {
                     name = ai_territories_to_build_mega_fort
-                    target = scope:redoubt_territory_of_state
+                    target = scope:new_redoubt_territory_of_state
                 }
             }
         }
@@ -446,7 +436,7 @@ ai_cache_fort_optimization_data = {
             state = {
                 add_to_variable_list = {
                     name = ai_territories_to_build_single_fort
-                    target = scope:redoubt_territory_of_state
+                    target = scope:new_redoubt_territory_of_state
                 }
             }
         }
@@ -491,7 +481,7 @@ ai_cache_fort_optimization_data = {
             }
         }
 
-        clear_saved_scope = redoubt_territory_of_state
+        clear_saved_scope = new_redoubt_territory_of_state
     }
 }
 
@@ -803,7 +793,7 @@ ai_optimize_positioning_of_forts = {
                 }
                 AND = {
                     OR = {
-                        var:state_fort_limit_was_exceeded = 1
+                        state_fort_limit_used > state_fort_limit_svalue
                         has_variable = ai_has_acquired_fort_territory
                     }
                     var:state_is_occupied_or_under_attack = 0
@@ -919,6 +909,15 @@ ai_optimize_positioning_of_forts = {
                             }
                         }
                     }
+                    
+                    # Update state fort limit cache
+                    state = {
+                        remove_variable = cached_state_fort_limit_used
+                        set_variable = {
+                            name = cached_state_fort_limit_used
+                            value = state_fort_limit_used
+                        }
+                    }
                 }
 
                 # Rebuild forts if possible to keep num of them consistent with what vanilla AI decided
@@ -956,6 +955,15 @@ ai_optimize_positioning_of_forts = {
                         position = 0
 
                         start_building_construction = fortress_building
+                    
+                        # Update state fort limit cache
+                        state = {
+                            remove_variable = cached_state_fort_limit_used
+                            set_variable = {
+                                name = cached_state_fort_limit_used
+                                value = state_fort_limit_used
+                            }
+                        }
                         
                         # Rebuild only once in any given territory
                         remove_list_local_variable = {

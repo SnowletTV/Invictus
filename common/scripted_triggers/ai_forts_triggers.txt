@@ -229,9 +229,9 @@ ai_wants_high_tier_fort_in_territory = {
 #     }
 # }
 
-# ai_fort_level_is_higher_than_wanted = {
-#     num_of_fortress_building_projected > ai_fort_level_wanted_in_territory
-# }
+ai_fort_level_is_higher_than_wanted = {
+    num_of_fortress_building_projected > ai_fort_level_wanted_in_territory
+}
 
 ai_fort_level_is_lower_than_wanted = {
     num_of_fortress_building_projected < ai_fort_level_wanted_in_territory
@@ -489,7 +489,7 @@ ai_should_rebuild_territory_fort = {
 ai_should_reduce_territory_fort = {
     OR = {
 
-        # Non-redoubt territories only, state is not perimeter or some other state territory has non-projected fort
+        # Non-redoubt territories where state is not perimeter or has other non-projected fort
         AND = {
             ai_territory_is_redoubt_of_state = no
             OR = {
@@ -500,11 +500,26 @@ ai_should_reduce_territory_fort = {
             }
         }
 
-        # Newly acquired high level fort while country fort maintenance is above the budget
+        # Borders shifted, country gained some forts in the process, fort budget is exceeded
         AND = {
-            has_variable = ai_acquired_territory_with_fort
-            num_of_fortress_building > 1
+            owner = {
+                has_variable = ai_country_acquired_fort_territory
+            }
             local_var:fort_maintenance_without_modifiers > country_fort_maintenance_budget
+            OR = {
+                # Downgrade all newly acquired high level forts to single ignoring any conditions
+                AND = {
+                    has_variable = ai_acquired_territory_with_fort
+                    num_of_fortress_building > 1
+                }
+                # Reduce all non-perimeter forts to wanted levels as perimeter has probably shifted
+                AND = {
+                    state = {
+                        state_is_perimeter_of_its_country = no
+                    }
+                    ai_fort_level_is_higher_than_wanted = yes
+                }
+            }
         }
 
         # State is above fort limit

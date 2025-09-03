@@ -122,11 +122,11 @@ ai_handle_forts_and_state_capitals = {
             ai_cache_tax_income_and_fort_budget = yes
         }
 
+        # In the second round of state effects perform destroying, cancelling, rebuilding of forts
         if = {
             limit = {
                 is_ai = yes
             }
-            # In the second round of state effects perform destroying, cancelling, rebuilding of forts
             set_local_variable = {
                 name = num_rebuilt_forts_this_iteration
                 value = 0
@@ -137,6 +137,20 @@ ai_handle_forts_and_state_capitals = {
                     OR = {
                         state_is_disloyal = no
                         has_variable = ai_state_acquired_fort_territory
+                    }
+                    OR = {
+                        owner = {
+                            war = no
+                        }
+                        AND = {
+                            OR = {
+                                state_fort_limit_used > state_fort_limit_svalue
+                                owner = {
+                                    has_variable = ai_country_acquired_fort_territory
+                                }
+                            }
+                            var:state_is_occupied_or_under_attack = 0
+                        }
                     }
                 }
                 order_by = {
@@ -780,137 +794,161 @@ ai_free_building_slots_for_forts = {
 }
 
 ai_optimize_positioning_of_forts = {
-    if = {
+    ordered_state_province = {
+        # Simple limit by having fort, most conditions are checked in while loop
         limit = {
-            OR = {
-                state_is_disloyal = no
-                has_variable = ai_state_acquired_fort_territory
+            num_of_fortress_building_projected > 0
+        }
+        order_by = {
+            # Reverse of highest fort priority, as we want to delete forts in unimportant territories first
+            value = 9999999
+            subtract = {
+                # Highest possible values are in 100000's
+                value = territory_priority_for_having_fort
+                # 1000000 x1-9 based on number of forts
+                add = {
+                    value = num_of_fortress_building_projected
+                    max = 9
+                    multiply = 1000000
+                }
             }
-            OR = {
-                owner = {
-                    war = no
+
+            # Prefer newly acquired territories with forts as the most urgent ones
+            if = {
+                limit = {
+                    has_variable = ai_acquired_territory_with_fort
                 }
-                AND = {
-                    OR = {
-                        state_fort_limit_used > state_fort_limit_svalue
-                        owner = {
-                            has_variable = ai_country_acquired_fort_territory
-                        }
-                    }
-                    var:state_is_occupied_or_under_attack = 0
+                add = 40000000
+            }
+
+            # Prefer cancelling ongoing constructions over removing existing forts
+            if = {
+                limit = {
+                    has_specific_construction = fortress_building
                 }
+                add = 20000000
+            }
+
+            # Prefer removing forts from territories other than redoubt first
+            if = {
+                limit = {
+                    ai_territory_is_redoubt_of_state = no
+                }
+                add = 10000000
             }
         }
+        min = 0
 
-        ordered_state_province = {
-            # Simple limit by having fort, most conditions are checked in while loop
-            limit = {
-                num_of_fortress_building_projected > 0
+        set_local_variable = {
+            name = previous_free_building_slots
+            value = {
+                value = free_building_slots
+                subtract = 1
             }
-            order_by = {
-                # Reverse of highest fort priority, as we want to delete forts in unimportant territories first
-                value = 9999999
-                subtract = {
-                    # Highest possible values are in 100000's
-                    value = territory_priority_for_having_fort
-                    # 1000000 x1-9 based on number of forts
-                    add = {
-                        value = num_of_fortress_building_projected
-                        max = 9
-                        multiply = 1000000
+        }
+        save_scope_as = territory_under_fort_optimization
+
+        while = {
+            limit = {
+                local_var:previous_free_building_slots < free_building_slots
+            }
+
+            set_local_variable = {
+                name = ai_should_optimize_territory_fort
+                value = {
+                    if = {
+                        limit = {
+                            ai_should_rebuild_territory_fort = yes
+                        }
+                        value = 2
+                    }
+                    else_if = {
+                        limit = {
+                            ai_should_reduce_territory_fort = yes
+                        }
+                        value = 1
+                    }
+                    else = {
+                        value = 0
                     }
                 }
+            }
 
-                # Prefer newly acquired territories with forts as the most urgent ones
-                if = {
-                    limit = {
-                        has_variable = ai_acquired_territory_with_fort
-                    }
-                    add = 40000000
+            set_local_variable = {
+                name = previous_free_building_slots
+                value = free_building_slots
+            }
+
+            if = {
+                limit = {
+                    local_var:ai_should_optimize_territory_fort > 0
                 }
-
-                # Prefer cancelling ongoing constructions over removing existing forts
                 if = {
                     limit = {
                         has_specific_construction = fortress_building
                     }
-                    add = 20000000
+                    cancel_building_construction = fortress_building
                 }
-
-                # Prefer removing forts from territories other than redoubt first
-                if = {
-                    limit = {
-                        ai_territory_is_redoubt_of_state = no
-                    }
-                    add = 10000000
-                }
-            }
-            min = 0
-
-            set_local_variable = {
-                name = previous_free_building_slots
-                value = {
-                    value = free_building_slots
-                    subtract = 1
-                }
-            }
-            save_scope_as = territory_under_fort_optimization
-
-            while = {
-                limit = {
-                    local_var:previous_free_building_slots < free_building_slots
-                }
-
-                set_local_variable = {
-                    name = ai_should_optimize_territory_fort
-                    value = {
-                        if = {
-                            limit = {
-                                ai_should_rebuild_territory_fort = yes
-                            }
-                            value = 2
-                        }
-                        else_if = {
-                            limit = {
-                                ai_should_reduce_territory_fort = yes
-                            }
-                            value = 1
-                        }
-                        else = {
-                            value = 0
-                        }
-                    }
-                }
-
-                set_local_variable = {
-                    name = previous_free_building_slots
-                    value = free_building_slots
-                }
-
-                if = {
-                    limit = {
-                        local_var:ai_should_optimize_territory_fort > 0
-                    }
+                else = {
+                    remove_building_level = fortress_building
+                    # Primitive for now, maybe should include proper calculations later?
                     if = {
                         limit = {
-                            has_specific_construction = fortress_building
+                            has_local_variable = fort_maintenance_without_modifiers
                         }
-                        cancel_building_construction = fortress_building
+                        change_local_variable = {
+                            name = fort_maintenance_without_modifiers
+                            subtract = define:NCountry|FORT_MAINTENANCE
+                        }
                     }
-                    else = {
-                        remove_building_level = fortress_building
-                        # Primitive for now, maybe should include proper calculations later?
+                }
+                
+                # Update state fort limit cache
+                state = {
+                    remove_variable = cached_state_fort_limit_used
+                    set_variable = {
+                        name = cached_state_fort_limit_used
+                        value = state_fort_limit_used
+                    }
+                }
+            }
+
+            # Rebuild forts if possible to keep num of them consistent with what vanilla AI decided
+            if = {
+                limit = {
+                    local_var:ai_should_optimize_territory_fort = 2
+                    # Fort was actually cancelled or removed
+                    local_var:previous_free_building_slots < free_building_slots
+                    has_non_empty_local_variable_list = {
+                        name = territories_allowed_to_build_fort
+                    }
+                    owner = {
+                        # Don't rebuild during wars to not exhaust treasury and because it's too long
+                        war = no
+                        treasury >= treasury_for_rebuilding_more_forts
+                    }
+                }
+
+                ordered_in_local_list = {
+                    variable = territories_allowed_to_build_fort
+                    limit = {
+                        ai_can_rebuild_fort_to_territory = yes
+                    }
+                    order_by = {
+                        # Cached version of priority script value
+                        value = var:territory_priority_for_rebuilding_fort
+                        # Higher priority for building in the same state
                         if = {
                             limit = {
-                                has_local_variable = fort_maintenance_without_modifiers
+                                state = scope:territory_under_fort_optimization.state
                             }
-                            change_local_variable = {
-                                name = fort_maintenance_without_modifiers
-                                subtract = define:NCountry|FORT_MAINTENANCE
-                            }
+                            add = 10000000
                         }
                     }
-                    
+                    position = 0
+
+                    start_building_construction = fortress_building
+                
                     # Update state fort limit cache
                     state = {
                         remove_variable = cached_state_fort_limit_used
@@ -919,67 +957,20 @@ ai_optimize_positioning_of_forts = {
                             value = state_fort_limit_used
                         }
                     }
-                }
-
-                # Rebuild forts if possible to keep num of them consistent with what vanilla AI decided
-                if = {
-                    limit = {
-                        local_var:ai_should_optimize_territory_fort = 2
-                        # Fort was actually cancelled or removed
-                        local_var:previous_free_building_slots < free_building_slots
-                        has_non_empty_local_variable_list = {
-                            name = territories_allowed_to_build_fort
-                        }
-                        owner = {
-                            # Don't rebuild during wars to not exhaust treasury and because it's too long
-                            war = no
-                            treasury >= treasury_for_rebuilding_more_forts
-                        }
-                    }
-
-                    ordered_in_local_list = {
-                        variable = territories_allowed_to_build_fort
-                        limit = {
-                            ai_can_rebuild_fort_to_territory = yes
-                        }
-                        order_by = {
-                            # Cached version of priority script value
-                            value = var:territory_priority_for_rebuilding_fort
-                            # Higher priority for building in the same state
-                            if = {
-                                limit = {
-                                    state = scope:territory_under_fort_optimization.state
-                                }
-                                add = 10000000
-                            }
-                        }
-                        position = 0
-
-                        start_building_construction = fortress_building
                     
-                        # Update state fort limit cache
-                        state = {
-                            remove_variable = cached_state_fort_limit_used
-                            set_variable = {
-                                name = cached_state_fort_limit_used
-                                value = state_fort_limit_used
-                            }
-                        }
-                        
-                        # Rebuild only once in any given territory
-                        remove_list_local_variable = {
-                            name = territories_allowed_to_build_fort
-                            target = this
-                        }
-                        remove_variable = territory_priority_for_rebuilding_fort
+                    # Rebuild only once in any given territory
+                    remove_list_local_variable = {
+                        name = territories_allowed_to_build_fort
+                        target = this
                     }
+                    remove_variable = territory_priority_for_rebuilding_fort
                 }
-
-                remove_local_variable = ai_should_optimize_territory_fort
             }
 
-            remove_local_variable = previous_free_building_slots
-            clear_saved_scope = territory_under_fort_optimization
+            remove_local_variable = ai_should_optimize_territory_fort
         }
+
+        remove_local_variable = previous_free_building_slots
+        clear_saved_scope = territory_under_fort_optimization
     }
 }

@@ -18,6 +18,126 @@
     }
 }
 
+state_meets_perimeter_requirements = {
+    OR = {
+        is_capital_state = yes
+        AND = {
+            save_temporary_scope_as = potential_perimeter_state
+
+            # State must have any kind of significance to be a part of country's defense perimeter
+            OR = {
+                any_state_province = {
+                    OR = {
+                        has_city_status = yes
+                        ai_territory_is_good_for_defense = yes
+                    }
+                }
+                area = {
+                    any_area_province = {
+                        percent >= 0.3333
+                        exists = state
+                        state = scope:potential_perimeter_state
+                    }
+                }
+            }
+
+            OR = {
+                # Navigable waters nearby means state must always be protected
+                any_state_province = {
+                    OR = {
+                        is_coastal = yes
+                        AND = {
+                            is_adjacent_to_major_river = yes
+
+                            # Exclude rivers not connected to ocean
+                            NOR = {
+                                # Rha (Volga)
+                                area = area:atara_area
+                                area = area:transhyrcania_area
+                                area = area:alania_orientalis_area
+                                # raha_ulterior_area
+                                this = p:8962
+                                this = p:8965
+                                this = p:8969
+                                # sarmatia_eschate_area
+                                this = p:9076
+                                this = p:9080
+                                this = p:9081
+                                # thyssagetia_orientalis_area
+                                this = p:9093
+                                area = area:thyssagetia_occidentalis_area
+                                area = area:sarmatia_hyperborealis_area
+
+                                # Velho
+                                area = area:velho_area
+
+                                # Rha (Volga) at north
+                                area = area:dyakovo_area
+                            }
+                        }
+                    }
+                }
+
+                # Any state in same area neighboring to evaluated is not ruled by us
+                area = {
+                    any_area_state = {
+                        NOT = {
+                            ruled_by_country = {
+                                ruler = scope:potential_perimeter_state.owner
+                            }
+                        }
+                        state_is_neighbor_of_including_unowned = {
+                            state = scope:potential_perimeter_state
+                        }
+                    }
+                }
+
+                # Any state in neighbor areas neighboring to evaluated is not ruled by us
+                area = {
+                    any_neighbor_area = {
+                        OR = {
+                            any_area_state = {
+                                NOT = {
+                                    ruled_by_country = {
+                                        ruler = scope:potential_perimeter_state.owner
+                                    }
+                                }
+                                state_is_neighbor_of_including_unowned = {
+                                    state = scope:potential_perimeter_state
+                                }
+                            }
+                            # Neighbor area is fully unowned but can be used for army movement
+                            AND = {
+                                any_area_state = {
+                                    count = 0
+                                }
+                                any_area_province = {
+                                    is_water = no
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+state_is_perimeter_of_its_country = {
+    # Mandatory checks for fort decision making to rule out error log spam in edge cases
+    exists = owner
+
+    owner = {
+        has_non_empty_variable_list = {
+            name = country_perimeter_states
+        }
+        is_target_in_variable_list = {
+            name = country_perimeter_states
+            target = prev
+        }
+    }
+}
+
 # Don't check building slots and other stuff here because it's used as building allow so it's all checked externally
 ai_territory_allowed_to_build_fort = {
     # Mandatory checks for fort decision making to rule out error log spam in edge cases
@@ -329,21 +449,6 @@ ai_state_redoubt_has_any_fort = {
 #         always = yes
 #     }
 # }
-
-state_is_perimeter_of_its_country = {
-    # Mandatory checks for fort decision making to rule out error log spam in edge cases
-    exists = owner
-
-    owner = {
-        has_non_empty_variable_list = {
-            name = country_perimeter_states
-        }
-        is_target_in_variable_list = {
-            name = country_perimeter_states
-            target = prev
-        }
-    }
-}
 
 all_perimeter_states_have_redoubt_fort = {
     OR = {

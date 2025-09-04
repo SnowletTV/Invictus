@@ -17,7 +17,7 @@ create_list_of_ownable_territories = {
     }
 }
 
-ai_mark_acquired_fort_territory = {
+ai_flag_acquired_fort_territory = {
     if = {
         limit = {
             # Sanity checks just in case
@@ -68,10 +68,13 @@ ai_handle_forts_and_state_capitals = {
             days = 530 # 1 year + 5.5 months - every 1.5 years
         }
 
+        # In case this is executed right after ai_on_state_secession but before ai_war_events.1 event
+        process_states_that_just_revolted = yes
+
         # Process fort territories that changed owners recently to optimize budgeting of acquired forts
         if = {
             limit = {
-                is_ai = yes
+                country_allowed_to_optimize_forts = yes
             }
             every_in_list = {
                 variable = ai_acquired_territories_with_fort
@@ -94,7 +97,7 @@ ai_handle_forts_and_state_capitals = {
                     }
                 }
 
-                # Otherwise remove variable so we don't process it in later executions, list is cleared later
+                # Otherwise remove variable so we don't count it as acquired fort territory in optimization
                 else = {
                     remove_variable = ai_acquired_territory_with_fort
                 }
@@ -108,7 +111,7 @@ ai_handle_forts_and_state_capitals = {
             if = {
                 limit = {
                     owner = {
-                        is_ai = yes
+                        country_allowed_to_optimize_forts = yes
                         war = no
                     }
                 }
@@ -121,7 +124,7 @@ ai_handle_forts_and_state_capitals = {
             if = {
                 limit = {
                     owner = {
-                        is_ai = yes
+                        country_allowed_to_optimize_forts = yes
                     }
                     ai_state_has_redoubt_territory = yes
                 }
@@ -134,7 +137,7 @@ ai_handle_forts_and_state_capitals = {
         # In the second round of state effects perform destroying, cancelling, rebuilding of forts
         if = {
             limit = {
-                is_ai = yes
+                country_allowed_to_optimize_forts = yes
             }
 
             # If there are newly acquired territories with forts, cache budget data for optimization
@@ -209,14 +212,16 @@ ai_handle_forts_and_state_capitals = {
 ai_cache_fort_optimization_data = {
     if = {
         limit = {
+            owner = {
+                country_allowed_to_optimize_forts = yes
+            }
             OR = {
                 state_is_disloyal = no
                 has_variable = ai_state_acquired_fort_territory
             }
-            owner = {
-                is_ai = yes
-            }
         }
+
+        # Cache used fort limit as it requires looping territories, re-cache when changing fort level in optimization
         set_variable = {
             name = cached_state_fort_limit_used
             value = state_fort_limit_used
@@ -356,7 +361,7 @@ ai_cache_fort_optimization_data = {
         if = {
             limit = {
                 owner = {
-                    is_ai = yes
+                    country_allowed_to_optimize_forts = yes
                 }
                 state = {
                     state_is_disloyal = no

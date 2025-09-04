@@ -32,34 +32,20 @@ ai_mark_acquired_fort_territory = {
                 is_ai = yes
                 has_land = yes
             }
+        }
 
-            # Is not in an ongoing war with a country that the territory was taken away from
-            save_temporary_scope_as = territory_with_changed_owner
-            NOT = {
-                owner = {
-                    any_countries_at_war_with = {
-                        scope:territory_with_changed_owner = {
-                            is_previous_owner = prev
-                        }
-                    }
-                }
+        # Add to country level list to check them all later
+        owner = {
+            add_to_variable_list = {
+                name = ai_acquired_territories_with_fort
+                target = prev
             }
         }
+
+        # Set up a timer to not optimize old fort changes
         set_variable = {
             name = ai_acquired_territory_with_fort
             days = 30
-        }
-        state = {
-            set_variable = {
-                name = ai_state_acquired_fort_territory
-                days = 30
-            }
-        }
-        owner = {
-            set_variable = {
-                name = ai_country_acquired_fort_territory
-                days = 30
-            }
         }
     }
 }
@@ -80,6 +66,39 @@ ai_handle_forts_and_state_capitals = {
         set_variable = {
             name = ai_handled_forts_and_state_capitals
             days = 530 # 1 year + 5.5 months - every 1.5 years
+        }
+
+        # Process fort territories that changed owners recently to optimize budgeting of acquired forts
+        if = {
+            limit = {
+                is_ai = yes
+            }
+            every_in_list = {
+                variable = ai_acquired_territories_with_fort
+
+                # Check if valid and set flags on state and country level to not loop territories in triggers
+                if = {
+                    limit = {
+                        # Nothing changed since acquiring it, still owned by us
+                        owner = prev
+                        # Time limit for fort optimization hasn't run out yet
+                        has_variable = ai_acquired_territory_with_fort
+                        # Not from ongoing conflict like total war or secession
+                        owner_at_war_with_previous_owner = no
+                    }
+                    state = {
+                        set_variable = ai_state_acquired_fort_territory 
+                    }
+                    owner = {
+                        set_variable = ai_country_acquired_fort_territory
+                    }
+                }
+
+                # Otherwise remove variable so we don't process it in later executions, list is cleared later
+                else = {
+                    remove_variable = ai_acquired_territory_with_fort
+                }
+            }
         }
 
         # In first round of state effects gather country wide data and prepare states for fort optimization
@@ -164,15 +183,6 @@ ai_handle_forts_and_state_capitals = {
             remove_variable = cached_state_fort_limit_used
             remove_variable = state_is_occupied_or_under_attack
             remove_variable = cached_redoubt_territory_of_state
-            if = {
-                limit = {
-                    has_variable = ai_state_acquired_fort_territory
-                }
-                remove_variable = ai_state_acquired_fort_territory
-                every_state_province = {
-                    remove_variable = ai_acquired_territory_with_fort
-                }
-            }
         }
         clear_local_variable_list = cached_perimeter_states_of_country
         every_in_local_list = {
@@ -182,6 +192,17 @@ ai_handle_forts_and_state_capitals = {
         clear_local_variable_list = territories_allowed_to_build_fort
         remove_local_variable = country_tax_income_without_modifiers
         remove_local_variable = fort_maintenance_without_modifiers
+
+        # Clear everything related to recently acquired fort territories
+        every_in_list = {
+            variable = ai_acquired_territories_with_fort
+            state = {
+                remove_variable = ai_state_acquired_fort_territory
+            }
+            remove_variable = ai_acquired_territory_with_fort
+        }
+        clear_variable_list = ai_acquired_territories_with_fort
+        remove_variable = ai_country_acquired_fort_territory
     }
 }
 

@@ -462,7 +462,7 @@ ai_build_roads_algorithm_principals = {
     if = {
         limit = {
             # Recheck if we haven't run out of money after previous road building
-            local_var:not_enough_gold_for_road_building = 0
+            local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
             # If going for ruled territories, ensure there are qualifying subjects
             OR = {
                 $owned$ = 1
@@ -498,7 +498,7 @@ ai_build_roads_algorithm_principals = {
             # Recheck if we haven't run out of money after previous road building
             if = {
                 limit = {
-                    local_var:not_enough_gold_for_road_building = 0
+                    local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
                     # Late game optimization - ignore states with a lot of roads built already
                     capital_scope.var:junction_territory_in_state = {
                         num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
@@ -515,7 +515,7 @@ ai_build_roads_algorithm_junctions = {
     if = {
         limit = {
             # Recheck if we haven't run out of money after previous road building
-            local_var:not_enough_gold_for_road_building = 0
+            local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
             # If going for ruled territories, ensure there are qualifying subjects
             OR = {
                 $owned$ = 1
@@ -549,7 +549,7 @@ ai_build_roads_algorithm_junctions = {
             # Recheck if we haven't run out of money after previous road building
             if = {
                 limit = {
-                    local_var:not_enough_gold_for_road_building = 0
+                    local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
                     # Late game optimization - ignore states with a lot of roads built already
                     capital_scope.var:junction_territory_in_state = {
                         num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
@@ -571,7 +571,7 @@ ai_build_roads_algorithm_confluence = {
     if = {
         limit = {
             # Recheck if we haven't run out of money after previous road building
-            local_var:not_enough_gold_for_road_building = 0
+            local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
             # If going for ruled territories, ensure there are qualifying subjects
             OR = {
                 $owned$ = 1
@@ -661,7 +661,7 @@ ai_build_roads_algorithm_confluence = {
                 # Recheck if we haven't run out of money after previous road building
                 if = {
                     limit = {
-                        local_var:not_enough_gold_for_road_building = 0
+                        local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
                     }
 
                     # Save requirements into local variables as an alternative to checking any_neighbor_province
@@ -756,16 +756,16 @@ ai_build_roads_algorithm_confluence = {
                                 territory = scope:current_road_building_territory
                             }
                             
-                            # If we can't afford any serious amount of roads after this, change the variable as well
+                            # If we can't afford a single roads after this, set treasury variable to max attempts
                             if = {
                                 limit = {
                                     scope:current_road_building_country = {
-                                        ai_country_can_afford_to_build_5_roads = no
+                                        ai_country_can_afford_to_build_1_road = no
                                     }
                                 }
-                                set_local_variable = {
+                                change_local_variable = {
                                     name = not_enough_gold_for_road_building
-                                    value = 1
+                                    add = ai_road_attempts_with_low_treasury
                                 }
                             }
                         }
@@ -788,7 +788,7 @@ ai_build_roads_algorithm_intrastate = {
     if = {
         limit = {
             # Recheck if we haven't run out of money after previous road building
-            local_var:not_enough_gold_for_road_building = 0
+            local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
             # If going for ruled territories, ensure there are qualifying subjects
             OR = {
                 $owned$ = 1
@@ -848,7 +848,7 @@ ai_build_roads_algorithm_intrastate = {
                 # Recheck if we haven't run out of money after previous road building
                 if = {
                     limit = {
-                        local_var:not_enough_gold_for_road_building = 0
+                        local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
                     }
                     save_scope_as = state_with_junction_of_area
                     area = {
@@ -1100,7 +1100,7 @@ ai_build_roads_between_principals = {
         # Recheck if we haven't run out of money after previous road building
         if = {
             limit = {
-                local_var:not_enough_gold_for_road_building = 0
+                local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
             }
 
             # Start with the destination junction and find a path to current state junction
@@ -1210,7 +1210,7 @@ ai_build_roads_between_principals = {
                         limit = {
                             exists = scope:state_for_junction_connection
                             # Recheck if we haven't run out of money after previous road building
-                            local_var:not_enough_gold_for_road_building = 0
+                            local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
                         }
                         ai_fetch_junctions_and_build_roads = {
                             origin = capital_scope.var:junction_territory_in_state
@@ -1285,7 +1285,7 @@ ai_build_roads_between_junctions = {
         # Recheck if we haven't run out of money after previous road building
         if = {
             limit = {
-                local_var:not_enough_gold_for_road_building = 0
+                local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
             }
 
             # Start with the destination junction and find a path to current state junction
@@ -1404,25 +1404,36 @@ ai_build_roads_between_junctions = {
                     }
                     clear_saved_scope = territory_to_build_road_from
                 }
+
+                # If we can't afford any serious amount of roads after this, change the variable as well
+                if = {
+                    limit = {
+                        scope:current_road_building_country = {
+                            ai_country_can_afford_to_build_1_road = no
+                        }
+                    }
+                    change_local_variable = {
+                        name = not_enough_gold_for_road_building
+                        add = ai_road_attempts_with_low_treasury
+                    }
+                }
+                else_if = {
+                    limit = {
+                        scope:current_road_building_country = {
+                            ai_country_can_afford_to_build_5_roads = no
+                        }
+                    }
+                    change_local_variable = {
+                        name = not_enough_gold_for_road_building
+                        add = 1
+                    }
+                }
             }
             # Otherwise leave a mark that we don't have enough money for any further road building
             else = {
-                set_local_variable = {
+                change_local_variable = {
                     name = not_enough_gold_for_road_building
-                    value = 1
-                }
-            }
-
-            # If we can't afford any serious amount of roads after this, change the variable as well
-            if = {
-                limit = {
-                    scope:current_road_building_country = {
-                        ai_country_can_afford_to_build_5_roads = no
-                    }
-                }
-                set_local_variable = {
-                    name = not_enough_gold_for_road_building
-                    value = 1
+                    add = 1
                 }
             }
             

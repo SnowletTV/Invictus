@@ -18,11 +18,6 @@ state_fort_limit_svalue = {
     }
 }
 
-state_fort_limit_plus_1 = {
-    value = state_fort_limit_svalue
-    add = 1
-}
-
 state_fort_limit_used = {
     value = 0
     every_state_province = {
@@ -66,9 +61,40 @@ state_fort_limit_projected = {
     }
 }
 
-# Scope is territory where 1 more level will be built, is based on projected limit
-state_fort_limit_with_1_more_level = {
+# Scope is territory to where rebuilding will be performed, is based on projected limit
+state_fort_limit_after_rebuilding = {
     value = state.state_fort_limit_projected
+
+    # If optimized territory is in the same state, reduce fort limit by equivalent to 1 level
+    scope:territory_under_fort_optimization = {
+        if = {
+            limit = {
+                state = prev.state
+                OR = {
+                    fort_level > 0
+                    has_specific_construction = fortress_building
+                }
+            }
+            if = {
+                limit = {
+                    trigger_if = {
+                        limit = {
+                            has_specific_construction = fortress_building
+                        }
+                        fort_level = 0
+                    }
+                    trigger_else = {
+                        fort_level = 1
+                    }
+                }
+                subtract = define:NCountry|FIRST_FORT_COST_IN_POINTS
+            }
+            else = {
+                subtract = 1
+            }
+        }
+    }
+
     if = {
         limit = {
             OR = {

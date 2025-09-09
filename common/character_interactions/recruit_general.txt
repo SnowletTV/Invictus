@@ -1,0 +1,116 @@
+﻿recruit_general = {
+
+	on_other_nation = yes
+	on_own_nation = no
+	
+	sound = "event:/SFX/UI/Character/Generic/sfx_ui_character_diplomacy"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			is_alive = yes
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+			NOT = { employer = scope:actor }
+			is_mercenary = no
+			NOT = {
+				has_character_modifier = disloyal_successor_cmod
+			}
+		}
+	}
+	
+	
+	allowed_trigger = {
+		hidden:scope:actor = {
+			can_pay_price = recruit_general
+			trigger_if = {
+				limit = {
+					tag = ROM
+					is_republic = yes
+				}
+				OR = {
+					has_law = punic_reforms # Punic Reforms
+					has_law = marian_reforms # Marian Reforms
+				}
+			}
+			trigger_else_if = {
+				limit = { is_republic = yes }
+				OR = {
+					has_law = republican_recruitment_2 # Provisioning Act
+					has_law = republican_recruitment_4 # Military Modernization
+				}
+			}
+			trigger_else_if = {
+				limit = { is_monarchy = yes }
+				OR = {
+					has_law = work_for_the_best # Royal Guard
+					has_law = standing_army_law # Royal Army
+				}
+			}
+		}
+		hidden:scope:target = {
+			is_general = yes
+			has_legion_trigger = yes
+			is_ruler = no
+			is_banished = no
+			is_pretender = no
+			is_primary_heir = no
+			NOT = {
+				any_character_unit = {
+					unit_location = scope:target.location
+					in_combat = yes
+				}
+			}
+			NOT = { loyalty > 25 }
+		} 
+	}
+	
+	effect = {
+		scope:actor = {
+			pay_price = recruit_general
+            if = { # Find a legionless governorship
+                limit = {
+                	trigger_if = {
+                		limit = { is_republic = yes }
+                		has_law = republican_recruitment_4 # Military Modernization
+                	}
+                	trigger_else_if = {
+                		limit = { is_monarchy = yes }
+                		has_law = standing_army_law # Royal Army
+                	}
+                    any_governorships = { has_legion_trigger = no }
+                }
+                random_governorships = {
+                    limit = { has_legion_trigger = no }
+                    save_scope_as = bribery_legion_governorship
+                }
+            }
+            else = { # Give to capital governorship
+                capital_scope.governorship = { save_scope_as = bribery_legion_governorship }
+            }
+		}
+	
+		scope:target = {
+            if = {
+            	limit = { has_legion_trigger = yes }
+            	show_as_tooltip = { move_country = scope:actor }
+            	legion = { move_legion = scope:bribery_legion_governorship }
+            }
+            else = {
+            	custom_tooltip = recruit_general_tt
+            }
+			hidden_effect = {
+				remove_character_modifier = foreign_citizen
+				add_loyalty = granted_citizenship
+				set_as_minor_character = THIS
+				set_home_country = employer
+				if = {
+					limit = {
+						has_variable = came_from
+					}
+					remove_variable = came_from
+				}
+			}
+		}
+	}
+	
+}	

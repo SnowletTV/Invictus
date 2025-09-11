@@ -142,6 +142,7 @@ ai_choose_locations_and_build_roads = {
         every_owned_province = {
             remove_variable = num_of_roads_towards_neighbors_cached
         }
+        clear_variable_list = country_territories_for_confluence
         every_subject = {
             limit = {
                 ai_allowed_to_build_roads_in_subject = yes
@@ -149,6 +150,7 @@ ai_choose_locations_and_build_roads = {
             every_owned_province = {
                 remove_variable = num_of_roads_towards_neighbors_cached
             }
+            clear_variable_list = country_territories_for_confluence
         }
 
         # Clear junctions cached on state level
@@ -263,6 +265,18 @@ ai_cache_roads_towards_neighbors = {
     set_variable = {
         name = num_of_roads_towards_neighbors_cached
         value = num_of_roads_towards_neighbors
+    }
+    # Confluence eligibility depends on num roads, and caching them beforehand is very beneficial for performance
+    if = {
+        limit = {
+            ai_territory_for_confluence_phase = yes
+        }
+        owner = {
+            add_to_variable_list = {
+                name = country_territories_for_confluence
+                target = prev
+            }
+        }
     }
 }
 
@@ -584,23 +598,17 @@ ai_build_roads_algorithm_confluence = {
             limit = {
                 $owned$ = 1
             }
-            every_country_state = {
+            if = {
                 limit = {
-                    should_build_roads_in_ruled_state = yes
+                    has_non_empty_variable_list = {
+                        name = country_territories_for_confluence
+                    }
                 }
-                every_state_province = {
+                every_in_list = {
+                    variable = country_territories_for_confluence
                     limit = {
-                        # Requirements for initial territory boil down to this, so check it beforehand
-                        OR = {
-                            num_of_roads_towards_neighbors = 1
-                            AND = {
-                                num_of_roads_towards_neighbors = 2
-                                OR = {
-                                    is_state_capital = yes
-                                    has_city_status = yes
-                                    fort_level > 0
-                                }
-                            }
+                        state = {
+                            should_build_roads_in_ruled_state = yes
                         }
                     }
                     add_to_local_variable_list = {
@@ -616,31 +624,21 @@ ai_build_roads_algorithm_confluence = {
             }
             every_subject = {
                 limit = {
+                    has_non_empty_variable_list = {
+                        name = country_territories_for_confluence
+                    }
                     ai_allowed_to_build_roads_in_subject = yes
                 }
-                every_country_state = {
+                every_in_list = {
+                    variable = country_territories_for_confluence
                     limit = {
-                        should_build_roads_in_ruled_state = yes
+                        state = {
+                            should_build_roads_in_ruled_state = yes
+                        }
                     }
-                    every_state_province = {
-                        limit = {
-                            # Requirements for initial territory boil down to this, so check it beforehand
-                            OR = {
-                                num_of_roads_towards_neighbors = 1
-                                AND = {
-                                    num_of_roads_towards_neighbors = 2
-                                    OR = {
-                                        is_state_capital = yes
-                                        has_city_status = yes
-                                        fort_level > 0
-                                    }
-                                }
-                            }
-                        }
-                        add_to_local_variable_list = {
-                            name = territories_for_confluence_phase
-                            target = this
-                        }
+                    add_to_local_variable_list = {
+                        name = territories_for_confluence_phase
+                        target = this
                     }
                 }
             }
@@ -1502,6 +1500,44 @@ ai_increment_roads_towards_neighbors = {
         change_variable = {
             name = num_of_roads_towards_neighbors_cached
             add = 1
+        }
+        # Confluence eligibility depends on num roads, and caching them beforehand is very beneficial for performance
+        if = {
+            limit = {
+                ai_territory_for_confluence_phase = yes
+            }
+            owner = {
+                if = {
+                    limit = {
+                        NOT = {
+                            is_target_in_variable_list = {
+                                name = country_territories_for_confluence
+                                target = prev
+                            }
+                        }
+                    }
+                    add_to_variable_list = {
+                        name = country_territories_for_confluence
+                        target = prev
+                    }
+                }
+            }
+        }
+        else = {
+            owner = {
+                if = {
+                    limit = {
+                        is_target_in_variable_list = {
+                            name = country_territories_for_confluence
+                            target = prev
+                        }
+                    }
+                    remove_list_variable = {
+                        name = country_territories_for_confluence
+                        target = prev
+                    }
+                }
+            }
         }
     }                     
 }

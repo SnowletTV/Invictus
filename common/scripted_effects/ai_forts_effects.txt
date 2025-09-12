@@ -51,20 +51,20 @@ ai_flag_acquired_fort_territory = {
 }
 
 # Mega effect because all this stuff is highly interdependent and uses every_country_state which so better to combine
-ai_handle_forts_and_state_capitals = {
+optimize_state_capitals_and_forts = {
     if = {
         limit = {
             OR = {
                 $periodic$ = 0
                 NOT = {
-                    has_variable = ai_handled_forts_and_state_capitals
+                    has_variable = optimized_state_capitals_and_forts
                 }
             }
             has_land = yes
         }
         # Base fort build time is 720 days ~ 2 years, and with some usual modifiers it goes down to 1.5 years
         set_variable = {
-            name = ai_handled_forts_and_state_capitals
+            name = optimized_state_capitals_and_forts
             days = 530 # 1 year + 5.5 months - every 1.5 years
         }
 
@@ -118,7 +118,8 @@ ai_handle_forts_and_state_capitals = {
                 ai_move_state_capital_to_optimal = yes
             }
 
-            ai_cache_fort_optimization_data = yes
+            # Includes persistent cache of wanted fort levels for players as well to cover switching
+            cache_state_data_for_building_forts = yes
 
             # Forts can be wanted only in redoubts, so no need to perform this for other territories
             if = {
@@ -180,7 +181,7 @@ ai_handle_forts_and_state_capitals = {
             remove_local_variable = num_rebuilt_forts_this_iteration
         }
 
-        # Clear everything cached in ai_cache_fort_optimization_data except persistent cache
+        # Clear everything cached in cache_state_data_for_building_forts except persistent cache
         remove_variable = ai_country_acquired_fort_territory
         every_country_state = {
             remove_variable = cached_state_fort_limit_projected
@@ -209,7 +210,7 @@ ai_handle_forts_and_state_capitals = {
     }
 }
 
-ai_cache_fort_optimization_data = {
+cache_state_data_for_building_forts = {
     if = {
         limit = {
             owner = {
@@ -229,6 +230,7 @@ ai_cache_fort_optimization_data = {
         }
     }
 
+    # Cache perimeter states which is a main factor for wanting a fort
     if = {
         limit = {
             ai_perimeter_state_requirements = yes
@@ -250,12 +252,12 @@ ai_cache_fort_optimization_data = {
         }
     }
 
-
     # Clear old persistent cache of territories wanting fort tiers
     clear_variable_list = ai_territories_to_build_giga_fort
     clear_variable_list = ai_territories_to_build_mega_fort
     clear_variable_list = ai_territories_to_build_single_fort
 
+    # Determine state redoubt and cache what fort level it wants
     ordered_state_province = {
         limit = {
             ai_territory_can_have_fort = yes
@@ -309,6 +311,7 @@ ai_cache_fort_optimization_data = {
             }
         }
 
+        # Create list of territories where AI can rebuild forts to during optimization
         if = {
             limit = {
                 owner = {

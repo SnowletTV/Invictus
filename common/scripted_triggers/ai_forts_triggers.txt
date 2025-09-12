@@ -220,8 +220,13 @@ ai_needs_giga_fort_in_territory = {
     exists = owner
     exists = state
 
+    # Only build giga forts in country capitals
     is_capital = yes
+
     OR = {
+        # Already has giga fort, ignore requirements and keep it
+        num_of_fortress_building_projected >= level_of_giga_fort_wanted
+        # Large major power if civilized, great power if tribal
         owner = {
             trigger_if = {
                 limit = {
@@ -233,7 +238,8 @@ ai_needs_giga_fort_in_territory = {
                 rank >= great_power
             }
         }
-        num_of_fortress_building_projected >= level_of_giga_fort_wanted
+        # Very developed capital, probably OPM, needs more defences
+        num_of_total_building_slots >= 30
     }
 }
 
@@ -241,39 +247,16 @@ ai_needs_mega_fort_in_territory = {
     # Mandatory checks for fort decision making to rule out error log spam in edge cases
     exists = owner
     exists = state
-    
-    # Wanted in capital by everyone other than civilized great powers, who want giga instead
-    trigger_if = {
-        limit = {
-            is_capital = yes
-            NOR = {
-                owner = {
-                    trigger_if = {
-                        limit = {
-                            is_tribal = no
-                        }
-                        num_of_territories_svalue >= 300
-                    }
-                    trigger_else = {
-                        rank >= great_power
-                    }
-                }
-                num_of_fortress_building_projected >= level_of_giga_fort_wanted
-            }
-        }
-        always = yes
-    }
-    # Only build mega forts in capital state and on perimeter as they are a huge budget drain
-    trigger_else_if = {
-        limit = {
+
+    OR = {
+        # Fallback for country capitals that don't meet requirements to want giga forts
+        is_capital = yes
+        # Only build mega forts in perimeter state redoubts with high fort importance
+        AND = {
+            ai_territory_is_redoubt_of_state = yes
             ai_territory_state_is_perimeter = yes
+            territory_priority_for_having_fort >= priority_threshold_for_mega_fort
         }
-        # Only build mega forts in redoubts with high fort importance, otherwise it's not worth the investment
-        ai_territory_is_redoubt_of_state = yes
-        territory_priority_for_having_fort >= priority_threshold_for_mega_fort
-    }
-    trigger_else = {
-        always = no
     }
 }
 
@@ -282,7 +265,7 @@ ai_needs_single_fort_in_territory = {
     exists = owner
     exists = state
 
-    # Only want forts in redoubts
+    # Only build forts in redoubts
     ai_territory_is_redoubt_of_state = yes
 
     OR = {
@@ -303,12 +286,12 @@ ai_wants_mega_fort_in_territory = {
 ai_wants_single_fort_in_territory = {
     ai_fort_level_wanted_in_territory = 1
 }
-ai_wants_high_tier_fort_in_territory = {
-    OR = {
-        ai_wants_giga_fort_in_territory = yes
-        ai_wants_mega_fort_in_territory = yes
-    }
-}
+# ai_wants_high_tier_fort_in_territory = {
+#     OR = {
+#         ai_wants_giga_fort_in_territory = yes
+#         ai_wants_mega_fort_in_territory = yes
+#     }
+# }
 
 ai_fort_level_is_higher_than_wanted = {
     num_of_fortress_building_projected > ai_fort_level_wanted_in_territory
@@ -318,11 +301,61 @@ ai_fort_level_is_lower_than_wanted = {
     num_of_fortress_building_projected < ai_fort_level_wanted_in_territory
 }
 
+# TODO Declutter
 ai_has_enough_building_slots_for_fort = {    
-    # We count mega forts same as giga here for simplicity and giga being more of an extra than necessity
     trigger_if = {
         limit = {
-            ai_wants_high_tier_fort_in_territory = yes
+            ai_wants_giga_fort_in_territory = yes
+        }
+        trigger_if = {
+            limit = {
+                $and_some_more$ = 1
+            }
+            trigger_if = {
+                limit = {
+                    state = {
+                        state_fort_limit_svalue >= 7
+                    }
+                }
+                free_building_slots > building_slots_required_for_giga_fort
+            }
+            trigger_else_if = {
+                limit = {
+                    state = {
+                        state_fort_limit_svalue >= 6
+                    }
+                }
+                free_building_slots > building_slots_required_for_giga_fort_minus_1
+            }
+            trigger_else = {
+                free_building_slots > building_slots_required_for_mega_fort
+            }
+        }
+        trigger_else = {
+            trigger_if = {
+                limit = {
+                    state = {
+                        state_fort_limit_svalue >= 7
+                    }
+                }
+                free_building_slots >= building_slots_required_for_giga_fort
+            }
+            trigger_else_if = {
+                limit = {
+                    state = {
+                        state_fort_limit_svalue >= 6
+                    }
+                }
+                free_building_slots >= building_slots_required_for_giga_fort_minus_1
+            }
+            trigger_else = {
+                free_building_slots >= building_slots_required_for_mega_fort
+            }
+        }
+    }
+    trigger_else_if = {
+        limit = {
+            ai_wants_mega_fort_in_territory = yes
         }
         trigger_if = {
             limit = {

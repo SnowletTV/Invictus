@@ -200,18 +200,6 @@ ai_territory_allowed_to_build_fort = {
 
     # Only rebuild forts to redoubts of perimeter states
     ai_territory_is_redoubt_of_state = yes
-    ai_territory_state_is_perimeter = yes
-
-    # Rebuilding over level 1 is allowed only in capital redoubt
-    OR = {
-        state = {
-            is_capital_state = yes
-        }
-        num_of_fortress_building_projected < 1
-    }
-
-    # Territory hasn't reached its target for num of forts
-    ai_fort_level_is_lower_than_wanted = yes
 }
 
 # Only wanted by civilized great powers to make their capitals stand out
@@ -438,6 +426,7 @@ ai_should_rebuild_territory_fort = {
     any_in_local_list = {
         variable = territories_allowed_to_build_fort
         ai_can_rebuild_fort_to_territory = yes
+        ai_higher_fort_building_priority = yes
     }
 
     # Guarantee that we would end up with enough money for rebuilding
@@ -468,17 +457,25 @@ ai_should_rebuild_territory_fort = {
 
     # Only rebuild if either...
     OR = {
+
         # ...this is high level fort so it won't be left unprotected...
         num_of_fortress_building_projected > 1
+
         # ...or it's not a perimeter state so it can do without forts...
         ai_territory_state_is_perimeter = no
+
         # ...or there is some other territory with fort in same state...
         ai_territory_state_has_other_fort = yes
+
         # ...or we are doing rebuilding to redoubt of the same state
         any_in_local_list = {
             variable = territories_allowed_to_build_fort
             state = scope:territory_under_fort_optimization.state
             ai_can_rebuild_fort_to_territory = yes
+            ai_higher_fort_building_priority = yes
+            # Trigger that guarantee it won't be out-prioritized by other territories, except fort-less capital
+            ai_fort_level_is_lower_than_wanted = yes
+            num_of_fortress_building_projected < level_of_mega_fort_wanted
         }
     }
 }
@@ -512,6 +509,7 @@ ai_should_reduce_territory_fort = {
                     any_in_local_list = {
                         variable = territories_allowed_to_build_fort
                         ai_can_rebuild_fort_to_territory = yes
+                        ai_higher_fort_building_priority = yes
                     }
                 }
                 AND = {
@@ -562,6 +560,19 @@ ai_should_reduce_territory_fort = {
         state = {
             state_fort_limit_projected > state_fort_limit_svalue
         }
+    }
+}
+
+# Currently optimized territory is either not target for fort building, or has lower priority than scoped territory
+ai_higher_fort_building_priority = {
+    OR = {
+        NOT = {
+            is_target_in_local_variable_list = {
+                name = territories_allowed_to_build_fort
+                target = scope:territory_under_fort_optimization
+            }
+        }
+        territory_priority_for_building_fort > scope:territory_under_fort_optimization.territory_priority_for_building_fort
     }
 }
 

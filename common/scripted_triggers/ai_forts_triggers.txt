@@ -404,6 +404,12 @@ ai_territory_is_redoubt_of_state = {
     }
 }
 
+# This is how we fix AI having bad priorities on where to fix forts, and also forts becoming irrelevant due to changing
+# state borders and/or capital - we remove a bad fort and immediately queue a construction of a new one in a territory
+# where it would be more useful. This way we ourselves never build any additional forts, number of forts in the country
+# is controlled by vanilla AI for the most part. We just redirect them without interfering with budget management, with
+# the exception of ai_should_reduce_territory_fort deleting forts when critical to avoid decision making of vanilla AI.
+# Prioritization is done via order_by in ordered_state_province.
 ai_should_rebuild_territory_fort = {
     # Mandatory checks for fort decision making to rule out error log spam in edge cases
     exists = owner
@@ -449,7 +455,7 @@ ai_should_rebuild_territory_fort = {
     }
 
     OR = {
-        # State is above fort limit
+        # State is above fort limit - often problematic with vanilla AI, so avoid entirely
         state = {
             state_fort_limit_projected > state_fort_limit_svalue
         }
@@ -500,10 +506,15 @@ ai_should_rebuild_territory_fort = {
     }
 }
 
-# Is checked only if rebuilding trigger is false, prioritization is done via ordered_state_province
+# Straight up deletion of forts. Should be used only for cases where vanilla AI itself is likely to delete forts due to
+# budget issues, so we race against it to fix it our way first. This is because it has terrible decision making on what
+# forts to delete, e.g. removing capital territory fort in favor of a neighboring in some random city, high level forts
+# in core states instead of newly acquired border ones, and so on - and later the same vanilla AI will build all these
+# forts again, leading to a waste of money.
+# Is checked only if rebuilding trigger is false. Prioritization is done via order_by in ordered_state_province.
 ai_should_reduce_territory_fort = {
     OR = {
-        # State is above fort limit
+        # State is above fort limit - often problematic with vanilla AI, so avoid entirely
         state = {
             state_fort_limit_projected > state_fort_limit_svalue
         }

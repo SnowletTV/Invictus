@@ -1,0 +1,217 @@
+﻿recruit_general = {
+
+	on_other_nation = yes
+	on_own_nation = no
+	
+	sound = "event:/SFX/UI/Character/Generic/sfx_ui_character_diplomacy"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			is_alive = yes
+			is_ruler = no
+			is_co_ruler = no
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+			NOT = { employer = scope:actor }
+			is_mercenary = no
+			NOT = {
+				has_character_modifier = disloyal_successor_cmod
+			}
+		}
+	}
+	
+	allowed_trigger = {
+		hidden:scope:actor = {
+			can_pay_price = recruit_general
+			current_ruler = {
+				wealth >= 200
+			}
+			# Required to have a legion law
+			trigger_if = {
+				limit = {
+					tag = ROM
+					is_republic = yes
+				}
+				OR = {
+					has_law = punic_reforms # Punic Reforms
+					has_law = marian_reforms # Marian Reforms
+				}
+			}
+			trigger_else_if = {
+				limit = {
+					tag = CAR
+					is_republic = yes 
+				}
+				OR = {
+					has_law = republic_military_recruitment_car_2 # Army of the 1st Punic War
+					has_law = republic_military_recruitment_car_4 # Army of the 2nd Punic War
+				}
+			}
+			trigger_else_if = {
+				limit = { is_republic = yes }
+				OR = {
+					has_law = republican_recruitment_2 # Provisioning Act
+					has_law = republican_recruitment_4 # Military Modernization
+				}
+			}
+			trigger_else_if = {
+				limit = { is_monarchy = yes }
+				OR = {
+					has_law = work_for_the_best # Royal Guard
+					has_law = standing_army_law # Royal Army
+				}
+			}
+		}
+		hidden:scope:target = {
+			is_general = yes
+			has_legion_trigger = yes
+			any_character_unit = {
+				unit_size > 0
+			}
+			is_ruler = no
+			is_banished = no
+			is_pretender = no
+			is_primary_heir = no
+			trigger_if = {
+				limit = {
+					scope:actor = {
+						gender_equality = no
+					}
+				}
+				is_male = yes
+			}
+			NOT = {
+				any_character_unit = {
+					unit_location = scope:target.location
+					in_combat = yes
+				}
+			}
+			NOT = { loyalty > 25 }
+		}
+		hidden:scope:actor = {
+			# There's a legion that can fit in a new general
+			custom_tooltip = {
+				text = legion_with_commander_slots
+				any_legion = {
+					can_add_commander = yes
+				}
+			}
+		}
+	}
+	
+	effect = {
+		scope:actor = {
+			pay_price = recruit_general
+			current_ruler = {
+				add_gold = -200
+			}
+			hidden_effect = {
+				ordered_legion = {
+					limit = {
+						can_add_commander = yes
+					}
+					order_by = {
+						# Pick legion with most units, distictions, commanders
+						value = commander_count
+						max = 9
+						add = {
+							value = distinction_count
+							multiply = 10
+							max = 90
+						}
+						add = {
+							value = unit_count
+							multiply = 100
+							max = 99900
+						}
+						# Capital region priority overrides everything else
+						if = {
+							limit = {
+								exists = owner.capital_scope.governorship.legion
+								this = owner.capital_scope.governorship.legion
+							}
+							add = 100000
+						}
+					}
+					position = 0
+					save_scope_as = recruit_general_legion
+				}
+			}
+		}
+		scope:target = {
+			add_gold = 200
+			employer = {
+				add_opinion = {
+					target = scope:actor
+					modifier = wooed_our_general
+				}
+			}
+			hidden_effect = {
+				# Save unit that will defect to new country
+				ordered_character_unit = {
+					limit = {
+						has_legion_trigger = yes
+					}
+					order_by = unit_size
+					position = 0
+					save_scope_as = recruit_general_unit
+				}
+				# Remove from unit and legion in old country
+				legion = {
+					remove_commander = prev
+				}
+				remove_command = yes
+			}
+			# Move to new country, show in tooltip
+			move_country = scope:actor
+			hidden_effect = {
+				# Set up citizenship and home country
+				remove_character_modifier = foreign_citizen
+				add_loyalty = granted_citizenship
+				set_as_minor_character = THIS
+				set_home_country = employer
+				if = {
+					limit = {
+						has_variable = came_from
+					}
+					remove_variable = came_from
+				}
+				# Add to legion in new country
+				if = {
+					limit = {
+						# For tooltips when legion is not guaranteed
+						exists = scope:recruit_general_legion
+					}
+					add_to_legion = scope:recruit_general_legion
+				}
+			}
+			scope:recruit_general_unit = {
+				hidden_effect = {
+					# Make defecting unit owned by new country
+					change_unit_owner = scope:actor
+					# Cleanup current legion of defecting unit
+					if = {
+						limit = {
+							exists = legion
+						}
+						legion = {
+							remove_legion_unit = prev
+						}
+					}
+				}
+				# Add unit to new legion, show in tooltip
+				if = {
+					limit = {
+						# For tooltips when legion is not guaranteed
+						exists = scope:recruit_general_legion
+					}
+					add_to_legion = scope:recruit_general_legion
+				}
+				hidden_effect = {
+					# Set commander to his unit in new country
+					set_as_commander = prev
+				}
+			}
+		}
+	}
+}

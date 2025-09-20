@@ -1,73 +1,50 @@
-let tradeGoods = [
-  'grain',
-  'salt',
-  'iron',
-  'horses',
-  'wine',
-  'wood',
-  'amber',
-  'stone',
-  'fish',
-  'spices',
-  'elephants',
-  'papyrus',
-  'cloth',
-  'wild_game',
-  'precious_metals',
-  'steppe_horses',
-  'cattle',
-  'earthware',
-  'dye',
-  'fur',
-  'olive',
-  'leather',
-  'base_metals',
-  'woad',
-  'marble',
-  'honey',
-  'incense',
-  'hemp',
-  'vegetables',
-  'gems',
-  'camel',
-  'glass',
-  'silk',
-  'dates',
-  'sugar',
-  'cedar',
-  'myrrh',
-  'cinnabar',
-  'lapis',
-  'jade',
-  'fruits',
-  'silphium',
+const tradeGoods = [
+  'grain','salt','iron','horses','wine','wood','amber','stone','fish','spices',
+  'elephants','papyrus','cloth','wild_game','precious_metals','steppe_horses','cattle',
+  'earthware','dye','fur','olive','leather','base_metals','woad','marble','honey',
+  'incense','hemp','vegetables','gems','camel','glass','silk','dates','sugar','cedar',
+  'myrrh','cinnabar','lapis','jade','fruits','silphium'
 ];
 
-let depth = 100;
+const lowCutoff = 9;
+const depth = 100;
 
-let svalues = ``;
-for (let i = 0; i < tradeGoods.length; i++) {
-  svalues += `trade_good_surplus_${tradeGoods[i]} = {\n    value = 0\n    if = { limit = { trade_good_surplus = { target = ${tradeGoods[i]} value > 0 } }\n`;
-  for (let j = 1; j <= depth; j++) {
+function generateBinaryTree(good, start, end, indent = 12) {
+  const space = ' '.repeat(indent);
+  const mid = Math.floor((start + end) / 2);
+  if (start === end) return `${space}add = ${start}\n`;
 
-    if (j % 10 === 0 && j < depth) {
-      svalues += `        else_if = {\n            limit = { trade_good_surplus = { target = ${tradeGoods[i]} value < ${j + 10} } }\n`;
-    }
-
-    if (j >= 10 && j !== depth) {
-      svalues += `    `;
-    }
-    svalues += `        `;
-    if (j > 1 && (j % 10 !== 0 || j === depth)) {
-      svalues += `else_`;
-    }
-    svalues += `if = { limit = { trade_good_surplus = { target = ${tradeGoods[i]} value ${j === depth ? `>= ${j}` : `= { ${j} ${j} }` } } } add = ${j} }\n`;
-
-    if (j > 9 && j % 10 === 9) {
-      svalues += `        }\n`;
-    }
-  }
-  svalues += `    }\n}\n\n`;
+  return (
+    `${space}if = {\n` +
+    `${space}    limit = { trade_good_surplus = { target = ${good} value <= ${mid} } }\n` +
+    generateBinaryTree(good, start, mid, indent + 4) +
+    `${space}}\n` +
+    `${space}else = {\n` +
+    generateBinaryTree(good, mid + 1, end, indent + 4) +
+    `${space}}\n`
+  );
 }
 
-console.log(svalues.trim());
+let output = ``;
+
+for (const good of tradeGoods) {
+  output += `trade_good_surplus_${good} = {\n`;
+  output += `    value = 0\n`;
+  output += `    if = { limit = { trade_good_surplus = { target = ${good} value > 0 } }\n`;
+
+  // Linear check for 1–9
+  for (let i = 1; i <= lowCutoff; i++) {
+    const keyword = i === 1 ? 'if' : 'else_if';
+    output += `        ${keyword} = { limit = { trade_good_surplus = { target = ${good} value = { ${i} ${i} } } } add = ${i} }\n`;
+  }
+
+  // Fallback: binary search for 10–100
+  output += `        else = {\n`;
+  output += generateBinaryTree(good, lowCutoff + 1, depth, 12);
+  output += `        }\n`;
+
+  output += `    }\n`;
+  output += `}\n\n`;
+}
+
+console.log(output.trim());

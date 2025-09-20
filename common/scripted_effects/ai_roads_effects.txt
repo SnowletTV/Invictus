@@ -1,0 +1,1798 @@
+﻿# The AI aims to connect junctions[1] of all principals[2] of all large enough governorships it rules[3], then fix road
+# dead ends, then connect all junctions of states it rules, then connect 2nd largest state cities to neighbor junctions.
+#
+# Every time script is executed, the algorithm calculates roads from scratch, even if entities are already connected by
+# roads. This is because there's no simple trigger to check road connection between non-neighbor territories, so we are
+# doing pathfinding in any case. Then we build roads if there are none or don't if it turns out to be connected already.
+#
+# There are two very important conclusions from this:
+# 1. The algorithm must be as deterministic as possible, always going the same way on a given setup, otherwise it will
+#    cover the entire map with roads over time. No every or random, only ordered. Order by road network efficiency
+#    first, then resolve draws by territory ID.
+# 2. Existing roads must have higher priority in ordering so the algorithm could cope with external factors. The goal
+#    is to avoid building roads where they won't have much value, parallel paths that basically duplicate each other.
+#
+# [1] Every area has strictly one territory named junction, and areas are connected by building roads between them.
+#     Junction of an area is determined the first time the script is executed for country that has states in the area,#     and is usually a capital of the largest state in the area. Junctions stay for the lifetime and are the same from
+#     the perspective of all countries. Only a country that owns the junction will build roads from and towards it.
+# [2] Principal is basically a term for governorship capital state. Neighbour governorships are connected by building
+#     roads between junctions of one principal and another.
+# [3] To rule is to own it yourself or by having a permanent subject (can't cancel subject relations) that owns it.
+
+ai_perform_custom_road_building = {
+    if = {
+        limit = {
+            NOT = {
+                has_variable = ai_performed_custom_road_building
+            }
+            # Reverse variable - if it's set, it means the game rule for road building was un-checked
+            NOT = {
+                has_global_variable = game_rule_ai_road_building
+            }
+            OR = {
+                NOT = {
+                    has_global_variable = game_rule_ai_road_building_only_major_powers
+                }
+                rank >= major_power
+            }
+            OR = {
+                NOT = {
+                    has_global_variable = game_rule_ai_road_building_only_great_powers
+                }
+                rank >= great_power
+            }
+            is_ai = yes
+            has_land = yes
+            war = no
+            ai_country_allowed_to_build_roads = yes
+            ai_country_can_afford_to_build_5_roads = yes
+        }
+        set_variable = {
+            name = ai_performed_custom_road_building
+            days = 345 # 11.5 months - every year
+        }
+
+        # Save road building country to check various data related to it later
+        save_scope_as = current_road_building_country
+
+        # Used in various priority values to check distance_from_province, scope name must be exactly this
+        capital_scope = {
+            save_scope_as = target_province
+        }
+
+        # Cache junctions in country states, neighbouring states and governorships to connect with roads
+        ai_cache_country_road_building_data = yes
+
+        # Calculate state distance from capital in levels, used in various priority values
+        capital_scope.state = {
+            ai_determine_state_depth_level = {
+                variable = state_capital_distance
+                max = 50
+            }
+        }
+
+        # Used potentially a lot of times and checks country units, so it's better to cache this
+        set_local_variable = {
+            name = ai_country_build_roads_price_cached
+            value = ai_country_build_roads_price
+        }
+
+        # Script level flag that we ran out of money and should stop trying to build any roads
+        set_local_variable = {
+            name = not_enough_gold_for_road_building
+            value = 0
+        }
+
+        # Connect principals of own territories first, then of subject territories
+        ai_build_roads_algorithm_principals = {
+            owned = 1
+            ruled = 0
+        }
+        ai_build_roads_algorithm_principals = {
+            owned = 0
+            ruled = 1
+        }
+        
+        # Connect junctions of own territories first, then of subject territories
+        if = {
+            limit = {
+                ai_can_only_build_low_density_roads = no
+            }
+            ai_build_roads_algorithm_junctions = {
+                owned = 1
+                ruled = 0
+            }
+            ai_build_roads_algorithm_junctions = {
+                owned = 0
+                ruled = 1
+            }
+        }
+
+        # Perform optimization and densification of roads in own territories
+        ai_build_roads_algorithm_confluence = {
+            owned = 1
+            ruled = 0
+        }
+        if = {
+            limit = {
+                ai_can_only_build_low_density_roads = no
+            }
+            ai_build_roads_algorithm_intrastate = {
+                owned = 1
+                ruled = 0
+            }
+        }
+
+        # Perform optimization and densification of roads in subject territories
+        ai_build_roads_algorithm_confluence = {
+            owned = 0
+            ruled = 1
+        }
+        if = {
+            limit = {
+                ai_can_only_build_low_density_roads = no
+            }
+            ai_build_roads_algorithm_intrastate = {
+                owned = 0
+                ruled = 1
+            }
+        }
+
+        # Clear num of roads cached on territory level
+        every_owned_province = {
+            remove_variable = num_of_roads_towards_neighbors_cached
+        }
+        clear_variable_list = country_territories_for_confluence
+        every_subject = {
+            limit = {
+                ai_allowed_to_build_roads_in_subject = yes
+            }
+            every_owned_province = {
+                remove_variable = num_of_roads_towards_neighbors_cached
+            }
+            clear_variable_list = country_territories_for_confluence
+        }
+
+        # Clear junctions cached on state level
+        every_in_local_list = {
+            variable = clear_junction_territory_in_state
+            remove_variable = junction_territory_in_state
+        }
+        clear_local_variable_list = clear_junction_territory_in_state
+
+        # Clear neighbor states for road building
+        every_in_local_list = {
+            variable = states_to_connect_with_neighbors
+            capital_scope = {
+                clear_variable_list = neighbor_states_to_connect_with
+            }
+        }
+        clear_local_variable_list = states_to_connect_with_neighbors
+
+        # Clear neighbor governorships for road building
+        every_in_local_list = {
+            variable = governorships_to_connect_with_neighbors
+            capital_scope = {
+                clear_variable_list = neighbor_governorships_to_connect_with
+            }
+        }
+        clear_local_variable_list = governorships_to_connect_with_neighbors
+
+        # Clear state distance from capital
+        every_in_local_list = {
+            variable = clear_state_capital_distance
+            capital_scope = {
+                remove_variable = state_capital_distance
+            }
+        }
+        clear_local_variable_list = clear_state_capital_distance
+
+        # Clear principal processed neighbours
+        every_in_local_list = {
+            variable = principals_with_processed_neighbors
+            capital_scope = {
+                clear_variable_list = processed_neighbor_principals
+            }
+        }
+        clear_local_variable_list = principals_with_processed_neighbors
+
+        # Clear junction processed neighbours
+        every_in_local_list = {
+            variable = junctions_with_processed_neighbors
+            clear_variable_list = processed_neighbor_junctions
+        }
+        clear_local_variable_list = junctions_with_processed_neighbors
+
+        # Garbage collection
+        clear_saved_scope = current_road_building_country
+        clear_saved_scope = target_province
+        remove_local_variable = ai_country_build_roads_price_cached
+        remove_local_variable = not_enough_gold_for_road_building
+    }
+}
+
+ai_cache_country_road_building_data = {
+    every_owned_province = {
+        ai_cache_roads_towards_neighbors = yes
+    }
+    every_subject = {
+        limit = {
+            ai_allowed_to_build_roads_in_subject = yes
+        }
+        every_owned_province = {
+            ai_cache_roads_towards_neighbors = yes
+        }
+    }
+
+    every_country_state = {
+        ai_cache_state_junction_territory = yes
+    }
+    every_subject = {
+        limit = {
+            ai_allowed_to_build_roads_in_subject = yes
+        }
+        every_country_state = {
+            ai_cache_state_junction_territory = yes
+        }
+    }
+
+    every_country_state = {
+        ai_cache_neighbor_states_to_connect = yes
+    }
+    every_subject = {
+        limit = {
+            ai_allowed_to_build_roads_in_subject = yes
+        }
+        every_country_state = {
+            ai_cache_neighbor_states_to_connect = yes
+        }
+    }
+
+    every_governorships = {
+        ai_cache_governorships_to_connect = yes
+    }
+    every_subject = {
+        limit = {
+            ai_allowed_to_build_roads_in_subject = yes
+        }
+        every_governorships = {
+            ai_cache_governorships_to_connect = yes
+        }
+    }
+}
+
+ai_cache_roads_towards_neighbors = {
+    set_variable = {
+        name = num_of_roads_towards_neighbors_cached
+        value = num_of_roads_towards_neighbors
+    }
+    # Confluence eligibility depends on num roads, and caching them beforehand is very beneficial for performance
+    if = {
+        limit = {
+            ai_territory_is_eligible_for_confluence = yes
+        }
+        owner = {
+            add_to_variable_list = {
+                name = country_territories_for_confluence
+                target = prev
+            }
+        }
+    }
+}
+
+# If state contains a junction, save it to junction_territory_in_state variable in state capital
+ai_cache_state_junction_territory = {
+    area = {
+        ordered_area_province = {
+            limit = {
+                is_water = no
+            }
+            order_by = territory_priority_for_junction
+            position = 0
+            
+            if = {
+                limit = {
+                    NOT = {
+                        has_variable = territory_is_junction_of_its_area
+                    }
+                }
+                set_variable = territory_is_junction_of_its_area
+            }
+
+            if = {
+                limit = {
+                    exists = state
+                }
+                save_scope_as = territory_determined_as_junction
+                state.capital_scope = {
+                    set_variable = {
+                        name = junction_territory_in_state
+                        value = scope:territory_determined_as_junction
+                    }
+                    add_to_local_variable_list = {
+                        name = clear_junction_territory_in_state
+                        target = this
+                    }
+                }
+                clear_saved_scope = territory_determined_as_junction
+            }
+        }
+    }
+}
+
+# If state has ruled neighbors with junctions, save them to neighbor_states_to_connect_with list in state capital
+ai_cache_neighbor_states_to_connect = {
+    if = {
+        limit = {
+            state_contains_junction_of_its_area = yes
+        }
+        save_scope_as = state_to_check_neighbors
+
+        area = {
+            every_area_state = {
+                limit = {
+                    NOT = {
+                        this = scope:state_to_check_neighbors
+                    }
+                }
+                add_to_local_variable_list = {
+                    name = potential_state_neighbors
+                    target = this
+                }
+            }
+            every_neighbor_area = {
+                every_area_state = {
+                    add_to_local_variable_list = {
+                        name = potential_state_neighbors
+                        target = this
+                    }
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                has_non_empty_local_variable_list = {
+                    name = potential_state_neighbors
+                }
+            }
+            every_in_local_list = {
+                variable = potential_state_neighbors
+                limit = {
+                    ruled_by_road_building_country = yes
+                    state_contains_junction_of_its_area = yes
+                    state_is_neighbor_of_including_unowned = {
+                        state = scope:state_to_check_neighbors
+                    }
+                }
+                
+                save_scope_as = neighbor_state_to_connect
+                scope:state_to_check_neighbors.capital_scope = {
+                    add_to_variable_list = {
+                        name = neighbor_states_to_connect_with
+                        target = scope:neighbor_state_to_connect
+                    }
+                    add_to_local_variable_list = {
+                        name = states_to_connect_with_neighbors
+                        target = scope:state_to_check_neighbors
+                    }
+                }
+                clear_saved_scope = neighbor_state_to_connect
+            }
+        }
+
+        clear_local_variable_list = potential_state_neighbors
+
+        clear_saved_scope = state_to_check_neighbors
+    }
+}
+
+# If governorship has eligible neighbors, save them to neighbor_governorships_to_connect_with list in principal capital
+ai_cache_governorships_to_connect = {
+    if = {
+        limit = {
+            ai_can_build_roads_in_ruled_governorship = yes
+
+            # Late game optimization - ignore states with a lot of roads built already
+            capital_scope.var:junction_territory_in_state = {
+                num_of_roads_towards_neighbors < ai_max_neighbor_roads_for_road_building
+            }
+        }
+        save_scope_as = governorship_to_check_neighbors
+
+        capital_scope.region = {
+            every_region_governorship = {
+                limit = {
+                    NOT = {
+                        this = scope:governorship_to_check_neighbors
+                    }
+                }
+                add_to_local_variable_list = {
+                    name = potential_governorship_neighbors
+                    target = this
+                }
+            }
+            every_neighbor_region = {
+                every_region_governorship = {
+                    add_to_local_variable_list = {
+                        name = potential_governorship_neighbors
+                        target = this
+                    }
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                has_non_empty_local_variable_list = {
+                    name = potential_governorship_neighbors
+                }
+            }
+            every_in_local_list = {
+                variable = potential_governorship_neighbors
+                limit = {
+                    ruled_by_road_building_country = yes
+                    ai_can_build_roads_in_ruled_governorship = yes
+
+                    any_governorship_state = {
+                        state_is_target_for_road_building = yes
+
+                        capital_scope = {
+                            has_non_empty_variable_list = {
+                                name = neighbor_states_to_connect_with
+                            }
+                            any_in_list = {
+                                variable = neighbor_states_to_connect_with
+                                state_is_target_for_road_building = yes
+                                governorship = scope:governorship_to_check_neighbors
+                            }
+                        }
+                    }
+                }
+                
+                save_scope_as = neighbor_governorship_to_connect
+                scope:governorship_to_check_neighbors.capital_scope = {
+                    add_to_variable_list = {
+                        name = neighbor_governorships_to_connect_with
+                        target = scope:neighbor_governorship_to_connect
+                    }
+                    add_to_local_variable_list = {
+                        name = governorships_to_connect_with_neighbors
+                        target = scope:governorship_to_check_neighbors
+                    }
+                }
+                clear_saved_scope = neighbor_governorship_to_connect
+            }
+        }
+
+        clear_local_variable_list = potential_governorship_neighbors
+
+        clear_saved_scope = governorship_to_check_neighbors
+    }
+}
+
+# PRINCIPALS PHASE: Connect principals of all neighbouring governorships
+ai_build_roads_algorithm_principals = {
+    if = {
+        limit = {
+            # Ensure we had no signs to assume that we don't have enough money for road building
+            local_var:not_enough_gold_for_road_building = 0
+            # If going for ruled territories, ensure there are qualifying subjects
+            OR = {
+                $owned$ = 1
+                any_subject = {
+                    ai_allowed_to_build_roads_in_subject = yes
+                }
+            }
+        }
+        ordered_in_local_list = {
+            variable = governorships_to_connect_with_neighbors
+            limit = {
+                OR = {
+                    AND = {
+                        $owned$ = 1
+                        owner = scope:current_road_building_country
+                    }
+                    AND = {
+                        $ruled$ = 1
+                        owner = {
+                            is_subject_of = scope:current_road_building_country
+                            ai_allowed_to_build_roads_in_subject = yes
+                        }
+                    }
+                }
+                capital_scope.state = {
+                    ai_can_build_roads_in_ruled_state = yes
+                }
+            }
+            order_by = governorship_priority_by_closeness_to_capital
+            min = 0
+            check_range_bounds = no
+
+            # Ensure we haven't concluded that we don't have enough money for road building
+            if = {
+                limit = {
+                    local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
+                    # Late game optimization - ignore states with a lot of roads built already
+                    capital_scope.var:junction_territory_in_state = {
+                        num_of_roads_towards_neighbors < ai_max_neighbor_roads_for_road_building
+                    }
+                }
+                ai_fetch_principals_and_build_roads = yes
+            }
+        }
+    }
+}
+
+# JUNCTIONS PHASE: Connect junctions of all neighbouring states
+ai_build_roads_algorithm_junctions = {
+    if = {
+        limit = {
+            # Ensure we had no signs to assume that we don't have enough money for road building
+            local_var:not_enough_gold_for_road_building = 0
+            # If going for ruled territories, ensure there are qualifying subjects
+            OR = {
+                $owned$ = 1
+                any_subject = {
+                    ai_allowed_to_build_roads_in_subject = yes
+                }
+            }
+        }
+        ordered_in_local_list = {
+            variable = states_to_connect_with_neighbors
+            limit = {
+                OR = {
+                    AND = {
+                        $owned$ = 1
+                        owner = scope:current_road_building_country
+                    }
+                    AND = {
+                        $ruled$ = 1
+                        owner = {
+                            is_subject_of = scope:current_road_building_country
+                            ai_allowed_to_build_roads_in_subject = yes
+                        }
+                    }
+                }
+                ai_can_build_roads_in_ruled_state = yes
+            }
+            order_by = state_priority_by_closeness_to_capital
+            min = 0
+            check_range_bounds = no
+
+            # Ensure we haven't concluded that we don't have enough money for road building
+            if = {
+                limit = {
+                    local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
+                    # Late game optimization - ignore states with a lot of roads built already
+                    capital_scope.var:junction_territory_in_state = {
+                        num_of_roads_towards_neighbors < ai_max_neighbor_roads_for_road_building
+                    }
+                }
+                ai_fetch_junctions_and_build_roads = {
+                    origin = capital_scope.var:junction_territory_in_state
+                    specific = 0
+                    state = scope:target_province.state
+                    processed = 0
+                }
+            }
+        }
+    }
+}
+
+# CONFLUENCE PHASE: Fix dead ends and connect neighbor territories with many roads each
+ai_build_roads_algorithm_confluence = {
+    if = {
+        limit = {
+            # Ensure we had no signs to assume that we don't have enough money for road building
+            local_var:not_enough_gold_for_road_building = 0
+            # If going for ruled territories, ensure there are qualifying subjects
+            OR = {
+                $owned$ = 1
+                any_subject = {
+                    ai_allowed_to_build_roads_in_subject = yes
+                }
+            }
+        }
+        if = {
+            limit = {
+                $owned$ = 1
+            }
+            if = {
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = country_territories_for_confluence
+                    }
+                }
+                every_in_list = {
+                    variable = country_territories_for_confluence
+                    limit = {
+                        state = {
+                            ai_can_build_roads_in_ruled_state = yes
+                        }
+                    }
+                    add_to_local_variable_list = {
+                        name = territories_for_confluence_phase
+                        target = this
+                    }
+                }
+            }
+        }
+        if = {
+            limit = {
+                $ruled$ = 1
+            }
+            every_subject = {
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = country_territories_for_confluence
+                    }
+                    ai_allowed_to_build_roads_in_subject = yes
+                }
+                every_in_list = {
+                    variable = country_territories_for_confluence
+                    limit = {
+                        state = {
+                            ai_can_build_roads_in_ruled_state = yes
+                        }
+                    }
+                    add_to_local_variable_list = {
+                        name = territories_for_confluence_phase
+                        target = this
+                    }
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                has_non_empty_local_variable_list = {
+                    name = territories_for_confluence_phase
+                }
+            }
+            ordered_in_local_list = {
+                variable = territories_for_confluence_phase
+                order_by = territory_priority_by_closeness_to_capital
+                min = 0
+                check_range_bounds = no
+
+                # Ensure we haven't concluded that we don't have enough money for road building
+                if = {
+                    limit = {
+                        local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
+                    }
+
+                    # Save requirements into local variables as an alternative to checking any_neighbor_province
+                    set_local_variable = {
+                        name = must_have_at_least_this_many_roads
+                        value = {
+                            # Improve connection for important military targets
+                            if = {
+                                limit = {
+                                    OR = {
+                                        is_state_capital = yes
+                                        has_city_status = yes
+                                        fort_level > 0
+                                    }
+                                }
+                                # Dead ends between each other or dead end to well connected territory
+                                if = {
+                                    limit = {
+                                        num_of_roads_towards_neighbors = 1
+                                    }
+                                    value = 1
+                                }
+                                # Multiple well connected territories between each other for max efficiency
+                                else_if = {
+                                    limit = {
+                                        num_of_roads_towards_neighbors = 2
+                                    }
+                                    value = 3
+                                }
+                                else = {
+                                    value = -1
+                                }
+                            }
+                            else = {
+                                value = -1
+                            }
+                        }
+                    }
+                    set_local_variable = {
+                        name = must_have_exactly_this_many_roads
+                        value = {
+                            # For low value terrtiroies only dead ends between each other
+                            if = {
+                                limit = {
+                                    NOR = {
+                                        is_state_capital = yes
+                                        has_city_status = yes
+                                        fort_level > 0
+                                    }
+                                    num_of_roads_towards_neighbors = 1
+                                }
+                                value = 1
+                            }
+                            else = {
+                                value = -1
+                            }
+                        }
+                    }
+
+                    if = {
+                        limit = {
+                            OR = {
+                                local_var:must_have_at_least_this_many_roads > -1
+                                local_var:must_have_exactly_this_many_roads > -1
+                            }
+                        }
+                        save_scope_as = current_road_building_territory
+
+                        # We were not checking if such a neighbor exist beforehand so this may result in nothing
+                        ordered_neighbor_province = {
+                            limit = {
+                                ruled_by_road_building_country = yes
+                                NOT = {
+                                    has_road_towards = scope:current_road_building_territory
+                                }
+                                OR = {
+                                    AND = {
+                                        local_var:must_have_at_least_this_many_roads > -1
+                                        local_var:must_have_at_least_this_many_roads <= num_of_roads_towards_neighbors
+                                    }
+                                    AND = {
+                                        local_var:must_have_exactly_this_many_roads > -1
+                                        local_var:must_have_exactly_this_many_roads = num_of_roads_towards_neighbors
+                                    }
+                                }
+                            }
+                            order_by = territory_priority_for_road_building
+                            position = 0
+                            check_range_bounds = no
+
+                            ai_build_road_towards_territory = {
+                                territory = scope:current_road_building_territory
+                            }
+                            
+                            # If we can't afford a single roads after this, set treasury variable to max attempts
+                            if = {
+                                limit = {
+                                    scope:current_road_building_country = {
+                                        ai_country_can_afford_to_build_1_road = no
+                                    }
+                                }
+                                change_local_variable = {
+                                    name = not_enough_gold_for_road_building
+                                    add = ai_road_attempts_with_low_treasury
+                                }
+                            }
+                        }
+
+                        clear_saved_scope = current_road_building_territory
+                    }
+
+                    remove_local_variable = must_have_at_least_this_many_roads
+                    remove_local_variable = must_have_exactly_this_many_roads
+                }
+            }
+
+            clear_local_variable_list = territories_for_confluence_phase
+        }
+    }
+}
+
+# INTRASTATE PHASE: Connect roadless largest cities to junctions of their states
+ai_build_roads_algorithm_intrastate = {
+    if = {
+        limit = {
+            # Ensure we had no signs to assume that we don't have enough money for road building
+            local_var:not_enough_gold_for_road_building = 0
+            # If going for ruled territories, ensure there are qualifying subjects
+            OR = {
+                $owned$ = 1
+                any_subject = {
+                    ai_allowed_to_build_roads_in_subject = yes
+                }
+            }
+        }
+        if = {
+            limit = {
+                $owned$ = 1
+            }
+            every_country_state = {
+                limit = {
+                    ai_can_build_roads_in_ruled_state = yes
+                    state_contains_junction_of_its_area = yes
+                }
+                add_to_local_variable_list = {
+                    name = states_for_intrastate_phase
+                    target = this
+                }
+            }
+        }
+        if = {
+            limit = {
+                $ruled$ = 1
+            }
+            every_subject = {
+                limit = {
+                    ai_allowed_to_build_roads_in_subject = yes
+                }
+                every_country_state = {
+                    limit = {
+                        ai_can_build_roads_in_ruled_state = yes
+                        state_contains_junction_of_its_area = yes
+                    }
+                    add_to_local_variable_list = {
+                        name = states_for_intrastate_phase
+                        target = this
+                    }
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                has_non_empty_local_variable_list = {
+                    name = states_for_intrastate_phase
+                }
+            }
+            ordered_in_local_list = {
+                variable = states_for_intrastate_phase
+                order_by = state_priority_by_closeness_to_capital
+                min = 0
+                check_range_bounds = no
+
+                # Ensure we haven't concluded that we don't have enough money for road building
+                if = {
+                    limit = {
+                        local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
+                    }
+                    save_scope_as = state_with_junction_of_area
+                    area = {
+                        ordered_area_province = {
+                            limit = {
+                                ruled_by_road_building_country = yes
+                                territory_is_junction_of_its_area = no
+                                has_city_status = yes
+                            }
+                            order_by = total_population
+                            min = 0
+                            max = ai_max_cities_to_connect_to_junction
+                            check_range_bounds = no
+
+                            # If it's roadless, connect with junction of own state
+                            if = {
+                                limit = {
+                                    territory_has_any_roads = no
+                                }
+                                ai_fetch_junctions_and_build_roads = {
+                                    origin = this
+                                    specific = 1
+                                    state = scope:state_with_junction_of_area
+                                    processed = 0
+                                }
+                            }
+                        }
+                    }
+                    clear_saved_scope = state_with_junction_of_area
+                }
+            }
+
+            clear_local_variable_list = states_for_intrastate_phase
+        }
+    }
+}
+
+ai_fetch_principals_and_build_roads = {
+    capital_scope.state = {
+        save_scope_as = current_origin_principal
+
+        # Create list of principals to connect with this one
+        ai_determine_principals_for_roads = yes
+
+        # Calculate state depth level around this principal for pathfinding
+        ai_determine_state_depth_level = {
+            variable = state_depth_level
+            max = 10
+        }
+
+        # Perform roads building using gathered data
+        ai_build_roads_between_principals = yes
+
+        # Clear list of principals
+        clear_local_variable_list = principals_for_road_building
+
+        # Clear state depth level data
+        every_in_local_list = {
+            variable = clear_state_depth_level
+            capital_scope = {
+                remove_variable = state_depth_level
+            }
+        }
+        clear_local_variable_list = clear_state_depth_level
+
+        clear_saved_scope = current_origin_principal
+    }
+}
+
+# Scope is governorship principal
+ai_determine_principals_for_roads = {
+    # Scope to state capital which is where variables are stored
+    capital_scope = {
+        if = {
+            limit = {
+                has_non_empty_variable_list = {
+                    name = neighbor_governorships_to_connect_with
+                }
+            }
+            ordered_in_list = {
+                variable = neighbor_governorships_to_connect_with
+                order_by = governorship_priority_by_closeness_to_capital
+                min = 0
+                check_range_bounds = no
+
+                # Scope to principal of neighbour governorship
+                capital_scope.state = {
+                    # Try connecting with this principal only if this pair wasn't processed before
+                    if = {
+                        limit = {
+                            NOR = {
+                                capital_scope = {
+                                    has_non_empty_variable_list = {
+                                        name = processed_neighbor_principals
+                                    }
+                                    is_target_in_variable_list = {
+                                        name = processed_neighbor_principals
+                                        target = scope:current_origin_principal
+                                    }
+                                }
+                                scope:current_origin_principal.capital_scope = {
+                                    has_non_empty_variable_list = {
+                                        name = processed_neighbor_principals
+                                    }
+                                    is_target_in_variable_list = {
+                                        name = processed_neighbor_principals
+                                        target = prev
+                                    }
+                                }
+                            }
+                        }
+                        add_to_local_variable_list = {
+                            name = principals_for_road_building
+                            target = this
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+# Arguments:
+# $origin$    -  territory from which we will build roads, usually capital_scope.var:junction_territory_in_state
+# $specific$  -  1 if we are looking for a junction of once specific neighbor, 0 for junctions of all neighbors
+# $state$     -  scope of the state for the $specific$ argument, is it's 0 then just any valid state to avoid errors
+# $processed$ -  if we are allowed to pair junctions that were already tried against each other in this execution
+ai_fetch_junctions_and_build_roads = {
+    $origin$ = {
+        save_scope_as = current_origin_junction
+
+        # Create list of junctions to connect with this one
+        ai_determine_junctions_for_roads = {
+            specific = $specific$
+            state = $state$
+            processed = $processed$
+        }
+
+        # Calculate territory depth level around this junction for pathfinding
+        ai_determine_territory_depth_level = yes
+
+        # Perform roads building using gathered data
+        ai_build_roads_between_junctions = yes
+
+        # Clear list of junctions
+        clear_local_variable_list = junctions_for_road_building
+
+        # Clear territory depth level data
+        every_in_local_list = {
+            variable = clear_territory_depth_level
+            remove_variable = territory_depth_level
+        }
+        clear_local_variable_list = clear_territory_depth_level
+
+        clear_saved_scope = current_origin_junction
+    }
+}
+
+ai_determine_junctions_for_roads = {
+    # If specific state is set, check only its junction
+    if = {
+        limit = {
+            $specific$ = 1
+        }
+        $state$ = {
+            ai_add_state_junction_to_road_list = {
+                processed = $processed$
+            }
+        }
+    }
+    # Otherwise check junctions of all neighbouring states
+    else = {
+        # Scope to state capital which is where variables are stored
+        state.capital_scope = {
+            if = {
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = neighbor_states_to_connect_with
+                    }
+                }
+                ordered_in_list = {
+                    variable = neighbor_states_to_connect_with
+                    order_by = state_priority_by_closeness_to_capital
+                    min = 0
+                    check_range_bounds = no
+
+                    ai_add_state_junction_to_road_list = {
+                        processed = $processed$
+                    }
+                }
+            }
+        }
+    }
+}
+
+ai_add_state_junction_to_road_list = {
+    # Scope to junction of this territory, saved in state capital variable
+    capital_scope.var:junction_territory_in_state = {
+        # Try connecting with this junction only if this pair wasn't processed before
+        if = {
+            limit = {
+                OR = {
+                    $processed$ = 1
+                    NOR = {
+                        AND = {
+                            has_non_empty_variable_list = {
+                                name = processed_neighbor_junctions
+                            }
+                            is_target_in_variable_list = {
+                                name = processed_neighbor_junctions
+                                target = scope:current_origin_junction
+                            }
+                        }
+                        scope:current_origin_junction = {
+                            has_non_empty_variable_list = {
+                                name = processed_neighbor_junctions
+                            }
+                            is_target_in_variable_list = {
+                                name = processed_neighbor_junctions
+                                target = prev
+                            }
+                        }
+                    }
+                }
+            }
+            add_to_local_variable_list = {
+                name = junctions_for_road_building
+                target = this
+            }
+        }
+    }
+}
+
+ai_build_roads_between_principals = {
+    ordered_in_local_list = {
+        variable = principals_for_road_building
+        limit = {
+            capital_scope = {
+                has_variable = state_depth_level
+                has_non_empty_variable_list = {
+                    name = neighbor_states_to_connect_with
+                }
+            }
+        }
+        order_by = state_priority_by_closeness_to_capital
+        min = 0
+        check_range_bounds = no
+
+        # Ensure we haven't concluded that we don't have enough money for road building
+        if = {
+            limit = {
+                local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
+            }
+
+            # Start with the destination junction and find a path to current state junction
+            save_scope_as = current_road_building_state
+
+            # Save order to variable so we can build roads from origin, which is reverse to pathfinding
+            capital_scope = {
+                set_variable = {
+                    name = order_of_road_building_in_state
+                    value = num_states_chosen_for_road_building
+                }
+            }
+
+            # Save all processed states to a list for road building and not walking them a second time
+            add_to_local_variable_list = {
+                name = states_chosen_for_road_building
+                target = this
+            }
+
+            # Emergency exist for edge cases to prevent while loop from going on 1000 times
+            set_local_variable = {
+                name = found_new_state_for_roads
+                value = 1
+            }
+
+            while = {
+                limit = {
+                    local_var:found_new_state_for_roads > 0
+                    # Current state depth reaching zero means we found the origin
+                    scope:current_road_building_state = {
+                        state_depth_level_svalue > 0
+                    }
+                }
+
+                # Reset it to 0 on every iteration, update to 1 after finding new state
+                set_local_variable = {
+                    name = found_new_state_for_roads
+                    value = 0
+                }
+
+                # Scope to state capital which is where variables are stored
+                scope:current_road_building_state.capital_scope = {
+                    ordered_in_list = {
+                        variable = neighbor_states_to_connect_with
+                        limit = {
+                            ai_state_is_suitable_for_road_building = yes
+                        }
+                        order_by = state_priority_for_road_building
+                        position = 0
+                        check_range_bounds = no
+
+                        # Save order to variable so we can build roads from origin, which is reverse to pathfinding
+                        capital_scope = {
+                            set_variable = {
+                                name = order_of_road_building_in_state
+                                value = num_states_chosen_for_road_building
+                            }
+                        }
+
+                        # Save all processed states to a list for road building and not walking them a second time
+                        add_to_local_variable_list = {
+                            name = states_chosen_for_road_building
+                            target = this
+                        }
+                        
+                        # Save current state as previous, then this one as current to track pairs
+                        scope:current_road_building_state = {
+                            save_scope_as = previous_road_building_state
+                        }
+                        save_scope_as = current_road_building_state
+
+                        # Mark that we were able to find some new state and while loop can continue
+                        set_local_variable = {
+                            name = found_new_state_for_roads
+                            value = 1
+                        }
+                    }
+                }
+
+                if = {
+                    limit = {
+                        local_var:found_new_state_for_roads = 0
+                    }
+                    debug_log = "STATE PATHFINDING FAIL - DESTINATION SCOPE"
+                    debug_log_scopes = yes
+                    scope:current_road_building_state = {
+                        debug_log = "STATE PATHFINDING FAIL - LAST NODE SCOPE"
+                        debug_log_scopes = yes
+                    }
+                }
+            }
+
+            # If pathfinding was successful, perform the actual road building
+            if = {
+                limit = {
+                    local_var:found_new_state_for_roads > 0
+                }
+                ordered_in_local_list = {
+                    variable = states_chosen_for_road_building
+                    # Higher order means closer to origin, as pathfinding starts from destination
+                    order_by = capital_scope.var:order_of_road_building_in_state
+                    min = 0
+                    check_range_bounds = no
+
+                    # If has previous state saved, build roads between their junctions
+                    if = {
+                        limit = {
+                            exists = scope:state_for_junction_connection
+                            # Ensure we haven't concluded that we don't have enough money for road building
+                            local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
+                        }
+                        ai_fetch_junctions_and_build_roads = {
+                            origin = capital_scope.var:junction_territory_in_state
+                            specific = 1
+                            state = scope:state_for_junction_connection
+                            processed = 1
+                        }
+                    }
+
+                    # Save scope for next state to build roads here, basically a current + previous pair again
+                    save_scope_as = state_for_junction_connection
+                }
+                clear_saved_scope = state_for_junction_connection
+            }
+
+            # Mark that we already processed this pair of principals
+            capital_scope = {
+                add_to_variable_list = {
+                    name = processed_neighbor_principals
+                    target = scope:current_origin_principal
+                }
+            }
+            scope:current_origin_principal.capital_scope = {
+                add_to_variable_list = {
+                    name = processed_neighbor_principals
+                    target = prev
+                }
+            }
+
+            # Save them to list to easily clear processed_neighbor_principals later
+            add_to_local_variable_list = {
+                name = principals_with_processed_neighbors
+                target = this
+            }
+            add_to_local_variable_list = {
+                name = principals_with_processed_neighbors
+                target = scope:current_origin_principal
+            }
+            
+            # Clear state variables with road building order
+            every_in_local_list = {
+                variable = states_chosen_for_road_building
+                limit = {
+                    capital_scope = {
+                        has_variable = order_of_road_building_in_state
+                    }
+                }
+                capital_scope = {
+                    remove_variable = order_of_road_building_in_state
+                }
+            }
+            clear_local_variable_list = states_chosen_for_road_building
+
+            # Garbage collection
+            clear_saved_scope = current_road_building_state
+            clear_saved_scope = previous_road_building_state
+            remove_local_variable = found_new_state_for_roads
+        }
+    }
+}
+
+ai_build_roads_between_junctions = {
+    ordered_in_local_list = {
+        variable = junctions_for_road_building
+        limit = {
+            has_variable = territory_depth_level
+        }
+        order_by = territory_priority_by_closeness_to_capital
+        min = 0
+        check_range_bounds = no
+
+        # Ensure we haven't concluded that we don't have enough money for road building
+        if = {
+            limit = {
+                local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
+            }
+
+            # Start with the destination junction and find a path to current state junction
+            save_scope_as = current_road_building_territory
+
+            # Save all processed states to a list for road building and not walking them a second time
+            add_to_local_variable_list = {
+                name = territories_chosen_for_road_building
+                target = this
+            }
+
+            # Emergency exist for edge cases to prevent while loop from going on 1000 times
+            set_local_variable = {
+                name = found_new_territory_for_road
+                value = 1
+            }
+
+            while = {
+                limit = {
+                    local_var:found_new_territory_for_road > 0
+                    # Current territory depth reaching zero means we found the origin
+                    scope:current_road_building_territory = {
+                        territory_depth_level_svalue > 0
+                    }
+                }
+
+                # Reset it to 0 on every iteration, update to 1 after finding new territory
+                set_local_variable = {
+                    name = found_new_territory_for_road
+                    value = 0
+                }
+
+                scope:current_road_building_territory = {
+                    ordered_neighbor_province = {
+                        limit = {
+                            ai_territory_is_suitable_for_road_building = yes
+                        }
+                        order_by = territory_priority_for_road_building
+                        position = 0
+                        check_range_bounds = no
+
+                        # Save to territory variable list that we want to build road from here to current territory
+                        if = {
+                            limit = {
+                                NOT = {
+                                    has_road_towards = scope:current_road_building_territory
+                                }
+                            }
+                            add_to_variable_list = {
+                                name = territories_to_build_roads_towards
+                                target = scope:current_road_building_territory
+                            }
+                        }
+
+                        # Save all processed territories to a list for road building and not walking them a second time
+                        add_to_local_variable_list = {
+                            name = territories_chosen_for_road_building
+                            target = this
+                        }
+                        
+                        # Save previous territory as prevprev, then current as previous, then this one as current
+                        if = {
+                            limit = {
+                                exists = scope:previous_road_building_territory
+                            }
+                            scope:previous_road_building_territory = {
+                                save_scope_as = prevprev_road_building_territory
+                            }
+                        }
+                        scope:current_road_building_territory = {
+                            save_scope_as = previous_road_building_territory
+                        }
+                        save_scope_as = current_road_building_territory
+
+                        # Mark that we were able to find some new territory and while loop can continue
+                        set_local_variable = {
+                            name = found_new_territory_for_road
+                            value = 1
+                        }
+                    }
+                }
+
+                if = {
+                    limit = {
+                        local_var:found_new_territory_for_road = 0
+                    }
+                    debug_log = "TERRITORY PATHFINDING FAIL - DESTINATION SCOPE"
+                    debug_log_scopes = yes
+                    scope:current_road_building_territory = {
+                        debug_log = "TERRITORY PATHFINDING FAIL - LAST NODE SCOPE"
+                        debug_log_scopes = yes
+                    }
+                }
+            }
+
+            # Build roads only if we can afford all of them so we don't leave weird dead ends between states
+            if = {
+                limit = {
+                    scope:current_road_building_country = {
+                        ai_country_can_afford_to_build_planned_roads = yes
+                    }
+                }
+                every_in_local_list = {
+                    variable = territories_chosen_for_road_building
+                    limit = {
+                        has_non_empty_variable_list = {
+                            name = territories_to_build_roads_towards
+                        }
+                    }
+                    save_scope_as = territory_to_build_road_from
+                    every_in_list = {
+                        variable = territories_to_build_roads_towards
+                        ai_build_road_towards_territory = {
+                            territory = scope:territory_to_build_road_from
+                        }
+                    }
+                    clear_saved_scope = territory_to_build_road_from
+                }
+
+                # If we can't afford any serious amount of roads after this, change the variable as well
+                if = {
+                    limit = {
+                        scope:current_road_building_country = {
+                            ai_country_can_afford_to_build_1_road = no
+                        }
+                    }
+                    change_local_variable = {
+                        name = not_enough_gold_for_road_building
+                        add = ai_road_attempts_with_low_treasury
+                    }
+                }
+                else_if = {
+                    limit = {
+                        scope:current_road_building_country = {
+                            ai_country_can_afford_to_build_5_roads = no
+                        }
+                    }
+                    change_local_variable = {
+                        name = not_enough_gold_for_road_building
+                        add = 1
+                    }
+                }
+            }
+            # Otherwise leave a mark that we don't have enough money for any further road building
+            else = {
+                change_local_variable = {
+                    name = not_enough_gold_for_road_building
+                    add = 1
+                }
+            }
+            
+            # Mark that we already processed this pair of junctions
+            add_to_variable_list = {
+                name = processed_neighbor_junctions
+                target = scope:current_origin_junction
+            }
+            scope:current_origin_junction = {
+                add_to_variable_list = {
+                    name = processed_neighbor_junctions
+                    target = prev
+                }
+            }
+
+            # Save them to list to easily clear processed_neighbor_junctions later
+            add_to_local_variable_list = {
+                name = junctions_with_processed_neighbors
+                target = this
+            }
+            add_to_local_variable_list = {
+                name = junctions_with_processed_neighbors
+                target = scope:current_origin_junction
+            }
+            
+            # Clear territory variable lists with where we are building roads
+            every_in_local_list = {
+                variable = territories_chosen_for_road_building
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = territories_to_build_roads_towards
+                    }
+                }
+                clear_variable_list = territories_to_build_roads_towards
+            }
+            clear_local_variable_list = territories_chosen_for_road_building
+
+            # Garbage collection
+            clear_saved_scope = current_road_building_territory
+            clear_saved_scope = previous_road_building_territory
+            clear_saved_scope = prevprev_road_building_territory
+            remove_local_variable = found_new_territory_for_road
+        }
+    }
+}
+
+ai_build_road_towards_territory = {
+    $territory$ = {
+        add_road_towards = prev
+        ai_increment_roads_towards_neighbors = yes
+    }
+    ai_increment_roads_towards_neighbors = yes
+    scope:current_road_building_country = {
+        add_treasury = {
+            value = 0
+            subtract = ai_country_build_roads_price
+        }
+    }
+}                          
+
+ai_increment_roads_towards_neighbors = {
+    if = {
+        limit = {
+            has_variable = num_of_roads_towards_neighbors_cached
+        }
+        change_variable = {
+            name = num_of_roads_towards_neighbors_cached
+            add = 1
+        }
+        # Confluence eligibility depends on num roads, and caching them beforehand is very beneficial for performance
+        if = {
+            limit = {
+                ai_territory_is_eligible_for_confluence = yes
+            }
+            owner = {
+                if = {
+                    limit = {
+                        NOT = {
+                            is_target_in_variable_list = {
+                                name = country_territories_for_confluence
+                                target = prev
+                            }
+                        }
+                    }
+                    add_to_variable_list = {
+                        name = country_territories_for_confluence
+                        target = prev
+                    }
+                }
+            }
+        }
+        else = {
+            owner = {
+                if = {
+                    limit = {
+                        is_target_in_variable_list = {
+                            name = country_territories_for_confluence
+                            target = prev
+                        }
+                    }
+                    remove_list_variable = {
+                        name = country_territories_for_confluence
+                        target = prev
+                    }
+                }
+            }
+        }
+    }                     
+}
+
+ai_determine_state_depth_level = {
+    # Initiate state depth calculations starting from origin principal
+    capital_scope = {
+        set_variable = {
+            name = $variable$
+            value = 0
+        }
+    }
+    add_to_local_variable_list = {
+        name = states_of_current_level
+        target = this
+    }
+
+    # Save it to list so we don't need to every_owned_province to clear state_depth_level
+    add_to_local_variable_list = {
+        name = clear_$variable$
+        target = this
+    }
+
+    # Track it separately in local variable to use it easily as while limit and to set new variables
+    set_local_variable = {
+        name = current_state_depth_level
+        value = 0
+    }
+
+    # Try all neigbours level by level, forming state depth map to use in pathfinding algorithm later
+    while = {
+        limit = {
+            # Hard limit to avoid performance issues in case of mistakes and edge cases
+            local_var:current_state_depth_level < $max$
+
+            # Obviously we need some states of current level to find states of next level
+            has_non_empty_local_variable_list = {
+                name = states_of_current_level
+            }
+
+            # If we are doing this to find destination principals, the list must exist and not everything is found yet
+            OR = {
+                NOT = {
+                    has_non_empty_local_variable_list = {
+                        name = principals_for_road_building
+                    }
+                }
+                any_in_local_list = {
+                    variable = principals_for_road_building
+                    NOT = {
+                        has_variable = $variable$
+                    }
+                }
+            }
+        }
+
+        ordered_in_local_list = {
+            variable = states_of_current_level
+            limit = {
+                capital_scope = {
+                    has_non_empty_variable_list = {
+                        name = neighbor_states_to_connect_with
+                    }
+                }
+            }
+            order_by = state_priority_by_id
+            min = 0
+            check_range_bounds = no
+
+            # Scope to state capital which is where variables are stored
+            capital_scope = {
+                ordered_in_list = {
+                    variable = neighbor_states_to_connect_with
+                    limit = {
+                        # Not processed previously
+                        NOT = {
+                            capital_scope = {
+                                has_variable = $variable$
+                            }
+                        }
+                    }
+                    order_by = state_priority_by_id
+                    min = 0
+                    check_range_bounds = no
+
+                    # Set corresponding depth level as state variable
+                    capital_scope = {
+                        set_variable = {
+                            name = $variable$
+                            value = {
+                                value = local_var:current_state_depth_level
+                                add = 1
+                            }
+                        }
+                    }
+
+                    # Add to list of the states whose neighbours will be processed in the next iteration
+                    add_to_local_variable_list = {
+                        name = states_of_next_level
+                        target = this
+                    }
+
+                    # Save it to list so we don't need to every_owned_province to clear the variable
+                    add_to_local_variable_list = {
+                        name = clear_$variable$
+                        target = this
+                    }
+                }
+            }
+        }
+
+        # Set next level states as current level for the next iteration 
+        clear_local_variable_list = states_of_current_level
+        every_in_local_list = {
+            variable = states_of_next_level
+            add_to_local_variable_list = {
+                name = states_of_current_level
+                target = this
+            }
+        }
+        clear_local_variable_list = states_of_next_level
+
+        # Increment local variable with current state depth level
+        change_local_variable = {
+            name = current_state_depth_level
+            add = 1
+        }
+    }
+
+    # Garbage collection
+    clear_local_variable_list = states_of_current_level
+    remove_local_variable = current_state_depth_level
+}
+
+ai_determine_territory_depth_level = {
+    # Initiate territory depth calculations starting from origin junction
+    set_variable = {
+        name = territory_depth_level
+        value = 0
+    }
+    add_to_local_variable_list = {
+        name = territories_of_current_level
+        target = this
+    }
+
+    # Save it to list so we don't need to every_owned_province to clear territory_depth_level
+    add_to_local_variable_list = {
+        name = clear_territory_depth_level
+        target = this
+    }
+
+    # Track it separately in local variable to use it easily as while limit and to set new variables
+    set_local_variable = {
+        name = current_territory_depth_level
+        value = 0
+    }
+
+    # Try all neigbours level by level, forming territory depth map to use in pathfinding algorithm later
+    while = {
+        limit = {
+            # Hard limit to avoid performance issues in case of mistakes and edge cases
+            local_var:current_territory_depth_level < road_building_territory_search_depth
+
+            # Obviously we need some territories of current level to find territories of next level
+            has_non_empty_local_variable_list = {
+                name = territories_of_current_level
+            }
+
+            # If we are doing this to find destination junctions, the list must exist and not everything is found yet
+            OR = {
+                NOT = {
+                    has_non_empty_local_variable_list = {
+                        name = junctions_for_road_building
+                    }
+                }
+                any_in_local_list = {
+                    variable = junctions_for_road_building
+                    NOT = {
+                        has_variable = territory_depth_level
+                    }
+                }
+            }
+        }
+
+        ordered_in_local_list = {
+            variable = territories_of_current_level
+            order_by = territory_priority_by_id
+            min = 0
+            check_range_bounds = no
+
+            ordered_neighbor_province = {
+                limit = {
+                    # Only land territories that armies can walk on
+                    is_water = no
+                    territory_has_walkable_terrain = yes
+
+                    # Not processed previously
+                    NOT = {
+                        has_variable = territory_depth_level
+                    }
+
+                    # Either unowned or ruled by us
+                    OR = {
+                        NOT = {
+                            exists = owner
+                        }
+                        ruled_by_road_building_country = yes
+                    }
+                }
+                order_by = territory_priority_by_id
+                min = 0
+                check_range_bounds = no
+                
+                # Set corresponding depth level as territory variable
+                set_variable = {
+                    name = territory_depth_level
+                    value = {
+                        value = local_var:current_territory_depth_level
+                        add = 1
+                    }
+                }
+
+                # Add to list of the territories whose neighbours will be processed in the next iteration
+                add_to_local_variable_list = {
+                    name = territories_of_next_level
+                    target = this
+                }
+
+                # Save it to list so we don't need to every_owned_province to clear territory_depth_level
+                add_to_local_variable_list = {
+                    name = clear_territory_depth_level
+                    target = this
+                }
+            }
+        }
+
+        # Set next level territories as current level for the next iteration 
+        clear_local_variable_list = territories_of_current_level
+        every_in_local_list = {
+            variable = territories_of_next_level
+            add_to_local_variable_list = {
+                name = territories_of_current_level
+                target = this
+            }
+        }
+        clear_local_variable_list = territories_of_next_level
+
+        # Increment local variable with current territory depth level
+        change_local_variable = {
+            name = current_territory_depth_level
+            add = 1
+        }
+    }
+
+    # Garbage collection
+    clear_local_variable_list = territories_of_current_level
+    remove_local_variable = current_territory_depth_level
+}

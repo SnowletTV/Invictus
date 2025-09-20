@@ -1,9 +1,17 @@
 ﻿ai_determine_economic_policies = {
     if = {
         limit = {
+            NOT = {
+                has_variable = ai_determined_economic_policies
+            }
             is_ai = yes
 			has_land = yes
         }
+        set_variable = {
+            name = ai_determined_economic_policies
+            days = 345 # 11.5 months - every year
+        }
+
 		# Reset all economic oplicy variables
 		remove_variable = ai_economic_policy_income_commerce_default
 		remove_variable = ai_economic_policy_income_commerce_high
@@ -74,14 +82,41 @@
 
         if = {
 			limit = {
-				# Only 1 fort level and it's in the capital, so the country has no fort maintenance
-				capital_scope = {
-					num_of_fortress_building = 1
-				}
-				NOT = {
-					any_owned_province = {
-						is_capital = no
-						num_of_fortress_building > 0
+				OR = {
+					# Only 1 fort level and it's in the capital, so the country has no fort maintenance
+					AND = {
+						capital_scope = {
+							num_of_fortress_building = 1
+						}
+						NOT = {
+							any_owned_province = {
+								is_capital = no
+								num_of_fortress_building > 0
+							}
+						}
+					}
+
+					# There's a player or antagonist of large enough rank nearby, and we are not allies
+					save_temporary_scope_as = country_considering_fort_policy
+					any_neighbour_country = {
+						is_subject = no
+						NOT = {
+							alliance_with = scope:country_considering_fort_policy
+						}
+						trigger_if = {
+							limit = {
+								is_ai = no
+							}
+							OR = {
+								rank >= scope:country_considering_fort_policy.rank
+								rank >= major_power
+								scope:country_considering_fort_policy.rank <= regional_power
+							}
+						}
+						trigger_else = {
+							is_antagonist = yes
+							rank >= scope:country_considering_fort_policy.rank
+						}
 					}
 				}
 			}

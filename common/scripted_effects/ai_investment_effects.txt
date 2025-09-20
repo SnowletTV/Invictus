@@ -1,6 +1,9 @@
 ﻿ai_choose_and_make_investment = {
     if = {
         limit = {
+            NOT = {
+                has_variable = ai_chose_and_made_investment
+            }
             is_ai = yes
             has_land = yes
             war = no
@@ -11,6 +14,10 @@
                     var:free_investments > 0
                 }
             }
+        }
+        set_variable = {
+            name = ai_chose_and_made_investment
+            days = 165 # 5.5 months - every half year
         }
 
         # Save to variable cause we may want to use it more than once
@@ -85,7 +92,7 @@
                 }
             }
 
-            # Military investment in states overloaded on fort limit
+            # Military investment in states with fort limit issues
             if = {
                 limit = {
                     local_var:made_investment = 0
@@ -96,8 +103,17 @@
                         ai_can_make_investment_in_this_state = yes
                         # Requirements for the investment type
                         ai_can_make_state_investment_military = yes
-                        # Only if overloaded on fort limit
-                        state_fort_limit_used > state_fort_limit_svalue
+                        # Only if overloaded on fort limit or is capital with limit reached
+                        state_fort_limit_svalue < state_fort_limit_for_wanted_forts
+                        trigger_if = {
+                            limit = {
+                                is_capital_state = yes
+                            }
+                            state_fort_limit_svalue <= state_fort_limit_used
+                        }
+                        trigger_else = {
+                            state_fort_limit_svalue < state_fort_limit_used
+                        }
                     }
                     weight = {
                         base = 1
@@ -193,7 +209,7 @@
                             any_state_province = {
                                 count >= 2
                                 has_city_status = yes
-                                free_building_slots <= 1
+                                free_building_slots <= free_slots_for_religious_investment
                             }
                         }
                         # In tribes and small countries even one city has a significant impact
@@ -201,7 +217,7 @@
                             any_state_province = {
                                 count >= 1
                                 has_city_status = yes
-                                free_building_slots <= 1
+                                free_building_slots <= free_slots_for_religious_investment
                             }
                         }
                     }
@@ -329,7 +345,7 @@
                         any_state_province = {
                             count >= 1
                             has_city_status = yes
-                            free_building_slots <= 1
+                            free_building_slots <= free_slots_for_religious_investment
                         }
                     }
                     weight = {
@@ -349,36 +365,36 @@
                 }
             }
 
-            # Military investment as fallback for tribals, who has more states without permanent trade routes
-            # Well, actually it's useless and is just a waste of resources, better to do no investments at all
-            # if = {
-            #     limit = {
-            #         local_var:made_investment = 0
-            #         is_tribal = yes
-            #     }
-            #     random_country_state = {
-            #         limit = {
-            #             # Requirements fot the state
-            #             ai_can_make_investment_in_this_state = yes
-            #             # Requirements for the investment type
-            #             ai_can_make_state_investment_military = yes
-            #         }
-            #         weight = {
-            #             base = 1
-            #             modifier = {
-            #                 factor = ai_state_importance
-            #             }
-            #         }
-            #         # Pressing effect from the investment button
-            #         invest_in_state_button_effect = {
-            #             type = military
-            #         }
-            #         change_local_variable = {
-            #             name = made_investment
-            #             add = 1
-            #         }
-            #     }
-            # }
+            # Military investment in states where fort limit is lower than wanted
+            if = {
+                limit = {
+                    local_var:made_investment = 0
+                }
+                random_country_state = {
+                    limit = {
+                        # Requirements fot the state
+                        ai_can_make_investment_in_this_state = yes
+                        # Requirements for the investment type
+                        ai_can_make_state_investment_military = yes
+                        # Only if current fort limit is lower than wanted
+                        state_fort_limit_svalue < state_fort_limit_for_wanted_forts
+                    }
+                    weight = {
+                        base = 1
+                        modifier = {
+                            factor = ai_state_importance
+                        }
+                    }
+                    # Pressing effect from the investment button
+                    invest_in_state_button_effect = {
+                        type = military
+                    }
+                    change_local_variable = {
+                        name = made_investment
+                        add = 1
+                    }
+                }
+            }
 
             # Sparta's unique DLC religious investment, not as useful so use only as fallback
             # Commented out as actually it's better to just keep resources and limits for future opportunities

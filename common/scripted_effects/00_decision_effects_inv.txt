@@ -214,3 +214,238 @@ imperium_renname_effect = {
 		change_country_name = "HEKATOMNID_EMPIRE"
 	}
 }
+
+#Added extra sageguards to check that the new culture isn't already the primary culture
+set_primary_culture_cleanup_effect = {
+	#THIS = Country, so inside random country culture PREV = Country
+	#NEW_PRIMARY_CULTURE = The tag of the culture
+	#MAKE_OLD_CULTURE_INTEGRATED = Check for if the dropping culture should remain integrated or not.
+	
+	#This clears all modifiers on the old primary culture as well as the new primary culture.
+
+	if = {
+		limit = {
+			NOT = {
+				any_country_culture = { #The new culture isn't the primary culture already
+					this.culture = prev.culture
+					is_culture = $NEW_PRIMARY_CULTURE$
+				}
+			}
+		}
+		hidden_effect = { #The tooltip already says you are changing primary culture.
+			random_country_culture = { #Old Primary Culture modifier removal
+				limit = { this.culture = prev.culture }#Country culture tag
+				#Trial Rights
+				if = {
+					limit = {
+						has_country_culture_modifier = trial_right
+					}
+					remove_country_culture_modifier = trial_right
+					PREV = {
+						if = {
+							limit = { has_country_modifier = extended_trial_rights }
+							remove_country_modifier = extended_trial_rights
+						}
+					}
+				}
+				#Eased Restrictions on Citizenship
+				if = { 
+					limit = {
+						has_country_culture_modifier = citizenship_by_adoption
+					}
+					remove_country_culture_modifier = citizenship_by_adoption
+				}
+				#Protected Land Rights:
+				if = { 
+					limit = {
+						has_country_culture_modifier = land_protection
+					}
+					remove_country_culture_modifier = land_protection
+					PREV = {
+						if = {
+							limit = { has_country_modifier = extended_land_protection }
+							remove_country_modifier = extended_land_protection
+						}
+					}
+				}
+				
+				#We do not remove the exemption from Census Tax, since it has a specific decision to repeal.
+				save_scope_as = old_primary_culture
+			}
+			random_country_culture = { #New country culture
+				limit = {
+					is_culture = $NEW_PRIMARY_CULTURE$
+				}
+				if = {
+					limit = { 
+						is_integrated = no
+						NOR = {
+							has_pop_type_right = nobles #Safeguard, theoretically unnecessary
+							has_pop_type_right = citizen
+						}
+					}
+					ROOT = { integrate_country_culture = PREV }
+				}
+				#Patronage
+				if = {
+					limit = {
+						has_country_culture_modifier = patronizing_literature
+					}
+					remove_country_culture_modifier = patronizing_literature
+					PREV = {
+						if = {
+							limit = { has_country_modifier = impressive_culture_literature }
+							remove_country_modifier = impressive_culture_literature
+						}
+					}
+				}
+				#Municipal self rule should not be a thing your primary culture needs to be happy about.
+				if = {
+					limit = {
+						has_country_culture_modifier = bestowed_city_rights
+					}
+					remove_country_culture_modifier = bestowed_city_rights
+				}
+				#Promote Administrators
+				if = {
+					limit = {
+						has_country_culture_modifier = promoted_administrators_in_subcultures
+					}
+					remove_country_culture_modifier = promoted_administrators_in_subcultures
+					PREV = {
+						every_country_culture = {
+							limit = {
+								this.culture.culture_group = prev.culture.culture_group
+								has_country_culture_modifier = administrators_cultmodifier
+							}
+							remove_country_culture_modifier = administrators_cultmodifier
+						}
+					}
+				}
+				#Honor Guard
+				if = {
+					limit = {
+						has_country_culture_modifier = honor_guard
+					}
+					remove_country_culture_modifier = honor_guard
+					PREV = {
+						every_country_culture = {
+							limit = {
+								has_country_culture_modifier = honor_guard_other
+							}
+							remove_country_culture_modifier = honor_guard_other
+						}
+					}
+					#The character modifier clears itself.
+				}
+
+				#If the culture was not integrated we still need to clear stuff:
+
+				#Intermarriage:
+				if = {
+					limit = {
+						has_country_culture_modifier = right_of_marriage
+					}
+					remove_country_culture_modifier = right_of_marriage
+					PREV = {
+						if = {
+							limit = { has_country_modifier = extended_right_of_marriage }
+							remove_country_modifier = extended_right_of_marriage
+						}
+					}
+				}
+				#Torture:
+				if = {
+					limit = {
+						has_country_culture_modifier = torture_protection
+					}
+					remove_country_culture_modifier = torture_protection
+					PREV = {
+						if = {
+							limit = { has_country_modifier = extended_torture_protection }
+							remove_country_modifier = extended_torture_protection
+						}
+					}
+				}
+				#Contracts:
+				if = { 
+					limit = {
+						has_country_culture_modifier = right_to_enter_contracts
+					}
+					remove_country_culture_modifier = right_to_enter_contracts
+					PREV = {
+						if = {
+							limit = { has_country_modifier = extended_contract_rights }
+							remove_country_modifier = extended_contract_rights
+						}
+					}
+				}
+				#Inheritance:
+				if = {
+					limit = {
+						has_country_culture_modifier = inheritance_right
+					}
+					remove_country_culture_modifier = inheritance_right
+					PREV = {
+						if = {
+							limit = { has_country_modifier = extended_inheritance_right }
+							remove_country_modifier = extended_inheritance_right
+						}
+					}
+				}
+				#Colonial Occupation:
+				#We don't clear the local modifier.
+				if = {
+					limit = {
+						has_country_culture_modifier = colonia_founded
+					}
+					remove_country_culture_modifier = colonia_founded
+					PREV = {
+						if = {
+							limit = { has_country_modifier = colonia_project }
+							remove_country_modifier = colonia_project
+						}
+					}
+				}
+				#Officer rights
+				if = {
+					limit = {
+						has_country_culture_modifier = officer_right
+					}
+					remove_country_culture_modifier = officer_right
+					PREV = {
+						if = {
+							limit = { has_country_modifier = extended_officer_right }
+							remove_country_modifier = extended_officer_right
+						}
+					}
+				}
+			}
+		}
+		set_primary_culture = $NEW_PRIMARY_CULTURE$
+		set_variable = {
+			name = integrate_culture_yes_no
+			value = $MAKE_OLD_CULTURE_INTEGRATED$
+		}
+		if = {
+			limit = {
+				has_variable = integrate_culture_yes_no
+				var:integrate_culture_yes_no = yes
+			}
+			integrate_country_culture = scope:old_primary_culture
+			scope:old_primary_culture = {
+				if = {
+					limit = { has_country_culture_modifier = integration_status_removed }
+					remove_country_culture_modifier = integration_status_removed
+				}
+			}
+		}
+		else_if = {
+			limit = {
+				has_variable = integrate_culture_yes_no
+				var:integrate_culture_yes_no = no
+			}
+			#Nothing
+		}
+	}
+}

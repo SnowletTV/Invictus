@@ -6,101 +6,8 @@
     }
 }
 
-# Same rules as found on Bribe button with some additions for the AI
-ai_can_bribe_mercenary = {
-    is_mercenary = yes
-    in_command = yes
-    # OR = {
-    #     is_general = yes
-    #     is_admiral = yes
-    # }
-    # Only armies for now
-    is_general = yes
-    any_character_unit = {
-        unit_size > 0
-        in_combat = no
-    }
-
-    save_temporary_scope_as = mercenary_to_bribe
-
-    employer = {
-        NOR = {
-            tag = MER
-            this = scope:recruiting_country
-        }
-        NOT = {
-            invention = recruit_mercenary_inv
-        }
-        # Minor fog removal for AI. While not completely fair, we need to compensate somehow for it lacking intuition.
-        # If we don't, AI countries will just drain gold with no gain, making them easier targets for players - BAD!
-        trigger_if = {
-            limit = {
-                is_ai = yes
-            }
-            # Bribe AI mercs only if it's guaranteed to succeed
-            ai_should_counter_bribe_mercenary = no
-        }
-        trigger_else = {
-            # Bribe player mercs only if AI's pockets are deeper
-            treasury < scope:recruiting_country.treasury
-        }
-    }
-
-    scope:recruiting_country = {
-        war_with = scope:mercenary_to_bribe.employer
-        treasury >= scope:mercenary_to_bribe.ai_army_size_merc_estimation
-        num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
-    }
-
-    # A Mercenary cannot be enticed more than once a year
-    NOT = {
-        has_variable = merc_buyoff_cooldown
-    }
-
-    OR = {
-        location = {
-            trigger_if = {
-                limit = {
-                    exists = controller
-                }
-                NOT = {
-                    controller = {
-                        war_with = scope:recruiting_country
-                    }
-                }
-            }
-            trigger_else_if = {
-                limit = {
-                    exists = owner
-                }
-                NOT = {
-                    owner = {
-                        war_with = scope:recruiting_country
-                    }
-                }
-            }
-            trigger_else = {
-                always = yes
-            }
-        }
-        NOT = {
-            any_character_unit = {
-                morale_percentage < 0.80
-            }
-        }
-    }
-    
-    # Not exceeding the maintenance the country can cover
-    NOT = {
-        any_character_unit = {
-            unit_adjusted_maintenance > scope:recruiting_country.ai_free_mercenary_maintenance_for_bribing
-        }
-    }
-}
-
 # Scope is character
-# Country must be saved as scope:recruiting_country
-ai_can_recruit_mercenary = {
+mercenary_can_be_recruited_by_ai = {
     # Basic checks for mercenary to be eligible
     is_mercenary = yes
     exists = c:MER
@@ -124,6 +31,12 @@ ai_can_recruit_mercenary = {
             }
         }
     }
+}
+
+# Scope is character
+# Country must be saved as scope:recruiting_country
+ai_can_recruit_mercenary = {
+    mercenary_can_be_recruited_by_ai = yes
 
     # Check if mercenaries are in diplomatic range and are close enough so the AI can properly use them
     save_temporary_scope_as = mercenary_to_recruit
@@ -133,8 +46,11 @@ ai_can_recruit_mercenary = {
             ai_can_recruit_mercenary_in_territory = yes
         }
     }
+}
 
-    # Not exceeding the maintenance the country can cover
+# Not exceeding the maintenance the country can cover
+# For ai_can_recruit_mercenary specifically it's separate because of caching in ai_recruit_mercenaries
+ai_can_afford_mercenary = {
     NOT = {
         any_character_unit = {
             unit_adjusted_maintenance > scope:recruiting_country.ai_free_mercenary_maintenance
@@ -145,29 +61,7 @@ ai_can_recruit_mercenary = {
 # Scope is character
 # Country must be saved as scope:recruiting_country
 ai_can_recruit_mercenary_without_bribed = {
-    # Basic checks for mercenary to be eligible
-    is_mercenary = yes
-    exists = c:MER
-    employer = c:MER
-    # OR = {
-    #     is_general = yes
-    #     is_admiral = yes
-    # }
-    # Only armies for now
-    is_general = yes
-    in_command = yes
-    any_character_unit = {
-        unit_size > 0
-    }
-    NOT = {
-        any_character_unit = {
-            OR = {
-                in_combat = yes
-                is_moving = yes
-                strength_percentage < 1
-            }
-        }
-    }
+    mercenary_can_be_recruited_by_ai = yes
 
     # Check if mercenaries are in diplomatic range and are close enough so the AI can properly use them
     save_temporary_scope_as = mercenary_to_recruit
@@ -297,7 +191,8 @@ ai_can_recruit_mercenary_in_territory = {
     }
 
     # Normally mercs are available by diplomatic range, but a proper check would be to compare distance from every
-    # province of the recruiting country, which is very expensive for such a frequently used trigger. Instead do a # series of simpler checks which should give us a good enough result, as mercs don't need a super precise one.
+    # province of the recruiting country, which is very expensive for such a frequently used trigger. Instead do a
+    # series of simpler checks which should give us a good enough result, as mercs don't need a super precise one.
     OR = {
         # First check if we own the territory, which is the easiest scenario
         AND = {
@@ -406,6 +301,98 @@ ai_can_recruit_mercenary_in_territory = {
                     is_island_area = no
                 }
             }
+        }
+    }
+}
+
+# Same rules as found on Bribe button with some additions for the AI
+ai_can_bribe_mercenary = {
+    is_mercenary = yes
+    in_command = yes
+    # OR = {
+    #     is_general = yes
+    #     is_admiral = yes
+    # }
+    # Only armies for now
+    is_general = yes
+    any_character_unit = {
+        unit_size > 0
+        in_combat = no
+    }
+
+    save_temporary_scope_as = mercenary_to_bribe
+
+    employer = {
+        NOR = {
+            tag = MER
+            this = scope:recruiting_country
+        }
+        NOT = {
+            invention = recruit_mercenary_inv
+        }
+        # Minor fog removal for AI. While not completely fair, we need to compensate somehow for it lacking intuition.
+        # If we don't, AI countries will just drain gold with no gain, making them easier targets for players - BAD!
+        trigger_if = {
+            limit = {
+                is_ai = yes
+            }
+            # Bribe AI mercs only if it's guaranteed to succeed
+            ai_should_counter_bribe_mercenary = no
+        }
+        trigger_else = {
+            # Bribe player mercs only if AI's pockets are deeper
+            treasury < scope:recruiting_country.treasury
+        }
+    }
+
+    scope:recruiting_country = {
+        war_with = scope:mercenary_to_bribe.employer
+        treasury >= scope:mercenary_to_bribe.ai_army_size_merc_estimation
+        num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
+    }
+
+    # A Mercenary cannot be enticed more than once a year
+    NOT = {
+        has_variable = merc_buyoff_cooldown
+    }
+
+    OR = {
+        location = {
+            trigger_if = {
+                limit = {
+                    exists = controller
+                }
+                NOT = {
+                    controller = {
+                        war_with = scope:recruiting_country
+                    }
+                }
+            }
+            trigger_else_if = {
+                limit = {
+                    exists = owner
+                }
+                NOT = {
+                    owner = {
+                        war_with = scope:recruiting_country
+                    }
+                }
+            }
+            trigger_else = {
+                always = yes
+            }
+        }
+        NOT = {
+            any_character_unit = {
+                morale_percentage < 0.80
+            }
+        }
+    }
+    
+    # Not exceeding the maintenance the country can cover
+    NOT = {
+        any_character_unit = {
+            unit_adjusted_maintenance > scope:recruiting_country.ai_free_mercenary_maintenance_for_bribing
         }
     }
 }
@@ -743,5 +730,22 @@ ai_should_counter_bribe_mercenary = {
     # Don't counter bribe mercenaries that are seemingly not worth it
     trigger_else = {
         always = no
+    }
+}
+
+is_attacker_in_war_of_independence = {
+    war = yes
+	save_temporary_scope_as = country_with_independence_war
+    any_current_war = {
+        has_non_empty_variable_list = {
+            name = war_of_independence_for_countries
+        }
+        is_target_in_variable_list = {
+            name = war_of_independence_for_countries
+            target = scope:country_with_independence_war
+        }
+        any_war_attacker = {
+            this = scope:country_with_independence_war
+        }
     }
 }

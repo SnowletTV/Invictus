@@ -1,0 +1,725 @@
+﻿country_fortress_building_cost = {
+    # Fort base cost, must by in sync with the real one
+    value = 160
+    multiply = {
+        value = 1
+        add = modifier:build_cost
+        add = modifier:fortress_building_cost
+    }
+}
+
+state_fort_limit_svalue = {
+    value = define:NCountry|BASE_FORT_LIMIT_PER_STATE
+    capital_scope = {
+        add = modifier:local_fort_limit
+    }
+    owner = {
+        add = modifier:fort_limit
+    }
+}
+
+state_fort_limit_used = {
+    value = 0
+    every_state_province = {
+        limit = {
+            fort_level > 0
+        }
+        add = define:NCountry|FIRST_FORT_COST_IN_POINTS
+        subtract = 1
+        min = 0
+        add = fort_level
+    }
+}
+
+state_fort_limit_projected = {
+    if = {
+        limit = {
+            has_variable = cached_state_fort_limit_projected
+        }
+        value = var:cached_state_fort_limit_projected
+    }
+    else = {
+        value = 0
+        every_state_province = {
+            limit = {
+                OR = {
+                    fort_level > 0
+                    has_specific_construction = fortress_building
+                }
+            }
+            add = define:NCountry|FIRST_FORT_COST_IN_POINTS
+            subtract = 1
+            min = 0
+            add = fort_level
+            if = {
+                limit = {
+                    has_specific_construction = fortress_building
+                }
+                add = 1
+            }
+        }
+    }
+}
+
+# Scope is territory to where rebuilding will be performed, is based on projected limit
+state_fort_limit_after_rebuilding = {
+    value = state.state_fort_limit_projected
+
+    # If optimized territory is in the same state, reduce fort limit by equivalent to 1 level
+    scope:territory_under_fort_optimization = {
+        if = {
+            limit = {
+                state = prev.state
+                OR = {
+                    fort_level > 0
+                    has_specific_construction = fortress_building
+                }
+            }
+            if = {
+                limit = {
+                    trigger_if = {
+                        limit = {
+                            has_specific_construction = fortress_building
+                        }
+                        fort_level = 0
+                    }
+                    trigger_else = {
+                        fort_level = 1
+                    }
+                }
+                subtract = define:NCountry|FIRST_FORT_COST_IN_POINTS
+            }
+            else = {
+                subtract = 1
+            }
+        }
+    }
+
+    if = {
+        limit = {
+            OR = {
+                fort_level > 0
+                has_specific_construction = fortress_building
+            }
+        }
+        add = 1
+    }
+    else = {
+        add = define:NCountry|FIRST_FORT_COST_IN_POINTS
+    }
+}
+
+territory_priority_for_state_capital = {
+    # Resolve draws by territory ID
+    value = territory_priority_by_id
+
+    # 1000000 x1 for city, x2 for state capital city, x3 for metropolis, x4 for state capital metropolis
+    if = {
+        limit = {
+            has_city_status = yes
+        }
+        add = 1000000
+        if = {
+            limit = {
+                is_state_capital = yes
+            }
+            add = 1000000
+        }
+        if = {
+            limit = {
+                has_province_rank = city_metropolis
+            }
+            add = 2000000
+        }
+    }
+
+    # 100000 x1-x8 for fort levels, but x9 instead if state capital and has any fort level
+    if = {
+        limit = {
+            num_of_fortress_building_projected > 0
+        }
+        if = {
+            limit = {
+                is_state_capital = yes
+            }
+            add = 900000
+        }
+        else = {
+            add = {
+                value = 100000
+                multiply = {
+                    value = num_of_fortress_building_projected
+                    max = 8
+                }
+            }
+        }
+    }
+
+    # 10000 x0-8 based on population capacity modifier from terrain
+    if = {
+        limit = {
+            OR = {
+                terrain = mountain
+                terrain = desert
+            }
+        }
+        add = 20000
+    }
+    else_if = {
+        limit = {
+            OR = {
+                terrain = jungle
+                terrain = desert_hills
+                terrain = marsh
+                terrain = forest
+            }
+        }
+        add = 40000
+    }
+    else_if = {
+        limit = {
+            OR = {
+                terrain = plains
+                terrain = hills
+            }
+        }
+        add = 60000
+    }
+    else_if = {
+        limit = {
+            OR = {
+                terrain = oasis
+                terrain = flood_plain
+                terrain = farmland
+            }
+        }
+        add = 80000
+    }
+
+    # 10000 x3 if already state capital, counting its terrain as 1.5 tiers higher
+    if = {
+        limit = {
+            is_state_capital = yes
+        }
+        # Don't overflow 10000 range if highest tier
+        if = {
+            limit = {
+                OR = {
+                    terrain = oasis
+                    terrain = flood_plain
+                    terrain = farmland
+                }
+            }
+            add = 10000
+        }
+        else = {
+            add = 30000
+        }
+    }
+
+    # 5000 if can't have mine or farm
+    if = {
+        limit = {
+            is_territory_with_preference_for_mine_or_farm = no
+        }
+        add = 5000
+    }
+
+    # 1000 x1 if holy site, x2 if country religion, x3 if state capital holy site, or x4 instead if country religion
+    if = {
+        limit = {
+            is_holy_site = yes
+        }
+        add = 1000
+        if = {
+            limit = {
+                is_holy_site_of_religion = owner.religion
+            }
+            add = 1000
+        }
+        if = {
+            limit = {
+                is_state_capital = yes
+            }
+            add = 2000
+        }
+    }
+
+    # 1-990 for territory population, but with state capital always winning
+    if = {
+        limit = {
+            is_state_capital = yes
+        }
+        add = 995
+    }
+    else = {
+        add = {
+            value = total_population
+            max = 990
+        }
+    }
+}
+
+monthly_state_loyalty_to_move_capital = {
+    # Loyalty 70 is considered ok to make a move if monthly change is 0
+    value = 70
+    # Everything differing from it allows for negative or requires positive monthly change
+    subtract = state_level_loyalty
+    divide = 200 # Same as multiply = 0.005
+
+    # Current state loyalty    Min monthly change must be >=
+    # 100                      -0.15
+    # 90                       -0.10
+    # 80                       -0.05
+    # 70                       -0.00
+    # 60                       +0.05
+    # 50                       +0.10
+}
+
+# Alternative to vanilla province_capital_price_svalue without scoping to root
+province_capital_price_territory_scope = {
+	value = 30
+	if = {
+		limit = {
+			has_province_rank = city_metropolis
+		}
+		subtract = 10
+	}
+	if = {
+		limit = {
+			has_city_status = yes
+		}
+		subtract = 10
+	}
+}
+
+level_of_giga_fort_wanted = 5
+
+level_of_mega_fort_wanted = 3
+
+fort_limit_per_giga_fort = {
+    value = define:NCountry|FIRST_FORT_COST_IN_POINTS
+    add = {
+        value = level_of_giga_fort_wanted
+        subtract = 1
+    }
+}
+
+fort_limit_per_mega_fort = {
+    value = define:NCountry|FIRST_FORT_COST_IN_POINTS
+    add = {
+        value = level_of_mega_fort_wanted
+        subtract = 1
+    }
+}
+
+fort_limit_per_single_fort = {
+    value = define:NCountry|FIRST_FORT_COST_IN_POINTS
+}
+
+fort_limit_for_mega_and_single_forts = {
+    value = fort_limit_per_single_fort
+    add = fort_limit_per_mega_fort
+}
+
+ai_fort_level_wanted_in_territory = {
+    value = 0
+    if = {
+        limit = {
+            exists = state
+        }
+        state = {
+            if = {
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = ai_territories_to_build_giga_fort
+                    }
+                    is_target_in_variable_list = {
+                        name = ai_territories_to_build_giga_fort
+                        target = prev
+                    }
+                }
+                add = level_of_giga_fort_wanted
+            }
+            else_if = {
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = ai_territories_to_build_mega_fort
+                    }
+                    is_target_in_variable_list = {
+                        name = ai_territories_to_build_mega_fort
+                        target = prev
+                    }
+                }
+                add = level_of_mega_fort_wanted
+            }
+            else_if = {
+                limit = {
+                    has_non_empty_variable_list = {
+                        name = ai_territories_to_build_single_fort
+                    }
+                    is_target_in_variable_list = {
+                        name = ai_territories_to_build_single_fort
+                        target = prev
+                    }
+                }
+                add = 1
+            }
+        }
+    }
+}
+
+state_fort_limit_for_wanted_forts = {
+    value = 0
+    if = {
+        limit = {
+            has_non_empty_variable_list = {
+                name = ai_territories_to_build_giga_fort
+            }
+        }
+        every_in_list = {
+            variable = ai_territories_to_build_giga_fort
+            add = {
+                value = level_of_giga_fort_wanted
+                subtract = 1
+                add = define:NCountry|FIRST_FORT_COST_IN_POINTS
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_non_empty_variable_list = {
+                name = ai_territories_to_build_mega_fort
+            }
+        }
+        every_in_list = {
+            variable = ai_territories_to_build_mega_fort
+            add = {
+                value = level_of_mega_fort_wanted
+                subtract = 1
+                add = define:NCountry|FIRST_FORT_COST_IN_POINTS
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_non_empty_variable_list = {
+                name = ai_territories_to_build_single_fort
+            }
+        }
+        every_in_list = {
+            variable = ai_territories_to_build_single_fort
+            add = define:NCountry|FIRST_FORT_COST_IN_POINTS
+        }
+    }
+}
+
+treasury_after_cancelling_fort = {
+    value = treasury
+    add = country_fortress_building_cost
+}
+
+treasury_after_removing_fort = {
+    value = treasury
+    add = {
+        value = country_fortress_building_cost
+        multiply = define:NProvince|DESTROY_BUILDING_MONEY_RETURN
+    }
+}
+
+building_slots_required_for_single_fort = {
+    value = 1
+    subtract = num_of_fortress_building_projected
+    min = 0
+    max = 1
+}
+
+building_slots_required_for_mega_fort = {
+    value = 3
+    subtract = num_of_fortress_building_projected
+    min = 0
+    max = 3
+}
+
+building_slots_required_for_giga_fort_minus_1 = {
+    value = 4
+    subtract = num_of_fortress_building_projected
+    min = 0
+    max = 4
+}
+
+building_slots_required_for_giga_fort = {
+    value = 5
+    subtract = num_of_fortress_building_projected
+    min = 0
+    max = 5
+}
+
+territory_priority_by_population = {
+    value = territory_priority_by_id
+    add = {
+        value = total_population
+        max = 997
+    }
+}
+
+territory_priority_for_state_redoubt = {
+    # If capital can have fort, it always hosts state redoubt
+    if = {
+        limit = {
+            is_state_capital_double_checked = yes
+        }
+        add = 10000000
+    }
+
+    # Most important is having fort already to avoid wasting money on rebuilding
+    if = {
+        limit = {
+            num_of_fortress_building_projected > 0
+        }
+        add = {
+            value = 1000000
+            multiply = {
+                value = num_of_fortress_building_projected
+                max = 9
+            }
+        }
+    }
+
+    add = territory_priority_for_having_fort
+}
+
+territory_priority_for_building_fort = {
+    if = {
+        limit = {
+            has_variable = territory_priority_for_building_fort
+        }
+        value = var:territory_priority_for_building_fort
+    }
+    else = {
+        # First priority is ensuring capital redoubt has at least some fort
+        if = {
+            limit = {
+                state = {
+                    is_capital_state = yes
+                }
+                ai_territory_is_redoubt_of_state = yes
+                num_of_fortress_building_projected < 1
+            }
+            add = 100000000
+        }
+
+        # Focus on building all the wanted forts, anything extra is a luxury
+        if = {
+            limit = {
+                ai_fort_level_is_lower_than_wanted = yes
+            }
+            add = 40000000
+        }
+
+        # Building above mega fort is very low in the priority list as well
+        if = {
+            limit = {
+                num_of_fortress_building_projected < level_of_mega_fort_wanted
+            }
+            add = 20000000
+        }
+
+        # Higher priority for building in the same state
+        # This svalue will be cached, so this priority is applied in order_by
+        # if = {
+        #     limit = {
+        #         state = scope:territory_under_fort_optimization.state
+        #     }
+        #     add = 10000000
+        # }
+
+        # Perimeter, important, lvl 0     -  7
+        # Perimeter, unimportant, lvl 0   -  6
+        # Perimeter, important, lvl 1+    -  5
+        # Perimeter, unimportant, lvl 1+  -  4
+        # Non-perimeter, lvl 0            -  2
+        # Non-perimeter, lvl 1+           -  0
+
+        # Prefer filling all perimeter states before others
+        if = {
+            limit = {
+                ai_territory_state_is_perimeter = yes
+            }
+            add = 4000000
+
+            # Prefer filling all important states before others
+            if = {
+                limit = {
+                    ai_territory_state_is_important = yes
+                }
+                add = 1000000
+            }
+        }
+
+        # Prefer territories that have no forts
+        if = {
+            limit = {
+                num_of_fortress_building_projected < 1
+            }
+            add = 2000000
+        }
+
+        add = territory_priority_for_having_fort
+    }
+}
+
+territory_priority_for_having_fort = {
+    if = {
+        limit = {
+            has_variable = territory_priority_for_having_fort
+        }
+        value = var:territory_priority_for_having_fort
+    }
+    else = {
+        # Resolve draws by territory ID
+        value = territory_priority_by_id
+
+        # 100000 x1-3 if a city or maybe even a metropolis
+        if = {
+            limit = {
+                has_city_status = yes
+            }
+            add = 100000
+
+            # Higher priority if large city or heavily urbanized state
+            if = {
+                limit = {
+                    OR = {
+                        # Decently high population in the city itself to warrant a fort
+                        total_population >= population_for_high_prio_city_fort
+
+                        # Somewhat populated state capital city and there are multiple more such cities in state
+                        AND = {
+                            is_state_capital_double_checked = yes
+                            total_population >= population_for_high_prio_urban_fort
+                            state = {
+                                any_state_province = {
+                                    count >= 3
+                                    has_city_status = yes
+                                    total_population >= 26 # Equivalent to level 3 fort requirements
+                                }
+                            }
+                        }
+                    }
+                }
+                add = 100000
+            }
+
+            # Higher priority if metropolis
+            if = {
+                limit = {
+                    has_province_rank = city_metropolis
+                }
+                add = 100000
+            }
+        }
+
+        # 20000 if makes a good fort due to map setup reasons
+        if = {
+            limit = {
+                ai_territory_is_good_for_defense = yes
+            }
+            add = 20000
+        }
+
+        # 10000 if can't have mine or farm
+        if = {
+            limit = {
+                is_territory_with_preference_for_mine_or_farm = no
+            }
+            add = 10000
+        }
+
+        # 1000 x0-4 based on defending modifiers from terrain
+        if = {
+            limit = {
+                OR = {
+                    terrain = flood_plain
+                    terrain = oasis
+                    terrain = farmland
+                }
+            }
+            add = 1000
+        }
+        else_if = {
+            limit = {
+                OR = {
+                    terrain = desert
+                    terrain = jungle
+                }
+            }
+            add = 2000
+        }
+        else_if = {
+            limit = {
+                OR = {
+                    terrain = hills
+                    terrain = forest
+                    terrain = marsh
+                }
+            }
+            add = 3000
+        }
+        else_if = {
+            limit = {
+                OR = {
+                    terrain = desert_hills
+                    terrain = mountain
+                }
+            }
+            add = 4000
+        }
+
+        # Population as a main draw resolver
+        add = {
+            value = total_population
+            max = 995
+        }
+    }
+}
+
+population_for_high_prio_city_fort = {
+    value = 45
+    subtract = {
+        value = 3
+        multiply = num_of_fortress_building_projected
+        max = 15
+    }
+}
+
+population_for_high_prio_urban_fort = {
+    value = 35
+    subtract = {
+        value = 3
+        multiply = num_of_fortress_building_projected
+        max = 15
+    }
+}
+
+priority_threshold_for_single_fort = 4000
+
+priority_threshold_for_mega_fort = 120000
+
+# Each next rebuilding in same iteration has higher treasury requirements
+treasury_for_rebuilding_more_forts = {
+    value = country_fortress_building_cost
+    add = {
+        value = local_var:num_rebuilt_forts_this_iteration
+        multiply = country_fortress_building_cost
+    }
+}
+
+# Requires local_var:country_tax_income_without_modifiers to be set
+country_fort_maintenance_budget = {
+    value = local_var:country_tax_income_without_modifiers
+    multiply = {
+        value = define:NAI|FORT_BUDGET
+        divide = 100
+    }
+}

@@ -16,67 +16,7 @@ REPLACE_RULES = [
     },
     {
         "pattern": {"multiply": "6", "subtract": None},
-        "max": "-20",
-        "min": "-2000",
-        "flag": "floor = yes"
-    },
-    {
-        "pattern": {"multiply": "6", "add": None},
-        "max": "1000",
-        "min": "10",
-        "flag": "ceiling = yes"
-    },
-    {
-        "pattern": {"multiply": "-6", "subtract": None},
-        "max": "1000",
-        "min": "10",
-        "flag": "ceiling = yes"
-    },
-    {
-        "pattern": {"multiply": "-12", "add": None},
-        "max": "-20",
-        "min": "-4000",
-        "flag": "floor = yes"
-    },
-    {
-        "pattern": {"multiply": "12", "subtract": None},
-        "max": "-20",
-        "min": "-4000",
-        "flag": "floor = yes"
-    },
-    {
-        "pattern": {"multiply": "12", "add": None},
         "max": "2000",
-        "min": "20",
-        "flag": "ceiling = yes"
-    },
-    {
-        "pattern": {"multiply": "-12", "subtract": None},
-        "max": "2000",
-        "min": "20",
-        "flag": "ceiling = yes"
-    },
-    {
-        "pattern": {"multiply": "-18", "add": None},
-        "max": "-20",
-        "min": "-6000",
-        "flag": "floor = yes"
-    },
-    {
-        "pattern": {"multiply": "18", "subtract": None},
-        "max": "-20",
-        "min": "-6000",
-        "flag": "floor = yes"
-    },
-    {
-        "pattern": {"multiply": "18", "add": None},
-        "max": "3000",
-        "min": "20",
-        "flag": "ceiling = yes"
-    },
-    {
-        "pattern": {"multiply": "-18", "subtract": None},
-        "max": "3000",
         "min": "20",
         "flag": "ceiling = yes"
     },
@@ -180,26 +120,17 @@ def normalize_block(original_block: str):
                     # MAX
                     target_max = int(rule["max"])
                     existing_max = int(block_kv.get("max", target_max))
-                    if flag_key.strip() == "floor":
-                        # floor → max: pick highest unless existing is already more extreme
-                        if abs(existing_max) > abs(target_max):
-                            max_val = existing_max
-                        else:
-                            max_val = max(existing_max, target_max)
-                    else:  # ceiling
+                    if target_max < 0:
                         max_val = min(existing_max, target_max)
-
+                    else:
+                        max_val = min(existing_max, target_max)
                     # MIN
                     target_min = int(rule["min"])
                     existing_min = int(block_kv.get("min", target_min))
-                    if flag_key.strip() == "ceiling":
-                        # ceiling → min: pick lowest unless existing is already more extreme
-                        if abs(existing_min) > abs(target_min):
-                            min_val = existing_min
-                        else:
-                            min_val = min(existing_min, target_min)
-                    else:  # floor
+                    if target_min < 0:
                         min_val = max(existing_min, target_min)
+                    else:
+                        min_val = min(existing_min, target_min)
                     # insert max/min
                     rebuilt.append(("max", str(max_val)))
                     rebuilt.append(("min", str(min_val)))

@@ -16,9 +16,21 @@ REPLACE_RULES = [
     },
     {
         "pattern": {"multiply": "6", "subtract": None},
-        "max": "2000",
-        "min": "20",
+        "max": "-20",
+        "min": "-2000",
         "flag": "ceiling = yes"
+    },
+    {
+        "pattern": {"multiply": "6", "add": None},
+        "max": "1000",
+        "min": "10",
+        "flag": "ceiling = yes"
+    },
+    {
+        "pattern": {"multiply": "-6", "subtract": None},
+        "max": "1000",
+        "min": "10",
+        "flag": "floor = yes"
     },
     {
         "pattern": {"multiply": "-12", "add": None},
@@ -28,9 +40,21 @@ REPLACE_RULES = [
     },
     {
         "pattern": {"multiply": "12", "subtract": None},
-        "max": "4000",
+        "max": "-20",
+        "min": "-4000",
+        "flag": "ceiling = yes"
+    },
+    {
+        "pattern": {"multiply": "12", "add": None},
+        "max": "2000",
         "min": "20",
         "flag": "ceiling = yes"
+    },
+    {
+        "pattern": {"multiply": "-12", "subtract": None},
+        "max": "2000",
+        "min": "20",
+        "flag": "floor = yes"
     },
     {
         "pattern": {"multiply": "-18", "add": None},
@@ -40,9 +64,21 @@ REPLACE_RULES = [
     },
     {
         "pattern": {"multiply": "18", "subtract": None},
-        "max": "6000",
+        "max": "-20",
+        "min": "-6000",
+        "flag": "ceiling = yes"
+    },
+    {
+        "pattern": {"multiply": "18", "add": None},
+        "max": "3000",
         "min": "20",
         "flag": "ceiling = yes"
+    },
+    {
+        "pattern": {"multiply": "-18", "subtract": None},
+        "max": "3000",
+        "min": "20",
+        "flag": "floor = yes"
     },
 ]
 # ----------------------------------------
@@ -145,7 +181,7 @@ def normalize_block(original_block: str):
                     target_max = int(rule["max"])
                     existing_max = int(block_kv.get("max", target_max))
                     if target_max < 0:
-                        max_val = min(existing_max, target_max)
+                        max_val = max(existing_max, target_max)
                     else:
                         max_val = min(existing_max, target_max)
                     # MIN

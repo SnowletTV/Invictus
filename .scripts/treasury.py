@@ -20,6 +20,30 @@ REPLACE_RULES = [
         "min": "20",
         "flag": "ceiling = yes"
     },
+    {
+        "pattern": {"multiply": "-12", "add": None},
+        "max": "-20",
+        "min": "-4000",
+        "flag": "floor = yes"
+    },
+    {
+        "pattern": {"multiply": "12", "subtract": None},
+        "max": "4000",
+        "min": "20",
+        "flag": "ceiling = yes"
+    },
+    {
+        "pattern": {"multiply": "-18", "add": None},
+        "max": "-20",
+        "min": "-6000",
+        "flag": "floor = yes"
+    },
+    {
+        "pattern": {"multiply": "18", "subtract": None},
+        "max": "6000",
+        "min": "20",
+        "flag": "ceiling = yes"
+    },
 ]
 # ----------------------------------------
 

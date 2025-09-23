@@ -19,11 +19,11 @@
 #     roads between junctions of one principal and another.
 # [3] To rule is to own it yourself or by having a permanent subject (can't cancel subject relations) that owns it.
 
-ai_choose_locations_and_build_roads = {
+ai_perform_custom_road_building = {
     if = {
         limit = {
             NOT = {
-                has_variable = ai_chose_locations_and_built_roads
+                has_variable = ai_performed_custom_road_building
             }
             # Reverse variable - if it's set, it means the game rule for road building was un-checked
             NOT = {
@@ -33,13 +33,13 @@ ai_choose_locations_and_build_roads = {
                 NOT = {
                     has_global_variable = game_rule_ai_road_building_only_major_powers
                 }
-                rank >= major_power
+                rank_by_num_territories >= major_power
             }
             OR = {
                 NOT = {
                     has_global_variable = game_rule_ai_road_building_only_great_powers
                 }
-                rank >= great_power
+                rank_by_num_territories >= great_power
             }
             is_ai = yes
             has_land = yes
@@ -48,7 +48,7 @@ ai_choose_locations_and_build_roads = {
             ai_country_can_afford_to_build_5_roads = yes
         }
         set_variable = {
-            name = ai_chose_locations_and_built_roads
+            name = ai_performed_custom_road_building
             days = 345 # 11.5 months - every year
         }
 
@@ -96,7 +96,7 @@ ai_choose_locations_and_build_roads = {
         # Connect junctions of own territories first, then of subject territories
         if = {
             limit = {
-                can_only_build_low_density_roads = no
+                ai_can_only_build_low_density_roads = no
             }
             ai_build_roads_algorithm_junctions = {
                 owned = 1
@@ -115,7 +115,7 @@ ai_choose_locations_and_build_roads = {
         }
         if = {
             limit = {
-                can_only_build_low_density_roads = no
+                ai_can_only_build_low_density_roads = no
             }
             ai_build_roads_algorithm_intrastate = {
                 owned = 1
@@ -130,7 +130,7 @@ ai_choose_locations_and_build_roads = {
         }
         if = {
             limit = {
-                can_only_build_low_density_roads = no
+                ai_can_only_build_low_density_roads = no
             }
             ai_build_roads_algorithm_intrastate = {
                 owned = 0
@@ -142,6 +142,7 @@ ai_choose_locations_and_build_roads = {
         every_owned_province = {
             remove_variable = num_of_roads_towards_neighbors_cached
         }
+        clear_variable_list = country_territories_for_confluence
         every_subject = {
             limit = {
                 ai_allowed_to_build_roads_in_subject = yes
@@ -149,6 +150,7 @@ ai_choose_locations_and_build_roads = {
             every_owned_province = {
                 remove_variable = num_of_roads_towards_neighbors_cached
             }
+            clear_variable_list = country_territories_for_confluence
         }
 
         # Clear junctions cached on state level
@@ -264,6 +266,18 @@ ai_cache_roads_towards_neighbors = {
         name = num_of_roads_towards_neighbors_cached
         value = num_of_roads_towards_neighbors
     }
+    # Confluence eligibility depends on num roads, and caching them beforehand is very beneficial for performance
+    if = {
+        limit = {
+            ai_territory_is_eligible_for_confluence = yes
+        }
+        owner = {
+            add_to_variable_list = {
+                name = country_territories_for_confluence
+                target = prev
+            }
+        }
+    }
 }
 
 # If state contains a junction, save it to junction_territory_in_state variable in state capital
@@ -377,11 +391,11 @@ ai_cache_neighbor_states_to_connect = {
 ai_cache_governorships_to_connect = {
     if = {
         limit = {
-            should_build_roads_in_ruled_governorship = yes
+            ai_can_build_roads_in_ruled_governorship = yes
 
             # Late game optimization - ignore states with a lot of roads built already
             capital_scope.var:junction_territory_in_state = {
-                num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
+                num_of_roads_towards_neighbors < ai_max_neighbor_roads_for_road_building
             }
         }
         save_scope_as = governorship_to_check_neighbors
@@ -418,7 +432,7 @@ ai_cache_governorships_to_connect = {
                 variable = potential_governorship_neighbors
                 limit = {
                     ruled_by_road_building_country = yes
-                    should_build_roads_in_ruled_governorship = yes
+                    ai_can_build_roads_in_ruled_governorship = yes
 
                     any_governorship_state = {
                         state_is_target_for_road_building = yes
@@ -461,7 +475,7 @@ ai_cache_governorships_to_connect = {
 ai_build_roads_algorithm_principals = {
     if = {
         limit = {
-            # Recheck if we haven't run out of money after previous road building
+            # Ensure we had no signs to assume that we don't have enough money for road building
             local_var:not_enough_gold_for_road_building = 0
             # If going for ruled territories, ensure there are qualifying subjects
             OR = {
@@ -488,20 +502,20 @@ ai_build_roads_algorithm_principals = {
                     }
                 }
                 capital_scope.state = {
-                    should_build_roads_in_ruled_state = yes
+                    ai_can_build_roads_in_ruled_state = yes
                 }
             }
             order_by = governorship_priority_by_closeness_to_capital
             min = 0
             check_range_bounds = no
 
-            # Recheck if we haven't run out of money after previous road building
+            # Ensure we haven't concluded that we don't have enough money for road building
             if = {
                 limit = {
-                    local_var:not_enough_gold_for_road_building = 0
+                    local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
                     # Late game optimization - ignore states with a lot of roads built already
                     capital_scope.var:junction_territory_in_state = {
-                        num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
+                        num_of_roads_towards_neighbors < ai_max_neighbor_roads_for_road_building
                     }
                 }
                 ai_fetch_principals_and_build_roads = yes
@@ -514,7 +528,7 @@ ai_build_roads_algorithm_principals = {
 ai_build_roads_algorithm_junctions = {
     if = {
         limit = {
-            # Recheck if we haven't run out of money after previous road building
+            # Ensure we had no signs to assume that we don't have enough money for road building
             local_var:not_enough_gold_for_road_building = 0
             # If going for ruled territories, ensure there are qualifying subjects
             OR = {
@@ -540,19 +554,19 @@ ai_build_roads_algorithm_junctions = {
                         }
                     }
                 }
-                should_build_roads_in_ruled_state = yes
+                ai_can_build_roads_in_ruled_state = yes
             }
             order_by = state_priority_by_closeness_to_capital
             min = 0
             check_range_bounds = no
 
-            # Recheck if we haven't run out of money after previous road building
+            # Ensure we haven't concluded that we don't have enough money for road building
             if = {
                 limit = {
-                    local_var:not_enough_gold_for_road_building = 0
+                    local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
                     # Late game optimization - ignore states with a lot of roads built already
                     capital_scope.var:junction_territory_in_state = {
-                        num_of_roads_towards_neighbors < no_road_building_if_has_this_many_roads
+                        num_of_roads_towards_neighbors < ai_max_neighbor_roads_for_road_building
                     }
                 }
                 ai_fetch_junctions_and_build_roads = {
@@ -570,7 +584,7 @@ ai_build_roads_algorithm_junctions = {
 ai_build_roads_algorithm_confluence = {
     if = {
         limit = {
-            # Recheck if we haven't run out of money after previous road building
+            # Ensure we had no signs to assume that we don't have enough money for road building
             local_var:not_enough_gold_for_road_building = 0
             # If going for ruled territories, ensure there are qualifying subjects
             OR = {
@@ -584,23 +598,17 @@ ai_build_roads_algorithm_confluence = {
             limit = {
                 $owned$ = 1
             }
-            every_country_state = {
+            if = {
                 limit = {
-                    should_build_roads_in_ruled_state = yes
+                    has_non_empty_variable_list = {
+                        name = country_territories_for_confluence
+                    }
                 }
-                every_state_province = {
+                every_in_list = {
+                    variable = country_territories_for_confluence
                     limit = {
-                        # Requirements for initial territory boil down to this, so check it beforehand
-                        OR = {
-                            num_of_roads_towards_neighbors = 1
-                            AND = {
-                                num_of_roads_towards_neighbors = 2
-                                OR = {
-                                    is_state_capital = yes
-                                    has_city_status = yes
-                                    fort_level > 0
-                                }
-                            }
+                        state = {
+                            ai_can_build_roads_in_ruled_state = yes
                         }
                     }
                     add_to_local_variable_list = {
@@ -616,31 +624,21 @@ ai_build_roads_algorithm_confluence = {
             }
             every_subject = {
                 limit = {
+                    has_non_empty_variable_list = {
+                        name = country_territories_for_confluence
+                    }
                     ai_allowed_to_build_roads_in_subject = yes
                 }
-                every_country_state = {
+                every_in_list = {
+                    variable = country_territories_for_confluence
                     limit = {
-                        should_build_roads_in_ruled_state = yes
+                        state = {
+                            ai_can_build_roads_in_ruled_state = yes
+                        }
                     }
-                    every_state_province = {
-                        limit = {
-                            # Requirements for initial territory boil down to this, so check it beforehand
-                            OR = {
-                                num_of_roads_towards_neighbors = 1
-                                AND = {
-                                    num_of_roads_towards_neighbors = 2
-                                    OR = {
-                                        is_state_capital = yes
-                                        has_city_status = yes
-                                        fort_level > 0
-                                    }
-                                }
-                            }
-                        }
-                        add_to_local_variable_list = {
-                            name = territories_for_confluence_phase
-                            target = this
-                        }
+                    add_to_local_variable_list = {
+                        name = territories_for_confluence_phase
+                        target = this
                     }
                 }
             }
@@ -658,10 +656,10 @@ ai_build_roads_algorithm_confluence = {
                 min = 0
                 check_range_bounds = no
 
-                # Recheck if we haven't run out of money after previous road building
+                # Ensure we haven't concluded that we don't have enough money for road building
                 if = {
                     limit = {
-                        local_var:not_enough_gold_for_road_building = 0
+                        local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
                     }
 
                     # Save requirements into local variables as an alternative to checking any_neighbor_province
@@ -756,16 +754,16 @@ ai_build_roads_algorithm_confluence = {
                                 territory = scope:current_road_building_territory
                             }
                             
-                            # If we can't afford any serious amount of roads after this, change the variable as well
+                            # If we can't afford a single roads after this, set treasury variable to max attempts
                             if = {
                                 limit = {
                                     scope:current_road_building_country = {
-                                        ai_country_can_afford_to_build_5_roads = no
+                                        ai_country_can_afford_to_build_1_road = no
                                     }
                                 }
-                                set_local_variable = {
+                                change_local_variable = {
                                     name = not_enough_gold_for_road_building
-                                    value = 1
+                                    add = ai_road_attempts_with_low_treasury
                                 }
                             }
                         }
@@ -787,7 +785,7 @@ ai_build_roads_algorithm_confluence = {
 ai_build_roads_algorithm_intrastate = {
     if = {
         limit = {
-            # Recheck if we haven't run out of money after previous road building
+            # Ensure we had no signs to assume that we don't have enough money for road building
             local_var:not_enough_gold_for_road_building = 0
             # If going for ruled territories, ensure there are qualifying subjects
             OR = {
@@ -803,7 +801,7 @@ ai_build_roads_algorithm_intrastate = {
             }
             every_country_state = {
                 limit = {
-                    should_build_roads_in_ruled_state = yes
+                    ai_can_build_roads_in_ruled_state = yes
                     state_contains_junction_of_its_area = yes
                 }
                 add_to_local_variable_list = {
@@ -822,7 +820,7 @@ ai_build_roads_algorithm_intrastate = {
                 }
                 every_country_state = {
                     limit = {
-                        should_build_roads_in_ruled_state = yes
+                        ai_can_build_roads_in_ruled_state = yes
                         state_contains_junction_of_its_area = yes
                     }
                     add_to_local_variable_list = {
@@ -845,10 +843,10 @@ ai_build_roads_algorithm_intrastate = {
                 min = 0
                 check_range_bounds = no
 
-                # Recheck if we haven't run out of money after previous road building
+                # Ensure we haven't concluded that we don't have enough money for road building
                 if = {
                     limit = {
-                        local_var:not_enough_gold_for_road_building = 0
+                        local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
                     }
                     save_scope_as = state_with_junction_of_area
                     area = {
@@ -860,7 +858,7 @@ ai_build_roads_algorithm_intrastate = {
                             }
                             order_by = total_population
                             min = 0
-                            max = max_cities_to_connect_to_junction
+                            max = ai_max_cities_to_connect_to_junction
                             check_range_bounds = no
 
                             # If it's roadless, connect with junction of own state
@@ -1097,10 +1095,10 @@ ai_build_roads_between_principals = {
         min = 0
         check_range_bounds = no
 
-        # Recheck if we haven't run out of money after previous road building
+        # Ensure we haven't concluded that we don't have enough money for road building
         if = {
             limit = {
-                local_var:not_enough_gold_for_road_building = 0
+                local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
             }
 
             # Start with the destination junction and find a path to current state junction
@@ -1146,7 +1144,7 @@ ai_build_roads_between_principals = {
                     ordered_in_list = {
                         variable = neighbor_states_to_connect_with
                         limit = {
-                            state_is_suitable_for_road_building = yes
+                            ai_state_is_suitable_for_road_building = yes
                         }
                         order_by = state_priority_for_road_building
                         position = 0
@@ -1209,8 +1207,8 @@ ai_build_roads_between_principals = {
                     if = {
                         limit = {
                             exists = scope:state_for_junction_connection
-                            # Recheck if we haven't run out of money after previous road building
-                            local_var:not_enough_gold_for_road_building = 0
+                            # Ensure we haven't concluded that we don't have enough money for road building
+                            local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
                         }
                         ai_fetch_junctions_and_build_roads = {
                             origin = capital_scope.var:junction_territory_in_state
@@ -1282,10 +1280,10 @@ ai_build_roads_between_junctions = {
         min = 0
         check_range_bounds = no
 
-        # Recheck if we haven't run out of money after previous road building
+        # Ensure we haven't concluded that we don't have enough money for road building
         if = {
             limit = {
-                local_var:not_enough_gold_for_road_building = 0
+                local_var:not_enough_gold_for_road_building < ai_road_attempts_with_low_treasury
             }
 
             # Start with the destination junction and find a path to current state junction
@@ -1321,7 +1319,7 @@ ai_build_roads_between_junctions = {
                 scope:current_road_building_territory = {
                     ordered_neighbor_province = {
                         limit = {
-                            territory_is_suitable_for_road_building = yes
+                            ai_territory_is_suitable_for_road_building = yes
                         }
                         order_by = territory_priority_for_road_building
                         position = 0
@@ -1404,25 +1402,36 @@ ai_build_roads_between_junctions = {
                     }
                     clear_saved_scope = territory_to_build_road_from
                 }
+
+                # If we can't afford any serious amount of roads after this, change the variable as well
+                if = {
+                    limit = {
+                        scope:current_road_building_country = {
+                            ai_country_can_afford_to_build_1_road = no
+                        }
+                    }
+                    change_local_variable = {
+                        name = not_enough_gold_for_road_building
+                        add = ai_road_attempts_with_low_treasury
+                    }
+                }
+                else_if = {
+                    limit = {
+                        scope:current_road_building_country = {
+                            ai_country_can_afford_to_build_5_roads = no
+                        }
+                    }
+                    change_local_variable = {
+                        name = not_enough_gold_for_road_building
+                        add = 1
+                    }
+                }
             }
             # Otherwise leave a mark that we don't have enough money for any further road building
             else = {
-                set_local_variable = {
+                change_local_variable = {
                     name = not_enough_gold_for_road_building
-                    value = 1
-                }
-            }
-
-            # If we can't afford any serious amount of roads after this, change the variable as well
-            if = {
-                limit = {
-                    scope:current_road_building_country = {
-                        ai_country_can_afford_to_build_5_roads = no
-                    }
-                }
-                set_local_variable = {
-                    name = not_enough_gold_for_road_building
-                    value = 1
+                    add = 1
                 }
             }
             
@@ -1491,6 +1500,44 @@ ai_increment_roads_towards_neighbors = {
         change_variable = {
             name = num_of_roads_towards_neighbors_cached
             add = 1
+        }
+        # Confluence eligibility depends on num roads, and caching them beforehand is very beneficial for performance
+        if = {
+            limit = {
+                ai_territory_is_eligible_for_confluence = yes
+            }
+            owner = {
+                if = {
+                    limit = {
+                        NOT = {
+                            is_target_in_variable_list = {
+                                name = country_territories_for_confluence
+                                target = prev
+                            }
+                        }
+                    }
+                    add_to_variable_list = {
+                        name = country_territories_for_confluence
+                        target = prev
+                    }
+                }
+            }
+        }
+        else = {
+            owner = {
+                if = {
+                    limit = {
+                        is_target_in_variable_list = {
+                            name = country_territories_for_confluence
+                            target = prev
+                        }
+                    }
+                    remove_list_variable = {
+                        name = country_territories_for_confluence
+                        target = prev
+                    }
+                }
+            }
         }
     }                     
 }

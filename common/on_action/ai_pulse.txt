@@ -1,5 +1,38 @@
 ﻿# ----------------------------------------------------------------------------------------------------------------------
-# AI actions on a quarter basis. Order has a big impact in these effects as most of them depend on political influence.
+# AI actions on a monthly basis - order has a big impact in these effects as many of them depend on same resource types
+# ----------------------------------------------------------------------------------------------------------------------
+
+monthly_country_pulse = {
+	on_actions = {
+		ai_monthly_pulse
+	}
+}
+
+ai_monthly_pulse = {
+	effect = {
+		create_list_of_ownable_territories = yes  # Once per game      Global, added here for old saves and edge cases
+		ai_avoid_to_invoke_devotio = yes          # Every month
+		ai_recruit_mercenaries = yes              # Every month        Global, only with Advanced AI, spends gold
+		optimize_state_capitals_and_forts = {     # Every 1.5 years    Spends gold, potentially a lot
+			periodic = 1                          #
+		}                                         #
+		cache_adjusted_research_efficiency = yes  # Every year         For players as well to prevent lags if switching
+		ai_determine_economic_policies = yes      # Every year         Depends on cache_adjusted_research_efficiency
+		ai_revoke_free_hands = yes                # Every half year    Before loyalty fix to compensate if needed
+		ai_fix_character_loyalty = yes            # Every quarter      Spends a bit of political influence
+		ai_choose_and_enact_law = yes             # Every half year    Spends stability and political influence
+		ai_perform_divine_sacrifice = yes         # Every quarter      Spends political influence
+		ai_manually_move_pops_to_cities = yes     # Every year         Only with Advanced AI, spends gold
+		ai_try_upgrading_city_to_metropolis = yes # Every half year    Spends political influence and gold
+		ai_choose_territory_and_found_city = yes  # Every half year    Spends political influence and gold
+		ai_perform_custom_road_building = yes     # Every year         Spends gold, potentially a lot
+		ai_press_hold_games_button = yes          # Every quarter      Only tribes with Advanced AI, spends gold
+		ai_choose_and_make_investment = yes       # Every half year    Spends political influence and maybe gold
+	}
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# AI actions on a quarterly basis - don't comment out the empty pulses themselves to avoid getting errors in old saves
 # ----------------------------------------------------------------------------------------------------------------------
 
 yearly_country_pulse = {
@@ -7,48 +40,132 @@ yearly_country_pulse = {
 		# Q1
 		ai_q1_pulse
 		# Q2
-		delay = { days = 90 }
-		ai_q2_pulse
+		# delay = { days = 90 }
+		# ai_q2_pulse
 		# Q3
-		delay = { days = 191 }
+		delay = { days = 181 }
 		ai_q3_pulse
 		# Q4
-		delay = { days = 273 }
-		ai_q4_pulse
+		# delay = { days = 273 }
+		# ai_q4_pulse
 	}
 }
 
 ai_q1_pulse = {
 	effect = {
-		ai_determine_economic_policies = yes # Every year
-		ai_revoke_free_hands = yes # Every year
-		ai_fix_character_loyalty = yes # Every quarter
-		ai_choose_and_enact_law = yes # Every half year
-		ai_perform_divine_sacrifice = yes # Every quarter
-		ai_try_upgrading_city_to_metropolis = yes # Every 5 years, gated by timed variable
-		ai_choose_territory_and_found_city = yes # Every year
-		ai_choose_and_make_investment = yes # Every year
+		ai_import_food_into_states_in_need = yes  # Every year         Global, food is at its lowest during winter
+		ai_enshrine_social_equity = yes           # Every year         Only if Mixed Gender Rules are enabled
+		ai_destroy_leftover_navies = yes          # Every year
 	}
 }
 
-ai_q2_pulse = {
-	effect = {
-		ai_fix_character_loyalty = yes # Every quarter
-		ai_perform_divine_sacrifice = yes # Every quarter
-	}
-}
+ai_q2_pulse = {}
 
 ai_q3_pulse = {
 	effect = {
-		ai_fix_character_loyalty = yes # Every quarter
-		ai_choose_and_enact_law = yes # Every half year
-		ai_perform_divine_sacrifice = yes # Every quarter
+		ai_colonize_unowned_territories = yes     # Every year         Global, spends a bit of gold
 	}
 }
 
-ai_q4_pulse = {
+ai_q4_pulse = {}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# AI actions after ending war
+# ----------------------------------------------------------------------------------------------------------------------
+
+on_ending_war = {
+	on_actions = {
+		# This is where the "after" part comes from
+		delay = { days = 2 }
+		ai_on_ending_war
+	}
+}
+
+ai_on_ending_war = {
 	effect = {
-		ai_fix_character_loyalty = yes # Every quarter
-		ai_perform_divine_sacrifice = yes # Every quarter
+		ai_destroy_leftover_navies = yes
+		optimize_state_capitals_and_forts = {
+			periodic = 0
+		}
+	}
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# AI actions after integrating subjects
+# ----------------------------------------------------------------------------------------------------------------------
+
+on_diplomatic_annex = {
+	on_actions = {
+		# This is where the "after" part comes from
+		delay = { days = 2 }
+		ai_on_diplomatic_annex
+	}
+}
+
+ai_on_diplomatic_annex = {
+	effect = {
+		ai_destroy_leftover_navies = yes
+		scope:actor = {
+			optimize_state_capitals_and_forts = {
+				periodic = 0
+			}
+		}
+	}
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# AI actions after annexing territories
+# ----------------------------------------------------------------------------------------------------------------------
+
+on_ownership_change = {
+	on_actions = {
+		# This is where the "after" part comes from
+		delay = { days = 1 }
+		ai_on_ownership_change
+	}
+}
+
+ai_on_ownership_change = {
+	effect = {
+		ai_flag_acquired_fort_territory = yes
+	}
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# AI actions after state revolting
+# ----------------------------------------------------------------------------------------------------------------------
+
+on_state_secession = {
+	on_actions = {
+		ai_on_state_secession
+	}
+}
+
+ai_on_state_secession = {
+	effect = {
+		# Must immediately schedule province level event next day, on action won't work because old state won't exist
+		ordered_state_province = {
+			order_by = {
+				value = total_population
+				if = {
+					limit = {
+						is_state_capital = yes
+					}
+					add = 100000
+				}
+			}
+			position = 0
+			check_range_bounds = no
+
+			add_to_global_variable_list = {
+				name = territories_that_just_revolted
+				target = this
+			}
+			# Simply executes process_states_that_just_revolted effect
+			trigger_event = {
+				id = ai_war_events.1
+				days = 1
+			}
+		}
 	}
 }

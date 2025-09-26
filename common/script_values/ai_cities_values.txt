@@ -15,13 +15,35 @@ ai_cities_allowed_per_country = {
             limit = {
                 government = tribal_federation
             }
-            divide = 15 # 1 per 15 terrirories
+            if = {
+                limit = {
+                    is_advanced_ai_enabled = yes
+                    NOT = {
+                        has_global_variable = game_rule_advanced_ai_tribal_development
+                    }
+                }
+                divide = 10 # 1 per 10 terrirories
+            }
+            else = {
+                divide = 15 # 1 per 15 terrirories
+            }
         }
         else_if = {
             limit = {
                 is_tribal = yes
             }
-            divide = 20 # 1 per 20 terrirories
+            if = {
+                limit = {
+                    is_advanced_ai_enabled = yes
+                    NOT = {
+                        has_global_variable = game_rule_advanced_ai_tribal_development
+                    }
+                }
+                divide = 15 # 1 per 15 terrirories
+            }
+            else = {
+                divide = 20 # 1 per 20 terrirories
+            }
         }
         else = {
             multiply = 0.3334 # No more than 1/3 of territories
@@ -49,13 +71,35 @@ ai_cities_allowed_per_area_percent = {
             limit = {
                 government = tribal_federation
             }
-            value = 0.1667 # 1 per 6 territories
+            if = {
+                limit = {
+                    is_advanced_ai_enabled = yes
+                    NOT = {
+                        has_global_variable = game_rule_advanced_ai_tribal_development
+                    }
+                }
+                value = 0.20 # 1 per 5 territories
+            }
+            else = {
+                value = 0.1667 # 1 per 6 territories
+            }
         }
         else_if = {
             limit = {
                 is_tribal = yes
             }
-            value = 0.10 # 1 per 10 territories
+            if = {
+                limit = {
+                    is_advanced_ai_enabled = yes
+                    NOT = {
+                        has_global_variable = game_rule_advanced_ai_tribal_development
+                    }
+                }
+                value = 0.125 # 1 per 8 territories
+            }
+            else = {
+                value = 0.10 # 1 per 10 territories
+            }
         }
         else = {
             value = 0.3334 # No more than 1/3 of territories
@@ -75,13 +119,35 @@ ai_cities_allowed_per_state_percent = {
             limit = {
                 government = tribal_federation
             }
-            value = 0.1667 # 1 per 6 territories
+            if = {
+                limit = {
+                    is_advanced_ai_enabled = yes
+                    NOT = {
+                        has_global_variable = game_rule_advanced_ai_tribal_development
+                    }
+                }
+                value = 0.20 # 1 per 5 territories
+            }
+            else = {
+                value = 0.1667 # 1 per 6 territories
+            }
         }
         else_if = {
             limit = {
                 is_tribal = yes
             }
-            value = 0.10 # 1 per 10 territories
+            if = {
+                limit = {
+                    is_advanced_ai_enabled = yes
+                    NOT = {
+                        has_global_variable = game_rule_advanced_ai_tribal_development
+                    }
+                }
+                value = 0.125 # 1 per 8 territories
+            }
+            else = {
+                value = 0.10 # 1 per 10 territories
+            }
         }
         else = {
             value = 0.3334 # No more than 1/3 of territories
@@ -138,4 +204,102 @@ ai_max_num_of_cities_in_same_state = {
     }
     multiply = owner.ai_cities_allowed_per_state_percent
     floor = yes
+}
+
+# Scope is territory
+slaves_per_additional_goods = {
+    value = define:NTrade|SLAVE_POPS_TO_PRODUCE_EXTRA
+    add = modifier:local_goods_from_slaves
+    if = {
+        limit = {
+            exists = owner
+        }
+        owner = {
+            add = modifier:global_goods_from_slaves
+        }
+    }
+    round = yes
+    min = 1
+}
+additional_goods_from_slaves = {
+    value = num_of_slaves
+    divide = slaves_per_additional_goods
+    floor = yes
+    min = 0
+}
+additional_goods_with_2_less_slaves = {
+    value = num_of_slaves
+    subtract = 2
+    divide = slaves_per_additional_goods
+    floor = yes
+    min = 0
+}
+additional_goods_with_2_more_slaves = {
+    value = num_of_slaves
+    add = 2
+    divide = slaves_per_additional_goods
+    floor = yes
+    min = 0
+}
+
+territory_population_until_cap = {
+    value = population_cap
+    subtract = total_population
+}
+
+tribesmen_move_cost_svalue = {
+    value = 5
+    multiply = {
+        value = 1.00
+        add = modifier:tribesmen_move_cost_modifier
+    }
+}
+slaves_move_cost_svalue = {
+    value = 5
+    multiply = {
+        value = 1.00
+        add = modifier:slaves_move_cost_modifier
+    }
+}
+
+# Defines:
+# RANK_MIGRANT_HORDE = 0
+# RANK_CITY_STATE = 1
+# RANK_LOCAL_POWER = 25
+# RANK_REGIONAL_POWER = 100
+# RANK_MAJOR_POWER = 500
+rank_by_num_territories = {
+    if = {
+        limit = {
+            num_of_territories_svalue >= define:NCountry|RANK_MAJOR_POWER
+        }
+        value = great_power
+    }
+    else_if = {
+        limit = {
+            num_of_territories_svalue >= define:NCountry|RANK_REGIONAL_POWER
+        }
+        value = major_power
+    }
+    else_if = {
+        limit = {
+            num_of_territories_svalue >= define:NCountry|RANK_LOCAL_POWER
+        }
+        value = regional_power
+    }
+    else_if = {
+        limit = {
+            num_of_territories_svalue > define:NCountry|RANK_CITY_STATE
+        }
+        value = local_power
+    }
+    else_if = {
+        limit = {
+            num_of_territories_svalue >= define:NCountry|RANK_CITY_STATE
+        }
+        value = city_power
+    }
+    else = {
+        value = migrant_horde
+    }
 }

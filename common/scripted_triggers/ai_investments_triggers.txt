@@ -1,16 +1,5 @@
 ﻿state_has_permanent_trade_routes = {
-    trigger_if = {
-        limit = {
-            is_capital_state = yes
-            owner = {
-                has_mid_economic_policy = income_commerce
-            }
-        }
-        trade_routes > 2
-    }
-    trigger_else = {
-        trade_routes > 0
-    }
+    state_trade_routes_without_global_modifiers > 0
 }
 
 ai_can_make_investment_in_this_state = {
@@ -19,16 +8,25 @@ ai_can_make_investment_in_this_state = {
         local_var:any_state_is_below_limit = 0
         current_state_investments_plus_1 <= ai_investments_allowed_per_state
     }
+    # If Advanced AI is enabled, don't invest until we have treasury >= wartime fund + investment gold cost
+    trigger_if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
+        }
+        owner.treasury >= ai_wartime_fund_plus_investment_gold_cost
+    }
+    trigger_else = {
+        always = yes
+    }
 }
 
 ai_can_make_state_investment_military = {
     # Validity conditions from the investment button
     invest_in_state_button_is_valid = {
         type = military
-    }
-    # Once per state
-    NOT = {
-        has_state_modifier = state_improvement_military
     }
 }
 
@@ -37,7 +35,7 @@ ai_can_make_state_investment_civic = {
     invest_in_state_button_is_valid = {
         type = civic
     }
-    # Only if >=50% of territories is close to population limit
+    # Only if >=50% of territories are close to population limit
     any_state_province = {
         percent >= 0.50
         total_population >= population_cap_90_percent
@@ -45,9 +43,6 @@ ai_can_make_state_investment_civic = {
 }
 
 ai_can_make_state_investment_oratory = {
-    # Oratory investment is allowed only if the state has trade routes from other sources anyways.
-    # The reason is AI trading is very performance intensive, can't give trade routes to everyone.
-    state_has_permanent_trade_routes = yes
     # Validity conditions from the investment button
     invest_in_state_button_is_valid = {
         type = oratory

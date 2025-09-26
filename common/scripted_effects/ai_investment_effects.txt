@@ -1,7 +1,11 @@
 ﻿ai_choose_and_make_investment = {
     if = {
         limit = {
+            NOT = {
+                has_variable = ai_chose_and_made_investment
+            }
             is_ai = yes
+            has_land = yes
             war = no
             OR = {
                 political_influence >= 125 # Political influence of 100 is often required in decisions + some buffer
@@ -10,6 +14,10 @@
                     var:free_investments > 0
                 }
             }
+        }
+        set_variable = {
+            name = ai_chose_and_made_investment
+            days = 165 # 5.5 months - every half year
         }
 
         # Save to variable cause we may want to use it more than once
@@ -30,15 +38,18 @@
             }
         }
 
-        # Either there's a state below limit or we have free investments and we want to use them regardless
         if = {
             limit = {
                 OR = {
+                    # Either there's a state below limit
                     local_var:any_state_is_below_limit = 1
+                    # Or we have free investments and we want to use them regardless
                     AND = {
                         has_variable = free_investments
                         var:free_investments > 0
                     }
+                    # Or we have too much political influence and want to use it regardless
+                    political_influence >= 500
                 }
             }
 
@@ -58,8 +69,8 @@
                     ai_can_make_investment_in_this_state = yes
                     # Requirements for the investment type
                     ai_can_make_state_investment_oratory = yes
-                    # Food is very low
-                    has_state_food <= 50
+                    # Food is dangerously low
+                    state_has_low_food = yes
                     # It's caused by city population
                     any_state_province = {
                         has_city_status = yes
@@ -81,7 +92,7 @@
                 }
             }
 
-            # Military investment in states overloaded on fort limit
+            # Military investment in states with fort limit issues
             if = {
                 limit = {
                     local_var:made_investment = 0
@@ -92,8 +103,17 @@
                         ai_can_make_investment_in_this_state = yes
                         # Requirements for the investment type
                         ai_can_make_state_investment_military = yes
-                        # Only if overloaded on fort limit
-                        state_fort_limit_used > state_fort_limit_svalue
+                        # Only if overloaded on fort limit or is capital with limit reached
+                        state_fort_limit_svalue < state_fort_limit_for_wanted_forts
+                        trigger_if = {
+                            limit = {
+                                is_capital_state = yes
+                            }
+                            state_fort_limit_svalue <= state_fort_limit_used
+                        }
+                        trigger_else = {
+                            state_fort_limit_svalue < state_fort_limit_used
+                        }
                     }
                     weight = {
                         base = 1
@@ -154,7 +174,7 @@
                 }
             }
 
-            # Religious investment in states with multiple built up cities
+            # Religious investment in states with built up cities
             if = {
                 limit = {
                     local_var:made_investment = 0
@@ -178,11 +198,27 @@
                         ai_can_make_investment_in_this_state = yes
                         # Requirements for the investment type
                         ai_can_make_state_investment_religious = yes
-                        # Only if has multiple cities almost full on building slots
-                        any_state_province = {
-                            count >= 2
-                            has_city_status = yes
-                            free_building_slots <= 1
+                        # For non-tribal regional powers and up - only if multiple cities almost full on building slots
+                        trigger_if = {
+                            limit = {
+                                owner = {
+                                    is_tribal = no
+                                    rank_by_num_territories >= regional_power
+                                }
+                            }
+                            any_state_province = {
+                                count >= 2
+                                has_city_status = yes
+                                free_building_slots <= free_slots_for_religious_investment
+                            }
+                        }
+                        # In tribes and small countries even one city has a significant impact
+                        trigger_else = {
+                            any_state_province = {
+                                count >= 1
+                                has_city_status = yes
+                                free_building_slots <= free_slots_for_religious_investment
+                            }
                         }
                     }
                     weight = {
@@ -255,6 +291,9 @@
                         ai_can_make_investment_in_this_state = yes
                         # Requirements for the investment type
                         ai_can_make_state_investment_oratory = yes
+                        # Oratory investment is allowed only if the state has trade routes from other sources anyways.
+                        # The reason is AI trading is very performance intensive, can't give trade routes to everyone.
+                        state_has_permanent_trade_routes = yes
                     }
                     weight = {
                         base = 1
@@ -297,11 +336,16 @@
                         ai_can_make_investment_in_this_state = yes
                         # Requirements for the investment type
                         ai_can_make_state_investment_religious = yes
-                        # Only if has at leeast one city almost full on building slots
+                        # Tribals and small countries only require one city even for regular religions investment
+                        owner = {
+                            is_tribal = no
+                            rank_by_num_territories >= regional_power
+                        }
+                        # Only if has at least one city almost full on building slots
                         any_state_province = {
                             count >= 1
                             has_city_status = yes
-                            free_building_slots <= 1
+                            free_building_slots <= free_slots_for_religious_investment
                         }
                     }
                     weight = {
@@ -321,11 +365,10 @@
                 }
             }
 
-            # Military investment as fallback for tribals, who has more states without permanent trade routes
+            # Military investment in states where fort limit is lower than wanted
             if = {
                 limit = {
                     local_var:made_investment = 0
-                    is_tribal = yes
                 }
                 random_country_state = {
                     limit = {
@@ -333,6 +376,8 @@
                         ai_can_make_investment_in_this_state = yes
                         # Requirements for the investment type
                         ai_can_make_state_investment_military = yes
+                        # Only if current fort limit is lower than wanted
+                        state_fort_limit_svalue < state_fort_limit_for_wanted_forts
                     }
                     weight = {
                         base = 1

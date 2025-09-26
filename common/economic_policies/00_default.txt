@@ -15,6 +15,23 @@ income_tax = {
 		global_slaves_output = output_huge_svalue
 		research_points_modifier = -0.2
 	}
+	
+	ai_will_do_low = {
+		modifier = {
+			factor = 0
+		}
+	}
+	ai_will_do = {
+		modifier = {
+			add = 100
+		}
+	}
+	ai_will_do_high = {
+		modifier = {
+			add = 200
+			has_variable = ai_economic_policy_income_tax_high
+		}
+	}
 }
 
 income_commerce = {
@@ -43,7 +60,8 @@ income_commerce = {
 	}
 	ai_will_do_high = {
 		modifier = {
-			factor = 0
+			add = 300
+			has_variable = ai_economic_policy_income_commerce_high
 		}
 	}
 }
@@ -59,7 +77,48 @@ income_tribute = {
 		tribute_income_modifier = 0.25
 		subject_opinions = -50
 	}
+	
+	ai_will_do_low = {
+		modifier = {
+			add = 200
+			any_subject = {
+				# Can be integrated
+				OR = {
+					is_subject_type = feudatory
+					is_subject_type = satrapy
+					is_subject_type = client_state
+					is_subject_type = subject_mercenary_city_state
+					is_subject_type = kushite_client
+					is_subject_type = indian_client
+				}
+				# If already boosting opinion, don't disable if any country is above or near the threshold
+				trigger_if = {
+					limit = {
+						overlord = {
+							has_low_economic_policy = income_tribute
+						}
+					}
+					opinion = {
+						target = overlord
+						value >= 180 # Buffer of 10
+					}
+				}
+				# Otherwise only boost opinion if there's some subject where it may help to reach the threshold
+				trigger_else = {
+					opinion = {
+						target = overlord
+						value >= 130 # Buffer of 10
+					}
+				}
+			}
+		}
+	}
 
+	ai_will_do = {
+		modifier = {
+			add = 100
+		}
+	}
 }
 
 expense_army = {
@@ -84,37 +143,31 @@ expense_army = {
 	
 	ai_will_do_low = {
 		modifier = {
-			add = 250
-			AND = {
-				war = no
-				treasury <= 0
-				has_monthly_income <= 0
-			}
+			add = 300
+			war = no
+			treasury <= 0
+			has_monthly_balance <= 0
 		}
 	}
 	
 	ai_will_do = {
 		modifier = {
-			add = 20
-			has_monthly_income <= 2
-		}
-		modifier = {
 			add = 100
-			has_monthly_income < 0
 		}
 	}
 	
 	ai_will_do_high = {
 		modifier = {
-			add = 8
+			add = 200
 			OR = {
-				months_to_war < 4
+				months_to_war <= 3
 				war = yes
 			}
-		}
-		modifier = {
-			add = -20
-			has_monthly_income < 0
+			NOT = {
+				any_army = {
+					unit_pays_maintenance = yes
+				}
+			}
 		}
 	}
 }
@@ -179,7 +232,7 @@ expense_fort = {
 	
 	ai_will_do = {
 		modifier = {
-			add = 1.5
+			add = 100
 			months_to_war < 6
 		}
 		modifier = {
@@ -189,6 +242,10 @@ expense_fort = {
 		modifier = {
 			add = 1.5
 			num_of_controlled_cities < num_of_cities
+		}
+		modifier = {
+			add = 200
+			has_variable = ai_economic_policy_expense_fort_default
 		}
 	}
 }
@@ -222,16 +279,25 @@ expense_wages = {
 	ai_will_do_high = {
 		modifier = {
 			add = 100
-			OR = {
-				AND = {
-					rank >= regional_power
-					treasury > 1000
+			# Doesn't have significant corruption modifier already
+			trigger_if = {
+				limit = {
+					has_high_economic_policy = expense_wages
 				}
-				AND = {
-					rank < regional_power
-					treasury > 600
+				modifier:monthly_corruption > -0.15
+			}
+			trigger_else = {
+				modifier:monthly_corruption > -0.05
+			}
+			# Plenty of gold in the treasury, different values to prevent switching back and forth
+			trigger_if = {
+				limit = {
+					has_high_economic_policy = expense_wages
 				}
-				treasury > 1200
+				treasury >= ai_treasury_for_expense_wages_high_active
+			}
+			trigger_else = {
+				treasury >= ai_treasury_for_expense_wages_high
 			}
 		}
 	}

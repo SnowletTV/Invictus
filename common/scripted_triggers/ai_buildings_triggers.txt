@@ -56,13 +56,23 @@ brc_wants_academy = {
 }
 brc_wants_nobles = {
     OR = {
-        # Capital territory
+        # Capital should be a research powerhouse
         this = owner.capital_scope
-        # Stick to it
+        # Build to limit if almost there already
         territory_has_more_than_one_academy = yes
-        # Territory culture can produce nobles
-        is_dominant_territory_culture_rights_equal_to = {
-            pop_type = nobles
+        AND = {
+            # No other ratio building close to limit
+            NOR = {
+                territory_has_more_than_one_court_of_law = yes
+                territory_has_more_than_one_forum = yes
+                territory_has_more_than_one_mill = yes
+            }
+            # Territory culture can produce nobles
+            is_dominant_territory_culture_rights_equal_to = {
+                pop_type = nobles
+            }
+            # And we can use more of them
+            brc_wants_more_research_ratio_buildings = yes
         }
     }
 }
@@ -82,11 +92,21 @@ brc_wants_citizen = {
         this = owner.capital_scope
     }
     OR = {
-        # Stick to it
+        # Build to limit if almost there already
         territory_has_more_than_one_court_of_law = yes
-        # Territory culture can produce citizen, but not nobles
-        is_dominant_territory_culture_rights_equal_to = {
-            pop_type = citizen
+        AND = {
+            # No other ratio building close to limit
+            NOR = {
+                territory_has_more_than_one_academy = yes
+                territory_has_more_than_one_forum = yes
+                territory_has_more_than_one_mill = yes
+            }
+            # Territory culture can produce citizen, but not nobles
+            is_dominant_territory_culture_rights_equal_to = {
+                pop_type = citizen
+            }
+            # And we can use more of them
+            brc_wants_more_research_ratio_buildings = yes
         }
     }
 }
@@ -104,10 +124,21 @@ brc_wants_freemen = {
         this = owner.capital_scope
     }
     OR = {
-        territory_has_more_than_one_forum = yes # Stick to it
+        # Build to limit if almost there already
+        territory_has_more_than_one_forum = yes
         AND = {
-            # Territory culture can't produce nobles or citizens
-            is_dominant_territory_culture_rights_freemen_or_lower = yes
+            # No other ratio building close to limit
+            NOR = {
+                territory_has_more_than_one_academy = yes
+                territory_has_more_than_one_court_of_law = yes
+                territory_has_more_than_one_mill = yes
+            }
+            OR = {
+                # Either territory culture can't produce nobles or citizens
+                is_dominant_territory_culture_rights_freemen_or_lower = yes
+                # Or we have no use for more of them
+                brc_wants_more_research_ratio_buildings = no
+            }
             # No valuable trade goods here
             NOR = {
                 has_trade_good_of_high_priority = yes
@@ -130,10 +161,21 @@ brc_wants_slaves = {
         this = owner.capital_scope
     }
     OR = {
-        territory_has_more_than_one_mill = yes # Stick to it
+        # Build to limit if almost there already
+        territory_has_more_than_one_mill = yes
         AND = {
-            # Territory culture can't produce nobles or citizens
-            is_dominant_territory_culture_rights_freemen_or_lower = yes
+            # No other ratio building close to limit
+            NOR = {
+                territory_has_more_than_one_academy = yes
+                territory_has_more_than_one_court_of_law = yes
+                territory_has_more_than_one_forum = yes
+            }
+            OR = {
+                # Either territory culture can't produce nobles or citizens
+                is_dominant_territory_culture_rights_freemen_or_lower = yes
+                # Or we have no use for more of them
+                brc_wants_more_research_ratio_buildings = no
+            }
             # Has some valuable trade goods here
             OR = {
                 has_trade_good_of_high_priority = yes
@@ -156,6 +198,18 @@ brc_wants_any_ratio_building = {
     }
 }
 
+brc_wants_more_research_modifier_buildings = {
+    owner = {
+        is_close_to_max_research_efficiency = no
+    }
+}
+brc_wants_more_research_ratio_buildings = {
+    owner = {
+        is_close_to_max_research_efficiency = no
+        adjusted_research_efficiency_cached < 1.00
+    }
+}
+
 # Check if there's not too many modifier buildings of one type
 territory_has_high_num_of_library_building = {
     num_of_library_building >= 5
@@ -170,8 +224,16 @@ territory_has_high_num_of_town_hall_building = {
     num_of_town_hall_building >= 5
 }
 territory_has_high_num_of_all_modifier_buildings = {
-    territory_has_high_num_of_library_building = yes
-    territory_has_high_num_of_commerce_building = yes
+    OR = {
+        territory_has_high_num_of_library_building = yes
+        # Specific condition under which it won't be built even while under the limit
+        brc_wants_more_research_modifier_buildings = no
+    }
+    OR = {
+        territory_has_high_num_of_commerce_building = yes
+        # Specific condition under which it won't be built even while under the limit
+        territory_has_more_than_one_academy = no
+    }
     territory_has_high_num_of_military_building = yes
     territory_has_high_num_of_town_hall_building = yes
 }
@@ -179,6 +241,64 @@ territory_has_high_num_of_all_modifier_buildings = {
 # ------------------- #
 # SUPPORTING TRIGGERS #
 # ------------------- #
+
+ai_required_to_destroy_in_territory = {
+    always = no
+}
+
+ai_required_to_destroy_in_city = {
+    ai_required_to_destroy_in_territory = yes
+}
+
+ai_required_to_destroy_in_settlement = {
+    OR = {
+        ai_required_to_destroy_in_territory = yes
+        # Presumably allows to recover a bit of money
+        has_province_modifier = founding_city_in_progress
+
+        NOT = {
+            ai_has_enough_building_slots_for_fort = {
+                and_some_more = 0
+            }
+        }
+    }
+}
+
+ai_treasury_is_enough_for_building = {
+    trigger_if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
+        }
+        treasury >= ai_wartime_fund_with_medium_buffer
+    }
+    trigger_else = {
+        always = yes
+    }
+}
+
+ai_prohibited_to_build_in_territory = {
+    OR = {
+        owner = {
+            ai_treasury_is_enough_for_building = no
+        }
+        NOT = {
+            ai_has_enough_building_slots_for_fort = {
+                and_some_more = 1
+            }
+        }
+    }
+}
+
+ai_prohibited_to_build_in_city = {
+    ai_prohibited_to_build_in_territory = yes
+}
+
+ai_prohibited_to_build_in_settlement = {
+    ai_prohibited_to_build_in_territory = yes
+}
 
 has_trade_good_of_extreme_priority = {
     OR = {
@@ -229,7 +349,7 @@ has_trade_good_of_medium_priority = {
     }
 }
 
-is_territory_of_capital_province = {
+is_territory_of_capital_state = {
     state = owner.capital_scope.state
 }
 
@@ -238,7 +358,7 @@ is_territory_of_capital_region = {
 }
 
 has_or_is_building_port = {
-    territory_port_level_including_construction > 0
+    port_level_including_construction > 0
 }
 
 can_build_port = {
@@ -255,7 +375,7 @@ country_has_at_least_one_port_including_construction = {
     OR = {
         num_of_ports > 0 # In-built trigger first for performance
         any_owned_province = {
-            territory_port_level_including_construction > 0
+            port_level_including_construction > 0
         }
     }
 }
@@ -267,7 +387,7 @@ territory_state_has_enough_ports = {
         state = {
             any_state_province = {
                 count >= scope:territory.num_of_ports_wanted_in_territory_state
-                territory_port_level_including_construction > 0
+                port_level_including_construction > 0
             }
         }
     }
@@ -280,20 +400,20 @@ territory_state_has_more_than_enough_ports = {
         state = {
             any_state_province = {
                 count > scope:territory.num_of_ports_wanted_in_territory_state
-                territory_port_level_including_construction > 0
+                port_level_including_construction > 0
             }
         }
     }
 }
 
 is_best_territory_for_new_port_in_state = {
-    territory_port_level_including_construction < 1
+    port_level_including_construction < 1
     OR = {
         has_city_status = yes
         territory_state_can_build_new_port_elsewhere_in_city = no
     }
     OR = {
-        is_territory_with_preference_for_mine_or_farm = no
+        territory_eligible_for_mine_or_farm = no
         territory_state_can_build_new_port_elsewhere_without_mine_or_farm = no
     }
 }
@@ -319,7 +439,7 @@ territory_state_has_port_elsewhere_with_mine_or_farm = {
                 this = scope:territory
             }
             has_or_is_building_port = yes
-            is_territory_with_preference_for_mine_or_farm = yes
+            territory_eligible_for_mine_or_farm = yes
         }
     }
 }
@@ -332,7 +452,7 @@ territory_state_can_build_new_port_elsewhere_without_mine_or_farm = {
                 this = scope:territory
             }
             can_build_new_port = yes
-            is_territory_with_preference_for_mine_or_farm = no
+            territory_eligible_for_mine_or_farm = no
         }
     }
 }
@@ -351,15 +471,15 @@ has_wanted_num_of_high_tier_ports = {
 }
 
 is_territory_with_high_tier_port = {
-    territory_port_level_including_construction >= owner.level_of_$tier$_port_wanted
+    port_level_including_construction >= owner.level_of_$tier$_port_wanted
     OR = {
         port_tier_enum_$tier$ = port_tier_enum_giga
-        territory_port_level_including_construction < owner.level_of_giga_port_wanted
+        port_level_including_construction < owner.level_of_giga_port_wanted
     }
 }
 
 is_territory_with_high_or_higher_tier_port = {
-    territory_port_level_including_construction >= owner.level_of_$tier$_port_wanted
+    port_level_including_construction >= owner.level_of_$tier$_port_wanted
 }
 
 is_best_territory_for_high_tier_port = {
@@ -369,11 +489,12 @@ is_best_territory_for_high_tier_port = {
 
     save_temporary_scope_as = territory
 
-    # Some capital province territory can build required port level, possibly including this one
+    # Some capital state territory (but not the capital itself) can build required port level, possibly the scoped one
     trigger_if = {
         limit = {
             owner.capital_scope.state = {
                 any_state_province = {
+                    is_capital = no
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
@@ -382,7 +503,9 @@ is_best_territory_for_high_tier_port = {
         }
 
         # Then it must be a territory of capital state
-        is_territory_of_capital_province = yes
+        is_territory_of_capital_state = yes
+        # But not the capital itself
+        is_capital = no
 
         # It should be territory with highest port level and free building slots out of eligible ones
         NOT = {
@@ -391,25 +514,26 @@ is_best_territory_for_high_tier_port = {
                     NOT = {
                         this = scope:territory
                     }
+                    is_capital = no
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
-                    territory_port_level_including_construction > scope:territory.territory_port_level_including_construction
+                    port_level_including_construction > scope:territory.port_level_including_construction
                     free_building_slots > scope:territory.free_building_slots
                 }
             }
         }
     }
 
-    # Some capital region territory can build required port level, possibly including this one
+    # Some capital region territory (but not the capital itself) can build required port level, possibly the scoped one
     trigger_else_if = {
         limit = {
-            owner = {
-                capital_scope.state.region = {
-                    any_region_province = {
-                        is_eligible_for_building_high_tier_port = {
-                            tier = $tier$
-                        }
+            owner.capital_scope.state.region = {
+                any_region_province = {
+                    owner = scope:territory.owner
+                    is_capital = no
+                    is_eligible_for_building_high_tier_port = {
+                        tier = $tier$
                     }
                 }
             }
@@ -417,6 +541,8 @@ is_best_territory_for_high_tier_port = {
 
         # Then it must be a territory of capital region
         is_territory_of_capital_region = yes
+        # But not the capital itself
+        is_capital = no
 
         # It should be territory with highest port level and free building slots out of eligible ones
         NOT = {
@@ -425,17 +551,31 @@ is_best_territory_for_high_tier_port = {
                     NOT = {
                         this = scope:territory
                     }
+                    owner = scope:territory.owner
+                    is_capital = no
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
-                    territory_port_level_including_construction > scope:territory.territory_port_level_including_construction
+                    port_level_including_construction > scope:territory.port_level_including_construction
                     free_building_slots > scope:territory.free_building_slots
                 }
             }
         }
     }
 
-    # Otherwise build just in any territory with highest port level and free building slots in the country
+    # If the capital is the only eligible territory in the capital region, build here - wanted to preserve its slots
+    trigger_else_if = {
+        limit = {
+            owner.capital_scope = {
+                is_eligible_for_building_high_tier_port = {
+                    tier = $tier$
+                }
+            }
+        }
+        is_capital = yes
+    }
+
+    # Otherwise build in any territory of the ones with highest port level and free building slots in the country
     trigger_else = {
         NOT = {
             owner = {
@@ -446,7 +586,7 @@ is_best_territory_for_high_tier_port = {
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
-                    territory_port_level_including_construction > scope:territory.territory_port_level_including_construction
+                    port_level_including_construction > scope:territory.port_level_including_construction
                     free_building_slots > scope:territory.free_building_slots
                 }
             }
@@ -475,9 +615,8 @@ has_any_city_ratio_building_maxed_out = {
     }
 }
 
-is_territory_with_preference_for_mine_or_farm = {
+territory_eligible_for_mine_or_farm = {
     has_city_status = no
-    num_of_total_building_slots < 2
     OR = {
         has_minable_trade_good_trigger = yes
         has_food_trade_good_trigger = yes
@@ -487,8 +626,7 @@ is_territory_with_preference_for_mine_or_farm = {
 is_dominant_territory_culture_integrated = {
     save_temporary_scope_as = territory
     owner = {
-        any_country_culture = {
-            is_integrated = yes
+        any_integrated_culture = {
             culture = {
                 scope:territory = {
                     dominant_province_culture = prev
@@ -531,4 +669,27 @@ is_dominant_territory_culture_rights_equal_to = {
 
 is_dominant_territory_religion_same_as_country = {
     dominant_province_religion = owner.religion
+}
+
+territory_prefers_tribal_settlement = {
+    has_city_status = no
+    # Territories has more tribesmen than slaves
+    num_of_tribesmen > num_of_slaves
+    # Owner must be tribal
+    owner = {
+        is_tribal = yes
+    }
+}
+
+territory_prefers_slave_estate = {
+    has_city_status = no
+    OR = {
+        # Has any valuable goods
+        has_trade_good_of_medium_priority = yes
+        has_trade_good_of_high_priority = yes
+        has_trade_good_of_extreme_priority = yes
+        # Has mine or farm, wants to double down
+        has_building = slave_mine_building
+        has_building = basic_settlement_infratructure_building
+    }
 }

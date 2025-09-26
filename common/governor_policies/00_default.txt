@@ -1,4 +1,19 @@
-﻿#Scope is State when checked.
+﻿# ----------------------------------------------------------------------------------------------------------------------
+# Scope is State when checked
+# ----------------------------------------------------------------------------------------------------------------------
+# Here are ai_will_do weights in order. Note that here it's simple highest wins instead of random chance.
+#
+# 1) local_autonomy - 100 - if bad loyalty, governor has specific (good or weak) traits, and is not AI
+# 2) harsh_treatment - 90 - if bad loyalty
+# 3) civilization_effort - 80 - if removing barbarians, is not tribe or has high centralization
+# 4) religious_conversion - 70 - if has territories to convert, for players: governor has main religion and is loyal
+# 5) cultural_assimilation - 60 - if has territories to assimilate, for players: governor has main culture and is loyal
+# 6) acquisition_of_wealth - up to 50 - based on corruption
+# 7) bleed_them_dry - 29.99 - if governor is psycho and is not AI
+# 8) encourage_trade - 24.99 for AI, 19.99 for players - default option
+#
+# Rest is too niche for AI countries and governors and thus have nulled weights.
+# ----------------------------------------------------------------------------------------------------------------------
 
 acquisition_of_wealth = {
 	province = {
@@ -9,17 +24,26 @@ acquisition_of_wealth = {
 
 	ai_will_do = {
 		modifier = {
-			add = 15
-			governor_or_ruler = { loyalty <= 40 }
-		}
-		modifier = {
-			add = {
+			factor = {
 				value = governor_or_ruler.corruption
-				divide = 2
+				if = {
+					limit = {
+						governor_or_ruler = {
+							character_is_disloyal = yes
+						}
+					}
+					multiply = 1.5
+				}
+				max = 50
+			}
+			governor_or_ruler = {
+				NOR = {
+					has_trait = honest
+					has_trait = righteous
+				}
 			}
 		}
 	}
-	
 	
 	on_action = acquisition_of_wealth_pulse
 }
@@ -28,25 +52,37 @@ religious_conversion = {
 	province = {
 		local_pop_conversion_speed = 3
 	}
+
 	ai_will_do = {
 		modifier = {
-			governor_or_ruler = { loyalty > 40 }
-			add = 150
-		}
-		modifier = { # Won't do if all state territories follow country religion
-			factor = 0
+			# State has multiple territories with wrong dominant religion
 			any_state_province = {
-				count = all
-				dominant_province_religion = governor_or_ruler.religion
+				count >= 2
+				NOT = {
+					dominant_province_religion = owner.religion
+				}
 			}
-		}
-		modifier = {
-			factor = 0
-			governor_or_ruler = { 
-				employer = {
+			governor_or_ruler = {
+				OR = {
+					# Don't make AI countries dependent on choosing correct governors
+					employer = {
+						is_ai = yes
+					}
+					AND = {
+						# Disloyal characters shouldn't pursue what's best for the countries
+						character_is_disloyal = no
+						# Convert only if religion of the governor and the country are the same
+						has_religion = employer.religion
+					}
+				}
+			}
+			# Doesn't have the invention that nearly zeroes conversion speed 
+			NOT = {
+				owner = {
 					invention = happiness_for_wrong_group_modifier_inv_3
 				}
 			}
+			factor = 70
 		}
 	}
 
@@ -57,24 +93,29 @@ cultural_assimilation = {
 	province = {
 		local_pop_assimilation_speed = 1
 	}
+
 	ai_will_do = {
 		modifier = {
-			governor_or_ruler = { loyalty > 40 }
-			add = 140
-		}
-		modifier = { # Won't do if all state territories already have governor's culture or the dominant culture of the owner
-			factor = 0
+			# State has multiple territories with non-integrated dominant culture
 			any_state_province = {
-				count = all
+				count >= 2
+				is_dominant_territory_culture_integrated = no
+			}
+			governor_or_ruler = {
 				OR = {
-					dominant_province_culture = governor_or_ruler.culture
-					owner = {
-						any_integrated_culture = {
-							this.culture = prev.prev.culture
-						}
+					# Don't make AI countries dependent on choosing correct governors
+					employer = {
+						is_ai = yes
+					}
+					AND = {
+						# Disloyal characters shouldn't pursue what's best for the countries
+						character_is_disloyal = no
+						# Convert only if culture of the governor and the country are the same
+						has_culture = employer.culture
 					}
 				}
 			}
+			factor = 60
 		}
 	}
 
@@ -91,43 +132,51 @@ bleed_them_dry = {
 	}
 
 	ai_will_do = {
+		# Governor ain't the most kind guy
 		modifier = {
-			add = 5
+			# Overtaken by acquisition_of_wealth at 30 corruption
+			factor = 29.99
 			governor_or_ruler = { 
-				AND	= {
-					employer = {
-						is_ai = no
+				# Note that Cruel and Harsh both have governor effects and thus are shown in the list when you choosing
+				# a governor, so you can't miss it if the governor has a tendency to do some not so pleasant stuff.
+				OR = {
+					# Pure evil
+					AND = {
+						has_trait = cruel
+						has_trait = harsh
 					}
-					has_trait = miserly 
+					# Vile + uncontrollable
+					AND = {
+						OR = {
+							has_trait = cruel
+							has_trait = harsh
+						}
+						OR = {
+							has_trait = abrasive
+							has_trait = arbitrary
+						}
+					}
+					# Maniac
+					has_trait = schizophrenic
 				}
 			}
 		}
+
+		# Don't sabotage the country too much
 		modifier = {
-			add = 5
-			governor_or_ruler = { 
-				AND	= {
-					employer = {
-						is_ai = no
-					}
-					has_trait = shrewd 
-				}
+			factor = 0
+			OR = {
+				state_has_low_food = yes
+				monthly_state_loyalty_without_policy < -0.10
 			}
 		}
-		modifier = {
-			add = 10
-			governor_or_ruler = { corruption >= 30 }
-		}
+
+		# As if AI countries don't have issues with food and loyalty as is...
 		modifier = {
 			factor = 0
-			governor_or_ruler = { is_ruler = yes }
-		}
-		modifier = {
-			factor = 0
-			governor_or_ruler = { employer = { is_ai = yes } }
-		}
-		modifier = {
-			factor = 0
-			has_state_food <= 800
+			owner = {
+				is_ai = yes
+			}
 		}
 	}
 }
@@ -138,74 +187,36 @@ borderlands = {
 		local_defensive = 0.2
 	}
 
+	# Too niche for AI countries and governors
 	ai_will_do = {
 		modifier = {
-			add = 10
-			any_state_province = {
-				num_of_freemen >= 16
-			}
-		}
-		modifier = {
-			add = 6
-			governor_or_ruler = { 
-				AND	= {
-					employer = {
-						is_ai = no
-					}
-					has_trait = suspicious 
-				}
-			}
-		}
-		modifier = {
-			add = 6
-			governor_or_ruler = { 
-				AND	= {
-					employer = {
-						is_ai = no
-					}
-					has_trait = stubborn 
-				}
-			}
+			factor = 0
 		}
 	}
-
 }
 
 encourage_trade = {
-	
 	province = {
 		state_commerce_modifier = 0.1
 		local_monthly_food_modifier = 0.1
 	}
-
 	
 	ai_will_do = {
 		modifier = {
-			add = trade_routes
-		}
-		modifier = {
-			add = 6
-			governor_or_ruler = { has_trait = silver_tongued }
-		}
-		modifier = {
-			add = 6
-			governor_or_ruler = { has_trait = crafty }
-		}
-		modifier = {
-			add = 10
-			governor_or_ruler.employer = {
-				is_republic = yes
+			# Overtaken by acquisition_of_wealth at 25 corruption
+			factor = 24.99
+			owner = {
+				is_ai = yes
 			}
-			governor_or_ruler = { character_traditionalist_party_trigger = yes }
 		}
 		modifier = {
-			add = 20
-			has_state_food <= governor_policy_food_svalue
-
+			# Overtaken by acquisition_of_wealth at 20 corruption
+			factor = 19.99
+			owner = {
+				is_ai = no
+			}
 		}
 	}
-
-
 }
 
 social_mobility = {
@@ -214,6 +225,7 @@ social_mobility = {
 		local_pop_demotion_speed_modifier = 1.5
 	}
 	
+	# Too niche for AI countries and governors
 	ai_will_do = {
 		modifier = {
 			factor = 0
@@ -223,6 +235,7 @@ social_mobility = {
 	#deprecated on_action = social_mobility_pulse
 }
 
+# Directly raise state loyalty in exchange for low population output and other debuffs
 harsh_treatment = {
 	province = {
 		local_migration_speed = 1
@@ -235,32 +248,19 @@ harsh_treatment = {
 
 	ai_will_do = {
 		modifier = {
-			add = local_autonomy_svalue
-		}
-		modifier = {
-			add = 11
-			state_level_loyalty < 40
-		}
-		modifier = {
-			add = 9
-			governor_or_ruler = { employer = { is_ai = yes } }
-			state_level_loyalty < 40
-		}
-		modifier = {
-			add = 900
-			governor_or_ruler = { loyalty > 40 }
-			state_level_loyalty < 40
-		}
-		modifier = {
-			factor = 0
-			state_level_loyalty >= 40
+			# Should be lower than Local Autonomy factor so it can overtake
+			factor = 90
+
+			# 10 years might look a bit long, but governors either don't update policies at all, or do it very rarely.
+			# Note that it's until 33, not 0 loyalty. Equals to -0.5583 monthly at 100 loyalty or -0.225 monthly at 60.
+			months_to_state_disloyalty_without_policy <= 120
 		}
 	}
-	
 	
 	#on_action = acquisition_of_wealth_pulse
 }
 
+# Fix population happiness in exchange for low population output
 local_autonomy = {
 	province = {
 		local_citizen_happyness = 0.15
@@ -268,46 +268,54 @@ local_autonomy = {
 		local_tribesmen_happyness = 0.15
 		local_slaves_happyness = 0.15
 		local_nobles_happyness = 0.1
-	
 		local_output_modifier = -0.4
-		
 	}
 
-	
 	ai_will_do = {
 		modifier = {
-			add = 5
-			governor_or_ruler = { has_trait = submissive }
-		}
-		modifier = {
-			add = 3
-			governor_or_ruler = { has_trait = generous }
-		}
-		modifier = {
-			add = 3
-			governor_or_ruler = { has_trait = kindly }
-		}
-		modifier = {
-			add = -30
-			exists = owner.capital_scope.state
-			this = owner.capital_scope.state
-		}
-		modifier = {
-			factor = 0
-			OR = {
-				governor_or_ruler = { 
-					employer = {
-						is_ai = yes
-					}
+			# Should be higher than Harsh Treatment factor to overtake it
+			factor = 100
+
+			# Harsh Treatment is more effective for loyalty and AI countries need every bit of help with it
+			owner = {
+				is_ai = no
+			}
+
+			# 10 years might look a bit long, but governors either don't update policies at all, or do it very rarely.
+			# Note that it's until 33, not 0 loyalty. Equals to -0.5583 monthly at 100 loyalty or -0.225 monthly at 60.
+			months_to_state_disloyalty_without_policy <= 120
+
+			# ----------------------------------------- #
+			# Resolve Harsh Treatment vs Local Autonomy #
+			# ----------------------------------------- #
+
+			governor_or_ruler = {
+				# No traits that shout "Harsh Treatment"
+				NOR = {
+					has_trait = cruel
+					has_trait = harsh
 				}
-				state_level_loyalty >= 90
+
+				# Has a trait that goes against punishing people
+				OR = {
+					# Too kind
+					has_trait = good_natured
+					has_trait = kindly
+					has_trait = merciful
+
+					# Too weak
+					has_trait = incapable
+					has_trait = submissive
+					has_trait = weak_willed
+
+					# Too sick
+					has_trait = depressed
+					has_trait = brain_damaged
+				}
 			}
 		}
 	}
 }
-
-
-
 
 civilization_effort = {
 	province = {
@@ -316,29 +324,12 @@ civilization_effort = {
 
 	ai_will_do = {
 		modifier = {
-			add = 5
-			governor_or_ruler = { has_trait = intelligent }
-		}
-		modifier = {
-			add = 5
-			governor_or_ruler = { has_trait = polymath }
-		}
-		modifier = {
-			add = 20
-			any_state_province = {
-				any_neighbor_province = {
-					OR = {
-						has_province_modifier = minor_barbarian_spawn_place
-						has_province_modifier = generic_barbarian_spawn_place
-						has_province_modifier = major_barbarian_spawn_place
-					}
+			factor = 80
+			owner = {
+				OR = {
+					is_tribal = no
+					centralization >= 40
 				}
-			}
-		}
-		modifier = {
-			add = 200
-			governor_or_ruler.employer = {
-				is_tribal = no
 			}
 			any_state_province = {
 				any_neighbor_province = {
@@ -348,27 +339,17 @@ civilization_effort = {
 						has_province_modifier = major_barbarian_spawn_place
 					}
 				}
-			}
-		}
-		modifier = {
-			add = -30
-			governor_or_ruler.employer = {
-				is_tribal = yes
-				centralization <= 40
 			}
 		}
 	}
 
 	on_action = civilization_effort_pulse
-
 }
 
 centralize_pops = {
-
 	province = {
 		local_migration_speed = 2
 	}
-	
 	capital = {
 		local_migration_attraction = 1
 	}
@@ -376,20 +357,20 @@ centralize_pops = {
 		local_migration_attraction = -5
 	}
 
+	# Too niche for AI countries and governors
 	ai_will_do = {
-		base = 0
+		modifier = {
+			factor = 0
+		}
 	}
 
 	#deprecated on_action = centralize_pops_pulse
-
 }
 
 decentralize_pops = {
-
 	province = {
 		local_migration_speed = 2
 	}
-	
 	capital = {
 		local_migration_attraction = -5
 	}
@@ -397,14 +378,12 @@ decentralize_pops = {
 		local_migration_attraction = 1
 	}
 
-
+	# Too niche for AI countries and governors
 	ai_will_do = {
-		base = 0
+		modifier = {
+			factor = 0
+		}
 	}
 
 	#deprecatedon_action = decentralize_pops_pulse
-
 }
-
-
-

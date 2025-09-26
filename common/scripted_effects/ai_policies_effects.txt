@@ -1,8 +1,23 @@
 ﻿ai_determine_economic_policies = {
     if = {
         limit = {
+            NOT = {
+                has_variable = ai_determined_economic_policies
+            }
             is_ai = yes
+			has_land = yes
         }
+        set_variable = {
+            name = ai_determined_economic_policies
+            days = 345 # 11.5 months - every year
+        }
+
+		# Reset all economic oplicy variables
+		remove_variable = ai_economic_policy_income_commerce_default
+		remove_variable = ai_economic_policy_income_commerce_high
+		remove_variable = ai_economic_policy_income_tax_high
+		remove_variable = ai_economic_policy_expense_fort_default
+
         if = {
 			limit = {
 				# Default policy is allowed only if the capital has trade routes from other sources anyways.
@@ -14,13 +29,102 @@
 				capital_scope.state = {
 					state_has_permanent_trade_routes = yes
 				}
-				# Conditions for 2 trade routes to be worth it over higher export income 
-				country_outgoing_trade_routes < 5
+				# Conditions for 2 trade routes to bring more income that either of other settings
+				trigger_if = {
+					limit = {
+						has_low_economic_policy = income_commerce
+					}
+					country_outgoing_trade_routes < 4
+					country_incoming_trade_routes < 12
+				}
+				trigger_else = {
+					country_outgoing_trade_routes < 5
+					country_incoming_trade_routes < 15
+				}
 			}
-			set_variable = ai_economic_policy_income_commerce_default
+			set_variable = {
+				name = ai_economic_policy_income_commerce_default
+				days = 366
+			}
 		}
-		else = {
-			remove_variable = ai_economic_policy_income_commerce_default
+		else_if = {
+			limit = {
+				# Export is 100% income, import is 35% - needs 3x more imports for them to bring more money
+				country_incoming_trade_routes > country_outgoing_trade_routes_mult_3
+			}
+			set_variable = {
+				name = ai_economic_policy_income_commerce_high
+				days = 366
+			}
+		}
+
+		# This once is pretty expensive, as it checks research_efficiency_svalue, which is any_owned_province
+        if = {
+			limit = {
+				# First check cached research efficiency, but as it's normalized, we compare it against lower target
+				adjusted_research_efficiency_cached >= max_research_efficiency_svalue
+				# If this pretty simple check is passed, we can proceed to the expensive part 
+				trigger_if = {
+					limit = {
+						has_high_economic_policy = income_tax
+					}
+					research_efficiency_svalue >= research_efficiency_for_income_tax_high_active
+				}
+				trigger_else = {
+					research_efficiency_svalue >= research_efficiency_for_income_tax_high
+				}
+			}
+			set_variable = {
+				name = ai_economic_policy_income_tax_high
+				days = 366
+			}
+		}
+
+        if = {
+			limit = {
+				OR = {
+					# Only 1 fort level and it's in the capital, so the country has no fort maintenance
+					AND = {
+						rank_by_num_territories <= local_power
+						capital_scope = {
+							fort_level = 1
+						}
+						NOT = {
+							any_owned_province = {
+								is_capital = no
+								fort_level > 0
+							}
+						}
+					}
+
+					# There's a player or antagonist of large enough rank nearby, and we are not allies
+					save_temporary_scope_as = country_considering_fort_policy
+					any_neighbour_country = {
+						is_subject = no
+						NOT = {
+							alliance_with = scope:country_considering_fort_policy
+						}
+						trigger_if = {
+							limit = {
+								is_ai = no
+							}
+							OR = {
+								rank_by_num_territories >= scope:country_considering_fort_policy.rank_by_num_territories
+								rank_by_num_territories >= major_power
+								scope:country_considering_fort_policy.rank_by_num_territories <= regional_power
+							}
+						}
+						trigger_else = {
+							is_antagonist = yes
+							rank_by_num_territories >= scope:country_considering_fort_policy.rank_by_num_territories
+						}
+					}
+				}
+			}
+			set_variable = {
+				name = ai_economic_policy_expense_fort_default
+				days = 366
+			}
 		}
     }
 }

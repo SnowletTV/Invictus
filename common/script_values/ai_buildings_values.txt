@@ -9,20 +9,58 @@
 # ------------------- #
 
 brc_fortress_ramparts = {
-    value = 0
-}
-
-brc_port = {
-    # Don't build and delete if exists
+    # Don't build and destroy if exists
     if = {
         limit = {
-            # State borders change very rapidly in the first years
-            current_date >= 460.1.1
-            # Don't delete anything while at war
+            # Don't destroy anything while at war
             owner = {
                 war = no
             }
-            # Don't ever delete the last port we have country wide
+            ai_required_to_destroy_in_city = yes
+        }
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
+            OR = {
+                ai_prohibited_to_build_in_city = yes
+                is_capital = yes
+                fort_level < 3
+
+                # Don't build on plains and higher population capacity terrains
+                terrain = oasis
+                terrain = flood_plain
+                terrain = plains
+                terrain = farmland
+            }
+        }
+        value = 0
+    }
+    else = {
+        value = brc_territory_importance
+        multiply = brc_90
+    }
+}
+
+brc_port = {
+    # Safeguard, destroy any port that somehow got build in a non-port province
+    if = {
+        limit = {
+            can_have_port = no
+        }
+        value = -1
+    }
+    # Don't build and destroy if exists
+    else_if = {
+        limit = {
+            # State borders change very rapidly in the first years
+            current_date >= 460.1.1
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            # Don't ever destroy the last port we have country wide
             OR = {
                 owner.num_of_ports > 1
                 num_of_port_building > 1
@@ -31,17 +69,17 @@ brc_port = {
                 # Handle non-city territories where state has too much ports
                 AND = {
                     has_city_status = no
-                    # If mine or farm, delete if more than enough ports or can build it somewhere without mine or farm
+                    # If mine or farm, destroy if more than enough ports or can build it somewhere without mine or farm
                     trigger_if = {
                         limit = {
-                            is_territory_with_preference_for_mine_or_farm = yes
+                            territory_eligible_for_mine_or_farm = yes
                         }
                         OR = {
                             territory_state_has_more_than_enough_ports = yes
                             territory_state_can_build_new_port_elsewhere_without_mine_or_farm = yes
                         }
                     }
-                    # If not, delete if more than enough ports and there's no mine or farm that wants it port deleted
+                    # If not, destroy if more than enough ports and there's no mine or farm that wants it port destroyed
                     trigger_else = {
                         territory_state_has_more_than_enough_ports = yes
                         territory_state_has_port_elsewhere_with_mine_or_farm = no
@@ -49,7 +87,7 @@ brc_port = {
                 }
                 # Tier >=2 ports in countries that don't want any mega ports
                 AND = {
-                    territory_port_level_including_construction >= 2
+                    port_level_including_construction >= 2
                     owner = {
                         num_of_mega_ports_wanted = 0
                         num_of_giga_ports_wanted = 0
@@ -57,7 +95,7 @@ brc_port = {
                 }
                 # Tier 2 ports that won't turn mega anytime soon but are taking up building slots
                 AND = {
-                    territory_port_level_including_construction = 2
+                    port_level_including_construction = 2
                     owner = {
                         has_wanted_num_of_high_tier_ports = {
                             tier = mega
@@ -69,16 +107,61 @@ brc_port = {
                 }
                 # Tier 4 ports that won't turn giga anytime soon but are taking up building slots
                 AND = {
-                    territory_port_level_including_construction = 4
+                    port_level_including_construction = 4
                     owner = {
                         has_wanted_num_of_high_tier_ports = {
                             tier = giga
                         }
                     }
                 }
+                # Rebuild mega and giga ports from capital to another capital region territory
+                AND = {
+                    is_capital = yes
+                    save_temporary_scope_as = current_territory
+                    trigger_if = {
+                        limit = {
+                            port_level_including_construction >= 2
+                            port_level_including_construction <= 3
+                        }
+                        owner.capital_scope.state.region = {
+                            any_region_province = {
+                                owner = scope:current_territory.owner
+                                is_capital = no
+                                is_eligible_for_building_high_tier_port = {
+                                    tier = mega
+                                }
+                            }
+                        }
+                    }
+                    trigger_else_if = {
+                        limit = {
+                            port_level_including_construction >= 4
+                        }
+                        owner.capital_scope.state.region = {
+                            any_region_province = {
+                                owner = scope:current_territory.owner
+                                is_capital = no
+                                is_eligible_for_building_high_tier_port = {
+                                    tier = giga
+                                }
+                            }
+                        }
+                    }
+                    trigger_else = {
+                        always = no
+                    }
+                }
             }
         }
         value = -1
+    }
+    else_if = {
+        limit = {
+            owner = {
+                ai_treasury_is_enough_for_building = no
+            }
+        }
+        value = 0
     }
     # Build... unless?
     else = {
@@ -103,14 +186,20 @@ brc_port = {
 }
 
 brc_barracks = {
-    # Don't build and delete if exists
+    # Don't build and destroy if exists
     if = {
         limit = {
-            # Don't delete anything while at war
+            # Don't destroy anything while at war
             owner = {
                 war = no
             }
-            is_territory_with_preference_for_mine_or_farm = yes
+            OR = {
+                ai_required_to_destroy_in_settlement = yes
+                # Always build mine or farm if possible
+                territory_eligible_for_mine_or_farm = yes
+                # Always build slave estate if it's preferred
+                territory_prefers_slave_estate = yes
+            }
         }
         value = -1
     }
@@ -118,9 +207,11 @@ brc_barracks = {
     else_if = {
         limit = {
             OR = {
-                has_trade_good_of_medium_priority = yes
-                has_trade_good_of_high_priority = yes
-                has_trade_good_of_extreme_priority = yes
+                ai_prohibited_to_build_in_settlement = yes
+                # Always build mine or farm if possible
+                territory_eligible_for_mine_or_farm = yes
+                # Always build slave estate if it's preferred
+                territory_prefers_slave_estate = yes
             }
         }
         value = 0
@@ -128,47 +219,26 @@ brc_barracks = {
     # Build
     else = {
         value = brc_territory_importance
-        multiply = brc_20
+        multiply = brc_15
     }
 }
 
 brc_foundry = {
-    value = brc_territory_importance
+    # Don't build and destroy if exists
     if = {
         limit = {
-            has_trade_good_of_extreme_priority = yes
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
         }
-        multiply = brc_95
+        value = -1
     }
+    # Don't build
     else_if = {
         limit = {
-            has_trade_good_of_high_priority = yes
-        }
-        multiply = brc_80
-    }
-    else_if = {
-        limit = {
-            has_trade_good_of_medium_priority = yes
-        }
-        multiply = brc_65
-    }
-    else = {
-        multiply = brc_40
-    }
-}
-
-brc_aqueduct = {
-    if = {
-        limit = {
-            OR = {
-                # Build more useful stuff first
-				num_of_used_building_slots < 5
-                has_any_city_ratio_building_maxed_out = no
-                # Not too big
-				total_population >= 80
-                # Must be somewhat close to population cap
-                total_population < population_cap_minus_10
-			}
+            ai_prohibited_to_build_in_city = yes
         }
         value = 0
     }
@@ -176,74 +246,207 @@ brc_aqueduct = {
         value = brc_territory_importance
         if = {
             limit = {
-                total_population >= population_cap
+                has_trade_good_of_extreme_priority = yes
             }
-            multiply = brc_75
+            multiply = brc_95
         }
         else_if = {
             limit = {
-                total_population >= population_cap_minus_3
+                has_trade_good_of_high_priority = yes
             }
+            multiply = brc_80
+        }
+        else_if = {
+            limit = {
+                has_trade_good_of_medium_priority = yes
+            }
+            multiply = brc_65
+        }
+        else = {
+            multiply = brc_45
+        }
+    }
+}
+
+brc_aqueduct = {
+    # Don't build and destroy if exists
+    if = {
+        limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
+        }
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
+            OR = {
+                ai_prohibited_to_build_in_city = yes
+                # Must be close to population cap
+                total_population < population_cap_minus_10
+                # Build more useful stuff first
+                has_any_city_ratio_building_maxed_out = no
+                # No issues with food in state
+                state = {
+				    state_has_close_to_low_food = yes
+                }
+			}
+        }
+        value = 0
+    }
+    else = {
+        value = brc_territory_importance
+        # In perfect conditions we can't and shouldn't refuse to get some juicy aqueducts
+        if = {
+            limit = {
+                total_population >= population_cap_minus_2
+            }
+            multiply = brc_75
+        }
+        else = {
+            # Capitals should prioritize aqueducts even with 10 pops before limit to increase their chances of becoming
+            # a metropolis, 10 before limit specifically means they are guaranteed to have a free building slot for it
             if = {
                 limit = {
                     is_capital = yes
                 }
                 multiply = brc_65
             }
+            # Regular cities are more dependent on slot luck to avoid world getting filled with metropolises eventually
             else = {
-                multiply = brc_40
+                if = {
+                    limit = {
+                        total_population >= population_cap_minus_5
+                    }
+                    multiply = brc_45
+                }
+                else = {
+                    multiply = 0
+                }
             }
-        }
-        else = {
-            multiply = brc_15
         }
     }
 }
 
 brc_temple = {
-    value = brc_territory_importance
+    # Don't build and destroy if exists
     if = {
         limit = {
-            is_dominant_territory_religion_same_as_country = no
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
         }
-        multiply = brc_50
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
+            ai_prohibited_to_build_in_city = yes
+        }
+        value = 0
     }
     else = {
-        multiply = brc_30
+        value = brc_territory_importance
+        if = {
+            limit = {
+                is_dominant_territory_religion_same_as_country = no
+            }
+            multiply = brc_50 # Shared with Forum
+        }
+        else = {
+            multiply = brc_40
+        }
     }
 }
 
 brc_granary = {
+    # Don't build and destroy if exists
     if = {
         limit = {
-            num_of_population_building < level_of_granary_wanted
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
         }
-        value = brc_territory_importance
-        multiply = brc_75
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
+            OR = {
+                ai_prohibited_to_build_in_city = yes
+                num_of_population_building >= level_of_granary_wanted
+            }
+        }
+        value = 0
     }
     else = {
-        value = 0
+        value = brc_territory_importance
+        multiply = brc_85
     }
 }
 
 brc_theatre = {
-    value = brc_territory_importance
+    # Don't build and destroy if exists
     if = {
         limit = {
-            is_dominant_territory_culture_integrated = no
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
         }
-        multiply = brc_75
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
+            ai_prohibited_to_build_in_city = yes
+        }
+        value = 0
     }
     else = {
-        multiply = brc_30
+        value = brc_territory_importance
+        if = {
+            limit = {
+                is_dominant_territory_culture_integrated = no
+            }
+            # Shared with Court of Law, but they are exclusive
+            multiply = brc_60
+        }
+        else = {
+            multiply = brc_40
+        }
     }
 }
 
 brc_library = {
+    # Don't build and destroy if exists
     if = {
         limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
+        }
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
             OR = {
+                ai_prohibited_to_build_in_city = yes
                 brc_wants_any_ratio_building = yes
+                # No need for more libraries if we are reading enough already
+                brc_wants_more_research_modifier_buildings = no
+                # Don't build too much of the same, unless there's too much of everything
                 AND = {
                     territory_has_high_num_of_library_building = yes
                     territory_has_high_num_of_all_modifier_buildings = no
@@ -272,23 +475,70 @@ brc_library = {
 brc_academy = {
     if = {
         limit = {
-            brc_wants_academy = yes
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            OR = {
+                ai_required_to_destroy_in_city = yes
+                # Remove level 1 if there's some other level 2+ ratio building
+                AND = {
+                    # Capital should always have Academy
+                    is_capital = no
+                    territory_has_more_than_one_academy = no
+                    OR = {
+                        territory_has_more_than_one_court_of_law = yes
+                        territory_has_more_than_one_forum = yes
+                        territory_has_more_than_one_mill = yes
+                    }
+                }
+            }
         }
-        value = brc_territory_importance
-        multiply = brc_70
+        value = -1
+    }
+    else_if = {
+        limit = {
+            OR = {
+                ai_prohibited_to_build_in_city = yes
+                brc_wants_academy = no
+            }
+        }
+        value = 0
     }
     else = {
-        value = 0
+        value = brc_territory_importance
+        multiply = brc_70
+        multiply = {
+            value = 1.00
+            add = {
+                value = num_of_academy_building
+                multiply = brc_ratio_building_weight_per_level
+            }
+        }
     }
 }
 
-# If many nobles set to base value of its siblings, otherwise never build
+# Set to base value of its siblings if there are many nobles, otherwise never build
 brc_commerce = {
+    # Don't build and destroy if exists
     if = {
         limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
+        }
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
             OR = {
+                ai_prohibited_to_build_in_city = yes
                 brc_wants_any_ratio_building = yes
                 territory_has_more_than_one_academy = no
+                # Don't build too much of the same, unless there's too much of everything
                 AND = {
                     territory_has_high_num_of_commerce_building = yes
                     territory_has_high_num_of_all_modifier_buildings = no
@@ -306,21 +556,66 @@ brc_commerce = {
 brc_court = {
     if = {
         limit = {
-            brc_wants_court_of_law = yes
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            OR = {
+                ai_required_to_destroy_in_city = yes
+                # Remove level 1 if there's some other level 2+ ratio building
+                AND = {
+                    territory_has_more_than_one_court_of_law = no
+                    OR = {
+                        territory_has_more_than_one_academy = yes
+                        territory_has_more_than_one_forum = yes
+                        territory_has_more_than_one_mill = yes
+                    }
+                }
+            }
         }
-        value = brc_territory_importance
-        multiply = brc_60
+        value = -1
+    }
+    else_if = {
+        limit = {
+            OR = {
+                ai_prohibited_to_build_in_city = yes
+                brc_wants_court_of_law = no
+            }
+        }
+        value = 0
     }
     else = {
-        value = 0
+        value = brc_territory_importance
+        multiply = brc_60
+        multiply = {
+            value = 1.00
+            add = {
+                value = num_of_court_building
+                multiply = brc_ratio_building_weight_per_level
+            }
+        }
     }
 }
 
 brc_military = {
+    # Don't build and destroy if exists
     if = {
         limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
+        }
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
             OR = {
+                ai_prohibited_to_build_in_city = yes
                 brc_wants_any_ratio_building = yes
+                # Don't build too much of the same, unless there's too much of everything
                 AND = {
                     territory_has_high_num_of_military_building = yes
                     territory_has_high_num_of_all_modifier_buildings = no
@@ -333,7 +628,10 @@ brc_military = {
         value = brc_territory_importance
         if = {
             limit = {
-                territory_has_more_than_one_forum = yes
+                OR = {
+                    territory_has_more_than_one_court_of_law = yes
+                    territory_has_more_than_one_forum = yes
+                }
             }
             multiply = brc_35
         }
@@ -346,21 +644,66 @@ brc_military = {
 brc_forum = {
     if = {
         limit = {
-            brc_wants_forum = yes
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            OR = {
+                ai_required_to_destroy_in_city = yes
+                # Remove level 1 if there's some other level 2+ ratio building
+                AND = {
+                    territory_has_more_than_one_forum = no
+                    OR = {
+                        territory_has_more_than_one_academy = yes
+                        territory_has_more_than_one_court_of_law = yes
+                        territory_has_more_than_one_mill = yes
+                    }
+                }
+            }
         }
-        value = brc_territory_importance
-        multiply = brc_45
+        value = -1
+    }
+    else_if = {
+        limit = {
+            OR = {
+                ai_prohibited_to_build_in_city = yes
+                brc_wants_forum = no
+            }
+        }
+        value = 0
     }
     else = {
-        value = 0
+        value = brc_territory_importance
+        multiply = brc_50
+        multiply = {
+            value = 1.00
+            add = {
+                value = num_of_forum_building
+                multiply = brc_ratio_building_weight_per_level
+            }
+        }
     }
 }
 
 brc_town_hall = {
+    # Don't build and destroy if exists
     if = {
         limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
+        }
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
             OR = {
+                ai_prohibited_to_build_in_city = yes
                 brc_wants_any_ratio_building = yes
+                # Don't build too much of the same, unless there's too much of everything
                 AND = {
                     territory_has_high_num_of_town_hall_building = yes
                     territory_has_high_num_of_all_modifier_buildings = no
@@ -373,7 +716,10 @@ brc_town_hall = {
         value = brc_territory_importance
         if = {
             limit = {
-                territory_has_more_than_one_mill = yes
+                OR = {
+                    territory_has_more_than_one_forum = yes
+                    territory_has_more_than_one_mill = yes
+                }
             }
             multiply = brc_35
         }
@@ -386,120 +732,88 @@ brc_town_hall = {
 brc_workshop = {
     if = {
         limit = {
-            brc_wants_mill = yes
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_city = yes
+        }
+        value = -1
+    }
+    else_if = {
+        limit = {
+            ai_prohibited_to_build_in_city = yes
+        }
+        value = 0
+    }
+    # Add mills to tall city states and alike - TODO integrate properly into triggers later?
+    else_if = {
+        limit = {
+            is_capital = yes
+            owner = {
+                rank_by_num_territories <= local_power
+            }
+            num_of_total_building_slots >= 20
         }
         value = brc_territory_importance
         multiply = brc_55
+        multiply = {
+            value = 1.00
+            add = {
+                value = num_of_workshop_building
+                multiply = brc_ratio_building_weight_per_level
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            # Remove level 1 if there's some other level 2+ ratio building
+            territory_has_more_than_one_mill = no
+            OR = {
+                territory_has_more_than_one_academy = yes
+                territory_has_more_than_one_court_of_law = yes
+                territory_has_more_than_one_forum = yes
+            }
+        }
+        value = -1
+    }
+    else_if = {
+        limit = {
+            brc_wants_mill = no
+        }
+        value = 0
     }
     else = {
-        value = 0
+        value = brc_territory_importance
+        multiply = brc_55
+        multiply = {
+            value = 1.00
+            add = {
+                value = num_of_workshop_building
+                multiply = brc_ratio_building_weight_per_level
+            }
+        }
     }
 }
 
 brc_latifundia = {
-    # Don't build and delete if exists
+    # Don't build and destroy if exists
     if = {
         limit = {
-            # Don't delete anything while at war
-            owner = {
-                war = no
-            }
-            # Can build mine or farm
-            is_territory_with_preference_for_mine_or_farm = yes
-        }
-        value = -1
-    }
-    # Don't build
-    else_if = {
-        limit = {
-            num_of_slaves < num_of_tribesmen
-            NOR = {
-                has_trade_good_of_medium_priority = yes
-                has_trade_good_of_high_priority = yes
-                has_trade_good_of_extreme_priority = yes
-            }
-        }
-        value = 0
-    }
-    # Build
-    else = {
-        value = brc_territory_importance
-        multiply = brc_20
-    }
-}
-
-brc_slave_mine = {
-    value = brc_territory_importance
-    if = {
-        limit = {
-            has_trade_good_of_extreme_priority = yes
-        }
-        multiply = brc_99
-    }
-    else_if = {
-        limit = {
-            has_trade_good_of_high_priority = yes
-        }
-        multiply = brc_90
-    }
-    else_if = {
-        limit = {
-            has_trade_good_of_medium_priority = yes
-        }
-        multiply = brc_85
-    }
-    else = {
-        multiply = brc_65
-    }
-}
-
-brc_basic_settlement_infratructure = {
-    value = brc_territory_importance
-    if = {
-        limit = {
-            root.state = {
-				has_state_food <= 50
-			}
-        }
-        multiply = brc_100
-    }
-    else_if = {
-        limit = {
-            has_trade_good_of_extreme_priority = yes
-        }
-        multiply = brc_99
-    }
-    else_if = {
-        limit = {
-            has_trade_good_of_high_priority = yes
-        }
-        multiply = brc_90
-    }
-    else_if = {
-        limit = {
-            has_trade_good_of_medium_priority = yes
-        }
-        multiply = brc_85
-    }
-    else = {
-        multiply = brc_50
-    }
-}
-
-brc_hill_fort = {
-    # Don't build and delete if exists
-    if = {
-        limit = {
-            # Don't delete anything while at war
+            # Don't destroy anything while at war
             owner = {
                 war = no
             }
             OR = {
-                # Can build mine or farm
-			    is_territory_with_preference_for_mine_or_farm = yes
-                # Not tribal
-                owner = {
-                    is_tribal = no
+                ai_required_to_destroy_in_settlement = yes
+                # Can build mine or farm and has only one slot
+                AND = {
+                    num_of_total_building_slots < 2
+                    territory_eligible_for_mine_or_farm = yes
                 }
             }
         }
@@ -509,10 +823,12 @@ brc_hill_fort = {
     else_if = {
         limit = {
             OR = {
-                num_of_slaves >= num_of_tribesmen
-                has_trade_good_of_medium_priority = yes
-                has_trade_good_of_high_priority = yes
-                has_trade_good_of_extreme_priority = yes
+                ai_prohibited_to_build_in_settlement = yes
+                # Has preference for tribal settlement, but not slave estate
+                AND = {
+                    territory_prefers_tribal_settlement = yes
+                    territory_prefers_slave_estate = no
+                }
             }
         }
         value = 0
@@ -520,7 +836,219 @@ brc_hill_fort = {
     # Build
     else = {
         value = brc_territory_importance
-        multiply = brc_20
+        if = {
+            limit = {
+                OR = {
+                    has_building = slave_mine_building
+                    has_building = basic_settlement_infratructure_building
+                }
+            }
+            if = {
+                limit = {
+                    has_trade_good_of_extreme_priority = yes
+                }
+                multiply = brc_80
+            }
+            else_if = {
+                limit = {
+                    has_trade_good_of_high_priority = yes
+                }
+                multiply = brc_70
+            }
+            else_if = {
+                limit = {
+                    has_trade_good_of_medium_priority = yes
+                }
+                if = {
+                    limit = {
+                        has_building = slave_mine_building
+                    }
+                    multiply = brc_60
+                }
+                else = {
+                    multiply = brc_50
+                }
+            }
+            else = {
+                if = {
+                    limit = {
+                        has_building = slave_mine_building
+                    }
+                    multiply = brc_40
+                }
+                else = {
+                    multiply = brc_20
+                }
+            }
+        }
+        else = {
+            multiply = brc_15
+        }
+    }
+}
+
+brc_slave_mine = {
+    # Don't build and destroy if exists
+    if = {
+        limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_settlement = yes
+        }
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
+            ai_prohibited_to_build_in_settlement = yes
+        }
+        value = 0
+    }
+    else = {
+        value = brc_territory_importance
+        if = {
+            limit = {
+                has_trade_good_of_extreme_priority = yes
+            }
+            multiply = brc_99
+        }
+        else_if = {
+            limit = {
+                has_trade_good_of_high_priority = yes
+            }
+            multiply = brc_95
+        }
+        else_if = {
+            limit = {
+                has_trade_good_of_medium_priority = yes
+            }
+            multiply = brc_85
+        }
+        else = {
+            multiply = brc_65
+        }
+    }
+}
+
+brc_basic_settlement_infratructure = {
+    # Don't build and destroy if exists
+    if = {
+        limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            ai_required_to_destroy_in_settlement = yes
+        }
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
+            ai_prohibited_to_build_in_settlement = yes
+        }
+        value = 0
+    }
+    else = {
+        value = brc_territory_importance
+        if = {
+            limit = {
+                root.state = {
+                    state_has_low_food = yes
+                }
+            }
+            multiply = brc_100
+        }
+        else_if = {
+            limit = {
+                OR = {
+                    has_trade_good_of_extreme_priority = yes
+                    share_of_cities_in_same_state >= 0.3333
+                }
+            }
+            multiply = brc_99
+        }
+        else_if = {
+            limit = {
+                has_trade_good_of_high_priority = yes
+            }
+            multiply = brc_95
+        }
+        else_if = {
+            limit = {
+                has_trade_good_of_medium_priority = yes
+            }
+            multiply = brc_75
+        }
+        else_if = {
+            limit = {
+                share_of_cities_in_same_state >= 0.25
+            }
+            multiply = brc_65
+        }
+        else_if = {
+            limit = {
+                share_of_cities_in_same_state >= 0.20
+            }
+            multiply = brc_55
+        }
+        else_if = {
+            limit = {
+                share_of_cities_in_same_state >= 0.1666
+            }
+            multiply = brc_45
+        }
+        else = {
+            multiply = brc_30
+        }
+    }
+}
+
+brc_hill_fort = {
+    # Don't build and destroy if exists
+    if = {
+        limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            OR = {
+                ai_required_to_destroy_in_settlement = yes
+                # Not tribal so can't use tribesmen bonuses
+                owner = {
+                    is_tribal = no
+                }
+                # Always build mine or farm if possible
+                territory_eligible_for_mine_or_farm = yes
+                # Always build slave estate if it's preferred
+                territory_prefers_slave_estate = yes
+            }
+        }
+        value = -1
+    }
+    # Don't build
+    else_if = {
+        limit = {
+            OR = {
+                ai_prohibited_to_build_in_settlement = yes
+                # Not tribal so can't use tribesmen bonuses
+                owner = {
+                    is_tribal = no
+                }
+                # Always build mine or farm if possible
+                territory_eligible_for_mine_or_farm = yes
+                # Always build slave estate if it's preferred
+                territory_prefers_slave_estate = yes
+            }
+        }
+        value = 0
+    }
+    # Build
+    else = {
+        value = brc_territory_importance
+        multiply = brc_15
     }
 }
 
@@ -532,10 +1060,19 @@ brc_local_forum = {
 # SUPPORTING VALUES #
 # ----------------- #
 
+brc_ratio_building_weight_per_level = 0.25
+
 brc_territory_importance = {
     value = 1
     add = {
         value = total_population
+        # Treat capital same as regular cities with 25 more pops
+        if = {
+            limit = {
+                is_capital = yes
+            }
+            add = 25
+        }
         multiply = 0.01
     }
 }
@@ -552,16 +1089,27 @@ num_of_territories_in_same_state = {
     add = state.num_of_territories_in_state
 }
 
-population_cap_minus_3 = {
+state_fort_level_svalue = {
+    value = 0
+    every_state_province = {
+        add = fort_level
+    }
+}
+
+population_cap_minus_2 = {
 	value = population_cap
-	subtract = 3
+	subtract = 1
+}
+population_cap_minus_5 = {
+	value = population_cap
+	subtract = 5
 }
 population_cap_minus_10 = {
 	value = population_cap
-	subtract = 10
+	subtract = 5
 }
 
-territory_port_level_including_construction = {
+port_level_including_construction = {
     if = {
         limit = {
             can_have_port = no
@@ -576,6 +1124,26 @@ territory_port_level_including_construction = {
             }
             add = 1
         }
+    }
+}
+
+num_of_fortress_building_projected = {
+    value = num_of_fortress_building
+    if = {
+        limit = {
+            has_specific_construction = fortress_building
+        }
+        add = 1
+    }
+}
+
+fort_level_projected = {
+    value = fort_level
+    if = {
+        limit = {
+            has_specific_construction = fortress_building
+        }
+        add = 1
     }
 }
 
@@ -634,7 +1202,7 @@ num_of_giga_ports_wanted = {
     value = 0
     if = {
         limit = {
-            rank >= regional_power
+            rank_by_num_territories >= regional_power
             OR = {
                 # Military traditions that unlock Octere
                 has_military_bonus = nubian_path_13
@@ -664,7 +1232,7 @@ num_of_giga_ports_wanted = {
         add = 1
         if = {
             limit = {
-                rank >= great_power
+                rank_by_num_territories >= great_power
             }
             add = 1
         }
@@ -692,7 +1260,7 @@ num_of_mega_ports_wanted = {
     # Base value depending on rank so they always want at least some
     if = {
         limit = {
-            rank >= regional_power
+            rank_by_num_territories >= regional_power
 
             # Removed due to performance concerns, reintroduce if there's a cheap way to do so
             # OR = {
@@ -709,12 +1277,12 @@ num_of_mega_ports_wanted = {
         add = 1
         if = {
             limit = {
-                rank >= major_power
+                rank_by_num_territories >= major_power
             }
             add = 1
             if = {
                 limit = {
-                    rank >= great_power
+                    rank_by_num_territories >= great_power
                 }
                 add = 1
             }
@@ -728,22 +1296,74 @@ num_of_mega_ports_wanted = {
 
 port_levels_to_giga_tier = {
     value = owner.level_of_giga_port_wanted
-    subtract = territory_port_level_including_construction
+    subtract = port_level_including_construction
 }
 
 port_levels_to_mega_tier = {
     value = owner.level_of_mega_port_wanted
-    subtract = territory_port_level_including_construction
+    subtract = port_level_including_construction
 }
 
 port_tier_enum_mega = 1
 port_tier_enum_giga = 2
 
-# 1 per every 30 pops - better to sync with 10s, so after reaching threshold AI could instantly build it using new slot
+# 1 per every 20-30 pops - better to sync with 10s, so after reaching threshold AI could build it using the new slot
 level_of_granary_wanted = {
     value = total_population
-    divide = 30
+    if = {
+        limit = {
+            share_of_cities_in_same_state >= 0.40
+        }
+        divide = 20
+    }
+    else_if = {
+        limit = {
+            share_of_cities_in_same_state >= 0.20
+        }
+        divide = 25
+    }
+    else = {
+        divide = 30
+    }
     floor = yes
+}
+
+share_of_cities_in_same_state = {
+    value = 0
+    state = {
+        every_state_province = {
+            limit = {
+                has_city_status = yes
+            }
+            add = 1
+        }
+    }
+    divide = {
+        value = 0
+        state = {
+            every_state_province = {
+                add = 1
+            }
+        }
+        min = 1
+    }
+}
+
+share_of_cities_in_state = {
+    value = 0
+    every_state_province = {
+        limit = {
+            has_city_status = yes
+        }
+        add = 1
+    }
+    divide = {
+        value = 0
+        every_state_province = {
+            add = 1
+        }
+        min = 1
+    }
 }
 
 # ----------------------------------------------------------------------------------------------------------------------

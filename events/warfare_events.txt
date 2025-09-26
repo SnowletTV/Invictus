@@ -1,0 +1,1453 @@
+﻿namespace = warfare
+
+warfare.1 = {
+	type = character_event
+	title = "warfare.1.t"
+	desc = "warfare.1.desc"
+	
+	picture = city_siege
+	
+	left_portrait = root
+	right_portrait = scope:enemy_ruler
+	
+	goto_location = scope:temp_city_scope_warfare_1
+	
+	trigger = {
+		is_governor = no
+		NOT = { employer = { tag = BAR } }
+		scope:target = {
+			OR = {
+				ROOT = {
+					is_mercenary = yes
+				}
+				NOT = { owner = root.employer }
+			}
+			OR = {
+				has_city_status = yes
+				is_capital = yes
+			}
+			NOR = { 
+				has_variable = sacking_cooldown
+				has_province_modifier = utterly_sacked
+			}
+		}
+	}
+	
+	immediate = {
+		save_scope_as = siege_instigator
+		save_scope_as = actor
+		add_popularity = popularity_small
+		if = {
+			limit = {
+				NOT = {
+					has_variable = sieginator
+				}
+			}
+			set_variable = {
+				name = sieginator
+				value = 1
+			}
+		}
+		else = {
+			change_variable = {
+				name = sieginator
+				add = 1
+			}
+		}
+		hidden_effect = { #Nickname assignation
+			if = {
+				limit = {
+					has_nickname = no
+					has_variable = sieginator
+					var:sieginator >= 20
+					has_culture_group = latin
+				}
+				add_nickname = NICKNAME_IMPERIOSUS
+				if = { limit = { is_minor_character = no } family = { add_prestige = prestige_small } }
+			}
+			else_if = {
+				limit = {
+					has_nickname = no
+					has_variable = sieginator
+					var:sieginator >= 20
+					NOT = {
+						has_culture_group = latin
+					}
+				}
+				add_nickname = NICKNAME_THE_BESIEGER
+				if = { limit = { is_minor_character = no } family = { add_prestige = prestige_small } }
+			}
+			if = {
+				limit = {
+					has_culture_group = latin
+					scope:target = {
+						province_id = 3256
+					}
+				}
+				random_list = {
+					25 = { 
+						add_nickname = NICKNAME_AFRICANUS
+						if = { limit = { is_minor_character = no } family = { add_prestige = prestige_small } }
+					}
+					75 = { }
+				}
+			}
+		}
+		set_local_variable = {
+			name = sieged_city
+			value = scope:target
+		}
+		scope:target = {
+			save_scope_as = temp_city_scope_warfare_1
+			set_variable = {
+				name = sacking_cooldown
+				days = 1825 # 5 years
+			}
+			owner = {
+				current_ruler = {
+					save_scope_as = enemy_ruler
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "warfare.1.a" #Be nice to them
+		if = { limit = { is_minor_character = no } family = { add_prestige = prestige_small } }
+		add_gold = {
+			value = warfare_1_loot_small_value
+		}
+		if = {
+			limit = {
+				is_ruler = yes
+			}
+			employer = {
+				add_treasury = {
+					value = warfare_1_loot_small_value
+				}
+			}
+		}
+		hidden_effect = {
+			random_list = {
+				50 = {}
+				50 = {
+					scope:target = {
+						add_city_fire_effect = yes
+					}
+				}
+			}
+			if = {
+				limit = {
+					has_legion_trigger = yes
+					NOT = {
+						scope:target.owner = { civil_war_with = ROOT.employer }
+					}
+				}
+				if = {
+					limit = {
+						scope:target = { num_of_fortress_building >= 3 }
+					}
+					legion = {
+						add_legion_history = {
+							key = gentle_great_fortress_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { has_province_rank = city_metropolis }
+					}
+					legion = {
+						add_legion_history = {
+							key = gentle_metropolis_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { is_capital = yes }
+					}
+					legion = {
+						add_legion_history = {
+							key = gentle_capital_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { total_population >= 30 }
+					}
+					legion = {
+						add_legion_history = {
+							key = gentle_sack_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+			}
+		}
+		ai_chance = {
+			base = 10
+			modifier = {
+				add = 10
+				has_trait = kindly
+			}
+			modifier = {
+				add = 10
+				has_trait = humble
+			}
+			modifier = {
+				add = 10
+				has_trait = loving
+			}
+			modifier = {
+				add = 10
+				has_trait = submissive
+			}
+			modifier = {
+				add = 10
+				has_trait = lazy
+			}
+		}
+	}
+	
+	option = {
+		name = "warfare.1.b" #normal looting
+		if = { limit = { is_minor_character = no } family = { add_prestige = prestige_small } }
+		add_gold = {
+			value = warfare_1_loot_medium_value
+		}
+		if = {
+			limit = {
+				is_ruler = yes
+			}
+			employer = {
+				add_treasury = {
+					value = warfare_1_loot_medium_value
+				}
+			}
+		}
+		if = {
+			limit = {
+				is_general = yes
+				any_character_unit = {
+					any_sub_unit = {
+						has_personal_loyalty = no
+					}
+				}
+			}
+			random_character_unit = {
+				limit = {
+					any_sub_unit = {
+						has_personal_loyalty = no
+					}
+				}
+				random_sub_unit = {
+					set_personal_loyalty = root
+				}
+			}
+		}
+		local_var:sieged_city = {
+			while = {
+				count = 2
+				random_pops_in_province = {
+					kill_pop = yes
+				}
+			}
+		}
+		scope:target = {
+			add_city_fire_effect = yes
+		}
+		hidden_effect = {
+			if = {
+				limit = {
+					scope:target = {
+						city_has_destroyable_wonder_trigger = yes
+					}
+				}
+				random_list = {
+					50 = {} # Nothing happens
+					10 = {
+						trigger = {
+							scope:target = {
+								city_has_museion_trigger = yes
+							}
+						}
+						scope:target = {
+							owner = {
+								trigger_event = {
+									id = dhe_museion.12
+								}
+							}
+						}
+					}
+					#10 = {
+					#	trigger = {
+					#		scope:target = {
+					#			city_has_colossus_trigger = yes
+					#		}
+					#	}
+					#	scope:target = {
+					#		owner = {
+					#			trigger_event = {
+					#				id = dhe_colossus_of_rhodes.13
+					#			}
+					#		}
+					#	}
+					#}
+				}
+			}
+			if = {
+				limit = {
+					has_legion_trigger = yes
+					trigger_if = {
+						limit = {
+							scope:target = { has_owner = yes }
+						}
+						NOT = {
+							scope:target.owner = { civil_war_with = ROOT.employer }
+						}
+					}
+				}
+				if = {
+					limit = {
+						scope:target = { num_of_fortress_building >= 3 }
+					}
+					legion = {
+						add_legion_history = {
+							key = normal_great_fortress_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { has_province_rank = city_metropolis }
+					}
+					legion = {
+						add_legion_history = {
+							key = normal_metropolis_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { is_capital = yes }
+					}
+					legion = {
+						add_legion_history = {
+							key = normal_capital_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { total_population >= 30 }
+					}
+					legion = {
+						add_legion_history = {
+							key = normal_sack_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+			}
+		}
+		ai_chance = {
+			base = 20
+		}
+	}
+	
+	option = {
+		name = "warfare.1.c" #megalooting
+		if = { limit = { is_minor_character = no } family = { add_prestige = prestige_small } }
+		add_gold = {
+			value = warfare_1_loot_large_value
+		}
+		if = {
+			limit = {
+				is_ruler = yes
+			}
+			employer = {
+				add_treasury = {
+					value = warfare_1_loot_large_value
+				}
+			}
+		}
+		if = {
+			limit = {
+				NOR = {
+					has_trait = cruel
+					has_trait = merciful
+					number_of_personality_traits > max_number_of_traits_svalue
+				}
+			}
+			add_trait = cruel
+		}
+		if = {
+			limit = {
+				is_general = yes
+				any_character_unit = {
+					any_sub_unit = {
+						has_personal_loyalty = no
+					}
+				}
+			}
+			while = {
+				count = 3
+				limit = {
+					any_character_unit = {
+						any_sub_unit = {
+							has_personal_loyalty = no
+						}
+					}
+				}
+				random_character_unit = {
+					limit = {
+						any_sub_unit = {
+							has_personal_loyalty = no
+						}
+					}
+					random_sub_unit = {
+						set_personal_loyalty = root
+					}
+				}
+			}
+		}
+		local_var:sieged_city = {
+			while = {
+				count = 4
+				random_pops_in_province = {
+					kill_pop = yes
+				}
+			}
+		}
+		scope:target = {
+			add_city_fire_effect = yes
+		}
+		hidden_effect = {
+			if = {
+				limit = {
+					scope:target = {
+						city_has_destroyable_wonder_trigger = yes
+					}
+				}
+				random_list = {
+					20 = {} # Nothing happens
+					10 = {
+						trigger = {
+							scope:target = {
+								city_has_museion_trigger = yes
+							}
+						}
+						scope:target = {
+							owner = {
+								trigger_event = {
+									id = dhe_museion.12
+								}
+							}
+						}
+					}
+					#10 = {
+					#	trigger = {
+					#		scope:target = {
+					#			city_has_colossus_trigger = yes
+					#		}
+					#	}
+					#	scope:target = {
+					#		owner = {
+					#			trigger_event = {
+					#				id = dhe_colossus_of_rhodes.13
+					#			}
+					#		}
+					#	}
+					#}
+				}
+			}
+			if = {
+				limit = {
+					has_legion_trigger = yes
+					NOT = {
+						scope:target.owner = { civil_war_with = ROOT.employer }
+					}
+				}
+				if = {
+					limit = {
+						scope:target = { num_of_fortress_building >= 3 }
+					}
+					legion = {
+						add_legion_history = {
+							key = megaloot_great_fortress_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { has_province_rank = city_metropolis }
+					}
+					legion = {
+						add_legion_history = {
+							key = megaloot_metropolis_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { is_capital = yes }
+					}
+					legion = {
+						add_legion_history = {
+							key = megaloot_capital_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { total_population >= 30 }
+					}
+					legion = {
+						add_legion_history = {
+							key = megaloot_sack_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+			}
+		}
+		ai_chance = {
+			base = 0
+			modifier = {
+				add = 10
+				has_trait = energetic
+			}
+			modifier = {
+				add = 10
+				has_trait = brave
+			}
+			modifier = {
+				add = 10
+				has_trait = vengeful
+			}
+			modifier = {
+				add = 10
+				has_trait = gluttonous
+			}
+			modifier = {
+				add = 10
+				has_trait = arrogant
+			}
+		}
+	}
+	
+	option = {
+		name = "warfare.1.d" #hyperlooting
+		trigger = {
+			local_var:sieged_city = {
+				OR = {
+					total_population >= 60
+					scripted_famous_cities_list_trigger = yes
+				}
+			}
+		}
+		if = { limit = { is_minor_character = no } family = { add_prestige = prestige_medium } }
+		add_gold = {
+			value = warfare_1_loot_huge_value
+		}
+		if = {
+			limit = {
+				is_ruler = yes
+			}
+			employer = {
+				add_treasury = {
+					value = warfare_1_loot_huge_value
+				}
+			}
+		}
+		if = {
+			limit = {
+				NOR = {
+					has_trait = cruel
+					has_trait = merciful
+					number_of_personality_traits > max_number_of_traits_svalue
+				}
+			}
+			add_trait = cruel
+		}
+		set_local_variable = {
+			name = looted_gold
+			value = warfare_1_loot_huge_value
+		}
+		local_var:sieged_city = {
+			while = {
+				count = 6
+				random_pops_in_province = {
+					kill_pop = yes
+				}
+			}
+		}
+		local_var:sieged_city = {
+			add_province_modifier = {
+				name = utterly_sacked
+				duration = 3650
+			}
+		}
+		if = {
+			limit = {
+				is_ruler = no
+				NOT = {
+					scope:target = {
+						city_has_destroyable_wonder_trigger = yes
+					}
+				}
+			}
+			employer = {
+				trigger_event = {
+					id = warfare.2
+				}
+			}
+		}
+		if = {
+			limit = {
+				is_general = yes
+				any_character_unit = {
+					any_sub_unit = {
+						has_personal_loyalty = no
+					}
+				}
+			}
+			while = {
+				count = 5
+				random_character_unit = {
+					limit = {
+						any_sub_unit = {
+							has_personal_loyalty = no
+						}
+					}
+					random_sub_unit = {
+						set_personal_loyalty = root
+					}
+				}
+			}
+		}
+		scope:target = {
+			add_city_fire_effect = yes
+		}
+		hidden_effect = {
+			if = {
+				limit = {
+					scope:target = {
+						city_has_destroyable_wonder_trigger = yes
+					}
+				}
+				random_list = {
+					10 = {} # Nothing happens
+					10 = {
+						trigger = {
+							scope:target = {
+								city_has_museion_trigger = yes
+							}
+						}
+						scope:target = {
+							owner = {
+								trigger_event = {
+									id = dhe_museion.12
+								}
+							}
+						}
+					}
+					#10 = {
+					#	trigger = {
+					#		scope:target = {
+					#			city_has_colossus_trigger = yes
+					#		}
+					#	}
+					#	scope:target = {
+					#		owner = {
+					#			trigger_event = {
+					#				id = dhe_colossus_of_rhodes.13
+					#			}
+					#		}
+					#	}
+					#}
+				}
+			}
+			random_list = {
+				75 = {}
+				25 = {
+					employer = {
+						trigger_event = {
+							days = 5
+							id = distinction.22
+						}
+					}
+				}
+			}
+			if = {
+				limit = {
+					has_legion_trigger = yes
+					NOT = {
+						scope:target.owner = { civil_war_with = ROOT.employer }
+					}
+				}
+				if = {
+					limit = {
+						scope:target = { num_of_fortress_building >= 3 }
+					}
+					legion = {
+						add_legion_history = {
+							key = hyperloot_great_fortress_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { has_province_rank = city_metropolis }
+					}
+					legion = {
+						add_legion_history = {
+							key = hyperloot_metropolis_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { is_capital = yes }
+					}
+					legion = {
+						add_legion_history = {
+							key = hyperloot_capital_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						scope:target = { total_population >= 30 }
+					}
+					legion = {
+						add_legion_history = {
+							key = hyperloot_sack_history
+							commander = ROOT
+							province = scope:temp_city_scope_warfare_1
+						}
+					}
+				}
+			}
+		}
+		ai_chance = {
+			base = 30
+			modifier = {
+				add = 20
+				has_trait = cruel
+			}
+			modifier = {
+				add = 10
+				has_trait = cold
+			}
+			modifier = {
+				add = 10
+				has_trait = rash
+			}
+			modifier = {
+				add = 10
+				has_trait = uncaring
+			}
+			modifier = {
+				add = 10
+				has_trait = obsessive
+			}
+		}
+	}
+}
+
+warfare.2 = {
+	type = country_event
+	title = warfare.2.t
+	desc = warfare.2.desc
+	picture = looting
+	
+	trigger = {
+		scope:siege_instigator = {
+			is_alive = yes
+		}
+	}
+	
+	immediate = {
+		
+	}
+	
+	option = {
+		name = "warfare.2.a"
+		scope:siege_instigator = {
+			if = {
+				limit = {
+					is_mercenary = no
+				}
+				add_loyalty = loyalty_looting_unpunished
+			}
+		}
+		if = {
+			limit = {
+				scope:siege_instigator = {
+					is_general = yes
+				}
+			}
+			scope:siege_instigator = {
+				ordered_character_unit = {
+					order_by = unit_size
+					add_loyal_subunit = light_infantry
+					add_loyal_subunit = light_infantry
+				}	
+			}
+			
+		}
+	}
+	
+	option = {
+		name = "warfare.2.b"
+		scope:siege_instigator = {
+			if = {
+				limit = {
+					is_mercenary = no
+				}
+				add_loyalty = loyalty_demanded_oath
+			}
+		}
+	}
+	
+	option = {
+		name = "warfare.2.c"
+		custom_tooltip = shrewd_tooltip
+		highlight = yes
+		trigger = {
+			current_ruler = {
+				has_trait = shrewd
+			}
+		}
+		scope:siege_instigator = {
+			if = {
+				limit = {
+					is_mercenary = no
+				}
+				add_loyalty = loyalty_split_loot
+			}
+			add_gold = {
+				value = 0
+				subtract = local_var:looted_gold
+				divide = 2
+			}
+			every_character_unit = {
+				remove_unit_loyalty = yes
+			}
+		}
+		
+	}
+	
+}
+
+warfare.3 = {
+	type = country_event
+	title = "warfare.3.t"
+	desc = "warfare.3.desc"
+	
+	left_portrait = current_ruler
+	right_portrait = scope:actor.current_ruler
+	right_portrait = scope:target
+	
+	goto_location = scope:target.location
+	
+	picture = persia_marching
+	
+	trigger = {
+		exists = scope:target
+		exists = scope:actor
+	}
+	
+	immediate = {
+		save_scope_as = counter_target
+		scope:target = {
+			save_scope_as = mercenary_to_bribe
+		}
+	}
+	
+	option = {
+		name = "warfare.3.a"
+		add_treasury = {
+			value = 0
+			subtract = army_size_merc_estimation
+		}
+		scope:actor = {
+			trigger_event = {
+				id = warfare.4
+			}
+		}
+		ai_chance = {
+			modifier = {
+				factor = 0
+				ai_should_counter_bribe_mercenary = no
+			}
+		}
+	}
+	
+	option = {
+		name = "warfare.3.b"
+		scope:target = {
+			change_mercenary_employer = scope:actor
+		}
+		scope:actor = {
+			trigger_event = {
+				id = warfare.5
+			}
+		}
+		ai_chance = {
+			modifier = {
+				factor = 0
+				ai_should_counter_bribe_mercenary = yes
+			}
+		}
+	}
+}
+
+warfare.4 = {
+	type = country_event
+	title = "warfare.4.t"
+	desc = "warfare.4.desc"
+	
+	left_portrait = current_ruler
+	right_portrait = scope:target.employer.current_ruler
+	right_portrait = scope:target
+	
+	picture = greek_court
+	
+	option = {
+		name = "warfare.4.a"
+	}
+	
+}
+
+warfare.5 = {
+	type = country_event
+	title = "warfare.5.t"
+	desc = "warfare.5.desc"
+	
+	picture = romans_marching
+	
+	goto_location = scope:target.location
+	
+	left_portrait = current_ruler
+	right_portrait = scope:target.employer.current_ruler
+	right_portrait = scope:target
+	
+	option = {
+		name = "warfare.5.a"
+		custom_tooltip = merc_joined_us_tt
+		
+	}
+	
+}
+	
+
+warfare.6 = { #Battle Wound
+	type = character_event
+	title = "warfare.6.t"
+	desc = "warfare.6.desc"
+	
+	picture = romans_marching
+	
+	goto_location = root.location
+	
+	left_portrait = root
+	
+	trigger = {
+		is_adult = yes
+		NOT = { has_trait = wounded }
+		NOT = { has_variable = wounded_in_battle }
+	}
+	
+	weight_multiplier = {
+		modifier = {
+			add = {
+				value = root.martial
+				divide = 4
+				multiply = -1
+			}
+		}
+	}
+	
+	immediate = {
+		add_trait = wounded
+		set_variable = {
+			name = wounded_in_battle
+			days = 60
+		}
+		if = {
+			limit = {
+				NOT = { has_trait = one_eyed }
+				NOT = { has_trait = blind }
+			}
+			random_list = {
+				5 = { add_trait = one_eyed }
+				95 = { }
+			}
+		}
+	}
+	
+	option = {
+		name = "warfare.6.a"
+		add_popularity = 5
+	}
+	
+}
+	
+
+warfare.7 = { #Fallen Commander
+	type = character_event
+	title = "warfare.7.t"
+	desc = "warfare.7.desc"
+	
+	picture = romans_marching
+	
+	goto_location = scope:battle_location
+	
+	left_portrait = root
+	
+	trigger = {
+		is_adult = yes
+		NOT = { has_variable = wounded_in_battle }
+	}
+	
+	weight_multiplier = {
+		modifier = {
+			add = {
+				value = root.martial
+				divide = 4
+				multiply = -1
+			}
+		}
+	}
+	
+	immediate = {
+		save_scope_as = dishonor_fallen_commander
+		hidden_effect = {
+			if = {
+				limit = {
+					has_dlc = "Heirs of Alexander"
+					has_legion_trigger = yes
+				}
+				legion = { save_scope_as = dishonor_fallen_commander_legion }
+				random_list = {
+					75 = { }
+					25 = {
+						employer = {
+							trigger_event = {
+								id = distinction.25
+								days = 10 
+							}
+						}
+					}
+				}
+			}
+		}
+		location = { save_scope_as = battle_location }
+		death = { death_reason = death_battle } 
+	}
+	
+	option = {
+		name = "warfare.7.a"
+	}
+}
+	
+warfare.8 = { #Battle at Sea - Wounded Commander
+	type = character_event
+	title = "warfare.8.t"
+	desc = "warfare.8.desc"
+	
+	picture = diadochi_demetrius_navy
+	
+	goto_location = root.location
+	
+	left_portrait = root
+	
+	
+	trigger = {
+		is_adult = yes
+		NOT = { has_trait = wounded }
+		NOT = { has_variable = wounded_in_battle }
+	}
+	
+	weight_multiplier = {
+		modifier = {
+			add = {
+				value = root.martial
+				divide = 4
+				multiply = -1
+			}
+		}
+	}
+	
+	immediate = {
+		add_trait = wounded
+		set_variable = {
+			name = wounded_in_battle
+			days = 60
+		}
+		if = {
+			limit = {
+				NOT = { has_trait = one_eyed }
+				NOT = { has_trait = blind }
+			}
+			random_list = {
+				5 = { add_trait = one_eyed }
+				95 = { }
+			}
+		}
+	}
+	
+	option = {
+		name = "warfare.8.a"
+		add_popularity = 5
+	}
+	
+}
+	
+warfare.9 = { #Battle at Sea - Fallen Commander
+	type = character_event
+	title = "warfare.9.t"
+	desc = "warfare.9.desc"
+	
+	picture = diadochi_demetrius_navy
+	
+	goto_location = scope:battle_location
+	
+	left_portrait = root
+	
+	
+	
+	trigger = {
+		is_adult = yes
+		NOT = { has_variable = wounded_in_battle }
+	}
+	
+	weight_multiplier = {
+		modifier = {
+			add = {
+				value = root.martial
+				divide = 4
+				multiply = -1
+			}
+		}
+	}
+	
+	immediate = {
+		location = { save_scope_as = battle_location }
+		death = { death_reason = death_battle } 
+		
+	}
+	
+	option = {
+		name = "warfare.9.a"
+		
+	}
+	
+}
+
+warfare.10 = { #Experience Mech
+	type = character_event
+	hidden = yes
+	
+	trigger = {
+		has_legion_trigger = yes
+		exists = employer
+		employer = {
+			invention = discipline_inv_4
+		}
+		location = {
+			has_owner = yes
+			has_city_status = yes
+			NOT = {
+				has_variable = cannot_sack_right_now
+			}
+		}
+	}
+	
+	immediate = {
+		location = { 
+			set_variable = {
+				name = cannot_sack_right_now
+				days = 730
+			}
+			trigger_event = {
+				id = warfare.11
+				days = 1
+			}
+		}
+		employer = {
+			add_military_experience = 0.1
+		}
+	}
+	
+}
+
+warfare.11 = { #Experience Mech
+	type = province_event
+	hidden = yes
+	
+	immediate = {
+		show_animated_text = mil_exp_anitext_effect
+	}
+	
+}
+
+warfare.12 = { #successor support
+	type = country_event
+	title = "warfare.12.t"
+	desc = "warfare.12.desc"
+	
+	picture = romans_marching
+	
+	left_portrait = current_ruler
+	right_portrait = scope:supported_target
+	
+	option = {
+		name = "warfare.12.a"
+		scope:supported_target.employer = {
+			add_manpower = {
+				value = 0
+				add = root.manpower
+				divide = 2
+			}
+		}
+		add_manpower = {
+			value = 0
+			subtract = root.manpower
+			divide = 2
+		}
+	}
+	
+	option = {
+		name = "warfare.12.b"
+		add_alliance = scope:supported_target.employer
+	}
+	
+	option = {
+		name = "warfare.12.d"
+		scope:supported_target.employer = {
+			add_manpower = {
+				value = 0
+				add = root.manpower
+				divide = 2
+			}
+		}
+		add_manpower = {
+			value = 0
+			subtract = root.manpower
+			divide = 2
+		}
+		add_alliance = scope:supported_target.employer
+		custom_tooltip = "if_small_enough_subject_tt"
+		scope:supported_target = {
+			set_variable = {
+				name = complete_pretender_support
+				value = root
+				days = 3650
+			}
+		}
+	}
+	
+	option = {
+		name = "warfare.12.b"
+		add_alliance = scope:supported_target.employer
+		ai_chance = {
+			modifier = {
+				factor = 100
+			}
+		}
+	}
+	
+	option = {
+		name = "warfare.12.c"
+		current_ruler = {
+			add_popularity = subtract_popularity_large 
+		}
+		add_stability = -10
+	}
+	
+}
+
+warfare.13 = {
+	type = character_event
+	hidden = yes
+	trigger = {
+		has_variable = successor_support_ci
+		exists = var:successor_support_ci
+		var:successor_support_ci = {
+			has_land = yes
+		}
+		employer = {
+			civil_war_with = scope:old_country
+		}
+	}
+	immediate = {
+		var:successor_support_ci = {
+			save_scope_as = origin_supporter
+		}
+		save_scope_as = supported_target 
+		remove_variable = successor_support_ci
+		employer = {
+			set_as_ruler = root
+		}
+		scope:origin_supporter = {
+			trigger_event = {
+				id = warfare.12
+			}
+		}
+	}
+}
+
+warfare.14 = { #successor support
+	type = country_event
+	title = "warfare.14.t"
+	desc = "warfare.14.desc"
+	
+	picture = romans_marching
+	
+	left_portrait = current_ruler
+	right_portrait = scope:puppet_kingdom.current_ruler
+	
+	option = {
+		name = "warfare.14.a"
+		add_tyranny = 20
+		add_stability = -10
+		make_subject = {
+			target = scope:puppet_kingdom
+			type = client_state
+		}
+		save_scope_as = puppeteer_country
+		every_country = {
+			limit = {
+				is_ai = no
+			}
+			trigger_event = {
+				id = warfare.16
+			}
+		}
+		ai_chance = {
+			modifier = { factor = 100 }
+		}
+	}
+	
+	option = {
+		name = "warfare.14.b"
+		add_treasury = 500
+	}
+}
+
+warfare.15 = { #successor support
+	type = country_event
+	title = "warfare.15.t"
+	desc = "warfare.15.desc"
+	
+	picture = romans_marching
+	
+	left_portrait = current_ruler
+	right_portrait = scope:puppet_kingdom.current_ruler
+	
+	option = {
+		name = "warfare.15.b"
+		add_treasury = 1000
+		add_political_influence = 100
+	}
+}
+
+warfare.16 = { #successor support ping
+	type = country_event
+	title = "warfare.16.t"
+	desc = "warfare.16.desc"
+	
+	picture = throneroom
+	
+	left_portrait = current_ruler
+	right_portrait = scope:puppet_kingdom.current_ruler
+	right_portrait = scope:puppeteer_country.current_ruler
+	
+	option = {
+		name = "warfare.16.a"
+	}
+}
+
+warfare.17 = { #A nice surprise
+	type = character_event
+	hidden = yes
+	
+	trigger = {
+		this = char:70
+		is_alive = yes
+		location = {
+			province_id = 440
+		}
+	}
+	
+	immediate = {
+		save_scope_as = sbgdnq1
+		char:70.employer = {
+			trigger_event = {
+				id = warfare.18
+			}
+		}
+	}
+	
+}
+
+warfare.18 = { #A nice surprise
+	type = country_event
+	title = "warfare.17.t"
+	desc = "warfare.17.desc"
+	
+	picture = revolt
+	
+	left_portrait = current_ruler
+	right_portrait = scope:sbgdnq1
+	
+	option = {
+		name = "warfare.17.a"
+		scope:sbgdnq1 = {
+			death = {
+				death_reason = death_rooftile
+			}
+		}
+		create_country_treasure = { 
+			key = "anti_personnel_rooftile"
+			icon = "treasure_chest"
+			
+			modifier = {
+				local_unrest = 2
+				local_defensive = 0.5
+			}
+		}
+	}
+}

@@ -117,6 +117,7 @@ types MultiplayerLobby
 	type game_rule_radio = vbox {
 		layoutpolicy_horizontal = expanding
 		margin_left = 5
+		margin_bottom = 4
 
 		radial_button_entry = {
 			margin_right = -20
@@ -1060,7 +1061,6 @@ types MultiplayerLobby
 	}
 
 	type LobbyViewButtons = vbox {
-
 
 		margin_widget = {
 			size = { 332 32 }
@@ -2128,8 +2128,6 @@ JominiMultiplayerLobby_BUI = {
 			blockoverride "On_click"
 			{
 				onclick = "[LobbyView.GoBack]"
-				onclick = "[GetVariableSystem.Clear('game_rules')]"
-				onclick = "[GetVariableSystem.Clear('country_selection')]"
 			}
 		}
 	}
@@ -2285,184 +2283,193 @@ JominiMultiplayerLobby_BUI = {
 			}
 		}
 	}
+
 	state = {
 		name = _show
-		on_start = "[GetVariableSystem.Set( 'show_south_europe_missions', 'yes' )]"
+		on_start = "[GetVariableSystem.Set( 'starting_nations_tab', 'south_europe' )]"
 		trigger_on_create = yes
 	}
-	window = {
-		size = { 742 173 }
+	state = {
+		name = backup
+		trigger_when = "[Not(GetVariableSystem.Exists('starting_nations_tab'))]"
+		on_start = "[GetVariableSystem.Set( 'starting_nations_tab', 'south_europe' )]"
+	}
+
+	# countries with missions
+	base_window = {
+		size = { 750 210 }
 		filter_mouse = left|right
 		alwaystransparent = no
 		movable = no
 		parentanchor = hcenter|bottom
-		visible = "[Not(IsSaveGame)]"
-		base_window = {
-			vbox = {
-				position = { 0 -60 }
-				top_window_header_for_layout_centered = {
-					layoutpolicy_horizontal = expanding
-					visible = "[Not(IsLocalPlayerReplayingCommands)]"
-					blockoverride "Title_text" { text = "countries_with_missions" }
-					blockoverride "White_buttons" {}
-					using = tooltip_above
-					tooltip = "unique_mission_tree_tt"
+		visible = "[And(Not(GetVariableSystem.Exists('mission_map')), Not(IsSaveGame))]"
+
+		# a vbox lets us have resizable tabs
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			# header
+			top_window_header_for_layout_centered = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Not(IsLocalPlayerReplayingCommands)]"
+
+				blockoverride "Title_text" {
+					text = "countries_with_missions"
+				}
+				tooltip = "unique_mission_tree_tt"
+				using = tooltip_above
+
+				#TODO mission map
+				white_button_round = {
+					visible = no
+					size = { 30 30 }
+					parentanchor = right|vcenter
+					position = { -10 0 }
+					tooltip = "Mission map, F1"
+					blockoverride "On_click" {
+						shortcut = top_bar_1
+						onclick = "[GetVariableSystem.Toggle('mission_map')]"
+					}
+					blockoverride "Icon" {
+						texture = "gfx/interface/icons/minimap/region.dds"
+					}
 				}
 			}
-			movable = no
-			size = { 742 173 }
-			parentanchor = bottom
-			blockoverride "BackgroundGradient" { visible = no }
-			container = {
-				name = "reccommended_nations_container"
-				flowcontainer = {
-					name = "reccommended_nations_tabs_container"
-					position = { 13 55 }
-					@mincategorybuttonwidth = 143
-					@maxcategorybuttonwidth = 143
-					@mincategorybuttonheight = 28
-					@maxcategorybuttonheight = 32
 
-					category_tab = {
-						name = "greek_missions_tab"
-						blockoverride "MinSize" { size = { @mincategorybuttonwidth @mincategorybuttonheight } }
-						blockoverride "MaxSize" { size = { @maxcategorybuttonwidth @maxcategorybuttonheight } }
-						blockoverride "MinVisible" { visible = "[Not( GetVariableSystem.HasValue( 'show_south_europe_missions', 'yes' ) )]" }
-						blockoverride "MaxVisible" { visible = "[GetVariableSystem.HasValue( 'show_south_europe_missions', 'yes' )]" }
-						blockoverride "Center_text" { text = "south_europe" }
-						blockoverride "Icon" { visible = no }
-						blockoverride "ClickFunction"
-						{
-							onclick = "[GetVariableSystem.Set( 'show_south_europe_missions', 'yes' )]"
-							onclick = "[GetVariableSystem.Set( 'show_north_europe_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_africa_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_asia_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_indian_missions', 'no' )]"
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				margin = { 10 10 }
+				spacing = 10
+
+				# tabs
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					# we don't need to set the size to these buttons
+					# add one and the rest will resize automatically
+
+					button_tab_inv = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "Center_text" { text = "new_missions"	}
+						blockoverride "On_click" {
+							onclick = "[GetVariableSystem.Set( 'starting_nations_tab', 'new_missions' )]"
+						}
+						blockoverride "MaxVisible" {
+							# making sure it's always visible by default
+							visible = "[Or(GetVariableSystem.HasValue('starting_nations_tab', 'new_missions'), Not(GetVariableSystem.Exists('starting_nations_tab')))]"
 						}
 					}
-					category_tab = {
-						name = "german_missions_tab"
-						blockoverride "MinSize" { size = { @mincategorybuttonwidth @mincategorybuttonheight } }
-						blockoverride "MaxSize" { size = { @maxcategorybuttonwidth @maxcategorybuttonheight } }
-						blockoverride "MinVisible" { visible = "[Not( GetVariableSystem.HasValue( 'show_north_europe_missions', 'yes' ) )]" }
-						blockoverride "MaxVisible" { visible = "[GetVariableSystem.HasValue( 'show_north_europe_missions', 'yes' )]" }
-						blockoverride "Center_text" { text = "north_europe" }
-						blockoverride "Icon" { visible = no }
-						blockoverride "ClickFunction"
-						{
-							onclick = "[GetVariableSystem.Set( 'show_south_europe_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_north_europe_missions', 'yes' )]"
-							onclick = "[GetVariableSystem.Set( 'show_africa_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_asia_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_indian_missions', 'no' )]"
+
+					button_tab_inv = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "Center_text" { text = "south_europe"	}
+						blockoverride "On_click" {
+							onclick = "[GetVariableSystem.Set( 'starting_nations_tab', 'south_europe' )]"
+						}
+						blockoverride "MaxVisible" {
+							# making sure it's always visible by default
+							visible = "[Or(GetVariableSystem.HasValue('starting_nations_tab', 'south_europe'), Not(GetVariableSystem.Exists('starting_nations_tab')))]"
 						}
 					}
-					category_tab = {
-						name = "africa_missions_tab"
-						blockoverride "MinSize" { size = { @mincategorybuttonwidth @mincategorybuttonheight } }
-						blockoverride "MaxSize" { size = { @maxcategorybuttonwidth @maxcategorybuttonheight } }
-						blockoverride "MinVisible" { visible = "[Not( GetVariableSystem.HasValue( 'show_africa_missions', 'yes' ) )]" }
-						blockoverride "MaxVisible" { visible = "[GetVariableSystem.HasValue( 'show_africa_missions', 'yes' )]" }
-						blockoverride "Center_text" { text = "africa" }
-						blockoverride "Icon" { visible = no }
-						blockoverride "ClickFunction"
-						{
-							onclick = "[GetVariableSystem.Set( 'show_south_europe_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_north_europe_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_africa_missions', 'yes' )]"
-							onclick = "[GetVariableSystem.Set( 'show_asia_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_indian_missions', 'no' )]"
+
+					button_tab_inv = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "Center_text" { text = "north_europe"	}
+						blockoverride "On_click" {
+							onclick = "[GetVariableSystem.Set( 'starting_nations_tab', 'north_europe' )]"
+						}
+						blockoverride "MaxVisible" {
+							visible = "[GetVariableSystem.HasValue('starting_nations_tab', 'north_europe')]"
 						}
 					}
-					category_tab = {
-						name = "asia_missions_tab"
-						blockoverride "MinSize" { size = { @mincategorybuttonwidth @mincategorybuttonheight } }
-						blockoverride "MaxSize" { size = { @maxcategorybuttonwidth @maxcategorybuttonheight } }
-						blockoverride "MinVisible" { visible = "[Not( GetVariableSystem.HasValue( 'show_asia_missions', 'yes' ) )]" }
-						blockoverride "MaxVisible" { visible = "[GetVariableSystem.HasValue( 'show_asia_missions', 'yes' )]" }
-						blockoverride "Center_text" { text = "asia" }
-						blockoverride "Icon" { visible = no }
-						blockoverride "ClickFunction"
-						{
-							onclick = "[GetVariableSystem.Set( 'show_south_europe_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_north_europe_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_africa_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_asia_missions', 'yes' )]"
-							onclick = "[GetVariableSystem.Set( 'show_indian_missions', 'no' )]"
+
+					button_tab_inv = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "Center_text" { text = "africa"	}
+						blockoverride "On_click" {
+							onclick = "[GetVariableSystem.Set( 'starting_nations_tab', 'africa' )]"
+						}
+						blockoverride "MaxVisible" {
+							visible = "[GetVariableSystem.HasValue('starting_nations_tab', 'africa')]"
 						}
 					}
-					category_tab = {
-						name = "indian_missions_tab"
-						blockoverride "MinSize" { size = { @mincategorybuttonwidth @mincategorybuttonheight } }
-						blockoverride "MaxSize" { size = { @maxcategorybuttonwidth @maxcategorybuttonheight } }
-						blockoverride "MinVisible" { visible = "[Not( GetVariableSystem.HasValue( 'show_indian_missions', 'yes' ) )]" }
-						blockoverride "MaxVisible" { visible = "[GetVariableSystem.HasValue( 'show_indian_missions', 'yes' )]" }
-						blockoverride "Center_text" { text = "india" }
-						blockoverride "Icon" { visible = no }
-						blockoverride "ClickFunction"
-						{
-							onclick = "[GetVariableSystem.Set( 'show_south_europe_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_north_europe_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_africa_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_asia_missions', 'no' )]"
-							onclick = "[GetVariableSystem.Set( 'show_indian_missions', 'yes' )]"
+
+					button_tab_inv = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "Center_text" { text = "asia"	}
+						blockoverride "On_click" {
+							onclick = "[GetVariableSystem.Set( 'starting_nations_tab', 'asia' )]"
+						}
+						blockoverride "MaxVisible" {
+							visible = "[GetVariableSystem.HasValue('starting_nations_tab', 'asia')]"
+						}
+					}
+
+					button_tab_inv = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "Center_text" { text = "india"	}
+						blockoverride "On_click" {
+							onclick = "[GetVariableSystem.Set( 'starting_nations_tab', 'india' )]"
+						}
+						blockoverride "MaxVisible" {
+							visible = "[GetVariableSystem.HasValue('starting_nations_tab', 'india')]"
 						}
 					}
 				}
-				missions_container = {
-					blockoverride "visiblity"
-					{
-						visible = "[GetVariableSystem.HasValue( 'show_south_europe_missions', 'yes' )]"
+
+				scrollarea = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					scrollbarpolicy_horizontal = always_off
+
+					scrollbar_vertical = {
+						using = VerticalScrollBar
 					}
-					blockoverride "missions"
-					{
-						using = south_europe_missions
-					}
-				}
-				missions_container = {
-					blockoverride "visiblity"
-					{
-						visible = "[GetVariableSystem.HasValue( 'show_north_europe_missions', 'yes' )]"
-					}
-					blockoverride "missions"
-					{
-						using = north_europe_missions
-					}
-				}
-				missions_container = {
-					blockoverride "visiblity"
-					{
-						visible = "[GetVariableSystem.HasValue( 'show_africa_missions', 'yes' )]"
-					}
-					blockoverride "missions"
-					{
-						using = africa_missions
-					}
-				}
-				missions_container = {
-					blockoverride "visiblity"
-					{
-						visible = "[GetVariableSystem.HasValue( 'show_asia_missions', 'yes' )]"
-					}
-					blockoverride "missions"
-					{
-						using = asian_missions
-					}
-				}
-				missions_container = {
-					blockoverride "visiblity"
-					{
-						visible = "[GetVariableSystem.HasValue( 'show_indian_missions', 'yes' )]"
-					}
-					blockoverride "missions"
-					{
-						using = indian_missions
+
+					scrollwidget = {
+						flowcontainer = {
+							direction = vertical
+							ignoreinvisible = yes
+							parentanchor = hcenter
+							margin_left = 7
+							margin_top = 5
+							margin_bottom = -10
+
+							# making sure it's always visible by default
+							new_missions = {
+								visible = "[GetVariableSystem.HasValue('starting_nations_tab', 'new_missions')]"
+							}
+							south_europe_missions = {
+								visible = "[Or(GetVariableSystem.HasValue('starting_nations_tab', 'south_europe'), Not(GetVariableSystem.Exists('starting_nations_tab')))]"
+							}
+
+							north_europe_missions = {
+								visible = "[GetVariableSystem.HasValue('starting_nations_tab', 'north_europe')]"
+							}
+
+							africa_missions = {
+								visible = "[GetVariableSystem.HasValue('starting_nations_tab', 'africa')]"
+							}
+
+							asian_missions = {
+								visible = "[GetVariableSystem.HasValue('starting_nations_tab', 'asia')]"
+							}
+
+							indian_missions = {
+								visible = "[GetVariableSystem.HasValue('starting_nations_tab', 'india')]"
+							}
+						}
 					}
 				}
 			}
 		}
 	}
 
+	# migratory tribes
 	base_window = {
 		size = { 520 148 }
 		parentanchor = bottom|hcenter
@@ -2524,6 +2531,7 @@ JominiMultiplayerLobby_BUI = {
 		}
 	}
 
+	# multiplayer
 	base_window = {
 		movable = no
 		size = { 332 55 }
@@ -2580,16 +2588,16 @@ JominiMultiplayerLobby_BUI = {
 		}
 	}
 
-	#mod
+	# game rules
 	base_window = {
 		movable = yes
 		minimumsize = { -1 100 }
 		parentanchor = center
-		visible = "[GetVariableSystem.Exists('game_rules')]"
+		visible = "[And(GetVariableSystem.Exists('country_selection'), GetVariableSystem.Exists('game_rules'))]"
 
 		vbox = {
 			resizeparent = yes
-			margin_bottom = 10
+			margin_bottom = 5
 			margin_top = 8
 			top_window_header_for_layout = {
 				layoutpolicy_horizontal = expanding
@@ -2618,8 +2626,10 @@ JominiMultiplayerLobby_BUI = {
 				scrollwidget = {
 					vbox = {
 						resizeparent = yes
-						margin = { 20 0 }
-						margin_top = 15
+						margin_top = 25
+						margin_bottom = 20
+						margin_left = 20
+						margin_right = 20
 						enabled = "[PlayerIsHost]"
 						spacing = 5
 
@@ -2709,6 +2719,20 @@ JominiMultiplayerLobby_BUI = {
 						}
 
 						game_rule = {
+							datacontext = "[GetScriptedGui('gender_rules')]"
+							blockoverride "name" {
+								text = "MODERN_GENDER_RULES"
+							}
+							blockoverride "desc" {
+								text = "gender_rules_desc"
+							}
+						}
+
+						widget = {
+							size = { 0 10 }
+						}
+
+						game_rule = {
 							datacontext = "[GetScriptedGui('diadochi_names')]"
 							blockoverride "name" {
 								text = "diadochi_names"
@@ -2746,6 +2770,114 @@ JominiMultiplayerLobby_BUI = {
 							}
 						}
 
+						widget = {
+							size = { 0 10 }
+						}
+
+						game_rule = {
+							datacontext = "[GetScriptedGui('ai_road_building')]"
+							blockoverride "name" {
+								text = "ai_road_building_name"
+							}
+							blockoverride "desc" {
+								text = "ai_road_building_desc"
+							}
+						}
+
+						game_rule_radio = {
+							datacontext = "[GetScriptedGui('ai_road_building_only_major_powers')]"
+							blockoverride "name" {
+								text = "ai_road_building_only_major_powers_name"
+								tooltip = "ai_road_building_only_major_powers_tooltip"
+							}
+						}
+
+						game_rule_radio = {
+							datacontext = "[GetScriptedGui('ai_road_building_only_great_powers')]"
+							blockoverride "name" {
+								text = "ai_road_building_only_great_powers_name"
+								tooltip = "ai_road_building_only_great_powers_tooltip"
+							}
+						}
+
+						game_rule_radio = {
+							datacontext = "[GetScriptedGui('ai_road_building_low_density')]"
+							blockoverride "name" {
+								text = "ai_road_building_low_density_name"
+								tooltip = "ai_road_building_low_density_tooltip"
+							}
+						}
+
+						game_rule_radio = {
+							datacontext = "[GetScriptedGui('ai_road_building_scaling_density')]"
+							blockoverride "name" {
+								text = "ai_road_building_scaling_density_name"
+								tooltip = "ai_road_building_scaling_density_tooltip"
+							}
+						}
+
+						game_rule_radio = {
+							datacontext = "[GetScriptedGui('ai_road_building_player_subjects')]"
+							blockoverride "name" {
+								text = "ai_road_building_player_subjects_name"
+								tooltip = "ai_road_building_player_subjects_tooltip"
+							}
+						}
+
+						widget = {
+							size = { 0 10 }
+						}
+
+						game_rule = {
+							datacontext = "[GetScriptedGui('advanced_ai')]"
+							blockoverride "name" {
+								text = "advanced_ai_name"
+							}
+							blockoverride "desc" {
+								text = "advanced_ai_desc"
+							}
+						}
+
+						game_rule_radio = {
+							datacontext = "[GetScriptedGui('advanced_ai_mercenaries')]"
+							blockoverride "name" {
+								text = "advanced_ai_mercenaries_name"
+								tooltip = "advanced_ai_configuration_tooltip"
+							}
+						}
+
+						game_rule_radio = {
+							datacontext = "[GetScriptedGui('advanced_ai_character_loyalty')]"
+							blockoverride "name" {
+								text = "advanced_ai_character_loyalty_name"
+								tooltip = "advanced_ai_configuration_tooltip"
+							}
+						}
+
+						game_rule_radio = {
+							datacontext = "[GetScriptedGui('advanced_ai_tribal_development')]"
+							blockoverride "name" {
+								text = "advanced_ai_tribal_development_name"
+								tooltip = "advanced_ai_configuration_tooltip"
+							}
+						}
+
+						game_rule_radio = {
+							datacontext = "[GetScriptedGui('advanced_ai_province_investment')]"
+							blockoverride "name" {
+								text = "advanced_ai_province_investment_name"
+								tooltip = "advanced_ai_configuration_tooltip"
+							}
+						}
+
+						game_rule_radio = {
+							datacontext = "[GetScriptedGui('advanced_ai_move_population')]"
+							blockoverride "name" {
+								text = "advanced_ai_move_population_name"
+								tooltip = "advanced_ai_configuration_tooltip"
+							}
+						}
+
 						#game_rule_radio = {
 						#	datacontext = "[GetScriptedGui('test_radio_2')]"
 						#	blockoverride "name" {
@@ -2771,6 +2903,162 @@ JominiMultiplayerLobby_BUI = {
 
 						expand = {}
 					}
+				}
+			}
+		}
+	}
+
+	# mission map
+	window = {
+		size = { 100% 100% }
+		visible = "[GetVariableSystem.Exists('mission_map')]"
+
+		button = {
+			shortcut = top_bar_1
+			onclick = "[GetVariableSystem.Clear('mission_map')]"
+		}
+
+		alpha = 0
+
+		state = {
+			name = _show
+			alpha = 1
+		}
+
+		state = {
+			name = _hide
+			alpha = 0
+			duration = 0.1
+		}
+
+		background = {
+			texture = "gfx/map/surround_map/surround_tile.dds"
+			shaderfile = "gfx/FX/pdxgui_default.shader"
+			tintcolor = { .8 .8 .8 1 }
+		}
+
+		zoomarea = {
+			size = { 100% 100% }
+			draggable_by = middle|left|right
+
+			zoom = 1.1
+			position = { 0 -50 }
+			zoom_step = 0.4
+			zoom_min = 1
+			zoom_max = 150
+
+			zoomwidget = {
+				widget = {
+					size = { 1920 1080 }
+
+					icon = {
+						texture = "gfx/interface/map/map_for_missions_sea.png"
+						size = { 2048 1024 }
+						alpha = 0.75
+						position = { -25 30 }
+					}
+
+					starting_nation_map = {
+						position = { 370 410 }
+						tooltip = "etruria_start"
+						datacontext = "[GetCountry('ETR')]"
+					}
+
+					starting_nation_map = {
+						position = { 405 450 }
+						tooltip = "rome_start"
+						datacontext = "[GetCountry('ROM')]"
+					}
+
+					starting_nation_map = {
+						position = { 440 545 }
+						tooltip = "syracuse_start"
+						datacontext = "[GetCountry('SYR')]"
+					}
+
+					starting_nation_map = {
+						position = { 510 480 }
+						tooltip = "epirus_start"
+						datacontext = "[GetCountry('EPI')]"
+					}
+
+					starting_nation_map = {
+						position = { 560 465 }
+						tooltip = "MACINTRO"
+						datacontext = "[GetCountry('MAC')]"
+					}
+
+					starting_nation_map = {
+						position = { 620 430 }
+						tooltip = "thrace_start"
+						datacontext = "[GetCountry('TRE')]"
+					}
+				}
+			}
+		}
+
+		button = {
+			size = { 30 30 }
+			onclick = "[GetVariableSystem.Clear('mission_map')]"
+			# shortcut = close_window
+			# shortcut doesn't work, something is taking priority
+			parentanchor = right
+
+			button_close = {
+				parentanchor = right
+				alwaystransparent = yes
+				position = { -10 10 }
+			}
+		}
+	}
+
+	widget = {
+		size = { 153 126 }
+		visible = "[And(Not(InReleaseMode), InDebugMode)]"
+		layer = top
+		parentanchor = bottom
+		position = { 400 0 }
+		container = {
+			button = {
+				name = "error_button"
+				parentanchor = top|hcenter
+				widgetanchor = top|hcenter
+				texture = "gfx/interface/error_platy.dds"
+				tooltip = "[ErrorTooltip]"
+				# onclick = "[OpenErrorLog]"
+				onclick = "[ExecuteConsoleCommand('Log.ClearErrorLog')]"
+				shortcut = macro_builder
+				size = { 113 140 }
+				position = { 0 -40 }
+
+				glow = {
+					glow_radius = 4
+					color = { 0.95 0.9 0.1 1 }
+				}
+			}
+
+			icon = {
+				parentanchor = hcenter|bottom
+				size = { 122 31 }
+				position = { 0 26 }
+				using = flat_background_white
+				modify_texture = {
+					name = "Alpha"
+					texture = "gfx/interface/base_parts/header_l_x20bd_alpha1.dds"
+					blend_mode = alphamultiply
+					spriteType = Corneredtiled
+					spriteborder = { 60 36 }
+				}
+
+				textbox = {
+					name = "error_text"
+					parentanchor = hcenter
+					using = FontValue
+					using = Black_FontColor
+					minimumsize = { 70 28 }
+					resizeparent = no
+					align = center
+					text = "[NumberOrErrors|b]"
 				}
 			}
 		}

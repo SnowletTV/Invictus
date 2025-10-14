@@ -26,7 +26,13 @@ brc_fortress_ramparts = {
             OR = {
                 ai_prohibited_to_build_in_city = yes
                 is_capital = yes
-                num_of_fortress_building < 3
+                fort_level < 3
+
+                # Don't build on plains and higher population capacity terrains
+                terrain = oasis
+                terrain = flood_plain
+                terrain = plains
+                terrain = farmland
             }
         }
         value = 0
@@ -66,7 +72,7 @@ brc_port = {
                     # If mine or farm, destroy if more than enough ports or can build it somewhere without mine or farm
                     trigger_if = {
                         limit = {
-                            is_territory_with_preference_for_mine_or_farm = yes
+                            territory_eligible_for_mine_or_farm = yes
                         }
                         OR = {
                             territory_state_has_more_than_enough_ports = yes
@@ -189,7 +195,10 @@ brc_barracks = {
             }
             OR = {
                 ai_required_to_destroy_in_settlement = yes
-                is_territory_with_preference_for_mine_or_farm = yes
+                # Always build mine or farm if possible
+                territory_eligible_for_mine_or_farm = yes
+                # Always build slave estate if it's preferred
+                territory_prefers_slave_estate = yes
             }
         }
         value = -1
@@ -199,9 +208,10 @@ brc_barracks = {
         limit = {
             OR = {
                 ai_prohibited_to_build_in_settlement = yes
-                has_trade_good_of_medium_priority = yes
-                has_trade_good_of_high_priority = yes
-                has_trade_good_of_extreme_priority = yes
+                # Always build mine or farm if possible
+                territory_eligible_for_mine_or_farm = yes
+                # Always build slave estate if it's preferred
+                territory_prefers_slave_estate = yes
             }
         }
         value = 0
@@ -209,7 +219,7 @@ brc_barracks = {
     # Build
     else = {
         value = brc_territory_importance
-        multiply = brc_20
+        multiply = brc_15
     }
 }
 
@@ -349,7 +359,7 @@ brc_temple = {
             multiply = brc_50 # Shared with Forum
         }
         else = {
-            multiply = brc_35
+            multiply = brc_40
         }
     }
 }
@@ -411,7 +421,7 @@ brc_theatre = {
             multiply = brc_60
         }
         else = {
-            multiply = brc_35
+            multiply = brc_40
         }
     }
 }
@@ -454,10 +464,10 @@ brc_library = {
                     territory_has_more_than_one_court_of_law = yes
                 }
             }
-            multiply = brc_40
+            multiply = brc_35
         }
         else = {
-            multiply = brc_30
+            multiply = brc_25
         }
     }
 }
@@ -539,7 +549,7 @@ brc_commerce = {
     }
     else = {
         value = brc_territory_importance
-        multiply = brc_30
+        multiply = brc_25
     }
 }
 
@@ -623,10 +633,10 @@ brc_military = {
                     territory_has_more_than_one_forum = yes
                 }
             }
-            multiply = brc_40
+            multiply = brc_35
         }
         else = {
-            multiply = brc_30
+            multiply = brc_25
         }
     }
 }
@@ -711,10 +721,10 @@ brc_town_hall = {
                     territory_has_more_than_one_mill = yes
                 }
             }
-            multiply = brc_40
+            multiply = brc_35
         }
         else = {
-            multiply = brc_30
+            multiply = brc_25
         }
     }
 }
@@ -726,27 +736,54 @@ brc_workshop = {
             owner = {
                 war = no
             }
+            ai_required_to_destroy_in_city = yes
+        }
+        value = -1
+    }
+    else_if = {
+        limit = {
+            ai_prohibited_to_build_in_city = yes
+        }
+        value = 0
+    }
+    # Add mills to tall city states and alike - TODO integrate properly into triggers later?
+    else_if = {
+        limit = {
+            is_capital = yes
+            owner = {
+                rank_by_num_territories <= local_power
+            }
+            num_of_total_building_slots >= 20
+        }
+        value = brc_territory_importance
+        multiply = brc_55
+        multiply = {
+            value = 1.00
+            add = {
+                value = num_of_workshop_building
+                multiply = brc_ratio_building_weight_per_level
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            # Don't destroy anything while at war
+            owner = {
+                war = no
+            }
+            # Remove level 1 if there's some other level 2+ ratio building
+            territory_has_more_than_one_mill = no
             OR = {
-                ai_required_to_destroy_in_city = yes
-                # Remove level 1 if there's some other level 2+ ratio building
-                AND = {
-                    territory_has_more_than_one_mill = no
-                    OR = {
-                        territory_has_more_than_one_academy = yes
-                        territory_has_more_than_one_court_of_law = yes
-                        territory_has_more_than_one_forum = yes
-                    }
-                }
+                territory_has_more_than_one_academy = yes
+                territory_has_more_than_one_court_of_law = yes
+                territory_has_more_than_one_forum = yes
             }
         }
         value = -1
     }
     else_if = {
         limit = {
-            OR = {
-                ai_prohibited_to_build_in_city = yes
-                brc_wants_mill = no
-            }
+            brc_wants_mill = no
         }
         value = 0
     }
@@ -771,10 +808,13 @@ brc_latifundia = {
             owner = {
                 war = no
             }
-            # Can build mine or farm
             OR = {
                 ai_required_to_destroy_in_settlement = yes
-                is_territory_with_preference_for_mine_or_farm = yes
+                # Can build mine or farm and has only one slot
+                AND = {
+                    num_of_total_building_slots < 2
+                    territory_eligible_for_mine_or_farm = yes
+                }
             }
         }
         value = -1
@@ -784,13 +824,10 @@ brc_latifundia = {
         limit = {
             OR = {
                 ai_prohibited_to_build_in_settlement = yes
+                # Has preference for tribal settlement, but not slave estate
                 AND = {
-                    num_of_slaves < num_of_tribesmen
-                    NOR = {
-                        has_trade_good_of_medium_priority = yes
-                        has_trade_good_of_high_priority = yes
-                        has_trade_good_of_extreme_priority = yes
-                    }
+                    territory_prefers_tribal_settlement = yes
+                    territory_prefers_slave_estate = no
                 }
             }
         }
@@ -799,7 +836,54 @@ brc_latifundia = {
     # Build
     else = {
         value = brc_territory_importance
-        multiply = brc_25
+        if = {
+            limit = {
+                OR = {
+                    has_building = slave_mine_building
+                    has_building = basic_settlement_infratructure_building
+                }
+            }
+            if = {
+                limit = {
+                    has_trade_good_of_extreme_priority = yes
+                }
+                multiply = brc_80
+            }
+            else_if = {
+                limit = {
+                    has_trade_good_of_high_priority = yes
+                }
+                multiply = brc_70
+            }
+            else_if = {
+                limit = {
+                    has_trade_good_of_medium_priority = yes
+                }
+                if = {
+                    limit = {
+                        has_building = slave_mine_building
+                    }
+                    multiply = brc_60
+                }
+                else = {
+                    multiply = brc_50
+                }
+            }
+            else = {
+                if = {
+                    limit = {
+                        has_building = slave_mine_building
+                    }
+                    multiply = brc_40
+                }
+                else = {
+                    multiply = brc_20
+                }
+            }
+        }
+        else = {
+            multiply = brc_15
+        }
     }
 }
 
@@ -834,7 +918,7 @@ brc_slave_mine = {
             limit = {
                 has_trade_good_of_high_priority = yes
             }
-            multiply = brc_90
+            multiply = brc_95
         }
         else_if = {
             limit = {
@@ -890,13 +974,13 @@ brc_basic_settlement_infratructure = {
             limit = {
                 has_trade_good_of_high_priority = yes
             }
-            multiply = brc_90
+            multiply = brc_95
         }
         else_if = {
             limit = {
                 has_trade_good_of_medium_priority = yes
             }
-            multiply = brc_85
+            multiply = brc_75
         }
         else_if = {
             limit = {
@@ -917,7 +1001,7 @@ brc_basic_settlement_infratructure = {
             multiply = brc_45
         }
         else = {
-            multiply = brc_35
+            multiply = brc_30
         }
     }
 }
@@ -932,12 +1016,14 @@ brc_hill_fort = {
             }
             OR = {
                 ai_required_to_destroy_in_settlement = yes
-                # Can build mine or farm
-			    is_territory_with_preference_for_mine_or_farm = yes
-                # Not tribal
+                # Not tribal so can't use tribesmen bonuses
                 owner = {
                     is_tribal = no
                 }
+                # Always build mine or farm if possible
+                territory_eligible_for_mine_or_farm = yes
+                # Always build slave estate if it's preferred
+                territory_prefers_slave_estate = yes
             }
         }
         value = -1
@@ -947,10 +1033,14 @@ brc_hill_fort = {
         limit = {
             OR = {
                 ai_prohibited_to_build_in_settlement = yes
-                num_of_slaves >= num_of_tribesmen
-                has_trade_good_of_medium_priority = yes
-                has_trade_good_of_high_priority = yes
-                has_trade_good_of_extreme_priority = yes
+                # Not tribal so can't use tribesmen bonuses
+                owner = {
+                    is_tribal = no
+                }
+                # Always build mine or farm if possible
+                territory_eligible_for_mine_or_farm = yes
+                # Always build slave estate if it's preferred
+                territory_prefers_slave_estate = yes
             }
         }
         value = 0
@@ -958,7 +1048,7 @@ brc_hill_fort = {
     # Build
     else = {
         value = brc_territory_importance
-        multiply = brc_20
+        multiply = brc_15
     }
 }
 
@@ -1047,6 +1137,16 @@ num_of_fortress_building_projected = {
     }
 }
 
+fort_level_projected = {
+    value = fort_level
+    if = {
+        limit = {
+            has_specific_construction = fortress_building
+        }
+        add = 1
+    }
+}
+
 num_of_ports_wanted_in_territory_state = {
     value = 0
     if = {
@@ -1102,7 +1202,7 @@ num_of_giga_ports_wanted = {
     value = 0
     if = {
         limit = {
-            rank >= regional_power
+            rank_by_num_territories >= regional_power
             OR = {
                 # Military traditions that unlock Octere
                 has_military_bonus = nubian_path_13
@@ -1132,7 +1232,7 @@ num_of_giga_ports_wanted = {
         add = 1
         if = {
             limit = {
-                rank >= great_power
+                rank_by_num_territories >= great_power
             }
             add = 1
         }
@@ -1160,7 +1260,7 @@ num_of_mega_ports_wanted = {
     # Base value depending on rank so they always want at least some
     if = {
         limit = {
-            rank >= regional_power
+            rank_by_num_territories >= regional_power
 
             # Removed due to performance concerns, reintroduce if there's a cheap way to do so
             # OR = {
@@ -1177,12 +1277,12 @@ num_of_mega_ports_wanted = {
         add = 1
         if = {
             limit = {
-                rank >= major_power
+                rank_by_num_territories >= major_power
             }
             add = 1
             if = {
                 limit = {
-                    rank >= great_power
+                    rank_by_num_territories >= great_power
                 }
                 add = 1
             }

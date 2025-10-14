@@ -24,7 +24,47 @@ ai_wartime_fund_with_medium_buffer = {
 }
 ai_wartime_fund_with_large_buffer = {
     value = ai_wartime_fund_desired
+    add = 225
+}
+ai_wartime_fund_with_extra_buffer = {
+    value = ai_wartime_fund_desired
     add = 300
+}
+
+ai_dangerous_war_exhaustion = {
+    value = define:NAI|WAR_EXHAUSTION_DESIRED
+    multiply = 0.80
+}
+
+ai_max_tyranny_allowed = {
+    # -4.8% civil war threshold, -4.8 loyalty
+    value = 40
+
+    # From +0% at 25 AE to +50% at 50 AE for decay
+    if = {
+        limit = {
+            has_aggressive_expansion >= 25
+        }
+        multiply = {
+            value = has_aggressive_expansion
+            subtract = 25
+            divide = 50
+            min = 0
+            max = 0.50
+            add = 1
+        }
+    }
+
+    # Lower limit for Advanced AI
+    if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_character_loyalty
+            }
+        }
+        multiply = 0.625 # Base value of 25
+    }
 }
 
 country_tax_income_svalue = {
@@ -102,6 +142,25 @@ ai_max_mercenary_maintenance = {
         # If navy is not at default economic policy, add delta between current policy and default
         add = navy_adjusted_maintenance_delta
 
+        # Mercenary maintenance nerf for subjects, absolute goes before multiplier to soften its impact
+        if = {
+            limit = {
+                is_subject = yes
+                # All types that have joins_overlord_in_war = yes
+                OR = {
+                    is_subject_type = feudatory
+                    is_subject_type = satrapy
+                    is_subject_type = client_state
+                    is_subject_type = subject_mercenary_city_state
+                    is_subject_type = kushite_client
+                    is_subject_type = indian_client
+                    is_subject_type = fiefdom
+                }
+            }
+            subtract = ai_max_mercenary_maintenance_subject_absolute
+            multiply = ai_max_mercenary_maintenance_subject_multiplier
+        }
+
         min = 0
     }
     else = {
@@ -127,6 +186,25 @@ ai_max_mercenary_maintenance_for_bribing = {
 
         # If navy is not at default economic policy, add delta between current policy and default
         add = navy_adjusted_maintenance_delta
+
+        # Mercenary maintenance nerf for subjects, absolute goes before multiplier to soften its impact
+        if = {
+            limit = {
+                is_subject = yes
+                # All types that have joins_overlord_in_war = yes
+                OR = {
+                    is_subject_type = feudatory
+                    is_subject_type = satrapy
+                    is_subject_type = client_state
+                    is_subject_type = subject_mercenary_city_state
+                    is_subject_type = kushite_client
+                    is_subject_type = indian_client
+                    is_subject_type = fiefdom
+                }
+            }
+            subtract = ai_max_mercenary_maintenance_subject_absolute
+            multiply = ai_max_mercenary_maintenance_subject_multiplier
+        }
 
         min = 0
     }
@@ -161,12 +239,45 @@ ai_max_mercenary_maintenance_without_bribed = {
         # If navy is not at default economic policy, add delta between current policy and default
         add = navy_adjusted_maintenance_delta
 
+        # Mercenary maintenance nerf for subjects, absolute goes before multiplier to soften its impact
+        if = {
+            limit = {
+                is_subject = yes
+                # All types that have joins_overlord_in_war = yes
+                OR = {
+                    is_subject_type = feudatory
+                    is_subject_type = satrapy
+                    is_subject_type = client_state
+                    is_subject_type = subject_mercenary_city_state
+                    is_subject_type = kushite_client
+                    is_subject_type = indian_client
+                    is_subject_type = fiefdom
+                }
+            }
+            subtract = ai_max_mercenary_maintenance_subject_absolute
+            multiply = ai_max_mercenary_maintenance_subject_multiplier
+        }
+
         min = 0
     }
     else = {
         value = 0
     }
 }
+
+# Subject nations want to spend less money on mercenaries compared to non-subjects to prevent vassal mercenary swarm.
+# Biggest problem is that every subject of any size have base tax income, so part of nerf is specifically targeting it. 
+ai_max_mercenary_maintenance_subject_absolute = {
+    # Base tax income given to any country incl modifiers
+    value = modifier:global_tax_income
+    multiply = {
+        value = 1
+        add = modifier:global_tax_modifier
+    }
+    # Don't count 50% of base tax income for mercenaries
+    multiply = 0.50
+}
+ai_max_mercenary_maintenance_subject_multiplier = 0.75 # Only want to spend 75% of what non-subject would want
 
 ai_treasury_for_mercenaries = {
     if = {
@@ -321,7 +432,9 @@ ai_mercenary_priority = {
             # If can still recruit multiple mercenaries, start with closer ones
             if = {
                 limit = {
-                    num_free_mercenary_slots_svalue > 1
+                    scope:recruiting_country = {
+                        num_free_mercenary_slots_svalue > 1
+                    }
                 }
                 divide = 5 # 50% size at 0 distance = 100% size at 250 distance
             }
@@ -1287,34 +1400,37 @@ army_recruitment_cost_by_cache = {
         add = {
             value = var:num_of_heavy_cavalry_subunits_cached
             multiply = 18
+            ceiling = yes
+            max = 3000
+            min = 20
             if = {
-                limit = {
-                    exists = scope:recruiting_country
-                }
-                scope:recruiting_country = {
-                    multiply = {
-                        value = 1.00
-                        add = modifier:heavy_cavalry_cost
-                    }
-                    multiply = {
-                        value = 1.00
-                        add = modifier:heavy_cavalry_maintenance_cost
-                    }
-                }
+            limit = {
+            exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+            multiply = {
+            value = 1.00
+            add = modifier:heavy_cavalry_cost
+            }
+            multiply = {
+            value = 1.00
+            add = modifier:heavy_cavalry_maintenance_cost
+            }
+            }
             }
             else = {
-                unit_owner = {
-                    multiply = {
-                        value = 1.00
-                        add = modifier:heavy_cavalry_cost
-                    }
-                    multiply = {
-                        value = 1.00
-                        add = modifier:heavy_cavalry_maintenance_cost
-                    }
-                }
+            unit_owner = {
+            multiply = {
+            value = 1.00
+            add = modifier:heavy_cavalry_cost
             }
-        }
+            multiply = {
+            value = 1.00
+            add = modifier:heavy_cavalry_maintenance_cost
+            }
+            }
+            }
+                }
     }
     if = {
         limit = {

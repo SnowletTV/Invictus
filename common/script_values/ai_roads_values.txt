@@ -99,46 +99,48 @@ ai_abstract_engineer_road_maintenance = {
     multiply = 1.20
 }
 
-# ai_country_build_1_road_price = {
-#     value = ai_country_build_roads_price
-# }
+ai_country_build_1_road_price = {
+    value = ai_country_build_roads_price
+}
 
 ai_country_build_5_roads_price = {
     value = ai_country_build_roads_price
     multiply = 5
 }
 
-# ai_wartime_fund_and_1_road = {
-#     value = ai_wartime_fund_with_medium_buffer
-#     add = ai_country_build_1_road_price
-# }
+ai_wartime_fund_and_1_road = {
+    value = ai_wartime_fund_desired
+    add = ai_country_build_1_road_price
+}
 
 ai_wartime_fund_and_5_roads = {
-    value = ai_wartime_fund_with_medium_buffer
+    value = ai_wartime_fund_desired
     add = ai_country_build_5_roads_price
+    min = ai_wartime_fund_with_medium_buffer
 }
 
 ai_wartime_fund_and_planned_roads = {
-    value = ai_wartime_fund_with_medium_buffer
-    add = cumulated_cost_of_planned_roads
+    value = ai_wartime_fund_desired
+    add = ai_cumulated_cost_of_planned_roads
+    min = ai_wartime_fund_with_medium_buffer
 }
 
-# ai_medium_buffer_and_1_road = {
-#     value = 300
-#     add = ai_country_build_1_road_price
-# }
+ai_extra_buffer_and_1_road = {
+    value = 300
+    add = ai_country_build_1_road_price
+}
 
-ai_medium_buffer_and_5_roads = {
+ai_extra_buffer_and_5_roads = {
     value = 300
     add = ai_country_build_5_roads_price
 }
 
-ai_medium_buffer_and_planned_roads = {
+ai_extra_buffer_and_planned_roads = {
     value = 300
-    add = cumulated_cost_of_planned_roads
+    add = ai_cumulated_cost_of_planned_roads
 }
 
-cumulated_cost_of_planned_roads = {
+ai_cumulated_cost_of_planned_roads = {
     value = 0
     every_in_local_list = {
         variable = territories_chosen_for_road_building
@@ -174,14 +176,20 @@ num_of_roads_towards_neighbors = {
     }
 }
 
-no_road_building_if_has_this_many_roads = 3
+ai_max_neighbor_roads_for_road_building = 3
 
-max_cities_to_connect_to_junction = {
+ai_max_cities_to_connect_to_junction = {
     if = {
         limit = {
-            scope:state_with_junction_of_area.owner = {
-                any_country_state = {
-                    count = 1
+            OR = {
+                scope:state_with_junction_of_area.owner = {
+                    any_country_state = {
+                        count = 1
+                    }
+                }
+                # Islands look ugly if there's many cities but just one road
+                scope:state_with_junction_of_area.area = {
+                    is_island_area = yes
                 }
             }
         }
@@ -190,7 +198,7 @@ max_cities_to_connect_to_junction = {
     else_if = {
         limit = {
             scope:state_with_junction_of_area.owner = {
-                rank <= local_power
+                rank_by_num_territories <= local_power
             }
         }
         value = 3
@@ -198,7 +206,7 @@ max_cities_to_connect_to_junction = {
     else_if = {
         limit = {
             scope:state_with_junction_of_area.owner = {
-                rank <= regional_power
+                rank_by_num_territories <= regional_power
             }
         }
         value = 2
@@ -553,3 +561,7 @@ years_passed_since_game_start = {
     value = days_passed_since_game_start
     divide = 365
 }
+
+# If we try to build roads, but there's not enough money to build required ones, we increment a local variable to leave
+# a mark about this. But maybe it was just unusually long road, so we'll continue to try until this amount of failures.
+ai_road_attempts_with_low_treasury = 3

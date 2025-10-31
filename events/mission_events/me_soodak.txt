@@ -736,6 +736,8 @@ me_soodak.910 = { #Sent Back with Great Outcome
 
 #############End of Event Chain
 
+#############Government Event Chain
+
 me_soodak.100 = { #Assembling a Government
 	type = country_event
 	title = me_soodak_100_title
@@ -743,23 +745,30 @@ me_soodak.100 = { #Assembling a Government
 	picture = interesting_histories_norse_tribes
 	immediate = {
 		soodak_get_overlord_effect = yes #Save the overlord as soodak_overlord
+		root = {
+			save_scope_as = soodak_country
+		}
+		scope:soodak_overlord = {
+			current_ruler = {
+				save_scope_as = overlord_ruler
+			}
+		}
 	}
 	left_portrait = current_ruler
+	right_portrait = scope:overlord_ruler
 
 	option = {
 		name = me_soodak_100.a
 		
 		scope:soodak_overlord = {
-			add_opinion = {
-				modifier = soodak_great_negotiations_opmod
-				target = root
-			}
+			trigger_event = { id = me_soodak.101 }
 		}
 		custom_tooltip = "me_soodak_100_a_tooltip"
 	}	
 	option = {
 		name = me_soodak_100.b
 		change_government = democratic_republic
+		switch_government_type_event_clearup_effect = yes
 		add_stability = -25
 		scope:soodak_overlord = {
 			add_opinion = {
@@ -813,12 +822,14 @@ me_soodak.100 = { #Assembling a Government
 				religion = buddhism
 				religion = jainism
 				religion = ajivika
+				tag = SOO
 			}
 		}
 
 		highlight = yes
 		custom_tooltip = "me_soodak_100_e_tooltip"
 		change_government = theocratic_monarchy
+		switch_government_type_event_clearup_effect = yes
 		add_stability = -25
 		custom_tooltip = "me_soodak_100_e2_tooltip"
 		scope:soodak_overlord = {
@@ -827,6 +838,188 @@ me_soodak.100 = { #Assembling a Government
 				target = root
 			}
 		}
+	}
+}
+
+me_soodak.101 = { #Overlord receives request for a royalist candidate
+	type = country_event
+	title = me_soodak_101_title
+	desc = me_soodak_101_desc
+	picture = event_dancing_party_wine
+	immediate = {
+		root = {
+			random_character = {
+				limit = {
+					from_ruler_family = yes
+					is_head_of_family = no
+					is_primary_heir = no
+					is_male = yes
+					is_adult = yes
+				}
+			save_scope_as = soodak_selected_noble
+			}
+			
+		}
+		if = { #If no eligable adults can be found, try using children
+			limit = {
+				NOT = {
+					exists = scope:soodak_selected_noble
+				}
+			}
+			root = {
+				random_character = {
+					limit = {
+						from_ruler_family = yes
+						is_head_of_family = no
+						is_primary_heir = no
+						is_male = yes
+						#is_adult = yes
+					}
+				save_scope_as = soodak_selected_noble
+				}
+			
+			}
+
+		}
+	}	
+
+
+	left_portrait = current_ruler
+	right_portrait = scope:soodak_selected_noble
+
+	option = {
+		name = me_soodak_101.a
+		trigger = { #In-case no eligable character exists, don't send one over
+			exists = scope:soodak_selected_noble
+		}
+		current_ruler = { add_popularity = -25 }
+		scope:soodak_selected_noble = {
+			move_country = scope:soodak_country
+			#set_as_minor_character = THIS
+		}
+		scope:soodak_country = {
+			trigger_event = { id = me_soodak.102 }
+			add_opinion = {
+				modifier = soodak_great_negotiations_opmod
+				target = root
+			}
+		}
+		root = {
+			add_opinion = {
+				modifier = soodak_great_negotiations_opmod
+				target = scope:soodak_country
+			}
+		}
+	}
+
+	option = {
+		name = me_soodak_101.b
+		current_ruler = { add_popularity = 5 }
+		scope:soodak_country = {
+			trigger_event = { id = me_soodak.103 }
+		}
+	}
+	option = {
+		name = me_soodak_101.c
+		current_ruler = { add_popularity = 25 }
+		scope:soodak_country = {
+			add_opinion = {
+				modifier = soodak_great_negotiations_opmod
+				target = root
+			}
+		}
+		root = {
+			add_opinion = {
+				modifier = soodak_great_negotiations_opmod
+				target = scope:soodak_country
+			}
+		}
+	}
+}
+
+me_soodak.102 = { #Soodak receives royalist governor
+	type = country_event
+	title = me_soodak_102_title
+	desc = me_soodak_102_desc
+	picture = event_dancing_party_wine	
+
+	left_portrait = scope:soodak_selected_noble
+	right_portrait = scope:overlord_ruler
+
+	option = {
+		name = me_soodak_102.a
+		set_as_ruler = scope:soodak_selected_noble
+		current_ruler = { add_popularity = 25 }
+		change_government = despotic_monarchy
+		switch_government_type_event_clearup_effect = yes
+	}
+}
+
+me_soodak.103 = { #Soodak receives commoner
+	type = country_event
+	title = me_soodak_103_title
+	desc = me_soodak_103_desc
+	picture = event_dancing_party_wine	
+	immediate = {
+		hidden_effect = {
+			create_character = {
+				add_finesse = 2
+				add_trait = shrewd
+				add_trait = crafty
+				add_trait = harsh
+				add_trait = well_connected
+				add_trait = self_controlled
+				add_corruption = 15
+				religion = scope:soodak_country.religion
+				culture = scope:soodak_country.culture
+				female = no
+				save_scope_as = soodak_colonial_governor
+			}
+		}
+	}
+
+	left_portrait = scope:soodak_colonial_governor
+	right_portrait = scope:overlord_ruler
+
+	option = {
+		name = me_soodak_103.a
+		set_as_ruler = scope:soodak_colonial_governor
+		current_ruler = { add_popularity = -10 }
+		change_government = despotic_monarchy
+		switch_government_type_event_clearup_effect = yes
+		add_stability = -25
+	}
+	option = {
+		name = me_soodak_103.b
+		current_ruler = { add_popularity = 10 }
+		change_government = despotic_monarchy
+		switch_government_type_event_clearup_effect = yes
+		add_stability = -10
+		current_ruler = { save_scope_as = soodak_ruler }
+		scope:soodak_colonial_governor = {
+			move_country = scope:soodak_overlord
+			set_as_minor_character = THIS
+		}
+		scope:soodak_overlord = {
+			trigger_event = {
+				id = me_soodak.104
+			}
+		}
+	}
+}
+
+me_soodak.104 = { #Soodak rejects commoner
+	type = country_event
+	title = me_soodak_104_title
+	desc = me_soodak_104_desc
+	picture = event_dancing_party_wine	
+
+	left_portrait = current_ruler
+	left_portrait = scope:soodak_colonial_governor
+	right_portrait = scope:soodak_ruler
+
+	option = {
+		name = me_soodak_104.a
 	}
 }
 

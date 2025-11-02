@@ -855,6 +855,9 @@ me_soodak.101 = { #Overlord receives request for a royalist candidate
 					is_primary_heir = no
 					is_male = yes
 					is_adult = yes
+					is_admiral = no #prevents fleets from being taken
+					is_general = no #prevents armies from being taken
+					is_governor = no #prevents governorships from being taken
 				}
 			save_scope_as = soodak_selected_noble
 			}
@@ -950,6 +953,7 @@ me_soodak.102 = { #Soodak receives royalist governor
 		name = me_soodak_102.a
 		set_as_ruler = scope:soodak_selected_noble
 		current_ruler = { add_popularity = 25 }
+		current_ruler = { remove_character_modifier = foreign_citizen }
 		change_government = despotic_monarchy
 		switch_government_type_event_clearup_effect = yes
 	}
@@ -975,6 +979,9 @@ me_soodak.103 = { #Soodak receives commoner
 				female = no
 				save_scope_as = soodak_colonial_governor
 			}
+			soodak_select_candidate_country_effect = yes
+			#Saved as soodak_foreign_nobility_target
+
 		}
 	}
 
@@ -985,6 +992,7 @@ me_soodak.103 = { #Soodak receives commoner
 		name = me_soodak_103.a
 		set_as_ruler = scope:soodak_colonial_governor
 		current_ruler = { add_popularity = -10 }
+		current_ruler = { remove_character_modifier = foreign_citizen }
 		change_government = despotic_monarchy
 		switch_government_type_event_clearup_effect = yes
 		add_stability = -25
@@ -1006,6 +1014,22 @@ me_soodak.103 = { #Soodak receives commoner
 			}
 		}
 	}
+	option = {
+		name = me_soodak_103.c
+		custom_tooltip = "me_soodak_103_c2_tt"
+		custom_tooltip = "me_soodak_103_c_tt"
+		scope:soodak_overlord = {
+			#trigger_event = {
+			#	id = me_soodak.104
+			#}
+		}
+		scope:soodak_foreign_nobility_target = {
+			#change_country_name = "TESTLAND"
+			trigger_event = {
+				id = me_soodak.105
+			}
+		}
+	}
 }
 
 me_soodak.104 = { #Soodak rejects commoner
@@ -1021,6 +1045,175 @@ me_soodak.104 = { #Soodak rejects commoner
 	option = {
 		name = me_soodak_104.a
 	}
+}
+
+me_soodak.105 = { #Foreign country receives Soodak request
+	type = country_event
+	title = me_soodak_105_title
+	desc = me_soodak_105_desc
+	picture = event_dancing_party_wine
+	immediate = {
+		root = {
+			random_character = {
+				limit = {
+					from_ruler_family = yes
+					is_head_of_family = no
+					is_primary_heir = no
+					is_male = yes
+					is_adult = yes
+					is_admiral = no #prevents fleets from being taken
+					is_general = no #prevents armies from being taken
+					is_governor = no #prevents governorships from being taken
+				}
+			save_scope_as = soodak_foreign_noble
+			}
+			
+		}
+		if = { #If no eligable adults can be found, try using children
+			limit = {
+				NOT = {
+					exists = scope:soodak_selected_noble
+				}
+			}
+			root = {
+				random_character = {
+					limit = {
+						from_ruler_family = yes
+						is_head_of_family = no
+						is_primary_heir = no
+						is_male = yes
+						#is_adult = yes
+					}
+				save_scope_as = soodak_foreign_noble
+				}
+			
+			}
+
+		}
+	}	
+
+
+	left_portrait = current_ruler
+	right_portrait = scope:soodak_foreign_noble
+
+	option = {
+		name = me_soodak_105.a
+		trigger = { #In-case no eligable character exists, don't send one over
+			exists = scope:soodak_foreign_noble
+		}
+		scope:soodak_foreign_noble = {
+			move_country = scope:soodak_country
+			#set_as_minor_character = THIS
+		}
+		scope:soodak_country = {
+			trigger_event = { id = me_soodak.106 }
+			add_opinion = {
+				modifier = soodak_great_negotiations_opmod
+				target = root
+			}
+		}
+		root = {
+			add_opinion = {
+				modifier = soodak_great_negotiations_opmod
+				target = scope:soodak_country
+			}
+		}
+	}
+
+	option = {
+		name = me_soodak_105.b
+		current_ruler = {
+			set_variable = {
+				name = soodak_declined_nobility_var
+				days = 1825
+			}
+		}
+		scope:soodak_country = {
+			trigger_event = { id = me_soodak.107 }
+		}
+		
+	}
+}
+
+me_soodak.106 = { #Soodak receives foreign nobility
+	type = country_event
+	title = me_soodak_106_title
+	desc = me_soodak_106_desc
+	picture = event_dancing_party_wine	
+
+	left_portrait = scope:soodak_foreign_noble
+	right_portrait = scope:overlord_ruler
+
+	option = {
+		name = me_soodak_106.a
+		set_as_ruler = scope:soodak_foreign_noble
+		current_ruler = { add_popularity = 25 }
+		current_ruler = { remove_character_modifier = foreign_citizen }
+		change_government = despotic_monarchy
+		switch_government_type_event_clearup_effect = yes
+		scope:soodak_colonial_governor = {
+			move_country = scope:soodak_overlord
+			set_as_minor_character = THIS
+		}
+	}
+}
+
+me_soodak.107 = { #Foreign country declines to send nobility
+	type = country_event
+	title = me_soodak_107_title
+	desc = me_soodak_107_desc
+	picture = event_dancing_party_wine	
+	#immediate = {
+		#hidden_effect = {
+			#soodak_select_candidate_country_effect = yes
+			#Saved as soodak_foreign_nobility_target
+		#}
+	#}
+
+	left_portrait = scope:soodak_colonial_governor
+	right_portrait = scope:overlord_ruler
+
+	option = {
+		name = me_soodak_107.a
+		set_as_ruler = scope:soodak_colonial_governor
+		current_ruler = { add_popularity = -10 }
+		change_government = despotic_monarchy
+		switch_government_type_event_clearup_effect = yes
+		add_stability = -25
+	}
+	option = {
+		name = me_soodak_107.b
+		current_ruler = { add_popularity = 10 }
+		change_government = despotic_monarchy
+		switch_government_type_event_clearup_effect = yes
+		add_stability = -10
+		current_ruler = { save_scope_as = soodak_ruler }
+		scope:soodak_colonial_governor = {
+			move_country = scope:soodak_overlord
+			set_as_minor_character = THIS
+		}
+		scope:soodak_overlord = {
+			trigger_event = {
+				id = me_soodak.104
+			}
+		}
+	}
+	#option = {
+	#	name = me_soodak_107.c
+	#	custom_tooltip = "me_soodak_103_c2_tt"
+	#	custom_tooltip = "me_soodak_103_c_tt"
+	#	scope:soodak_overlord = {
+	#		#trigger_event = {
+	#		#	id = me_soodak.104
+	#		#}
+	#	}
+	#	scope:soodak_foreign_nobility_target = {
+	#		#change_country_name = "TESTLAND"
+	#		trigger_event = {
+	#			id = me_soodak.105
+	#		}
+	#	}
+	#}
 }
 
 

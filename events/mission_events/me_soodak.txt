@@ -858,6 +858,7 @@ me_soodak.101 = { #Overlord receives request for a royalist candidate
 					is_admiral = no #prevents fleets from being taken
 					is_general = no #prevents armies from being taken
 					is_governor = no #prevents governorships from being taken
+					is_ruler = no
 				}
 			save_scope_as = soodak_selected_noble
 			}
@@ -877,6 +878,10 @@ me_soodak.101 = { #Overlord receives request for a royalist candidate
 						is_primary_heir = no
 						is_male = yes
 						#is_adult = yes
+						is_admiral = no #prevents fleets from being taken
+						is_general = no #prevents armies from being taken
+						is_governor = no #prevents governorships from being taken
+						is_ruler = no
 					}
 				save_scope_as = soodak_selected_noble
 				}
@@ -1064,6 +1069,7 @@ me_soodak.105 = { #Foreign country receives Soodak request
 					is_admiral = no #prevents fleets from being taken
 					is_general = no #prevents armies from being taken
 					is_governor = no #prevents governorships from being taken
+					is_ruler = no
 				}
 			save_scope_as = soodak_foreign_noble
 			}
@@ -1083,6 +1089,7 @@ me_soodak.105 = { #Foreign country receives Soodak request
 						is_primary_heir = no
 						is_male = yes
 						#is_adult = yes
+						is_ruler = no
 					}
 				save_scope_as = soodak_foreign_noble
 				}
@@ -1155,6 +1162,11 @@ me_soodak.106 = { #Soodak receives foreign nobility
 			move_country = scope:soodak_overlord
 			set_as_minor_character = THIS
 		}
+		scope:soodak_overlord = {
+			trigger_event = {
+				id = me_soodak.108
+			}
+		}
 	}
 }
 
@@ -1192,11 +1204,11 @@ me_soodak.107 = { #Foreign country declines to send nobility
 			move_country = scope:soodak_overlord
 			set_as_minor_character = THIS
 		}
-		scope:soodak_overlord = {
-			trigger_event = {
-				id = me_soodak.104
-			}
-		}
+		#scope:soodak_overlord = {
+		#	trigger_event = {
+		#		id = me_soodak.104
+		#	}
+		#}
 	}
 	#option = {
 	#	name = me_soodak_107.c
@@ -1214,6 +1226,150 @@ me_soodak.107 = { #Foreign country declines to send nobility
 	#		}
 	#	}
 	#}
+}
+
+me_soodak.108 = { #News of foreign ruler hits homeland
+	type = country_event
+	title = me_soodak_108_title
+	desc = me_soodak_108_desc
+	picture = event_dancing_party_wine	
+
+	left_portrait = current_ruler
+	left_portrait = scope:soodak_colonial_governor
+	right_portrait = scope:soodak_foreign_noble
+
+	option = {
+		name = me_soodak_108.a
+		current_ruler = { add_popularity = -30 }
+		add_political_influence = -25
+		ai_chance = { factor = 1 }
+	}
+	option = {
+		name = me_soodak_108.b
+		ai_chance = { factor = 99 }
+		scope:soodak_country = {
+			trigger_event = { id = me_soodak.109 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = soodak_sanctions_modifier
+					duration = 9125 #25 years
+				}
+				capital_scope.state = {
+					add_state_modifier = {
+					name = soodak_sanctions_capital_modifier
+					duration = 9125 #25 years
+					}
+				}
+			}
+		}
+	}
+}
+
+me_soodak.109 = { #Soodak receives ultimatum
+	type = country_event
+	title = me_soodak_109_title
+	desc = me_soodak_109_desc
+	picture = event_dancing_party_wine	
+
+	left_portrait = scope:soodak_foreign_noble
+	right_portrait = scope:overlord_ruler
+	right_portrait = scope:soodak_colonial_governor
+
+
+	option = {
+		name = me_soodak_109.a
+		add_political_influence = -25
+		add_country_modifier = {
+			name = soodak_sanctions_modifier
+			duration = 9125 #25 years
+		}
+		capital_scope.state = {
+			add_state_modifier = {
+				name = soodak_sanctions_capital_modifier
+				duration = 9125 #25 years
+			}
+		}
+	}
+	option = {
+		name = me_soodak_109.b
+		scope:soodak_colonial_governor = {
+			move_country = scope:soodak_country
+			set_as_minor_character = THIS
+		}
+		current_ruler = {
+			move_country = scope:soodak_foreign_nobility_target
+			set_as_minor_character = THIS
+		}
+		set_as_ruler = scope:soodak_colonial_governor
+		current_ruler = { add_popularity = -25 }
+		current_ruler = { remove_character_modifier = foreign_citizen }
+		#change_government = despotic_monarchy
+		#switch_government_type_event_clearup_effect = yes
+		add_stability = -25
+		scope:soodak_overlord = {
+			trigger_event = { id = me_soodak.110 }
+		}
+		scope:soodak_foreign_nobility_target = {
+			trigger_event = { id = me_soodak.111 }
+		}
+		add_country_modifier = {
+			name = soodak_sanctions_lifted_modifier
+			duration = 9125 #25 years
+		}
+	}
+}
+
+me_soodak.110 = { #Soodak folds
+	type = country_event
+	title = me_soodak_110_title
+	desc = me_soodak_110_desc
+	picture = event_dancing_party_wine	
+
+	left_portrait = current_ruler
+	right_portrait = scope:soodak_colonial_governor
+
+	option = {
+		name = me_soodak_110.a
+		current_ruler = { add_popularity = 50 }
+		add_political_influence = 50
+		show_as_tooltip = {
+			scope:soodak_country = {
+				add_country_modifier = {
+					name = soodak_sanctions_lifted_modifier
+					duration = 9125 #25 years
+				}
+			}
+		}
+	}
+}
+
+me_soodak.111 = { #Foreign Target receives news of fold
+	type = country_event
+	title = me_soodak_111_title
+	desc = me_soodak_111_desc
+	picture = event_dancing_party_wine	
+
+	left_portrait = current_ruler
+	left_portrait = scope:soodak_foreign_noble
+	right_portrait = scope:soodak_colonial_governor
+
+	option = {
+		name = me_soodak_111.a
+	}
+}
+
+me_soodak.112 = { #Overlord declines to punish Soodak
+	type = country_event
+	title = me_soodak_112_title
+	desc = me_soodak_112_desc
+	picture = event_dancing_party_wine	
+
+	left_portrait = current_ruler
+	right_portrait = scope:overlord_ruler
+
+	option = {
+		name = me_soodak_112.a
+	}
 }
 
 

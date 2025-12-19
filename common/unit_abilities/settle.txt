@@ -63,15 +63,62 @@
 	
 	start_effect = {
 		hidden_effect = {
-		if = {
-			# Split off only what's required to conquer a region, unless the region is already owned, then settle everything
-			limit = {
-				NOT = { unit_location.owner = unit_owner }
-				num_of_migrants > unit_location.total_population
+			if = {
+				# Split off only what's required to conquer a territory, unless the territory is already owned, then settle everything
+				limit = {
+					NOT = { unit_location.owner = unit_owner }
+					num_of_migrants > unit_location.total_population
+				}
+				split_migrants_to = unit_location.total_population
 			}
-			
-			split_migrants_to = unit_location.total_population
-		}
+			if = {
+				limit = {
+					unit_owner = {
+						has_variable = androphagia_territories_turned_amber
+						var:androphagia_territories_turned_amber < 3
+					}
+					unit_location = {
+						is_coastal = yes
+						NOT = { trade_goods = amber }
+						OR = {
+							is_in_region = venedia_region
+							is_in_region = hyperborea_region
+						}
+					}
+				}
+				random_ownable_province = {
+					limit = {
+						NOT = { has_variable = inv_selected_for_randomness }
+						exists = owner
+					}
+					set_variable = {
+						name = inv_selected_for_randomness
+						days = 365
+					}
+					save_temporary_scope_as = inv_random_prov
+				}
+				unit_owner = {
+					set_variable = {
+						name = inv_randomness
+						value = scope:inv_random_prov.inv_randomness_value
+					}
+				}
+				if = {
+					limit = {
+						exists = unit_owner.var:inv_randomness
+						unit_owner.var:inv_randomness <= 20
+					}
+					unit_owner = {
+						change_variable = {
+							name = androphagia_territories_turned_amber
+							add = 1
+						}
+					}
+					unit_location = {
+						trigger_event = androphagian.41
+					}
+				}
+			}
 		}
 		if = {
 			limit = {
@@ -97,9 +144,7 @@
 					NOT = { unit_location.owner = root.unit_owner }
 				}
 			}
-			unit_location = {
-				set_conquered_by = root.unit_owner
-			}
+			unit_location = { set_conquered_by = root.unit_owner }
 		}
 		custom_tooltip = migratory_settle_tooltip
 		hidden_effect = {

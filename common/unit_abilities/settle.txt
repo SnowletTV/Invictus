@@ -1,0 +1,138 @@
+﻿settle = {
+
+	duration = 0
+	enable = yes
+	toggle = no
+
+	army_only = yes
+	soundeffect ="event:/SFX/Animations/Units/Generic/sfx_anim_unit_build_colony"
+
+	
+	hidden = {
+		unit_owner = { 
+			NOT = { 
+				government = tribal_chiefdom 
+			}
+		}
+	}
+	
+	
+	allow = {
+		#scope:province rather than unit_location in the following since AI needs to be able to reason about future unit location
+		in_combat = no
+		trigger_if = {
+			limit = {
+				unit_owner = { is_ai = yes }
+			}
+			unit_owner = { is_ai = yes }
+		}
+		trigger_else = {
+			is_moving = no #We check this transitory condition in AI anyway and it needs to know about potential settle sites.
+		}
+		OR = {
+			#forbid AI from settling own territory & some other stuff since it's pointless
+			unit_owner = {
+				is_ai = no
+			}
+			NOR = {
+				scope:province.owner = unit_owner
+				scope:province = {
+					is_colonizer = root.unit_owner
+				}
+				scope:province = {
+					is_previous_owner = root.unit_owner
+				}
+			}
+		}
+		in_siege = no
+		is_exiled = no
+		num_of_migrants > 0
+		scope:province = { is_inhabitable = yes }
+		OR = {
+			scope:province.controller = unit_owner
+			hidden:scope:province = { has_owner = no }
+		}
+		hidden:scope:province = { has_siege = no }
+		hidden:scope:province = { NOT = { is_sea = yes } }
+		hidden:scope:province = { is_uninhabitable = no }
+		OR = {
+			num_of_migrants >= scope:province.total_population
+			scope:province.owner = unit_owner
+		}
+	}
+	
+	start_effect = {
+		hidden_effect = {
+		if = {
+			# Split off only what's required to conquer a region, unless the region is already owned, then settle everything
+			limit = {
+				NOT = { unit_location.owner = unit_owner }
+				num_of_migrants > unit_location.total_population
+			}
+			
+			split_migrants_to = unit_location.total_population
+		}
+		}
+		if = {
+			limit = {
+				is_iron_man = yes
+				unit_owner = {
+					is_ai = no
+					NOT = {
+						has_variable = ach_a_new_home_var
+					}
+				}
+			}
+			unit_owner = {
+				set_variable = {
+					name = ach_a_new_home_var
+				}
+			}
+		}
+		if = {
+			limit = {
+				num_of_migrants >= unit_location.total_population
+				trigger_if = {
+					limit = { num_of_migrants >= 1 }
+					NOT = { unit_location.owner = root.unit_owner }
+				}
+			}
+			unit_location = {
+				set_conquered_by = root.unit_owner
+			}
+		}
+		custom_tooltip = migratory_settle_tooltip
+		hidden_effect = {
+			every_sub_unit = {
+				limit = {
+					is_migration = yes
+				}
+				owning_unit.unit_location = { 
+					define_pop = {
+						type = tribesmen
+						religion = root.unit_owner.religion
+						culture = root.unit_owner.culture
+					}
+				}
+				destroy_subunit = yes
+			}
+		}
+		#if = {
+		#	limit = {
+		#		unit_size = 0
+		#	}
+		#	destroy_unit = yes
+		#}
+	}
+	
+	ai_will_do = {
+		modifier = {
+			trigger = {
+				is_moving = no #Possibility checks are in allow trigger... So OK to simple do this when stopped.
+			}
+			add = {
+				value = 1337
+			}
+		}
+	}
+}

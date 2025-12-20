@@ -1,0 +1,314 @@
+﻿grant_temple_state = {
+	on_other_nation = no
+	on_own_nation = yes
+	
+	sound = "event:/SFX/UI/Character/Generic/sfx_ui_character_economy"
+	
+	potential_trigger = {
+		always = no #Too unbalanced and broken
+		scope:actor = {
+			can_make_temple_state = yes
+	        any_owned_province = {
+				is_capital = no
+				OR = {
+					own_religious_center_province_trigger = yes
+					has_province_modifier = temple_state_modifier 
+					is_holy_site = yes
+				}
+	        }
+		}		
+		hidden:scope:target = {#Zeal
+			employer = scope:actor
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+			is_alive = yes
+			is_mercenary = no
+			prisoner = no
+			is_female = no
+			OR = {
+			   has_office = office_high_priest_monarchy
+			   has_office = office_pontifex
+			   has_office = office_high_priest
+			   zeal >= 8
+			}
+		}
+	}
+
+	allowed_trigger = {
+		scope:actor = {
+			can_pay_price = grant_temple_estate_price
+			war = no
+			has_civil_war = no
+			is_subject = no
+			trigger_if = {
+				limit = {
+					has_variable = make_temple_state_cooldown
+				}
+				custom_tooltip = {
+					text = temple_state_cooldown_tooltip
+					always = no
+				}
+			}
+		}
+	}
+	
+	effect = {#Make event instead
+		scope:actor = {
+			pay_price = grant_temple_estate_price
+			hidden_effect = {
+				scope:actor = {
+					every_character = {
+						limit = {
+							has_same_family = scope:target
+							is_ruler = no
+							NOT = {
+								this = scope:target
+							}
+						}
+						add_loyalty = family_made_temple_state
+					}
+				}	
+			}
+			hidden_effect = {
+				if = {
+					limit = {
+				        any_owned_province = {
+							NOT = { is_capital = yes }
+							has_province_modifier = temple_state_modifier 
+				        }
+					}
+			        ordered_owned_province = {
+			            limit = {
+			        		NOT = { is_capital = yes }
+							has_province_modifier = temple_state_modifier          
+			            }
+			            order_by = total_population
+			            max = 1
+			            check_range_bounds = no
+						save_scope_as = temple_estate_province
+			        }
+				}
+				else_if = {
+					limit = {
+				        any_owned_province = {
+							NOT = { is_capital = yes }
+							own_religious_center_province_trigger = yes 
+				        }
+					}
+			        ordered_owned_province = {
+			            limit = {
+			        		NOT = { is_capital = yes }
+							own_religious_center_province_trigger = yes          
+			            }
+			            order_by = total_population
+			            max = 1
+			            check_range_bounds = no
+						save_scope_as = temple_estate_province
+			        }
+				}
+				else = {
+			        ordered_owned_holy_site = {
+			            limit = {
+			        		NOT = { is_capital = yes }      
+			            }
+			            order_by = total_population
+			            max = 1
+			            check_range_bounds = no
+						save_scope_as = temple_estate_province
+			        }
+				}
+				scope:temple_estate_province = {
+					create_country = { save_scope_as = new_temple_state }
+				}
+				scope:target = {
+					move_country = scope:new_temple_state
+					remove_character_modifier = foreign_citizen
+					set_home_country = scope:new_temple_state
+				}
+				scope:new_temple_state = {
+					create_family = scope:target
+					set_as_ruler = scope:target				
+				}
+				scope:target = {
+					if = {
+						limit = {
+							is_married = yes
+							spouse = {
+								employer = root
+								prisoner = no
+							}
+						}
+						spouse = {
+							remove_all_positions = yes
+							move_country = scope:new_temple_state
+							remove_character_modifier = foreign_citizen
+							set_home_country = scope:new_temple_state
+						}
+					}
+					if = {
+						limit = {
+							num_of_children > 0
+							any_child = {
+								employer = root
+								prisoner = no
+							}
+						}
+						every_child = {
+							limit = {
+								employer = root
+								prisoner = no
+							}
+							remove_all_positions = yes
+							move_country = scope:new_temple_state
+							remove_character_modifier = foreign_citizen
+							set_home_country = scope:new_temple_state
+							set_family = scope:target.family
+						}
+					}
+				}
+			}
+
+			scope:actor = {
+				show_as_tooltip = {
+					scope:new_temple_state = {
+						create_country = {}
+					}
+				}
+				custom_tooltip = made_temple_state
+				scope:target = {
+					force_add_trait = priest_king
+				}
+				hidden_effect = {
+					if = {
+						limit = {
+							root = {
+								is_republic = yes
+							}
+						}
+						scope:new_temple_state = {
+							change_government = theocratic_republic							
+						} 
+					}
+					else = {
+						scope:new_temple_state = {
+							change_government = theocratic_monarchy							
+						} 
+					}
+					scope:new_temple_state = {
+						set_country_heritage = religious_enclave_heritage
+						create_2_slaves_effect = yes
+						capital_scope = {
+							if = {
+								limit = {
+									NOT = { 
+										has_province_modifier = temple_state_modifier 
+									}
+								}
+								add_permanent_province_modifier = {
+									name = temple_state_modifier
+									duration = -1
+								}
+							}
+						}
+					}
+				}
+				hidden_effect = {
+					make_subject = {
+						target = scope:new_temple_state
+						type = temple_state
+					}
+	            	trigger_event = { id = temple_state_event.1 }
+				}
+			}
+			custom_tooltip = family_made_temple_state_tt
+			set_variable = {#can make variable longer to prevent AI spam if that is an issue
+				name = make_temple_state_cooldown
+				days = 9125
+			}
+			custom_tooltip = temple_state_cooldown_effect_tooltip	
+		}
+	}
+	
+	ai_will_do = {
+		modifier = {
+			add = 0.05 #%
+			trigger = {
+				loyalty < 15
+			}
+		}
+		modifier = {
+			add = 2.5 #%
+			trigger = {
+				employer = {
+					towards_civil_war = yes
+				}
+			}
+		}
+	}
+	
+}
+
+
+put_dynasty_temple_state = {
+
+	on_other_nation = yes
+	on_own_nation = no
+	
+	message = no
+	
+	sound = "event:/SFX/UI/Character/Generic/sfx_ui_character_corruption"
+	
+	potential_trigger = {
+		hidden:scope:actor = {
+			is_subject = no
+			is_monarchy = yes
+		}		
+		hidden:scope:target = {
+			is_ruler = yes
+			employer = { is_subject_of = scope:actor }
+			employer = { is_ai = yes }
+			employer = { NOT = { primary_culture = hebrew } }
+			OR = {
+				has_trait = priest_king
+				employer = { is_subject_type = temple_state }
+			}
+			employer = { NOT = { has_variable = deposed_priest } }
+			is_alive = yes
+			is_mercenary = no
+		}
+	}
+	
+	allowed_trigger = {
+		hidden:scope:actor = {
+			can_pay_price = depose_priest_king_price
+			war = no
+			has_civil_war = no
+			is_subject = no
+			trigger_if = {
+				limit = {
+					has_variable = temple_state_dynasty_cooldown
+				}
+				custom_tooltip = {
+					text = temple_state_cooldown_tooltip
+					always = no
+				}
+			}
+		}
+		#employer = { has_subject_loyalty >= 50 }
+	} 
+	
+	effect = {
+		scope:target.employer = {
+			save_scope_as = temple_state_scope
+		}
+		scope:actor = {
+			pay_price = depose_priest_king_price
+			set_variable = {#can make variable longer to prevent AI spam if that is an issue
+				name = temple_state_dynasty_cooldown
+				days = 9125
+			}
+			custom_tooltip = put_dynasty_temple_state_effect_tooltip	
+			trigger_event = { id = temple_state_event.3 }
+		}
+	}
+}	

@@ -1,0 +1,487 @@
+﻿ai_recruit_mercenaries = {
+    if = {
+        limit = {
+            NOT = {
+                has_global_variable = ai_recruited_mercenaries
+            }
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
+            exists = c:MER
+        }
+        set_global_variable = {
+            name = ai_recruited_mercenaries
+            days = 15 # 0.5 months - every month
+        }
+
+        ordered_country = {
+            limit = {
+                is_ai = yes
+                has_land = yes
+                war = yes
+                # Simple trigger to prevent broke countries from making performance impact
+                trigger_if = {
+                    limit = {
+                        num_free_mercenary_slots_svalue > 0
+                    }
+                    treasury >= recruit_mercenary_cost_svalue
+                }
+                trigger_else = {
+                    treasury >= 200 # Min value for bribing
+                }
+                # For comparable threat only recruit mercs normally, without bribing, which requires free slots
+                trigger_if = {
+                    limit = {
+                        ai_is_facing_comparable_threat = yes
+                    }
+                    num_free_mercenary_slots_svalue > 0
+                }
+                # For existential threat can also bribe mercs if needed, and bribing is allowed up until max stacks + 1
+                trigger_else_if = {
+                    limit = {
+                        ai_is_facing_existential_threat = yes
+                    }
+                    num_mercenaries_employed_svalue < max_mercenary_stacks_plus_1
+                }
+                # If we are not feeling any threat, there's no point in spending a lot on money on mercs
+                trigger_else = {
+                    always = no
+                }
+            }
+            # Larger countries have priority on recruiting mercs
+            order_by = {
+                value = country_population
+                add = num_of_territories_svalue
+            }
+            min = 0
+            check_range_bounds = no
+
+            # Not so trivial calculations that will be repeated many times if we cycle through mercenaries
+            set_local_variable = {
+                name = ai_treasury_for_mercenaries_cached
+                value = ai_treasury_for_mercenaries
+            }
+            set_local_variable = {
+                name = navy_adjusted_maintenance_delta_cached
+                value = navy_adjusted_maintenance_delta
+            }
+            set_local_variable = {
+                name = ai_current_mercenary_maintenance_cached
+                value = ai_current_mercenary_maintenance
+            }
+
+            # Only recruit or bribe mercs if there's some monthly gold the country can spend on their maintenance
+            if = {
+                limit = {
+                    ai_free_mercenary_maintenance > 0
+                }
+                save_scope_as = recruiting_country
+                # Used in ai_mercenary_priority to check distance_from_province between mercs and capital
+                capital_scope = {
+                    save_scope_as = target_province
+                }
+
+                set_local_variable = {
+                    name = recruited_a_mercenary
+                    value = 0
+                }
+                # Entry trigger checks only for limit + 1 as bribing requires, so ensure we can recruit new mercs
+                if = {
+                    limit = {
+                        num_free_mercenary_slots_svalue > 0
+                    }
+                    c:MER = {
+                        every_character = {
+                            limit = {
+                                ai_can_recruit_mercenary = yes
+                            }
+                            add_to_local_variable_list = {
+                                name = mercenaries_that_ai_can_recruit
+                                target = this
+                            }
+                            every_character_unit = {
+                                ai_cache_num_of_subunits_by_type = yes
+                            }
+                        }
+                    }
+                    
+                    if = {
+                        limit = {
+                            has_non_empty_local_variable_list = {
+                                name = mercenaries_that_ai_can_recruit
+                            }
+                        }
+                        ordered_in_local_list = {
+                            variable = mercenaries_that_ai_can_recruit
+                            limit = {
+                                ai_can_afford_mercenary = yes
+                            }
+                            # Get one mercs stack with highest priority
+                            order_by = ai_mercenary_priority
+                            position = 0
+                            check_range_bounds = no
+
+                            # Recruit them
+                            change_mercenary_employer = scope:recruiting_country
+                            scope:recruiting_country = {
+                                pay_price = recruit_mercenary
+                            }
+
+                            set_local_variable = {
+                                name = recruited_a_mercenary
+                                value = 1
+                            }
+                        }
+                        clear_local_variable_list = mercenaries_that_ai_can_recruit
+                    }
+                }
+
+                # Try bribing only if wasn't able to recruit mercs and we are threatened enough to do it
+                if = {
+                    limit = {
+                        local_var:recruited_a_mercenary = 0
+                        treasury >= 200 # Min value for bribing
+                        ai_is_facing_existential_threat = yes
+                    }
+
+                    # Gather all the mercs that we can bribe including economy factors into a list
+                    every_countries_at_war_with = {
+                        every_character = {
+                            limit = {
+                                ai_can_bribe_mercenary = yes
+                            }
+                            add_to_local_variable_list = {
+                                name = mercenaries_to_bribe
+                                target = this
+                            }
+                        }
+                    }
+                    if = {
+                        limit = {
+                            has_local_variable_list = mercenaries_to_bribe
+                            local_variable_list_size = {
+                                name = mercenaries_to_bribe
+                                value > 0
+                            }
+                        }
+                        ordered_in_local_list = {
+                            # Get one mercs stack with highest priority
+                            variable = mercenaries_to_bribe
+                            order_by = ai_mercenary_priority
+                            position = 0
+                            check_range_bounds = no
+
+                            save_scope_as = mercenary_to_bribe
+
+                            # Same effect as the one found on the bribing button
+                            scope:recruiting_country = {
+                                add_treasury = {
+                                    value = 0
+                                    subtract = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+                                }
+                            }
+                            set_variable = {
+                                name = merc_buyoff_cooldown
+                                days = 365
+                            }
+                            save_scope_as = target
+                            scope:recruiting_country = {
+                                save_scope_as = actor
+                            }
+                            employer = {
+                                trigger_event = {
+                                    id = warfare.3
+                                }
+                            }
+
+                            clear_saved_scope = mercenary_to_bribe
+                        }
+                        clear_local_variable_list = mercenaries_to_bribe
+                    }
+                }
+
+                clear_saved_scope = recruiting_country
+                clear_saved_scope = target_province
+                remove_local_variable = recruited_a_mercenary
+            }
+
+            remove_local_variable = ai_treasury_for_mercenaries_cached
+            remove_local_variable = navy_adjusted_maintenance_delta_cached
+            remove_local_variable = ai_current_mercenary_maintenance_cached
+        }
+    }
+
+    # Fix startup error log about deprecated game rule global variable
+    if = {
+        limit = {
+            always = no
+        }
+        set_global_variable = game_rule_ai_custom_mercenary_recruitment
+    }
+}
+
+ai_cache_num_of_subunits_by_type = {
+    if = {
+        limit = {
+            OR = {
+                NOT = {
+                    has_variable = has_cached_num_of_subunits_by_type
+                }
+                var:has_cached_num_of_subunits_by_type != unit_size
+            }
+        }
+        set_variable = {
+            name = has_cached_num_of_subunits_by_type
+            value = unit_size
+            days = 365
+        }
+        if = {
+            limit = {
+                is_army = yes
+            }
+            every_sub_unit = {
+                if = {
+                    limit = {
+                        sub_unit_type = archers
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = archers
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = camels
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = camels
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = chariots
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = chariots
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = engineer_cohort
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = engineer_cohort
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = heavy_cavalry
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = heavy_cavalry
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = heavy_infantry
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = heavy_infantry
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = horse_archers
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = horse_archers
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = light_cavalry
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = light_cavalry
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = light_infantry
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = light_infantry
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = spearmen
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = spearmen
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = supply_train
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = supply_train
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = warelephant
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = warelephant
+                    }
+                }
+            }
+        }
+        else_if = {
+            limit = {
+                is_navy = yes
+            }
+            every_sub_unit = {
+                if = {
+                    limit = {
+                        sub_unit_type = liburnian
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = liburnian
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = trireme
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = trireme
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = tetrere
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = tetrere
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = hexere
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = hexere
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = octere
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = octere
+                    }
+                }
+                else_if = {
+                    limit = {
+                        sub_unit_type = mega_galley
+                    }
+                    ai_cache_num_of_subunits_of_type = {
+                        type = mega_galley
+                    }
+                }
+            }
+        }
+    }
+}
+
+ai_cache_num_of_subunits_of_type = {
+    owning_unit = {
+        if = {
+            limit = {
+                NOT = {
+                    has_variable = num_of_$type$_subunits_cached
+                }
+            }
+            set_variable = {
+                name = num_of_$type$_subunits_cached
+                value = 0
+                days = 365
+            }
+        }
+        change_variable = {
+            name = num_of_$type$_subunits_cached
+            add = 1
+        }
+    }
+}
+
+ai_destroy_leftover_navies = {
+    if = {
+        limit = {
+            is_ai = yes
+            has_land = yes
+            war = no
+            num_of_ports <= 0
+        }
+        every_navy = {
+            limit = {
+                in_combat = no
+                is_mercenary_unit = no
+            }
+            destroy_unit = yes
+        }
+    }
+}
+
+process_states_that_just_revolted = {
+    if = {
+        limit = {
+            has_non_empty_global_variable_list = {
+                name = territories_that_just_revolted
+            }
+        }
+        every_in_global_list = {
+            variable = territories_that_just_revolted
+            if = {
+                limit = {
+                    exists = owner
+                    owner = {
+                        war = yes
+                    }
+                }
+                owner = {
+                    save_temporary_scope_as = country_that_just_revolted
+                    every_current_war = {
+                        limit = {
+                            any_war_attacker = {
+                                this = scope:country_that_just_revolted
+                            }
+                        }
+                        add_to_variable_list = {
+                            name = war_of_independence_for_countries
+                            target = scope:country_that_just_revolted
+                        }
+                    }
+                }
+            }
+        }
+        clear_global_variable_list = territories_that_just_revolted
+    }
+}
+
+ai_avoid_to_invoke_devotio = {
+    if = {
+        limit = {
+            is_ai = yes
+            has_war_exhaustion >= ai_dangerous_war_exhaustion
+            tyranny >= ai_max_tyranny_allowed
+        }
+        add_country_modifier = {
+            name = ai_avoiding_to_invoke_devotio
+            duration = 31
+        }
+    }
+}

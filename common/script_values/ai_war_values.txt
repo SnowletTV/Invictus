@@ -1,0 +1,4039 @@
+﻿ai_wartime_fund_desired = {
+    value = max_mercenary_stacks_svalue
+    multiply = recruit_mercenary_cost_svalue
+    
+    # Some money to pay mercenary wages
+    add = 50
+    add = has_monthly_income
+
+    # Round to 2 digits
+    multiply = 100
+    round = yes
+    divide = 100
+    
+    min = 0
+}
+
+ai_wartime_fund_with_small_buffer = {
+    value = ai_wartime_fund_desired
+    add = 75
+}
+ai_wartime_fund_with_medium_buffer = {
+    value = ai_wartime_fund_desired
+    add = 150 # Just above the average priced buildings
+}
+ai_wartime_fund_with_large_buffer = {
+    value = ai_wartime_fund_desired
+    add = 225
+}
+ai_wartime_fund_with_extra_buffer = {
+    value = ai_wartime_fund_desired
+    add = 300
+}
+
+ai_dangerous_war_exhaustion = {
+    value = define:NAI|WAR_EXHAUSTION_DESIRED
+    multiply = 0.80
+}
+
+ai_max_tyranny_allowed = {
+    # -4.8% civil war threshold, -4.8 loyalty
+    value = 40
+
+    # From +0% at 25 AE to +50% at 50 AE for decay
+    if = {
+        limit = {
+            has_aggressive_expansion >= 25
+        }
+        multiply = {
+            value = has_aggressive_expansion
+            subtract = 25
+            divide = 50
+            min = 0
+            max = 0.50
+            add = 1
+        }
+    }
+
+    # Lower limit for Advanced AI
+    if = {
+        limit = {
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_character_loyalty
+            }
+        }
+        multiply = 0.625 # Base value of 25
+    }
+}
+
+country_tax_income_svalue = {
+    # Base income
+    value = modifier:global_tax_income
+    multiply = {
+        value = 1.00
+        add = modifier:global_tax_modifier
+    }
+    # Already includes tax modifier
+    every_owned_province = {
+        add = province_tax_income
+    }
+}
+
+recruit_mercenary_cost_svalue = {
+    value = 100
+    multiply = {
+        value = 1.00
+        add = modifier:recruit_mercenary_cost_modifier
+    }
+}
+
+max_mercenary_stacks_svalue = {
+    value = modifier:max_mercenary_stacks
+}
+
+max_mercenary_stacks_plus_1 = {
+    value = modifier:max_mercenary_stacks
+    add = 1
+}
+
+num_free_mercenary_slots_svalue = {
+    value = max_mercenary_stacks_svalue
+    subtract = num_mercenaries_employed_svalue
+}
+
+num_mercenaries_employed_svalue = {
+    value = 0
+    every_character = {
+        limit = {
+            is_mercenary = yes
+        }
+        add = 1
+    }
+}
+
+diplomatic_range_svalue = {
+    value = define:NDiplomacy|DIPLOMATIC_RANGE
+    multiply = {
+        value = 1.00
+        add = modifier:diplomatic_range_modifier
+    }
+    min = 0
+}
+
+ai_expected_months_to_keep_mercs = 42 # 3.5 years
+
+# Check how much gold per month a country can spend on mercenaries
+# Armies only
+ai_max_mercenary_maintenance = {
+    if = {
+        limit = {
+            treasury >= recruit_mercenary_cost_svalue
+        }
+
+        # Use treasury to offset temporary deficit, starting with wartime fund
+        value = ai_treasury_for_mercenaries
+        subtract = recruit_mercenary_cost_svalue
+        divide = ai_expected_months_to_keep_mercs
+
+        # Current treasury monthly balance
+        add = has_monthly_balance
+
+        # If navy is not at default economic policy, add delta between current policy and default
+        add = navy_adjusted_maintenance_delta
+
+        # Mercenary maintenance nerf for subjects, absolute goes before multiplier to soften its impact
+        if = {
+            limit = {
+                is_subject = yes
+                # All types that have joins_overlord_in_war = yes
+                OR = {
+                    is_subject_type = feudatory
+                    is_subject_type = satrapy
+                    is_subject_type = client_state
+                    is_subject_type = subject_mercenary_city_state
+                    is_subject_type = kushite_client
+                    is_subject_type = indian_client
+                    is_subject_type = fiefdom
+                }
+            }
+            subtract = ai_max_mercenary_maintenance_subject_absolute
+            multiply = ai_max_mercenary_maintenance_subject_multiplier
+        }
+
+        min = 0
+    }
+    else = {
+        value = 0
+    }
+}
+
+# Check how much gold per month a country can spend on mercenaries
+# Armies only
+ai_max_mercenary_maintenance_for_bribing = {
+    if = {
+        limit = {
+            treasury >= scope:mercenary_to_bribe.ai_army_size_merc_estimation
+        }
+
+        # Use treasury to offset temporary deficit, starting with wartime fund
+        value = ai_treasury_for_mercenaries
+        subtract = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+        divide = ai_expected_months_to_keep_mercs
+
+        # Current treasury monthly balance
+        add = has_monthly_balance
+
+        # If navy is not at default economic policy, add delta between current policy and default
+        add = navy_adjusted_maintenance_delta
+
+        # Mercenary maintenance nerf for subjects, absolute goes before multiplier to soften its impact
+        if = {
+            limit = {
+                is_subject = yes
+                # All types that have joins_overlord_in_war = yes
+                OR = {
+                    is_subject_type = feudatory
+                    is_subject_type = satrapy
+                    is_subject_type = client_state
+                    is_subject_type = subject_mercenary_city_state
+                    is_subject_type = kushite_client
+                    is_subject_type = indian_client
+                    is_subject_type = fiefdom
+                }
+            }
+            subtract = ai_max_mercenary_maintenance_subject_absolute
+            multiply = ai_max_mercenary_maintenance_subject_multiplier
+        }
+
+        min = 0
+    }
+    else = {
+        value = 0
+    }
+}
+
+# Check how much gold per month a country can spend on mercenaries
+# Armies only
+ai_max_mercenary_maintenance_without_bribed = {
+    if = {
+        limit = {
+            treasury >= recruit_mercenary_cost_svalue
+        }
+
+        # Use treasury to offset temporary deficit, starting with wartime fund
+        value = ai_treasury_for_mercenaries
+        subtract = recruit_mercenary_cost_svalue
+        divide = ai_expected_months_to_keep_mercs
+
+        # Current treasury monthly balance
+        add = has_monthly_balance
+
+        # Our monthly balance will be higher without maintenance of the bribed mercs
+        scope:mercenary_to_bribe = {
+            every_character_unit = {
+                add = unit_adjusted_maintenance
+            }
+        }
+
+        # If navy is not at default economic policy, add delta between current policy and default
+        add = navy_adjusted_maintenance_delta
+
+        # Mercenary maintenance nerf for subjects, absolute goes before multiplier to soften its impact
+        if = {
+            limit = {
+                is_subject = yes
+                # All types that have joins_overlord_in_war = yes
+                OR = {
+                    is_subject_type = feudatory
+                    is_subject_type = satrapy
+                    is_subject_type = client_state
+                    is_subject_type = subject_mercenary_city_state
+                    is_subject_type = kushite_client
+                    is_subject_type = indian_client
+                    is_subject_type = fiefdom
+                }
+            }
+            subtract = ai_max_mercenary_maintenance_subject_absolute
+            multiply = ai_max_mercenary_maintenance_subject_multiplier
+        }
+
+        min = 0
+    }
+    else = {
+        value = 0
+    }
+}
+
+# Subject nations want to spend less money on mercenaries compared to non-subjects to prevent vassal mercenary swarm.
+# Biggest problem is that every subject of any size have base tax income, so part of nerf is specifically targeting it. 
+ai_max_mercenary_maintenance_subject_absolute = {
+    # Base tax income given to any country incl modifiers
+    value = modifier:global_tax_income
+    multiply = {
+        value = 1
+        add = modifier:global_tax_modifier
+    }
+    # Don't count 50% of base tax income for mercenaries
+    multiply = 0.50
+}
+ai_max_mercenary_maintenance_subject_multiplier = 0.75 # Only want to spend 75% of what non-subject would want
+
+ai_treasury_for_mercenaries = {
+    if = {
+        limit = {
+            has_local_variable = ai_treasury_for_mercenaries_cached
+        }
+        value = local_var:ai_treasury_for_mercenaries_cached
+    }
+    else = {
+        # Start with allocating wartime fund
+        value = treasury
+        max = ai_wartime_fund_desired
+        # Everything above it can be used only partially
+        if = {
+            limit = {
+                treasury > ai_wartime_fund_desired
+            }
+            # Add part of the treasury at a decent rate, but with a rather harsh cap
+            add = {
+                value = treasury
+                subtract = ai_wartime_fund_desired
+                min = 0
+                if = {
+                    limit = {
+                        ai_is_facing_existential_threat = yes
+                    }
+                    multiply = 0.40
+                }
+                else = {
+                    multiply = 0.20
+                }
+                # No more than 175% or 250% of wartime fund is allowed in sum depending on threat
+                max = {
+                    value = ai_wartime_fund_desired
+                    if = {
+                        limit = {
+                            ai_is_facing_existential_threat = yes
+                        }
+                        multiply = 1.50
+                    }
+                    else = {
+                        multiply = 0.75
+                    }
+                }
+            }
+            # Add part of the treasury at a low rate, but without a cap
+            add = {
+                value = treasury
+                subtract = ai_wartime_fund_desired
+                min = 0
+                if = {
+                    limit = {
+                        ai_is_facing_existential_threat = yes
+                    }
+                    multiply = 0.10
+                }
+                else = {
+                    multiply = 0.05
+                }
+            }
+        }
+    }
+}
+
+navy_adjusted_maintenance_delta = {
+    if = {
+        limit = {
+            has_local_variable = navy_adjusted_maintenance_delta_cached
+        }
+        value = local_var:navy_adjusted_maintenance_delta_cached
+    }
+    else_if = {
+        limit = {
+            OR = {
+                has_high_economic_policy = expense_navy
+                has_low_economic_policy = expense_navy
+            }
+        }
+        value = 0
+        every_navy = {
+            add = unit_typical_maintenance
+            subtract = unit_adjusted_maintenance
+        }
+    }
+    else = {
+        value = 0
+    }
+}
+
+# Copy of army_size_merc_estimation_sg but with scope being the character themselves
+ai_army_size_merc_estimation = { 
+    value = army_size_merc_estimation_calculation
+}
+
+# Armies only
+ai_current_mercenary_maintenance = {
+    if = {
+        limit = {
+            has_local_variable = ai_current_mercenary_maintenance_cached
+        }
+        value = local_var:ai_current_mercenary_maintenance_cached
+    }
+    else = {
+        value = 0
+        every_army = {
+            limit = {
+                is_mercenary_unit = yes
+            }
+            add = unit_adjusted_maintenance
+        }
+    }
+}
+
+# Armies only
+ai_free_mercenary_maintenance = {
+    value = ai_max_mercenary_maintenance
+    subtract = ai_current_mercenary_maintenance
+}
+
+ai_free_mercenary_maintenance_for_bribing = {
+    value = ai_max_mercenary_maintenance_for_bribing
+    subtract = ai_current_mercenary_maintenance
+}
+
+ai_free_mercenary_maintenance_without_bribed = {
+    # Max maintenance as if we didn't have the bribed mercs
+    value = ai_max_mercenary_maintenance_without_bribed
+    # Current maintenance as if we didn't have the bribed mercs
+    subtract = ai_current_mercenary_maintenance
+    scope:mercenary_to_bribe = {
+        every_character_unit = {
+            add = unit_adjusted_maintenance
+        }
+    }
+}
+
+# Requires scope:recruiting_country and territory to check distance from as scope:target_province
+# Armies only
+ai_mercenary_priority = {
+    # Bigger mercenaries are better
+    value = 0
+    every_character_unit = {
+        add = unit_size
+    }
+    multiply = {
+        value = 1.00
+        # For every X distance mercenary size matters 1% less, divide = X below
+        subtract = {
+            location = {
+                value = distance_from_province
+            }
+            # If can still recruit multiple mercenaries, start with closer ones
+            if = {
+                limit = {
+                    scope:recruiting_country = {
+                        num_free_mercenary_slots_svalue > 1
+                    }
+                }
+                divide = 5 # 50% size at 0 distance = 100% size at 250 distance
+            }
+            # Otherwise heavily prefer the biggest one the country is allowed to recruit
+            else = {
+                divide = 20 # 50% size at 0 distance = 100% size at 1000 distance
+            }
+            multiply = 0.01
+        }
+        # Let's avoid priority going into zero and below
+        min = 0.01
+    }
+    # For bribing heavily prioritize stealing mercs from players
+    if = {
+        limit = {
+            employer = {
+                is_ai = no
+            }
+        }
+        multiply = 2
+    }
+    # Lower priority for mercs that are in a risk of getting stack wiped
+    if = {
+        limit = {
+            exists = c:MER
+            employer = c:MER
+            location = {
+                any_neighbor_province = {
+                    any_unit_in_province = {
+                        is_army = yes
+                        unit_owner = {
+                            war_with = scope:recruiting_country
+                        }
+                    }
+                }
+            }
+        }
+        divide = 3
+    }
+}
+
+subunits_base_recruitment_cost = {
+    value = 0
+    if = {
+        limit = {
+            is_army = yes
+        }
+        every_sub_unit = {
+            if = {
+                limit = {
+                    sub_unit_type = archers
+                }
+                add = 8
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = camels
+                }
+                add = 15
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = chariots
+                }
+                add = 8
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = engineer_cohort
+                }
+                add = 40
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = heavy_cavalry
+                }
+                add = 18
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = heavy_infantry
+                }
+                add = 16
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = horse_archers
+                }
+                add = 16
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = light_cavalry
+                }
+                add = 10
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = light_infantry
+                }
+                add = 8
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = spearmen
+                }
+                add = 8
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = supply_train
+                }
+                add = 20
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = warelephant
+                }
+                add = 28
+            }
+        }
+    }
+    else = {
+        every_sub_unit = {
+            if = {
+                limit = {
+                    sub_unit_type = liburnian
+                }
+                add = 5
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = trireme
+                }
+                add = 8
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = tetrere
+                }
+                add = 10
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = hexere
+                }
+                add = 15
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = octere
+                }
+                add = 25
+            }
+            else_if = {
+                limit = {
+                    sub_unit_type = mega_galley
+                }
+                add = 32
+            }
+        }
+    }
+}
+
+army_subunit_recruitment_cost = {
+    value = 0
+    if = {
+        limit = {
+            sub_unit_type = archers
+        }
+        add = {
+            value = 8
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:archers_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:archers_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:archers_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:archers_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = camels
+        }
+        add = {
+            value = 15
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:camels_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:camels_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:camels_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:camels_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = chariots
+        }
+        add = {
+            value = 8
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:chariots_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:chariots_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:chariots_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:chariots_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = engineer_cohort
+        }
+        add = {
+            value = 40
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:engineer_cohort_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:engineer_cohort_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:engineer_cohort_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:engineer_cohort_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = heavy_cavalry
+        }
+        add = {
+            value = 18
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_cavalry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_cavalry_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_cavalry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_cavalry_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = heavy_infantry
+        }
+        add = {
+            value = 16
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_infantry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_infantry_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_infantry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_infantry_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = horse_archers
+        }
+        add = {
+            value = 16
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:horse_archers_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:horse_archers_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:horse_archers_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:horse_archers_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = light_cavalry
+        }
+        add = {
+            value = 10
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_cavalry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_cavalry_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_cavalry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_cavalry_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = light_infantry
+        }
+        add = {
+            value = 8
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_infantry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_infantry_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_infantry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_infantry_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = spearmen
+        }
+        add = {
+            value = 8
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:spearmen_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:spearmen_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:spearmen_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:spearmen_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = supply_train
+        }
+        add = {
+            value = 20
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:supply_train_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:supply_train_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:supply_train_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:supply_train_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = warelephant
+        }
+        add = {
+            value = 28
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:warelephant_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:warelephant_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:warelephant_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:warelephant_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            owning_unit = {
+                is_mercenary_unit = no
+            }
+            has_personal_loyalty = yes
+        }
+        multiply = 2
+        divide = 3
+    }
+}
+
+navy_subunit_recruitment_cost = {
+    value = 0
+    if = {
+        limit = {
+            sub_unit_type = liburnian
+        }
+        add = {
+            value = 5
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:liburnian_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:liburnian_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:liburnian_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:liburnian_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = trireme
+        }
+        add = {
+            value = 8
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:trireme_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:trireme_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:trireme_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:trireme_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = tetrere
+        }
+        add = {
+            value = 10
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:tetrere_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:tetrere_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:tetrere_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:tetrere_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = hexere
+        }
+        add = {
+            value = 15
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:hexere_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:hexere_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:hexere_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:hexere_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = octere
+        }
+        add = {
+            value = 25
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:octere_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:octere_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:octere_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:octere_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            sub_unit_type = mega_galley
+        }
+        add = {
+            value = 32
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mega_galley_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mega_galley_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                owning_unit.unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mega_galley_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mega_galley_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+}
+
+army_recruitment_cost_by_cache = {
+    value = 0
+    if = {
+        limit = {
+            has_variable = num_of_archers_subunits_cached
+        }
+        add = {
+            value = var:num_of_archers_subunits_cached
+            multiply = 8
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:archers_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:archers_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:archers_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:archers_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_camels_subunits_cached
+        }
+        add = {
+            value = var:num_of_camels_subunits_cached
+            multiply = 15
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:camels_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:camels_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:camels_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:camels_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_chariots_subunits_cached
+        }
+        add = {
+            value = var:num_of_chariots_subunits_cached
+            multiply = 8
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:chariots_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:chariots_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:chariots_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:chariots_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_engineer_cohort_subunits_cached
+        }
+        add = {
+            value = var:num_of_engineer_cohort_subunits_cached
+            multiply = 40
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:engineer_cohort_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:engineer_cohort_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:engineer_cohort_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:engineer_cohort_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_heavy_cavalry_subunits_cached
+        }
+        add = {
+            value = var:num_of_heavy_cavalry_subunits_cached
+            multiply = 18
+            ceiling = yes
+            max = 3000
+            min = 20
+            if = {
+            limit = {
+            exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+            multiply = {
+            value = 1.00
+            add = modifier:heavy_cavalry_cost
+            }
+            multiply = {
+            value = 1.00
+            add = modifier:heavy_cavalry_maintenance_cost
+            }
+            }
+            }
+            else = {
+            unit_owner = {
+            multiply = {
+            value = 1.00
+            add = modifier:heavy_cavalry_cost
+            }
+            multiply = {
+            value = 1.00
+            add = modifier:heavy_cavalry_maintenance_cost
+            }
+            }
+            }
+                }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_heavy_infantry_subunits_cached
+        }
+        add = {
+            value = var:num_of_heavy_infantry_subunits_cached
+            multiply = 16
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_infantry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_infantry_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_infantry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:heavy_infantry_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_horse_archers_subunits_cached
+        }
+        add = {
+            value = var:num_of_horse_archers_subunits_cached
+            multiply = 16
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:horse_archers_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:horse_archers_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:horse_archers_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:horse_archers_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_light_cavalry_subunits_cached
+        }
+        add = {
+            value = var:num_of_light_cavalry_subunits_cached
+            multiply = 10
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_cavalry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_cavalry_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_cavalry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_cavalry_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_light_infantry_subunits_cached
+        }
+        add = {
+            value = var:num_of_light_infantry_subunits_cached
+            multiply = 8
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_infantry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_infantry_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_infantry_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:light_infantry_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_spearmen_subunits_cached
+        }
+        add = {
+            value = var:num_of_spearmen_subunits_cached
+            multiply = 8
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:spearmen_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:spearmen_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:spearmen_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:spearmen_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_supply_train_subunits_cached
+        }
+        add = {
+            value = var:num_of_supply_train_subunits_cached
+            multiply = 20
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:supply_train_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:supply_train_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:supply_train_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:supply_train_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    if = {
+        limit = {
+            has_variable = num_of_warelephant_subunits_cached
+        }
+        add = {
+            value = var:num_of_warelephant_subunits_cached
+            multiply = 28
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:warelephant_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:warelephant_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:warelephant_cost
+                    }
+                    multiply = {
+                        value = 1.00
+                        add = modifier:warelephant_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+}
+
+# Prefers scope:recruiting_country if it exists, otherwise current unit owner
+subunits_typical_maintenance = {
+    value = 0
+    if = {
+        limit = {
+            is_army = yes
+        }
+        if = {
+            limit = {
+                unit_pays_maintenance = yes
+            }
+            if = {
+                limit = {
+                    has_variable = has_cached_num_of_subunits_by_type
+                    var:has_cached_num_of_subunits_by_type = unit_size
+                }
+                add = army_recruitment_cost_by_cache
+            }
+            else = {
+                every_sub_unit = {
+                    add = army_subunit_recruitment_cost
+                }
+            }
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:cohort_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:cohort_cost
+                    }
+                }
+            }
+            divide = 48 # 25% of the total recruitment cost each year
+        }
+    }
+    else_if = {
+        limit = {
+            is_navy = yes
+        }
+        every_sub_unit = {
+            add = navy_subunit_recruitment_cost
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:ship_cost
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:ship_cost
+                }
+            }
+        }
+        divide = 60 # 20% of the total recruitment cost each year
+    }
+}
+
+# Typical maintenance but including impact from strength losses
+subunits_strength_maintenance = {
+    value = 0
+    if = {
+        limit = {
+            is_army = yes
+        }
+        if = {
+            limit = {
+                unit_pays_maintenance = yes
+            }
+            every_sub_unit = {
+                add = {
+                    value = army_subunit_recruitment_cost
+                    multiply = subunit_strength_percentage
+                }
+            }
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:cohort_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:cohort_cost
+                    }
+                }
+            }
+            divide = 48 # 25% of the total recruitment cost each year
+        }
+    }
+    else_if = {
+        limit = {
+            is_navy = yes
+        }
+        every_sub_unit = {
+            add = {
+                value = navy_subunit_recruitment_cost
+                multiply = subunit_strength_percentage
+            }
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:ship_cost
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:ship_cost
+                }
+            }
+        }
+        divide = 60 # 20% of the total recruitment cost each year
+    }
+}
+
+# Doesn't include unit level modifiers like from active ability etc.
+# Prefers scope:recruiting_country if it exists, otherwise current unit owner
+unit_typical_maintenance = {
+    value = subunits_typical_maintenance
+    if = {
+        limit = {
+            is_army = yes
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:army_maintenance_cost
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:army_maintenance_cost
+                }
+            }
+        }
+        if = {
+            limit = {
+                is_mercenary_unit = yes
+            }
+            # Mercenary premium
+            multiply = 1.50
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_land_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_land_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            is_navy = yes
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:navy_maintenance_cost
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:navy_maintenance_cost
+                }
+            }
+        }
+        if = {
+            limit = {
+                is_mercenary_unit = yes
+            }
+            # Mercenary premium
+            multiply = 1.50
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_naval_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_naval_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+}
+
+# Doesn't include unit level modifiers like from active ability etc., assumes that army maintenance policy is default
+# Prefers scope:recruiting_country if it exists, otherwise current unit owner
+unit_adjusted_maintenance = {
+    value = subunits_typical_maintenance
+    if = {
+        limit = {
+            is_army = yes
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:army_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_army
+                        }
+                        subtract = 0.25
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_army
+                        }
+                        add = 0.25
+                    }
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:army_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_army
+                        }
+                        subtract = 0.25
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_army
+                        }
+                        add = 0.25
+                    }
+                }
+            }
+        }
+        if = {
+            limit = {
+                is_mercenary_unit = yes
+            }
+            # Mercenary premium
+            multiply = 1.50
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_land_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_land_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            is_navy = yes
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:navy_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_navy
+                        }
+                        subtract = 0.50
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_navy
+                        }
+                        add = 0.50
+                    }
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:navy_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_navy
+                        }
+                        subtract = 0.50
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_navy
+                        }
+                        add = 0.50
+                    }
+                }
+            }
+        }
+        if = {
+            limit = {
+                is_mercenary_unit = yes
+            }
+            # Mercenary premium
+            multiply = 1.50
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_naval_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_naval_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+}
+
+# Adjusted maintenance but including impact from strength losses
+unit_strength_maintenance = {
+    value = subunits_strength_maintenance
+    if = {
+        limit = {
+            is_army = yes
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:army_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_army
+                        }
+                        subtract = 0.25
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_army
+                        }
+                        add = 0.25
+                    }
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:army_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_army
+                        }
+                        subtract = 0.25
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_army
+                        }
+                        add = 0.25
+                    }
+                }
+            }
+        }
+        if = {
+            limit = {
+                is_mercenary_unit = yes
+            }
+            # Mercenary premium
+            multiply = 1.50
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_land_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_land_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            is_navy = yes
+        }
+        if = {
+            limit = {
+                exists = scope:recruiting_country
+            }
+            scope:recruiting_country = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:navy_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_navy
+                        }
+                        subtract = 0.50
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_navy
+                        }
+                        add = 0.50
+                    }
+                }
+            }
+        }
+        else = {
+            unit_owner = {
+                multiply = {
+                    value = 1.00
+                    add = modifier:navy_maintenance_cost
+                    # Always assume army maintenance economic policy will be set to default
+                    if = {
+                        limit = {
+                            has_high_economic_policy = expense_navy
+                        }
+                        subtract = 0.50
+                    }
+                    else_if = {
+                        limit = {
+                            has_low_economic_policy = expense_navy
+                        }
+                        add = 0.50
+                    }
+                }
+            }
+        }
+        if = {
+            limit = {
+                is_mercenary_unit = yes
+            }
+            # Mercenary premium
+            multiply = 1.50
+            if = {
+                limit = {
+                    exists = scope:recruiting_country
+                }
+                scope:recruiting_country = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_naval_maintenance_cost
+                    }
+                }
+            }
+            else = {
+                unit_owner = {
+                    multiply = {
+                        value = 1.00
+                        add = modifier:mercenary_naval_maintenance_cost
+                    }
+                }
+            }
+        }
+    }
+}
+
+mercenary_adjusted_maintenance = {
+    value = 0
+    every_character_unit = {
+        add = unit_adjusted_maintenance
+    }
+}
+
+mercenary_adjusted_maintenance_75_percent = {
+    value = mercenary_adjusted_maintenance
+    multiply = 0.75
+}
+
+mercenary_strength_maintenance = {
+    value = 0
+    every_character_unit = {
+        add = unit_strength_maintenance
+    }
+}
+
+# Scope is unit evaluated for unit recovery
+ai_treasury_for_unit_recovery_base = {
+    # Minimal buffer before negative treasury for small countries
+    value = 50
+    # 6 months of income
+    add = {
+        value = unit_owner.has_monthly_income
+        multiply = 6
+    }
+}
+# Scope is unit evaluated for unit recovery
+ai_treasury_for_unit_recovery = {
+    value = ai_treasury_for_unit_recovery_base
+    # 12 months of doubled unit typical maintenance
+    add = {
+        value = unit_typical_maintenance
+        multiply = 2
+        multiply = 12
+    }
+}
+
+# Used in ai_should_counter_bribe_mercenary, requires scope:mercenary_to_bribe
+ai_treasury_for_counter_bribing_base = {
+    # Some really minimal buffer to negative treasury, where mercs become disloyal
+    value = 10
+    add = {
+        value = has_monthly_income
+        divide = 2
+    }
+    # Counter bribe amount
+    add = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+}
+
+# Used in ai_should_counter_bribe_mercenary, requires scope:mercenary_to_bribe
+ai_treasury_for_counter_bribing_high_prio = {
+    value = ai_treasury_for_counter_bribing_base
+
+    # We must be able to pay all our current mercenaries for at least a couple of months
+    add = {
+        value = ai_current_mercenary_maintenance
+        multiply = 6
+    }
+    
+    # If balance is in the red, we must be able to hold out for at least a couple of months
+    if = {
+        limit = {
+            has_monthly_balance < 0
+        }
+        subtract = {
+            value = has_monthly_balance
+            multiply = 6
+        }
+    }
+}
+
+# Used in ai_should_counter_bribe_mercenary, requires scope:mercenary_to_bribe
+ai_treasury_for_counter_bribing_medium_prio = {
+    value = ai_treasury_for_counter_bribing_base
+
+    # We must be able to pay all our current mercenaries for at least some time
+    add = {
+        value = ai_current_mercenary_maintenance
+        multiply = 12
+    }
+    
+    # If balance is in the red, we must be able to hold out for at least some time
+    if = {
+        limit = {
+            has_monthly_balance < 0
+        }
+        subtract = {
+            value = has_monthly_balance
+            multiply = 12
+        }
+    }
+}
+
+# Used in ai_should_counter_bribe_mercenary, requires scope:mercenary_to_bribe
+ai_treasury_for_counter_bribing_low_prio = {
+    value = ai_treasury_for_counter_bribing_base
+
+    # We must be able to pay all our current mercenaries for a long time
+    add = {
+        value = ai_current_mercenary_maintenance
+        multiply = ai_expected_months_to_keep_mercs
+    }
+    
+    # If balance is in the red, we must be able to hold out for a long time
+    if = {
+        limit = {
+            has_monthly_balance < 0
+        }
+        subtract = {
+            value = has_monthly_balance
+            multiply = ai_expected_months_to_keep_mercs
+        }
+    }
+
+    # Remaining treasury can't be lower than what we consider to be plenty of money for waging a war
+    min = {
+        value = ai_wartime_fund_desired
+        multiply = 2.50
+        add = scope:mercenary_to_bribe.ai_army_size_merc_estimation
+    }
+}
+
+country_population_of_enemy_players = {
+    value = 0
+    every_countries_at_war_with = {
+        limit = {
+            is_ai = no
+        }
+        add = country_population
+    }
+}
+
+country_population_20_percent = {
+    value = country_population
+    multiply = 0.20
+}
+
+country_population_40_percent = {
+    value = country_population
+    multiply = 0.40
+}
+
+# Requires country to be saved as scope:country_at_war
+num_of_territories_of_enemy_side = {
+    value = 0
+    if = {
+        limit = {
+            any_war_attacker = {
+                this = scope:country_at_war
+            }
+        }
+        every_war_defender = {
+            add = num_of_territories_svalue
+        }
+    }
+    else = {
+        every_war_attacker = {
+            add = num_of_territories_svalue
+        }
+    }
+}
+
+# Requires country to be saved as scope:country_at_war
+num_of_territories_of_ally_side = {
+    value = 0
+    if = {
+        limit = {
+            any_war_attacker = {
+                this = scope:country_at_war
+            }
+        }
+        every_war_attacker = {
+            add = num_of_territories_svalue
+        }
+    }
+    else = {
+        every_war_defender = {
+            add = num_of_territories_svalue
+        }
+    }
+}
+num_of_territories_of_ally_side_plus_three_fifths = {
+    value = num_of_territories_of_ally_side
+    multiply = 1.60
+}
+num_of_territories_of_ally_side_minus_one_fifth = {
+    value = num_of_territories_of_ally_side
+    multiply = 0.80
+}
+num_of_territories_of_ally_side_minus_ten = {
+    value = num_of_territories_of_ally_side
+    subtract = 10
+}
+
+# Requires country to be saved as scope:country_at_war
+country_population_of_enemy_side = {
+    value = 0
+    if = {
+        limit = {
+            any_war_attacker = {
+                this = scope:country_at_war
+            }
+        }
+        every_war_defender = {
+            add = country_population
+        }
+    }
+    else = {
+        every_war_attacker = {
+            add = country_population
+        }
+    }
+}
+
+# Requires country to be saved as scope:country_at_war
+country_population_of_ally_side = {
+    value = 0
+    if = {
+        limit = {
+            any_war_attacker = {
+                this = scope:country_at_war
+            }
+        }
+        every_war_attacker = {
+            add = country_population
+        }
+    }
+    else = {
+        every_war_defender = {
+            add = country_population
+        }
+    }
+}
+country_population_of_ally_side_plus_three_fifths = {
+    value = country_population_of_ally_side
+    multiply = 1.60
+}
+country_population_of_ally_side_minus_one_fifth = {
+    value = country_population_of_ally_side
+    multiply = 0.80
+}
+country_population_of_ally_side_minus_thirty = {
+    value = country_population_of_ally_side
+    subtract = 30
+}
+
+# Generated using /tools/metaprogramming/distance_from_province.js
+distance_from_province = {
+    if = {
+        limit = { distance_from = { province = scope:target_province value <= 2500 } }
+        if = {
+            limit = { distance_from = { province = scope:target_province value <= 1250 } }
+            if = {
+                limit = { distance_from = { province = scope:target_province value <= 630 } }
+                if = {
+                    limit = { distance_from = { province = scope:target_province value <= 320 } }
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 160 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 80 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 40 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 20 } }
+                                    value = 5
+                                }
+                                else = {
+                                    value = 25
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 60 } }
+                                    value = 45
+                                }
+                                else = {
+                                    value = 65
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 120 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 100 } }
+                                    value = 85
+                                }
+                                else = {
+                                    value = 105
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 140 } }
+                                    value = 125
+                                }
+                                else = {
+                                    value = 145
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 240 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 200 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 180 } }
+                                    value = 165
+                                }
+                                else = {
+                                    value = 185
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 220 } }
+                                    value = 205
+                                }
+                                else = {
+                                    value = 225
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 280 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 260 } }
+                                    value = 245
+                                }
+                                else = {
+                                    value = 265
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 300 } }
+                                    value = 285
+                                }
+                                else = {
+                                    value = 305
+                                }
+                            }
+                        }
+                    }
+                }
+                else = {
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 480 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 400 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 360 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 340 } }
+                                    value = 325
+                                }
+                                else = {
+                                    value = 345
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 380 } }
+                                    value = 365
+                                }
+                                else = {
+                                    value = 385
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 440 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 420 } }
+                                    value = 405
+                                }
+                                else = {
+                                    value = 425
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 460 } }
+                                    value = 445
+                                }
+                                else = {
+                                    value = 465
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 560 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 520 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 500 } }
+                                    value = 485
+                                }
+                                else = {
+                                    value = 505
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 540 } }
+                                    value = 525
+                                }
+                                else = {
+                                    value = 545
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 600 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 580 } }
+                                    value = 565
+                                }
+                                else = {
+                                    value = 585
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 620 } }
+                                    value = 605
+                                }
+                                else = {
+                                    value = 625
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else = {
+                if = {
+                    limit = { distance_from = { province = scope:target_province value <= 940 } }
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 790 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 710 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 670 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 650 } }
+                                    value = 635
+                                }
+                                else = {
+                                    value = 655
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 690 } }
+                                    value = 675
+                                }
+                                else = {
+                                    value = 695
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 750 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 730 } }
+                                    value = 715
+                                }
+                                else = {
+                                    value = 735
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 770 } }
+                                    value = 755
+                                }
+                                else = {
+                                    value = 775
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 870 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 830 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 810 } }
+                                    value = 795
+                                }
+                                else = {
+                                    value = 815
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 850 } }
+                                    value = 835
+                                }
+                                else = {
+                                    value = 855
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 910 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 890 } }
+                                    value = 875
+                                }
+                                else = {
+                                    value = 895
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 930 } }
+                                    value = 915
+                                }
+                                else = {
+                                    value = 935
+                                }
+                            }
+                        }
+                    }
+                }
+                else = {
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 1100 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 1020 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 980 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 960 } }
+                                    value = 945
+                                }
+                                else = {
+                                    value = 965
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1000 } }
+                                    value = 985
+                                }
+                                else = {
+                                    value = 1005
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1060 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1040 } }
+                                    value = 1025
+                                }
+                                else = {
+                                    value = 1045
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1080 } }
+                                    value = 1065
+                                }
+                                else = {
+                                    value = 1085
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 1180 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1140 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1120 } }
+                                    value = 1105
+                                }
+                                else = {
+                                    value = 1125
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1160 } }
+                                    value = 1145
+                                }
+                                else = {
+                                    value = 1165
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1220 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1200 } }
+                                    value = 1185
+                                }
+                                else = {
+                                    value = 1205
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1240 } }
+                                    value = 1225
+                                }
+                                else = {
+                                    value = 1245
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else = {
+            if = {
+                limit = { distance_from = { province = scope:target_province value <= 1880 } }
+                if = {
+                    limit = { distance_from = { province = scope:target_province value <= 1570 } }
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 1410 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 1330 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1290 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1270 } }
+                                    value = 1255
+                                }
+                                else = {
+                                    value = 1275
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1310 } }
+                                    value = 1295
+                                }
+                                else = {
+                                    value = 1315
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1370 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1350 } }
+                                    value = 1335
+                                }
+                                else = {
+                                    value = 1355
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1390 } }
+                                    value = 1375
+                                }
+                                else = {
+                                    value = 1395
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 1490 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1450 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1430 } }
+                                    value = 1415
+                                }
+                                else = {
+                                    value = 1435
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1470 } }
+                                    value = 1455
+                                }
+                                else = {
+                                    value = 1475
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1530 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1510 } }
+                                    value = 1495
+                                }
+                                else = {
+                                    value = 1515
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1550 } }
+                                    value = 1535
+                                }
+                                else = {
+                                    value = 1555
+                                }
+                            }
+                        }
+                    }
+                }
+                else = {
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 1730 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 1650 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1610 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1590 } }
+                                    value = 1575
+                                }
+                                else = {
+                                    value = 1595
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1630 } }
+                                    value = 1615
+                                }
+                                else = {
+                                    value = 1635
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1690 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1670 } }
+                                    value = 1655
+                                }
+                                else = {
+                                    value = 1675
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1710 } }
+                                    value = 1695
+                                }
+                                else = {
+                                    value = 1715
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 1810 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1770 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1750 } }
+                                    value = 1735
+                                }
+                                else = {
+                                    value = 1755
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1790 } }
+                                    value = 1775
+                                }
+                                else = {
+                                    value = 1795
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1850 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1830 } }
+                                    value = 1815
+                                }
+                                else = {
+                                    value = 1835
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1870 } }
+                                    value = 1855
+                                }
+                                else = {
+                                    value = 1875
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else = {
+                if = {
+                    limit = { distance_from = { province = scope:target_province value <= 2190 } }
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 2040 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 1960 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 1920 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1900 } }
+                                    value = 1885
+                                }
+                                else = {
+                                    value = 1905
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1940 } }
+                                    value = 1925
+                                }
+                                else = {
+                                    value = 1945
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2000 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 1980 } }
+                                    value = 1965
+                                }
+                                else = {
+                                    value = 1985
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2020 } }
+                                    value = 2005
+                                }
+                                else = {
+                                    value = 2025
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 2120 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2080 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2060 } }
+                                    value = 2045
+                                }
+                                else = {
+                                    value = 2065
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2100 } }
+                                    value = 2085
+                                }
+                                else = {
+                                    value = 2105
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2160 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2140 } }
+                                    value = 2125
+                                }
+                                else = {
+                                    value = 2145
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2180 } }
+                                    value = 2165
+                                }
+                                else = {
+                                    value = 2185
+                                }
+                            }
+                        }
+                    }
+                }
+                else = {
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 2350 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 2270 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2230 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2210 } }
+                                    value = 2195
+                                }
+                                else = {
+                                    value = 2215
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2250 } }
+                                    value = 2235
+                                }
+                                else = {
+                                    value = 2255
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2310 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2290 } }
+                                    value = 2275
+                                }
+                                else = {
+                                    value = 2295
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2330 } }
+                                    value = 2315
+                                }
+                                else = {
+                                    value = 2335
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 2430 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2390 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2370 } }
+                                    value = 2355
+                                }
+                                else = {
+                                    value = 2375
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2410 } }
+                                    value = 2395
+                                }
+                                else = {
+                                    value = 2415
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2470 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2450 } }
+                                    value = 2435
+                                }
+                                else = {
+                                    value = 2455
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2490 } }
+                                    value = 2475
+                                }
+                                else = {
+                                    value = 2495
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else = {
+        if = {
+            limit = { distance_from = { province = scope:target_province value <= 3750 } }
+            if = {
+                limit = { distance_from = { province = scope:target_province value <= 3130 } }
+                if = {
+                    limit = { distance_from = { province = scope:target_province value <= 2820 } }
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 2660 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 2580 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2540 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2520 } }
+                                    value = 2505
+                                }
+                                else = {
+                                    value = 2525
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2560 } }
+                                    value = 2545
+                                }
+                                else = {
+                                    value = 2565
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2620 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2600 } }
+                                    value = 2585
+                                }
+                                else = {
+                                    value = 2605
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2640 } }
+                                    value = 2625
+                                }
+                                else = {
+                                    value = 2645
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 2740 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2700 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2680 } }
+                                    value = 2665
+                                }
+                                else = {
+                                    value = 2685
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2720 } }
+                                    value = 2705
+                                }
+                                else = {
+                                    value = 2725
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2780 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2760 } }
+                                    value = 2745
+                                }
+                                else = {
+                                    value = 2765
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2800 } }
+                                    value = 2785
+                                }
+                                else = {
+                                    value = 2805
+                                }
+                            }
+                        }
+                    }
+                }
+                else = {
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 2980 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 2900 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2860 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2840 } }
+                                    value = 2825
+                                }
+                                else = {
+                                    value = 2845
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2880 } }
+                                    value = 2865
+                                }
+                                else = {
+                                    value = 2885
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 2940 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2920 } }
+                                    value = 2905
+                                }
+                                else = {
+                                    value = 2925
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 2960 } }
+                                    value = 2945
+                                }
+                                else = {
+                                    value = 2965
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 3060 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3020 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3000 } }
+                                    value = 2985
+                                }
+                                else = {
+                                    value = 3005
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3040 } }
+                                    value = 3025
+                                }
+                                else = {
+                                    value = 3045
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3100 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3080 } }
+                                    value = 3065
+                                }
+                                else = {
+                                    value = 3085
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3120 } }
+                                    value = 3105
+                                }
+                                else = {
+                                    value = 3125
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else = {
+                if = {
+                    limit = { distance_from = { province = scope:target_province value <= 3440 } }
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 3290 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 3210 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3170 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3150 } }
+                                    value = 3135
+                                }
+                                else = {
+                                    value = 3155
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3190 } }
+                                    value = 3175
+                                }
+                                else = {
+                                    value = 3195
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3250 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3230 } }
+                                    value = 3215
+                                }
+                                else = {
+                                    value = 3235
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3270 } }
+                                    value = 3255
+                                }
+                                else = {
+                                    value = 3275
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 3370 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3330 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3310 } }
+                                    value = 3295
+                                }
+                                else = {
+                                    value = 3315
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3350 } }
+                                    value = 3335
+                                }
+                                else = {
+                                    value = 3355
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3410 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3390 } }
+                                    value = 3375
+                                }
+                                else = {
+                                    value = 3395
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3430 } }
+                                    value = 3415
+                                }
+                                else = {
+                                    value = 3435
+                                }
+                            }
+                        }
+                    }
+                }
+                else = {
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 3600 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 3520 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3480 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3460 } }
+                                    value = 3445
+                                }
+                                else = {
+                                    value = 3465
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3500 } }
+                                    value = 3485
+                                }
+                                else = {
+                                    value = 3505
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3560 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3540 } }
+                                    value = 3525
+                                }
+                                else = {
+                                    value = 3545
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3580 } }
+                                    value = 3565
+                                }
+                                else = {
+                                    value = 3585
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 3680 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3640 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3620 } }
+                                    value = 3605
+                                }
+                                else = {
+                                    value = 3625
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3660 } }
+                                    value = 3645
+                                }
+                                else = {
+                                    value = 3665
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3720 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3700 } }
+                                    value = 3685
+                                }
+                                else = {
+                                    value = 3705
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3740 } }
+                                    value = 3725
+                                }
+                                else = {
+                                    value = 3745
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else = {
+            if = {
+                limit = { distance_from = { province = scope:target_province value <= 4380 } }
+                if = {
+                    limit = { distance_from = { province = scope:target_province value <= 4070 } }
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 3910 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 3830 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3790 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3770 } }
+                                    value = 3755
+                                }
+                                else = {
+                                    value = 3775
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3810 } }
+                                    value = 3795
+                                }
+                                else = {
+                                    value = 3815
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3870 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3850 } }
+                                    value = 3835
+                                }
+                                else = {
+                                    value = 3855
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3890 } }
+                                    value = 3875
+                                }
+                                else = {
+                                    value = 3895
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 3990 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 3950 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3930 } }
+                                    value = 3915
+                                }
+                                else = {
+                                    value = 3935
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 3970 } }
+                                    value = 3955
+                                }
+                                else = {
+                                    value = 3975
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4030 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4010 } }
+                                    value = 3995
+                                }
+                                else = {
+                                    value = 4015
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4050 } }
+                                    value = 4035
+                                }
+                                else = {
+                                    value = 4055
+                                }
+                            }
+                        }
+                    }
+                }
+                else = {
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 4230 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 4150 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4110 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4090 } }
+                                    value = 4075
+                                }
+                                else = {
+                                    value = 4095
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4130 } }
+                                    value = 4115
+                                }
+                                else = {
+                                    value = 4135
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4190 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4170 } }
+                                    value = 4155
+                                }
+                                else = {
+                                    value = 4175
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4210 } }
+                                    value = 4195
+                                }
+                                else = {
+                                    value = 4215
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 4310 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4270 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4250 } }
+                                    value = 4235
+                                }
+                                else = {
+                                    value = 4255
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4290 } }
+                                    value = 4275
+                                }
+                                else = {
+                                    value = 4295
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4350 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4330 } }
+                                    value = 4315
+                                }
+                                else = {
+                                    value = 4335
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4370 } }
+                                    value = 4355
+                                }
+                                else = {
+                                    value = 4375
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else = {
+                if = {
+                    limit = { distance_from = { province = scope:target_province value <= 4690 } }
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 4540 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 4460 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4420 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4400 } }
+                                    value = 4385
+                                }
+                                else = {
+                                    value = 4405
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4440 } }
+                                    value = 4425
+                                }
+                                else = {
+                                    value = 4445
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4500 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4480 } }
+                                    value = 4465
+                                }
+                                else = {
+                                    value = 4485
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4520 } }
+                                    value = 4505
+                                }
+                                else = {
+                                    value = 4525
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 4620 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4580 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4560 } }
+                                    value = 4545
+                                }
+                                else = {
+                                    value = 4565
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4600 } }
+                                    value = 4585
+                                }
+                                else = {
+                                    value = 4605
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4660 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4640 } }
+                                    value = 4625
+                                }
+                                else = {
+                                    value = 4645
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4680 } }
+                                    value = 4665
+                                }
+                                else = {
+                                    value = 4685
+                                }
+                            }
+                        }
+                    }
+                }
+                else = {
+                    if = {
+                        limit = { distance_from = { province = scope:target_province value <= 4850 } }
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 4770 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4730 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4710 } }
+                                    value = 4695
+                                }
+                                else = {
+                                    value = 4715
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4750 } }
+                                    value = 4735
+                                }
+                                else = {
+                                    value = 4755
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4810 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4790 } }
+                                    value = 4775
+                                }
+                                else = {
+                                    value = 4795
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4830 } }
+                                    value = 4815
+                                }
+                                else = {
+                                    value = 4835
+                                }
+                            }
+                        }
+                    }
+                    else = {
+                        if = {
+                            limit = { distance_from = { province = scope:target_province value <= 4930 } }
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4890 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4870 } }
+                                    value = 4855
+                                }
+                                else = {
+                                    value = 4875
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4910 } }
+                                    value = 4895
+                                }
+                                else = {
+                                    value = 4915
+                                }
+                            }
+                        }
+                        else = {
+                            if = {
+                                limit = { distance_from = { province = scope:target_province value <= 4970 } }
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4950 } }
+                                    value = 4935
+                                }
+                                else = {
+                                    value = 4955
+                                }
+                            }
+                            else = {
+                                if = {
+                                    limit = { distance_from = { province = scope:target_province value <= 4990 } }
+                                    value = 4975
+                                }
+                                else = {
+                                    value = 4995
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -99,6 +99,17 @@ types GameConfiguration
 
 vbox = {
 	name = "game_configuration_window"
+
+	# These variables should be reset on every new lobby, otherwise it spams errors due to SGUI scope not existing etc.
+	# Previously they were cleared by the lobby back button, but this doesn't cover cases where you choose a country,
+	# load into the game, then return to the main menu, then load into a new lobby. Need to clear them on lobby start.
+	# I moved it to game configuration box just because currently these variables are mostly set to be checked there.
+	state = {
+		name = _show
+		on_start = "[GetVariableSystem.Clear('game_rules')]"
+		on_start = "[GetVariableSystem.Clear('country_selection')]"
+		trigger_on_create = yes
+	}
 	
 	size = { 332 180 }
 	max_width = 332
@@ -160,6 +171,54 @@ vbox = {
 				}
 			}
 			
+			# Advanced AI - placeholder for not being a host
+			game_rule_small = {
+				visible = "[Not(PlayerIsHost)]" 
+				enabled = "[EqualTo_int32('(int32)0', '(int32)1')]"
+				
+				tooltip = "non_host_advanced_ai_tooltip"
+				
+				blockoverride "Text" {
+					text = "advanced_ai_name"
+				}
+			}
+			
+			# Advanced AI - placeholder before choosing a country
+			game_rule_small = {
+				visible = "[And(PlayerIsHost, Not(GetVariableSystem.Exists('country_selection')))]" 
+				enabled = "[EqualTo_int32('(int32)0', '(int32)1')]"
+				
+				tooltip = "select_country_first_tooltip"
+				
+				blockoverride "Text" {
+					text = "advanced_ai_name"
+				}
+			}
+			
+			# Advanced AI - actual checkbox
+			game_rule_small = {
+				# Selected country is required to set global variables
+				visible = "[And(PlayerIsHost, GetVariableSystem.Exists('country_selection'))]"
+				
+				tooltip = "advanced_ai_tooltip"
+				
+				datacontext = "[GetScriptedGui('advanced_ai')]"
+				blockoverride "Frame" {
+					frame = "[Select_int32(ScriptedGui.IsShown(GuiScope.SetRoot(Player.MakeScope).End), '(int32)2', '(int32)1')]"
+				}
+				blockoverride "rule_click" {
+					onclick = "[ScriptedGui.Execute(GuiScope.SetRoot(Player.MakeScope).End)]"
+				}
+				blockoverride "On_click" {
+					onclick = "[ScriptedGui.Execute(GuiScope.SetRoot(Player.MakeScope).End)]"
+				}
+				
+				blockoverride "Text" {
+					text = "advanced_ai_name"
+				}
+			}
+			
+			# Ironman Mode
 			game_rule_small = {
 				enabled = "[GameIsIronmanAvailable]"
 				tooltip = "[GameGetIronmanToolTip]"
@@ -169,36 +228,49 @@ vbox = {
 				blockoverride "rule_click" { onclick = "[GameConfigurationWindow.ToggleIronman]" }
 				blockoverride "On_click" { onclick = "[GameConfigurationWindow.ToggleIronman]" }
 				
-				blockoverride "Text"
-				{
+				blockoverride "Text" {
 					text = "IRONMAN_MODE"
 				}
 			}
-			
-			game_rule_small = {
-				tooltip = "GENDER_RULES_TOOLTIP"
-				blockoverride "Frame" {
-					frame = "[GameConfigurationWindow.GetGenderRulesFrame]"
-				}
-				blockoverride "rule_click" { onclick = "[GameConfigurationWindow.ToggleGenderRules]" }
-				blockoverride "On_click" { onclick = "[GameConfigurationWindow.ToggleGenderRules]" }
-				
-				blockoverride "Text"
-				{
-					text = "MODERN_GENDER_RULES"
-				}
-			}
+
 			widget = {
 				size = { 0 20 }
 			}
+
+			# Game Rules - placeholder for not being a host
 			text_button_square = {
-				visible = "[GetVariableSystem.Exists('country_selection')]"
+				visible = "[Not(PlayerIsHost)]" 
+				enabled = "[EqualTo_int32('(int32)0', '(int32)1')]"
+
+				tooltip = "host_rules"
+
 				size = { 120 30 }
 				layoutpolicy_horizontal = expanding
-				blockoverride "On_click" { onclick = "[GetVariableSystem.Toggle('game_rules')]" }
 				blockoverride "Center_text" { text = "game_rules" }
-				enabled = "[LobbyView.HasSelectedPlayable]"
-				tooltip = "select_country_first"
+			}
+
+			# Game Rules - placeholder before choosing a country
+			text_button_square = {
+				# Simply a Not() of actual button conditions
+				visible = "[And(PlayerIsHost, Not(GetVariableSystem.Exists('country_selection')))]" 
+				enabled = "[EqualTo_int32('(int32)0', '(int32)1')]"
+
+				tooltip = "select_country_first_tooltip"
+
+				size = { 120 30 }
+				layoutpolicy_horizontal = expanding
+				blockoverride "Center_text" { text = "game_rules" }
+			}
+
+			# Game Rules - actual button
+			text_button_square = {
+				# Selected country is required to set global variables
+				visible = "[And(PlayerIsHost, GetVariableSystem.Exists('country_selection'))]"
+
+				size = { 120 30 }
+				layoutpolicy_horizontal = expanding
+				blockoverride "Center_text" { text = "game_rules" }
+				blockoverride "On_click" { onclick = "[GetVariableSystem.Toggle('game_rules')]" }
 			}
 		}
 	}

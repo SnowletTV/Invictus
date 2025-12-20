@@ -1,0 +1,279 @@
+﻿grant_satrap_autonomy = {
+###THIS IS NOT USED, BUT I WANT TO KEEP IT FOR FUTURE REFERENCE
+	on_other_nation = no
+	on_own_nation = yes
+	
+	sound = "event:/SFX/UI/Character/Generic/sfx_ui_character_economy"
+	
+	potential_trigger = {
+		always = no ###THIS IS NOT USED, BUT I WANT TO KEEP IT FOR FUTURE REFERENCE
+		scope:actor = {
+			OR = {
+				#Satrap invention
+				is_tradition_tree_allowed = persian_philosophy #subjected state is Persian.
+				is_tradition_tree_allowed = anatolian_philosophy #subjected state is Anatolian.
+				primary_culture = macedonian
+			}
+			is_monarchy = yes			
+		}
+		hidden:scope:target = {
+			is_alive = yes
+			is_governor = yes
+			is_ruler = no
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+		}
+	}
+
+	allowed_trigger = {
+		trigger_if = {
+			limit = {
+				OR = {
+					c:PRY = {
+						NOR = {
+							has_variable = secure_phrygian_position_flag
+							has_variable = antigonus_death
+						}	
+					}
+					char:37 = { is_alive = yes }
+				}
+			}
+			custom_tooltip = {
+				text = 4th_war_cooldown_tooltip
+				OR = {
+					c:PRY = {
+						OR = {
+							has_variable = secure_phrygian_position_flag
+							has_variable = antigonus_death
+						}	
+					}
+					char:37 = { is_alive = no }
+				}
+			}
+		}
+		trigger_if = { limit = { scope:actor = { num_of_cities < 75 } }
+			scope:actor = { num_of_cities >= 75 }
+		}
+		trigger_if = { limit = { scope:actor = { is_subject = yes } }
+			scope:actor = { is_subject = no }
+		}
+		trigger_if = {
+			limit = {
+				has_variable = satrap_autonomy_cooldown
+			}
+			custom_tooltip = {
+				text = satrap_autonomy_cooldown_tooltip
+				always = no
+			}
+		}
+		scope:target = {
+			#loyalty <= 33
+			location = {
+				has_owner = yes
+				owner = scope:actor
+				NOT = {
+					THIS.area = scope:actor.capital_scope.area
+				}
+			}
+			NOT = {
+				any_character_unit = {
+					unit_location = scope:target.location
+					in_combat = yes
+				}
+			}
+		}
+		scope:actor = {
+			can_pay_price = grant_satrap_autonomy_price
+			war = no
+			has_civil_war = no
+			is_subject = no
+		}
+	}
+	
+	effect = {
+		scope:actor = {
+			pay_price = grant_satrap_autonomy_price
+			set_variable = {#can make variable longer to prevent AI spam if that is an issue
+				name = satrap_autonomy_cooldown
+				days = 9125
+			}
+			custom_tooltip = satrap_autonomy_cooldown_effect_tooltip	
+			hidden_effect = {
+		        ordered_owned_province = {
+		            limit = {
+		        		governorship = {
+		        			exists = governor_or_ruler
+		        			governor_or_ruler = {
+		        				THIS = scope:target
+		        			}
+		        		}           
+		            }
+		            order_by = total_population
+		            max = 1
+		            check_range_bounds = no
+					save_scope_as = satrapy_capital
+		        }
+				scope:satrapy_capital = {
+					create_country = { save_scope_as = new_satrapy }
+				}
+				scope:satrapy_capital.region = {
+					every_region_province = {
+						limit = {
+							owner = scope:actor
+						}
+						set_owned_by = scope:new_satrapy
+					}
+				}
+				scope:target = {
+					remove_all_positions = yes
+					move_country = scope:new_satrapy
+					remove_character_modifier = foreign_citizen
+					set_home_country = scope:new_satrapy
+				}
+				scope:new_satrapy = {
+					create_family = scope:target
+					set_as_ruler = scope:target				
+				}
+				scope:target = {
+					if = {
+						limit = {
+							is_married = yes
+							spouse = {
+								employer = root
+								prisoner = no
+							}
+						}
+						spouse = {
+							remove_all_positions = yes
+							move_country = scope:new_satrapy
+							remove_character_modifier = foreign_citizen
+							set_home_country = scope:new_satrapy
+						}
+					}
+					if = {
+						limit = {
+							num_of_children > 0
+							any_child = {
+								employer = root
+								prisoner = no
+							}
+						}
+						every_child = {
+							limit = {
+								employer = root
+								prisoner = no
+							}
+							remove_all_positions = yes
+							move_country = scope:new_satrapy
+							remove_character_modifier = foreign_citizen
+							set_home_country = scope:new_satrapy
+							set_family = scope:target.family
+						}
+					}
+				}
+			}
+
+			scope:actor = {
+				show_as_tooltip = {
+					scope:new_satrapy = {
+						create_country = {}
+					}
+				}
+				custom_tooltip = satrap_secedes
+				hidden_effect = {
+					scope:new_satrapy = {
+						new_satrapy_name_effect = yes #name and flag
+						change_government = despotic_monarchy
+						switch_government_type_event_clearup_effect = yes
+					}
+				}
+				#custom_tooltip = becomes_a_satrapy_tt
+				hidden_effect = {
+					scope:actor = {
+						make_subject = {
+							target = scope:new_satrapy
+							type = satrapy
+						}
+					}
+					scope:new_satrapy = {
+						capital_scope = {
+							define_pop = {
+								type = nobles
+								culture = scope:target.culture
+								religion = PREV.religion
+							}
+							define_pop = {
+								type = citizen
+								culture = scope:target.culture
+								religion = PREV.religion
+							}
+							define_pop = {
+								type = citizen
+								culture = scope:target.culture
+								religion = PREV.religion
+							}
+						}
+						if = {
+							limit = {
+								NOT = {
+									primary_culture = scope:target.culture
+								}
+							}
+							set_primary_culture_cleanup_effect = {
+								NEW_PRIMARY_CULTURE = scope:target.culture
+								MAKE_OLD_CULTURE_INTEGRATED = yes
+							}
+						}
+					}					
+				}
+			}
+			custom_tooltip = every_remaining_governor_tt
+			custom_tooltip = preferential_treatment_satrap_tt
+			hidden_effect = {
+				scope:actor = {
+					every_character = {
+						limit = {
+							is_governor = yes
+							is_ruler = no
+							NOT = {
+								this = scope:target
+							}
+						}
+						add_loyalty = unequal_treatment_satrap
+					}
+				}
+				scope:actor = {
+					every_character = {
+						limit = {
+							has_same_family = scope:target
+							is_ruler = no
+							NOT = {
+								this = scope:target
+							}
+						}
+						add_loyalty = preferential_treatment_satrap
+					}
+				}	
+			}
+
+		}
+	}
+	
+	ai_will_do = {
+		modifier = {
+			add = 0.05 #%
+			trigger = {
+				loyalty < 15
+			}
+		}
+		modifier = {
+			add = 2.5 #%
+			trigger = {
+				employer = {
+					towards_civil_war = yes
+				}
+			}
+		}
+	}
+	
+}

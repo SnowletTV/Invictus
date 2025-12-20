@@ -1,0 +1,181 @@
+ANBEELD'S INVENTION RELATIVE CHANCE
+TL;DR Nice and handy 1/x
+
+------------------------------------------------------------------------------------------------------------------------
+
+My issue with AI chances in systems with many options, with technologies being the best example, is how hard it is to
+make sense of values set in the big picture. It can be hard to keep track of everything even while planning the system,
+and then people maintaining it for years to come stand no chance whatsoever. You bash in some 100s and 9999s, but then
+making a broader sense out of them is a bit challenging.
+
+This system appeared is a result of me facing this issue, and not for the first time either, while setting ai_will_do
+values for all the key inventions in Invictus. I ended up giving some 100s to "just ok" inventions, then for the "good"
+inventions the values went to 1000s so the AI would prioritize them, then for "crucial" ones the numbers were in 10000s
+already... It ended up not feeling intuitive and coherent, while also looking like a horror to maintain in the future.
+
+The obvious issue is that the values, 100s and 9999s mentioned above, are arbitrary and not tied to anything, and you
+need to do some real extra to systemize it for yourself if it stays this way. So the big part of the solution as I see
+it is to force all the values into some measurement, preferrably abstracted behind script values, because it's more
+convenient to use this way and it discourages from overwriting the system with 9999s all over again.
+
+------------------------------------------------------------------------------------------------------------------------
+
+The measurement I suggest here is Invention Relative Chance, aka IRC. Imagine you as AI have 26 inventions to choose
+from out of all the trees and stuff. Now imagine you want one particular invention to have 35% chance to get chosen,
+like it's a pretty good invention, not insane but still useful. In this case we say out loud (obligatory): "I want this
+invention to have 35% IRC!" then we open the files and 35% IRC all over them:
+
+global_citizen_output_inv_1 = { 
+    modifier = { global_citizen_output = output_small_svalue }
+    ai_will_do = {
+        modifier = {
+            factor = irc_35
+        }
+    }
+}
+
+And that's it.
+But what does it mean?
+
+So this script value is a calculation of what ai_will_do value an invention should have so that if all the other
+inventions have the base ai_will_do value, this will be picked in 35% of cases, and all the other ones share the 65%.
+
+Allegedly of course, because we don't know for sure how Paradox coded all the decision making under the hood, but we
+know that the base ai_will_do value is 1 and that it looks like it follows the simple math expectations we could have
+more than not. There's some weird stuff but generally big numba is better than small numba.
+
+------------------------------------------------------------------------------------------------------------------------
+
+The good stuff it brings is that now you just map all the important inventions with a certain invention relative chance,
+and you simultaneously can easily judge how prioritized it is over inventions without a set value, and then how it
+relates to other inventions with some invention relative chance.
+
+Like when you see "irc_35" you can immediately say that it's pretty favoured in an open field against all the base
+ai_will_do value inventions. But then if there's also an invention with "irc_65" that's available to the AI right now,
+the 35% one becomes much less likely to go through, though not improssible.
+
+Then you add "irc_99" and "irc_100" (which is not 100% ofc but still super high) to the mix and these 2 will stomp
+everyone else. But after the AI will finish picking these ones the 35% and 65% will get back on board trying to make
+senpai notice them.
+
+You see, we went from assigning random 100s and 9999s catDespair-style to some pretty clear stuff, where I just wrote a
+small story about their adventures, that's how picturesque invention relative chance is.
+
+------------------------------------------------------------------------------------------------------------------------
+
+It's important to note that applying IRC just to one important invention deep in the tree is useless. We need to apply
+the same chance to all the inventions on the path to that important one, so the AI pushes towards it over time.
+
+For this reason there is a separate section in invention script values for IRC per tree, looking like:
+
+uct_some_invention_name_65 = {
+	value = irc_65
+}
+
+Which may seem useless, but will turn out very handy if you would need to replace IRC for the entire tree at the time.
+Search-replace by "irc_65" may also affect other trees and singular inventions that just happened to have the same IRC,
+while search-replace by "uct_some_invention_name_65" won't bring any side effects. Note that we really want to state
+which chance a tree has in its value name, as otherwise you would need to check it every time in script value file.
+
+Invention trees also have targets and subtargets, which are the most important inventions in the tree. Usually they are
+simply stronger that the others and should be taken ASAP. For this reason they may not follow IRC of the tree, instead
+targets would have IRC 100% and subtargets have IRC 99%. Sometimes they still use default IRC if the tree isn't strong.
+
+------------------------------------------------------------------------------------------------------------------------
+
+Invention relative chance can be upgraded to higher one conditionaly:
+
+global_citizen_output_inv_1 = { 
+    modifier = { global_citizen_output = output_small_svalue }
+    ai_will_do = {
+        modifier = {
+            factor = irc_35
+        }
+        modifier = {
+            factor = irc_from_35_to_80
+            is_tribal = yes
+        }
+    }
+}
+
+The syntax is self-explanatory: we set some base IRC and then if the country meets a certain criteria, we can upgrade
+it to some other chance using another set of special script values. Abstraction is needed here too, because if we have
+e.g. 30 inventions to choose from, the 35% value is 15.6153, and 80% is 116, so if you do some cringe like multiplying
+it by 2.2857 (80/35) instead you would get absolutely wrong result. Don't stick your raw numbers into these values.
+
+------------------------------------------------------------------------------------------------------------------------
+
+Here's example with an invention that's a part of two different trees:
+
+diplomatic_relations_inv = { 
+    modifier = { diplomatic_relations = 1 }
+    requires = { oratory_tech_investment_inv_1 }
+
+    # Military Patronage and Approved Familia trees
+    ai_will_do = {
+        modifier = {
+            factor = {
+                value = cdt_approved_familia_15
+                min = uct_military_patronage_15
+            }
+        }
+    }
+}
+
+While a bit wordy, you would spend much more time consulting script value source somewhere in the file, while in this
+case you can see what's base IRC and how will it change if the country would satisfy the condition of the other tree.
+
+------------------------------------------------------------------------------------------------------------------------
+
+In tools folder there's a script to generate IRC script values with the step of 5% plus special cases e.g. 99%. It only
+needs to be run once, unless we would want to reduce or extend the step or add some more values of specific position.
+
+The script value looks like this under the hood:
+
+irc_35 = {
+    value = num_inventions_to_choose_from_minus_1
+    divide = 0.65
+    subtract = num_inventions_to_choose_from_minus_1
+}
+
+Simple enough, but with one more gotcha. We don't have a trigger to get the number of inventions that the country can
+choose from. Because if this an arbitrary value is used instead of num_inventions_to_choose_from, something around how
+much inventions there are to choose from on rough average. As a side effect, IRC script values are actually just baked
+numbers, because we don't want the game to waste performance on calculating math that could be hardcoded.
+
+------------------------------------------------------------------------------------------------------------------------
+
+For technical details, the precision of the chance against base ai_will_do decreases because of using arbitrary number
+of inventions to choose from, but the precision between multiple inventions that has some IRC isn't affected that much.
+
+Let me illustrate:
+
+       10 invs     20 invs     30 invs
+35%    4.8461      10.2307     15.6153
+55%    11          23.2222     35.4444
+75%    27          57          87
+
+Now assuming we hardcode num_inventions_to_choose_from to 20 and this is the only invention with IRC in the pool, the
+actual probability would look like:
+
+       10 invs     20 invs     30 invs
+35%    53.19%      35%         26.07%
+55%    72.06%      55%         44.46%
+75%    86.36%      75%         66.27%
+
+And the further the hardcoded value would be from the actual pool size, the higher would be the deviation. But between
+IRC values of multiple inventions the proportions stay roughly the same. In other words, high deviation would lead to
+much higher or lower probability of non-IRC inventions to get chosen, leading to less strict following of priorities
+we set for AI. But when choosing between inventions with IRC the 35% won't magically become close to 55% or something.
+
+------------------------------------------------------------------------------------------------------------------------
+
+For future readers with a passion against bad precision...
+
+The alternative solution is to make a script, where you feed it invention files and it generates a scripted effect that
+cycles through all the inventions names, checking can_unlock_invention against each of them to determine the number of
+available ones to choose from. You then perform it on country scope every something, presumably year, writing num of
+inventions to a variable. IRC script values would of source require a rewrite to support these variables.
+
+The downside is increased maintenance, because after adding new inventions you would need to re-generate the effect,
+and possibly a small impact on game performance, albeit a minimal one.

@@ -1,0 +1,198 @@
+﻿grant_clan_autonomy = {
+
+	on_other_nation = no
+	on_own_nation = yes
+	
+	sound = "event:/SFX/UI/Character/Generic/sfx_ui_character_economy"
+	
+	potential_trigger = {
+		hidden:scope:target = {
+			is_alive = yes
+			is_clan_chief = yes
+			is_ruler = no
+			OR = {
+				is_governor = yes
+				is_general = yes
+			}
+			NOT = { employer = { tag = REB } }
+			NOT = { employer = { tag = BAR } }
+		}
+	}
+
+	allowed_trigger = {
+		scope:target = {
+			loyalty <= 33
+			location = {
+				has_owner = yes
+				owner = scope:actor
+				NOT = {
+					THIS.area = scope:actor.capital_scope.area
+				}
+			}
+			NOT = {
+				any_character_unit = {
+					unit_location = scope:target.location
+					in_combat = yes
+				}
+			}
+		}
+		scope:actor = {
+			can_pay_price = gallus_character_interaction_price
+			war = no
+			has_civil_war = no
+			is_subject = no
+		}
+	}
+	
+	effect = {
+		scope:actor = {
+			pay_price = gallus_character_interaction_price
+		}
+		if = {
+			limit = {
+				scope:target = {
+					is_general = yes
+				}
+			}
+			scope:actor = {
+				hidden_effect = {
+					scope:target.location = {
+						save_scope_as = target_province
+					}
+				}
+			}
+		}
+		else = {
+			scope:actor = {
+		        ordered_owned_province = {
+		            limit = {
+		        		governorship = {
+		        			exists = governor_or_ruler
+		        			governor_or_ruler = {
+		        				is_ruler = no
+		        				THIS = scope:target
+		        			}
+		        		}           
+		            }
+		            order_by = total_population
+		            max = 1
+		            check_range_bounds = no
+					save_scope_as = target_province
+		        }
+		    }
+		}
+				
+		scope:actor = {
+			hidden_effect = {
+				scope:target_province = {
+					create_country = {}
+				}
+			}
+			show_as_tooltip = {
+				scope:target.location = {
+					create_country = {}
+				}
+			}
+			custom_tooltip = clan_chief_secedes
+			hidden_effect = {
+				scope:target_province.owner = {
+					save_scope_as = target_country
+				}
+				scope:target = {
+					move_country = scope:target_country
+					remove_character_modifier = foreign_citizen
+				}
+				scope:target_country = {
+					set_as_ruler = scope:target
+				}
+				scope:target.family = {
+					every_family_member = {
+						limit = {
+							employer = scope:actor
+							is_ruler = no
+						}
+						move_country = scope:target_country
+						remove_character_modifier = foreign_citizen
+						set_home_country = scope:target_country
+					}
+					move_family = scope:actor
+				}
+				scope:target_province.area = {
+					every_area_province = {
+						limit = {
+							owner = scope:actor
+						}
+						set_owned_by = scope:target_country
+					}
+				}
+				scope:target_country = {
+					change_government = tribal_chiefdom
+				}
+				if = {
+					limit = {
+						scope:target_province = {
+							total_population < 5
+						}
+					}
+					scope:target_province = {
+						while = {
+							limit = {
+								total_population < 5
+							}
+							create_state_pop = tribesmen
+						}
+					}
+				}
+			}
+			if = {
+				limit = {
+					scope:actor = {
+						any_subject = {
+							count < 10
+							is_subject_type = vassal_tribe
+						}
+					}
+				}
+				custom_tooltip = becomes_a_tribal_vassal_tt
+				hidden_effect = {
+					scope:actor = {
+						make_subject = {
+							target = scope:target_country
+							type = vassal_tribe
+						}
+					}					
+				}
+			}
+			else = {
+				custom_tooltip = becomes_a_tributary_tt
+				hidden_effect = {
+					scope:actor = {
+						make_subject = {
+							target = scope:target_country
+							type = tributary
+						}
+					}					
+				}								
+			}
+		}
+		custom_tooltip = every_remaining_chief_tt
+		scope:actor = {
+			every_character = {
+				limit = {
+					is_clan_chief = yes
+					is_ruler = no
+					NOT = {
+						this = scope:target
+					}
+				}
+				add_loyalty = benevolent_overlord_tribal_chiefdom
+			}
+		}
+	}
+	
+	ai_will_do = {
+		modifier = {
+			factor = 0
+		}
+	}
+}

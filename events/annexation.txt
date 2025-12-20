@@ -942,6 +942,9 @@ annexation.3 = {
 	
 	option = {
 		name = "annexation.3.a" #Kill all.
+		trigger = {
+			NOT = { scope:annexer = { has_country_modifier = androphagia_cannibal_frenzy_mod } }
+		}
 		ai_chance = {
 			factor = 30
 		}
@@ -1024,6 +1027,7 @@ annexation.3 = {
 				exists = scope:banishment_country
 				exists = scope:banishment_country_2
 			}
+			NOT = { scope:annexer = { has_country_modifier = androphagia_cannibal_frenzy_mod } }
 		}
 		ai_chance = {
 			factor = 20
@@ -1283,6 +1287,91 @@ annexation.3 = {
 
 	option = {
 		name = "annexation.3.c" #Imprison prisonworthy people.
+		trigger = {
+			NOT = { scope:annexer = { has_country_modifier = androphagia_cannibal_frenzy_mod } }
+		}
+		ai_chance = {
+			factor = 10
+		}
+		custom_tooltip = important_prisoners_taken
+		current_ruler = { add_popularity = -3.5 }
+		hidden_effect = {
+			every_character = { #This is where we imprison those that we took in.
+				limit = {
+					is_in_list = imprisonment_list
+				}
+				save_scope_as = temp_prison
+				if = {
+					limit = { prisoner = no }
+					scope:annexer = {
+						imprison = {
+							target = scope:temp_prison
+						}
+					}
+				}
+				clear_saved_scope = temp_prison
+				annexation_character_cleanup = yes #This cleans up all the variables so we don't track them down and kill them by mistake later.
+			}
+			
+
+			#Those who could have lived:
+			every_character = { #anyone still alive with any of these variables is now killed.
+				limit = {
+					OR = {
+						is_in_list = first_annex_family_list
+						is_in_list = second_annex_family_list
+						is_in_list = third_annex_family_list
+						is_in_list = fourth_annex_family_list
+						is_in_list = imprisonment_list
+						is_in_list = banishment_list
+					}
+				}
+				remove_all_positions = yes
+				annexation_character_cleanup = yes #This cleans up all the variables.
+				if = {
+					limit = { is_adult = yes }
+					death = {
+						death_reason = death_slaughtered_during_conquest
+						silent = yes
+					}
+				}
+				else = {
+					death = {
+						death_reason = death_obscurity
+						silent = yes
+					}
+				}
+			}
+		}
+		scope:annexer = {
+			if = {
+				limit = {
+					NOT = { scope:annexee.culture = scope:annexer.culture }
+					any_country_culture = {
+						this.culture = scope:annexee.culture
+					}
+				}
+				random_country_culture = {
+					limit = {
+						this.culture = scope:annexee.culture
+					}
+					if = {
+						limit = {
+							NOT = { has_country_culture_modifier = annexed_my_home_culture }
+							NOT = { has_country_culture_modifier = annexed_my_home_culture_lenient }
+						}
+						add_country_culture_modifier = {
+							name = "annexed_my_home_culture_lenient"
+							duration = 1825
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = "annexation.3.d" #Sell off assets
 		ai_chance = {
 			factor = 10
 		}
@@ -1446,7 +1535,10 @@ annexation.3 = {
 	}
 	
 	option = {
-		name = "annexation.3.e"
+		name = "annexation.3.d"
+		trigger = {
+			NOT = { scope:annexer = { has_country_modifier = androphagia_cannibal_frenzy_mod } }
+		}
 		ai_chance = {
 			factor = 10
 		}
@@ -1518,6 +1610,126 @@ annexation.3 = {
 						}
 						add_country_culture_modifier = {
 							name = "annexed_my_home_culture_lenient"
+							duration = 1825
+						}
+					}
+				}
+			}
+		}
+	}
+
+	option = {
+		name = "annexation.3.e" #Kill all cannibal style.
+		ai_chance = {
+			factor = 50
+		}
+		highlight = yes
+		trigger = {
+			OR = {
+				current_ruler = { has_trait = cannibal_trait }
+				scope:annexer = { has_law = adopt_human_sacrifice_law_tribal }
+				scope:annexer = { has_country_modifier = androphagia_cannibal_frenzy_mod }
+			}
+		}
+		if = {
+			limit = { scope:annexer = { has_country_modifier = androphagia_cannibal_frenzy_mod } }
+			custom_tooltip = androphagia_always_eats
+		}
+		else_if = {
+			limit = { scope:annexer = { has_law = adopt_human_sacrifice_law_tribal } }
+			custom_tooltip = cannibal_country_tooltip
+		}
+		else = { custom_tooltip = cannibal_tooltip }
+		custom_tooltip = everybody_gonna_be_eaten
+		hidden_effect = { #Here we handle everyone not yet killed.
+			#Those who could have lived:
+			every_character = { #Now we kill everyone of interest:
+					limit = {
+						OR = {
+							is_in_list = first_annex_family_list
+							is_in_list = second_annex_family_list
+							is_in_list = third_annex_family_list
+							is_in_list = fourth_annex_family_list
+							is_in_list = imprisonment_list
+							is_in_list = banishment_list
+						}
+					}
+					remove_all_positions = yes
+					annexation_character_cleanup = yes #This cleans up all the variables.
+					if = {
+						limit = { is_adult = yes }
+						death = {
+							death_reason = death_sacrifice
+							silent = yes
+						}
+					}
+					else = {
+						death = {
+							death_reason = death_obscurity
+							silent = yes
+						}
+					}
+			}
+		}
+
+		current_ruler = {
+			add_popularity = 5
+			hidden_effect = {
+				random_list = {
+					1 = { add_nickname = cannnibal_nickname }
+					9 = { }
+				}
+			}
+		}
+
+		scope:annexer = {
+			if = {
+				limit = {
+					OR = {
+						has_law = adopt_human_sacrifice_law_tribal
+						primary_culture = androphagian
+					}
+				}
+				add_country_modifier = {
+					name = ate_enemy_elite_proudly_mod
+					duration = 92
+				}
+			}
+			else = {
+				add_country_modifier = {
+					name = ate_enemy_elite_secretly_mod
+					duration = 360
+				}
+			}
+			if = {
+				limit = {
+					NOT = { scope:annexee.culture = scope:annexer.culture }
+					any_country_culture = {
+						this.culture = scope:annexee.culture
+					}
+				}
+				random_country_culture = {
+					limit = {
+						this.culture = scope:annexee.culture
+					}
+					if = {
+						limit = {
+							NOT = { has_country_culture_modifier = annexed_my_home_culture }
+							NOT = { has_country_culture_modifier = annexed_my_home_culture_lenient }
+						}
+						add_country_culture_modifier = {
+							name = "annexed_my_home_culture"
+							duration = 1825
+						}
+					}
+					else_if = {
+						limit = {
+							NOT = { has_country_culture_modifier = annexed_my_home_culture }
+							has_country_culture_modifier = annexed_my_home_culture_lenient
+						}
+						remove_country_culture_modifier = annexed_my_home_culture_lenient
+						add_country_culture_modifier = {
+							name = "annexed_my_home_culture"
 							duration = 1825
 						}
 					}

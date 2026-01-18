@@ -112,22 +112,6 @@ province_siege.1 = {
 
 					#add AE and WE for all flipped territores
 					if = {
-						# add only to the attacker
-						# limit = {
-						# 	root.owner = {
-						# 		any_current_war = {
-						# 			any_war_defender = {
-						# 				has_variable = war_of_the_diadochs
-						# 				NOT = {
-						# 					this = root.owner
-						# 				}
-						# 				root = {
-						# 					is_previous_owner = prev
-						# 				}
-						# 			}
-						# 		}
-						# 	}
-						# }
 
 						limit = {
 							owner = {
@@ -175,6 +159,257 @@ province_siege.2 = {
 			ROOT = {
 				add_to_variable_list = {
 					name = my_land
+					target = prev
+				}
+			}
+		}
+	}
+}
+
+province_siege.3 = {
+	type = province_event
+	hidden = yes
+	
+	trigger = {
+		NOT = {
+			has_global_variable = greatconquest_old
+		}
+		exists = owner
+		exists = controller
+	}
+
+	immediate = {
+
+		# add AE and WE for the territory
+		if = {
+			limit = {
+				owner = {
+					NOT = {
+						is_target_in_variable_list = {
+							name = my_land2
+							target = ROOT
+						}
+					}
+					any_current_war = {
+						any_war_attacker = {
+							has_variable = imperialwg_rule_var
+							root = {
+								is_previous_owner = prev
+							}
+						}
+					}
+				}
+			}
+
+			show_animated_text = ae_we
+			root.owner = {
+				add_aggressive_expansion = {
+					value = 0.75
+					multiply = modifier:agressive_expansion_impact
+					add = 0.75
+					min = 0.0375
+				}
+				add_war_exhaustion = 0.1
+			}
+		}
+
+
+		if = {
+			limit = {
+				owner = {
+					OR = {
+						has_variable = imperialwg_rule_var
+						has_variable = civilwar_rule_var
+					}
+					any_countries_at_war_with = {
+						OR = {
+							has_variable = imperialwg_rule_var
+							has_variable = civilwar_rule_var
+						}
+						root = {
+							is_previous_owner = prev
+						}
+						num_of_cities > 10
+						any_country_state = {
+							count > 1
+						}
+					}
+				}
+				#do not flip if there are hostile forts
+				area = {
+					NOT = {
+						any_area_province = {
+							owner = {
+								root = {
+									is_previous_owner = prev
+								}
+							}
+							num_of_fortress_building > 0
+						}
+					}
+					#do not flip if there are hostile units in either our land or theirs
+					NOT = {
+						any_area_province = {
+							owner = {
+								OR = {
+									this = root.owner
+									root = {
+										is_previous_owner = prev
+									}
+								}
+							}
+							any_unit_in_province = {
+								is_exiled = no
+								unit_owner = {
+									war_with = root.owner
+								}
+							}
+						}
+					}
+				}
+			}
+
+			# flip
+			area = {
+				every_area_province = {
+					limit = {
+						owner = {
+							root = {
+								is_previous_owner = prev
+							}
+						}
+						controller = owner
+					}
+					set_conquered_by = root.controller
+
+					#add AE and WE for all flipped territores
+					if = {
+
+						limit = {
+							owner = {
+								has_variable = imperialwg_rule_var
+								NOT = {
+									is_target_in_variable_list = {
+										name = my_land2
+										target = prev
+									}
+								}
+							}
+						}
+						show_animated_text = ae_we
+						root.owner = {
+							add_aggressive_expansion = {
+								value = 0.75
+								multiply = modifier:agressive_expansion_impact
+								add = 0.75
+								min = 0.0375
+							}
+							add_war_exhaustion = 0.1
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+#mutually exclusive with player_greatconquest_start decision. If this is to be used, crop out that decision, and enable this event in monthly on_action
+province_siege.4 = {
+	type = country_event
+	hidden = yes
+
+	trigger = {
+		NOT = {
+			has_global_variable = greatconquest_old
+		}
+		is_ai = no              #fires only for player, AIs have decisions for performance to not use monthly on_action on them
+		NOT = {                 #do not make the script fire in LoA wars
+			has_variable = war_of_the_diadochs
+			any_countries_at_war_with = {
+				OR = {
+					tag = PRY
+					tag = SEL
+					tag = TRE
+					tag = MAC
+					tag = EGY
+				}
+			}
+		}
+		OR = {
+			AND = {         #enable if in imperial challenge/horde conquest war (well, it'll fire in every war but without in-game effects)
+				war = yes
+				has_civil_war = no
+				NOT = {
+					has_variable = imperialwg_rule_var
+				}
+			}
+			AND = {      #enable script if in civil war
+				war = no
+				has_civil_war = yes
+				NOT = {
+					has_variable = civilwar_rule_var
+				}
+			}
+		}
+	}
+
+	immediate = {
+		every_owned_province = {    #add provinces to the list on which area swap will work
+			ROOT = {
+				add_to_variable_list = {
+					name = my_land2
+					target = prev
+				}
+			}
+		}
+		if = {                      #if not in civil war, then the player and opposing war leaders get a var to enable event .3 firing. Opposing war leaders lands get added to a list on which area swap will work.
+			limit = {
+				has_civil_war = no
+			}
+			set_variable = imperialwg_rule_var
+			every_current_war = {
+				limit = {
+					any_war_participant = { THIS = ROOT }
+				}
+				every_war_participant = {
+					limit = {
+						is_war_leader = PREV
+					}
+					set_variable = imperialwg_rule_var
+					every_owned_province = {
+						add_to_variable_list = {
+							name = my_land2
+							target = prev
+						}
+					}
+				}
+			}
+		}
+		if = {     #same as above but for civil wars
+			limit = {
+				has_civil_war = yes
+			}
+			set_variable = civilwar_rule_var
+			every_countries_at_war_with = {
+				limit = {
+					has_civil_war = yes
+				}
+				trigger_event = province_siege.5
+			}
+		}
+	}
+}
+
+province_siege.5 = {    #script to enable area-swaps in civil wars
+	type = country_event
+	hidden = yes
+
+	immediate = {
+		set_variable = civilwar_rule_var
+		every_owned_province = {
+			ROOT = {
+				add_to_variable_list = {
+					name = my_land2
 					target = prev
 				}
 			}

@@ -1,0 +1,329 @@
+﻿country_decisions = {
+	
+	civilwar_ai_decision = { #decision for AI to start using area-flip script in CW. Goal with this design is to limit use of on_monthly on action for performance
+		potential = {
+			NOT = {
+				has_global_variable = greatconquest_old
+			}
+			NOT = { has_variable = civilwar_rule_var }
+			has_land = yes
+			has_civil_war = yes
+		}
+		
+		allow = {
+			NOT = { 
+				has_variable = civilwar_rule_var 
+			}
+		}
+
+		effect = {
+			trigger_event = province_siege.5
+			every_countries_at_war_with = {
+				limit = {
+					has_civil_war = yes
+					is_ai = yes
+				}
+				trigger_event = province_siege.5
+			}
+		}
+		
+		ai_will_do = {
+			base = 4000
+		}
+	}
+
+	civil_war_end = { #decision for AI to end using area-flip script in CW; removing flags clears everything for proper use in next CW
+		potential = {
+			has_land = yes
+			has_variable = civilwar_rule_var
+		}
+		
+		allow = {
+			is_ai = yes
+			has_civil_war = no
+		}
+
+		effect = {
+			remove_variable = civilwar_rule_var
+			every_owned_province = {
+				ROOT = {
+					remove_list_global_variable = {
+						name = my_land2
+						target = prev
+					}
+				}
+			}
+		}
+		
+		ai_will_do = {
+			base = 4000
+		}
+	}
+
+	player_greatconquest_start = {   #decision for a random AI to enable for player area-flipping script - so the player doesn't need to do it himself and monthly on_action isn't used
+		potential = {
+			NOT = {
+				has_global_variable = greatconquest_old
+			}
+			is_ai = yes
+			any_country = {
+				is_ai = no
+				NOT = {                 #do not make the script fire in LoA wars
+					has_variable = war_of_the_diadochs
+					any_countries_at_war_with = {
+						OR = {
+							tag = PRY
+							tag = SEL
+							tag = TRE
+							tag = MAC
+							tag = EGY
+						}
+					}
+				}
+				OR = {
+					AND = {         #enable if in imperial challenge/horde conquest war (well, it'll fire in every war but without in-game effects)
+						war = yes
+						has_civil_war = no
+						NOT = {
+							has_variable = imperialwg_rule_var
+						}
+					}
+					AND = {      #enable script if in civil war
+						war = no
+						has_civil_war = yes
+						NOT = {
+							has_variable = civilwar_rule_var
+						}
+					}
+				}
+			}
+		}
+
+		allow = {
+			always = yes
+		}
+		
+		effect = {
+			every_country = {
+				limit = {
+					is_ai = no
+				}
+				if = {                      #if not in civil war, then the player and opposing war leaders get a var to enable event .3 firing. Opposing war leaders lands get added to a list on which area swap will work.
+					limit = {
+						has_civil_war = no
+					}
+					set_variable = imperialwg_rule_var
+					every_owned_province = {    #add provinces to the list on which area swap will work
+						ROOT = {
+							add_to_variable_list = {
+								name = my_land2
+								target = prev
+							}
+						}
+					}
+					every_current_war = {
+						limit = {
+							any_war_participant = { THIS = ROOT }
+						}
+						every_war_participant = {
+							limit = {
+								is_war_leader = PREV
+							}
+							set_variable = imperialwg_rule_var
+							every_owned_province = {
+								add_to_variable_list = {
+									name = my_land2
+									target = prev
+								}
+							}
+						}
+					}
+				}
+				if = {     #same as above but for civil wars
+					limit = {
+						has_civil_war = yes
+					}
+					set_variable = civilwar_rule_var
+					every_owned_province = {
+						add_to_variable_list = {
+							name = my_land2
+							target = prev
+						}
+					}
+					every_countries_at_war_with = {
+						limit = {
+							has_civil_war = yes
+						}
+						trigger_event = province_siege.5
+					}
+				}
+			}
+		}
+		
+		ai_will_do = {
+			base = 4000
+		}
+	}
+
+	imperial_wg_start = { #backup for AI in 2nd or later IC started by the player & making AI in horde conquest enable it
+		potential = {
+			NOT = {
+				has_global_variable = greatconquest_old
+			}
+			OR = {
+				has_variable = horde_invasion_origin
+				any_countries_at_war_with = {
+					has_variable = imperialwg_rule_var
+				}
+			}
+			has_land = yes
+			is_ai = yes
+		}
+
+		allow = {
+			is_ai = yes
+			war = yes
+			NOT = {
+				has_variable = imperialwg_rule_var
+			}
+		}
+
+		effect = {
+			set_variable = imperialwg_rule_var
+			every_owned_province = {
+				add_to_variable_list = {
+					name = my_land2
+					target = prev
+				}
+			}
+			every_current_war = {
+				limit = {
+					is_war_leader = ROOT
+				}
+				every_war_participant = {
+					limit = {
+						is_war_leader = PREV
+					}
+					set_variable = imperialwg_rule_var
+					every_owned_province = {
+						add_to_variable_list = {
+							name = my_land2
+							target = prev
+						}
+					}
+				}
+			}			
+		}
+
+		ai_will_do = {
+			base = 4000
+		}
+	}
+
+	imperial_wg_end = {      #script to make: (i) any random AI remove area-script for player, so player doesn't need to click it himself; (ii) clear script for the AI itself
+		potential = {
+			NOT = {
+				has_global_variable = greatconquest_old
+			}
+			is_ai = yes
+			has_land = yes
+			OR = {
+				AND = {
+					NOT = {
+						has_variable = imperialwg_rule_var
+					}
+					OR = {
+						any_country = {                         #clear imperial challenge script for the player
+							is_ai = no
+							has_variable = imperialwg_rule_var
+							war = no
+						}
+						any_country = {                         #clear civil war script for the player
+							is_ai = no
+							has_variable = civilwar_rule_var
+							has_civil_war = no
+						}
+					}
+				}
+				has_variable = imperialwg_rule_var
+			}
+		}
+		
+		allow = {
+			always = yes
+		}
+
+		effect = {
+			if = {
+				limit = {
+					NOT = {
+						has_variable = imperialwg_rule_var
+					}
+					any_country = {
+						is_ai = no
+						has_variable = imperialwg_rule_var
+					}					
+				}
+				random_country = {
+					limit = {
+						is_ai = no
+						has_variable = imperialwg_rule_var
+					}
+					remove_variable = imperialwg_rule_var
+					every_owned_province = {
+						ROOT = {
+							remove_list_global_variable = {
+								name = my_land2
+								target = prev
+							}
+						}
+					}
+				}
+			}
+
+			if = {
+				limit = {
+					any_country = {
+						is_ai = no
+						has_variable = civilwar_rule_var
+					}					
+				}
+				random_country = {
+					limit = {
+						is_ai = no
+						has_variable = civilwar_rule_var
+					}
+					remove_variable = civilwar_rule_var
+					every_owned_province = {
+						ROOT = {
+							remove_list_global_variable = {
+								name = my_land2
+								target = prev
+							}
+						}
+					}
+				}
+			}
+
+			if = {
+				limit = {
+					is_ai = yes
+					has_variable = imperialwg_rule_var
+				}
+				remove_variable = imperialwg_rule_var
+				every_owned_province = {
+					ROOT = {
+						remove_list_global_variable = {
+							name = my_land2
+							target = prev
+						}
+					}
+				}
+			}
+		}
+		
+		ai_will_do = {
+			base = 4000
+		}
+	}
+}

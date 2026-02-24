@@ -15,8 +15,8 @@ Usage::
 
     python .scripts/check_murmur.py <dir1> [<dir2> ...] --vanilla <path/to/file>
 
-The workflow will call it with the english/ and replace/ folders and an
-example vanilla file that can later grow to ~10k entries.
+See .github/workflows/check_murmur.yml for an example of how this is integrated into the CI process.
+
 """
 
 import argparse

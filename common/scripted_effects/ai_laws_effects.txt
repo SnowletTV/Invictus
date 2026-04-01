@@ -1,0 +1,1248 @@
+﻿ai_choose_and_enact_law = {
+    if = {
+        limit = {
+            is_ai = yes
+            has_land = yes
+        }
+
+        # Law enacting is prohibited during wars
+        if = {
+            limit = {
+                NOT = {
+                    has_variable = ai_chose_and_enacted_law
+                }
+                war = no
+            }
+            set_variable = {
+                name = ai_chose_and_enacted_law
+                days = 165 # 5.5 months - every half year
+            }
+
+            # Use political influence stored for future law enacting if the country has it before can_pay_price check
+            if = {
+                limit = {
+                    has_variable = ai_stored_pi_to_enact_law
+                }
+                add_political_influence = 35
+                remove_variable = ai_stored_pi_to_enact_law
+            }
+
+            # Check if can pay the price and is not limited by any cooldown
+            if = {
+                limit = {
+                    can_pay_price = enact_law
+                    OR = {
+                        is_tribal = no
+                        NOT = {
+                            has_variable = ai_recently_enacted_tribal_law # Cooldown for law enacting
+                        }
+                    }
+                }
+
+                # Pay price to judge law enacting importance based on what will remain, refund later if no law is enacted
+                pay_price = enact_law
+                set_local_variable = {
+                    name = enacted_law
+                    value = 0
+                }
+
+                # If can't satisfy even extreme priority conditions, there's no reason to bother
+                if = {
+                    limit = {
+                        ai_should_enact_law_extreme_priority = yes
+                    }
+                    
+                    # Perform levy calculations once and save the result to local variables for better performance
+                    if = {
+                        # Triggers might require adjustment in the future if law enacting logic will be changed
+                        limit = {
+                            # Only these government types use levy calculations
+                            OR = {
+                                is_monarchy = yes
+                                is_republic = yes
+                            }
+                            # Only these law priorities use levy calculations
+                            ai_should_enact_law_high_priority = yes
+                        }
+                        save_levy_population_to_local_variables = yes
+                    }
+
+                    # Choose some law to enact based on government type
+                    if = {
+                        limit = {
+                            is_tribal = yes
+                        }
+                        ai_choose_and_enact_law_by_government = {
+                            type = tribal
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            is_monarchy = yes
+                        }
+                        ai_choose_and_enact_law_by_government = {
+                            type = monarchy
+                        }
+                    }
+                    else_if = {
+                        limit = {
+                            is_republic = yes
+                        }
+                        if = {
+                            limit = {
+                                tag = ROM
+                            }
+                            ai_choose_and_enact_law_by_government = {
+                                type = republic_rome
+                            }
+                        }
+                        else_if = {
+                            limit = {
+                                tag = CAR
+                            }
+                            ai_choose_and_enact_law_by_government = {
+                                type = republic_carthage
+                            }
+                        }
+                        else = {
+                            ai_choose_and_enact_law_by_government = {
+                                type = republic
+                            }
+                        }
+                    }
+
+                    # Garbage collection
+                    remove_local_variable = country_levy_population
+                    remove_local_variable = capital_region_levy_population
+                }
+
+                # If no law was found worthy to be enacted, refund the price
+                if = {
+                    limit = {
+                        local_var:enacted_law = 0
+                    }
+                    refund_price = enact_law
+                }
+
+                # Garbage collection
+                remove_local_variable = enacted_law
+            }
+        }
+
+        # Store political influence for future law enacting if can and hasn't yet
+        if = {
+            limit = {
+                NOT = {
+                    has_variable = ai_stored_pi_to_enact_law
+                }
+                political_influence >= 55
+            }
+            add_political_influence = -35
+            set_variable = ai_stored_pi_to_enact_law
+        }
+    }
+
+    # Handle player taking over AI country
+    else_if = {
+        limit = {
+            has_variable = ai_stored_pi_to_enact_law
+        }
+        add_political_influence = 35
+        remove_variable = ai_stored_pi_to_enact_law
+    }
+}
+
+save_levy_population_to_local_variables = {
+    set_local_variable = {
+        name = country_levy_population
+        value = 0
+    }
+    set_local_variable = {
+        name = capital_region_levy_population
+        value = 0
+    }
+    every_owned_province = {
+        # Calculate once and save to local variable
+        set_local_variable = {
+            name = territory_levy_population
+            value = territory_levy_population
+        }
+        # Add to country levy population
+        change_local_variable = {
+            name = country_levy_population
+            add = local_var:territory_levy_population 
+        }
+        # Add to capital region levy population if it's that
+        if = {
+            limit = {
+                region = owner.capital_scope.region
+            }
+            change_local_variable = {
+                name = capital_region_levy_population
+                add = local_var:territory_levy_population 
+            }
+        }
+        # Garbage collection
+        remove_local_variable = territory_levy_population
+    }
+}
+
+ai_choose_and_enact_law_by_government = {
+    if = {
+        limit = {
+            ai_should_enact_law_extreme_priority = yes
+        }
+        ai_choose_and_enact_law_$type$_extreme_priority = yes
+    }
+    if = {
+        limit = {
+            local_var:enacted_law = 0
+            ai_should_enact_law_high_priority = yes
+        }
+        ai_choose_and_enact_law_$type$_high_priority = yes
+    }
+    if = {
+        limit = {
+            local_var:enacted_law = 0
+            ai_should_enact_law_medium_priority = yes
+        }
+        ai_choose_and_enact_law_$type$_medium_priority = yes
+    }
+    if = {
+        limit = {
+            local_var:enacted_law = 0
+            ai_should_enact_law_low_priority = yes
+        }
+        ai_choose_and_enact_law_$type$_low_priority = yes
+    }
+}
+
+ai_enact_law = {
+    change_law = $name$
+
+    # Cooldown to slow down AI tribes progress
+    if = {
+        limit = {
+            is_tribal = yes
+        }
+        if = {
+            limit = {
+                is_advanced_ai_enabled = yes
+                NOT = {
+                    has_global_variable = game_rule_advanced_ai_tribal_development
+                }
+            }
+            set_variable = {
+                name = ai_recently_enacted_tribal_law
+                days = 5475 # 15 years
+            }
+        }
+        else = {
+            set_variable = {
+                name = ai_recently_enacted_tribal_law
+                days = 9125 # 25 years
+            }
+        }
+        
+    }
+
+    # To inform the script that we enacted some law
+    change_local_variable = {
+        name = enacted_law
+        add = 1
+    }
+
+    # If stability is negative, perform sacrifice immediately if haven't yet
+    ai_perform_divine_sacrifice = yes
+}
+
+# ----------- #
+# TRIBAL LAWS #
+# ----------- #
+
+ai_choose_and_enact_law_tribal_extreme_priority = {
+    if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = local_hierarchs # stability_monthly_change = 0.15
+                has_law = follow_the_strong_law # clan_chief_loyalty = 10
+            }
+            # Conditions of the law itself
+            centralization <= -30
+        }
+        ai_enact_law = {
+            name = local_hierarchs
+        }
+    }
+}
+
+ai_choose_and_enact_law_tribal_high_priority = {
+    if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = steppe_horde_levy_size_2
+                has_law = steppe_horde_levy_size_3
+                has_law = steppe_horde_levy_size_5
+            }
+            # Conditions of the law itself
+            government = steppe_horde
+        }
+        ai_enact_law = {
+            name = steppe_horde_levy_size_3
+        }
+    }
+    # Required to Codify State Lands and removes found city price debuff
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = formalized_industry_law_tribal
+                has_law = oppidi_law_tribal # Hill-Fort Initiative
+            }
+            # Conditions of the law itself
+            centralization >= 30
+        }
+        ai_enact_law = {
+            name = oppidi_law_tribal
+        }
+    }
+    # High priority for countries with small negative centralization to force them in that direction
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = property_ownership_law_tribal # global_tribesmen_output = output_huge_svalue
+                has_law = right_of_might_law_tribal # global_tax_modifier = 0.1
+            }
+            # Conditions of the law itself
+            centralization <= -10
+            # Additional conditions we want to match
+            centralization > -30
+        }
+        ai_enact_law = {
+            name = right_of_might_law_tribal
+        }
+    }
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = barter_economy_law # global_commerce_modifier = 0.2
+                has_law = coin_minting_law # global_monthly_civilization = 0.03
+            }
+            # Conditions of the law itself
+            # None
+        }
+        ai_enact_law = {
+            name = barter_economy_law
+        }
+    }
+    # High priority for countries with small positive centralization to force them in that direction
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = increased_council_powers # monthly_tyranny = -0.05 => republic
+                has_law = absolute_authority # ruler_popularity_gain = 0.15 => monarchy
+            }
+            # Conditions of the law itself
+            centralization >= 10
+            # Additional conditions we want to match
+            centralization < 30
+        }
+        ai_tribe_enact_authority_law = yes
+    }
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = syncretization_law_tribal
+                has_law = adopt_human_sacrifice_law_tribal
+            }
+            # Conditions of the law itself
+            # None
+            # Additional conditions we want to match
+            has_large_amount_of_unintegrated_pops = yes
+        }
+        ai_enact_law = {
+            name = syncretization_law_tribal
+        }
+    }
+}
+
+ai_choose_and_enact_law_tribal_medium_priority = {
+    if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = tribal_decentralized_laws_2 # global_pop_assimilation_speed_modifier = 0.30
+                has_law = tribal_decentralized_laws_3 # happiness_for_same_culture_modifier = 0.1
+            }
+            # Conditions of the law itself
+            centralization <= -50
+        }
+        if = {
+            limit = {
+                has_large_amount_of_unintegrated_pops = yes
+            }
+            ai_enact_law = {
+                name = tribal_decentralized_laws_2
+            }
+        }
+        else = {
+            ai_enact_law = {
+                name = tribal_decentralized_laws_3
+            }
+        }
+    }
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = tribal_centralized_laws_2 # monthly_political_influence_modifier = 0.1
+                has_law = tribal_centralized_laws_3 # global_pop_promotion_speed = 2
+            }
+            # Conditions of the law itself
+            centralization >= 50
+        }
+        ai_enact_law = {
+            name = tribal_centralized_laws_2
+        }
+    }
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = increased_council_powers # monthly_tyranny = -0.05 => republic
+                has_law = absolute_authority # ruler_popularity_gain = 0.15 => monarchy
+            }
+            # Conditions of the law itself
+            centralization >= 10
+        }
+        ai_tribe_enact_authority_law = yes
+    }
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = property_ownership_law_tribal # global_tribesmen_output = output_huge_svalue
+                has_law = right_of_might_law_tribal # global_tax_modifier = 0.1
+            }
+            # Conditions of the law itself
+            centralization <= -10
+        }
+        ai_enact_law = {
+            name = right_of_might_law_tribal
+        }
+    }
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = syncretization_law_tribal
+                has_law = adopt_human_sacrifice_law_tribal
+            }
+            # Conditions of the law itself
+            # None
+            # Additional conditions we want to match
+            has_moderate_amount_of_unintegrated_pops = yes
+        }
+        ai_enact_law = {
+            name = syncretization_law_tribal
+        }
+    }
+    # Steppe horde culture specific military laws
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = training_steppe_2
+                has_law = training_steppe_3
+                has_law = training_steppe_4
+            }
+            # Conditions of the law itself
+            government = steppe_horde
+            any_integrated_culture = {
+				is_culture = sarmatian
+			}
+            # Additional conditions we want to match
+            OR = {
+                primary_culture = sarmatian
+                NOR = {
+                    primary_culture = scythian
+                    primary_culture = sarmatian
+                    primary_culture = agathyrsian
+                }
+            }
+        }
+        ai_enact_law = {
+            name = training_steppe_3
+        }
+    }
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = training_steppe_2
+                has_law = training_steppe_3
+                has_law = training_steppe_4
+            }
+            # Conditions of the law itself
+            government = steppe_horde
+            any_integrated_culture = {
+				is_culture = agathyrsian
+			}
+            # Additional conditions we want to match
+            OR = {
+                primary_culture = agathyrsian
+                NOR = {
+                    primary_culture = scythian
+                    primary_culture = sarmatian
+                    primary_culture = agathyrsian
+                }
+            }
+        }
+        ai_enact_law = {
+            name = training_steppe_4
+        }
+    }
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = training_steppe_2
+                has_law = training_steppe_3
+                has_law = training_steppe_4
+            }
+            # Conditions of the law itself
+            government = steppe_horde
+            any_integrated_culture = {
+				is_culture = scythian 
+			}
+            # Additional conditions we want to match
+            OR = {
+                primary_culture = scythian
+                NOR = {
+                    primary_culture = scythian
+                    primary_culture = sarmatian
+                    primary_culture = agathyrsian
+                }
+            }
+        }
+        ai_enact_law = {
+            name = training_steppe_2
+        }
+    }
+}
+
+ai_choose_and_enact_law_tribal_low_priority = {
+    if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = super_decentralized_law_two # enslavement_efficiency, global_slaves_output
+                has_law = super_decentralized_law_three # land_morale_modifier, war_exhaustion
+            }
+            # Conditions of the law itself
+            centralization <= -80
+        }
+        ai_enact_law = {
+            name = super_decentralized_law_three
+        }
+    }
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = super_centralized_law_two # global_freemen_city_desired_pop_ratio
+                has_law = super_centralized_law_three # global_citizen_city_desired_pop_ratio
+            }
+            # Conditions of the law itself
+            centralization >= 80
+        }
+        ai_enact_law = {
+            name = super_centralized_law_three
+        }
+    }
+    else_if = {
+        limit = {
+            # Has this particular law
+            has_law = tribal_decentralized_laws_2 # global_pop_assimilation_speed_modifier = 0.30
+            # But the other law in the group would be more useful now
+            has_moderate_amount_of_unintegrated_pops = no
+            # Conditions of the law itself
+            centralization <= -50
+        }
+        ai_enact_law = {
+            name = tribal_decentralized_laws_3
+        }
+    }
+    else_if = {
+        limit = {
+            # Has this particular law
+            has_law = tribal_decentralized_laws_3 # happiness_for_same_culture_modifier = 0.1
+            # But the other law in the group would be more useful now
+            has_large_amount_of_unintegrated_pops = yes
+            # Conditions of the law itself
+            centralization <= -50
+        }
+        ai_enact_law = {
+            name = tribal_decentralized_laws_2
+        }
+    }
+}
+
+# Is used in multiple places
+ai_tribe_enact_authority_law = {
+    if = {
+        limit = {
+            any_neighbour_country = {
+                is_republic = yes
+            }
+        }
+        random_list = {
+            70 = {
+                ai_enact_law = {
+                    name = absolute_authority
+                }
+            }
+            30 = {
+                ai_enact_law = {
+                    name = increased_council_powers
+                }
+            }
+        }
+    }
+    else = {
+        random_list = {
+            90 = {
+                ai_enact_law = {
+                    name = absolute_authority
+                }
+            }
+            10 = {
+                ai_enact_law = {
+                    name = increased_council_powers
+                }
+            }
+        }
+    }
+}
+
+# ------------- #
+# MONARCHY LAWS #
+# ------------- #
+
+ai_choose_and_enact_law_monarchy_extreme_priority = {
+    # monarchy_religious_laws group at extreme priority if has big problems with religious and/or cultural unity
+    if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = religious_integration_efforts # conversion speed
+            }
+            # Conditions of the law itself
+            invention = omen_power_inv_4
+            # Additional conditions we want to match
+            NOT = {
+                has_variable = ai_recently_changed_monarchy_religious_laws
+            }
+            OR = {
+                # Religious unity is way too low, switch in any case
+                has_massive_religious_unity_deficit = yes
+                # Religious unity is a bit low, switch only if doesn't have assimilation law
+                AND = {
+                    has_large_religious_unity_deficit = yes
+                    NOT = {
+                        has_law = monarchy_religious_mandate_military
+                    }
+                }
+            }
+        }
+        ai_enact_law = {
+            name = religious_integration_efforts
+        }
+        # Cooldown for this specific law group
+        set_variable = {
+            name = ai_recently_changed_monarchy_religious_laws
+            days = 3650 # 10 years
+        }
+    }
+    else_if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = monarchy_religious_mandate_military # assimilation speed
+            }
+            # Conditions of the law itself
+            invention = omen_power_inv_4
+            # Additional conditions we want to match
+            NOT = {
+                has_variable = ai_recently_changed_monarchy_religious_laws
+            }
+            # A lot of unintegrated pops leading to higher priority
+            has_large_amount_of_unintegrated_pops = yes
+            # If we have converting law, stick to it until religious unity deficit will get low
+            OR = {
+                NOT = {
+                    has_law = religious_integration_efforts
+                }
+                has_moderate_religious_unity_deficit = no
+            }
+        }
+        ai_enact_law = {
+            name = monarchy_religious_mandate_military
+        }
+        # Cooldown for this specific law group
+        set_variable = {
+            name = ai_recently_changed_monarchy_religious_laws
+            days = 3650 # 10 years
+        }
+    }
+}
+
+ai_choose_and_enact_law_monarchy_high_priority = {
+    if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = standing_army_law # legions in any region
+            }
+            # Conditions of the law itself
+            invention = discipline_inv_5
+            rank >= major_power
+            # Additional conditions we want to match
+            trigger_if = {
+                limit = {
+                    OR = {
+                        # Auxiliary Recruitment
+                        invention = global_manpower_modifier_inv_1
+                        # Levy size is at least base + highest size law + 2.5%
+                        modifier:levy_size_multiplier >= 0.175
+                    }
+                }
+                non_capital_regions_levy_population >= country_levy_population_35_percent
+            }
+            trigger_else = {
+                non_capital_regions_levy_population >= country_levy_population_40_percent
+            }
+        }
+        ai_enact_law = {
+            name = standing_army_law
+        }
+    }
+    else_if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = work_for_the_best # legions in capital only
+            }
+            # Conditions of the law itself
+            rank >= regional_power
+            # Additional conditions we want to match
+            num_of_territories_svalue >= 75 # Small countries are too poor for legions + we are losing levy size
+            trigger_if = {
+                limit = {
+                    has_law = standing_army_law
+                }
+                # Switch from legions in any region only if you gain nothing from them and only lose levy size
+                capital_region_levy_population >= country_levy_population_90_percent
+            }
+            trigger_else = {
+                # Switch only if gains from capital legion outweight losing levy size for all regions
+                trigger_if = {
+                    limit = {
+                        OR = {
+                            # Auxiliary Recruitment
+                            invention = global_manpower_modifier_inv_1
+                            # Levy size is at least base + highest size law + 2.5%
+                            modifier:levy_size_multiplier >= 0.175
+                        }
+                    }
+                    capital_region_levy_population >= country_levy_population_35_percent
+                }
+                trigger_else = {
+                    capital_region_levy_population >= country_levy_population_40_percent
+                }
+            }
+        }
+        ai_enact_law = {
+            name = work_for_the_best
+        }
+    }
+    else_if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = mercenary_reliance
+            }
+            # Conditions of the law itself
+            # None
+            # Is good at using mercs
+            is_advanced_ai_enabled = yes
+            NOT = {
+                has_global_variable = game_rule_advanced_ai_mercenaries
+            }
+            # Doesn't have a legion law
+            NOT = {
+                has_law = standing_army_law
+                has_law = work_for_the_best
+            }
+            # Has a pretty small levy pool
+            country_levy_population < 75
+        }
+        ai_enact_law = {
+            name = mercenary_reliance
+        }
+    }
+    else_if = {
+        limit = {
+            # Has a weaker base law from AI perspective
+            OR = {
+                has_law = relaxed_recruiting_standards
+                AND = {
+                    has_law = mercenary_reliance
+                    OR = {
+                        # Can't use mercs properly
+                        is_advanced_ai_enabled = no
+                        has_global_variable = game_rule_advanced_ai_mercenaries
+                        # Levy pool is too large for this law
+                        country_levy_population >= 100
+                    }
+                }
+            }
+            # Conditions of the law itself
+            # None
+        }
+        ai_enact_law = {
+            name = recruit_from_nobles
+        }
+    }
+    # monarchy_religious_laws group at high priority if has moderate problems with religious and/or cultural unity
+    else_if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = religious_integration_efforts # conversion speed
+            }
+            # Conditions of the law itself
+            invention = omen_power_inv_4
+            # Additional conditions we want to match
+            NOT = {
+                has_variable = ai_recently_changed_monarchy_religious_laws
+            }
+            # Religious unity is moderately low
+            has_moderate_religious_unity_deficit = yes
+            # Assimilation law won't be useful that much because there are very few unintegrated pops
+            has_noticeable_amount_of_unintegrated_pops = no
+        }
+        ai_enact_law = {
+            name = religious_integration_efforts
+        }
+        # Cooldown for this specific law group
+        set_variable = {
+            name = ai_recently_changed_monarchy_religious_laws
+            days = 3650 # 10 years
+        }
+    }
+    else_if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = monarchy_religious_mandate_military # assimilation speed
+            }
+            # Conditions of the law itself
+            invention = omen_power_inv_4
+            # Additional conditions we want to match
+            NOT = {
+                has_variable = ai_recently_changed_monarchy_religious_laws
+            }
+            # If we have converting law, stick to it until religious unity deficit will get low
+            OR = {
+                NOT = {
+                    has_law = religious_integration_efforts
+                }
+                has_noticeable_religious_unity_deficit = no
+            }
+        }
+        ai_enact_law = {
+            name = monarchy_religious_mandate_military
+        }
+        # Cooldown for this specific law group
+        set_variable = {
+            name = ai_recently_changed_monarchy_religious_laws
+            days = 3650 # 10 years
+        }
+    }
+}
+
+ai_choose_and_enact_law_monarchy_medium_priority = {
+    if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = scholarly_pursuits_law # research_points_modifier, global_citizen_happyness
+                has_law = royal_bureaucracy # monthly_legitimacy, global_nobles_happyness
+            }
+            # Conditions of the law itself
+            invention = scientific_patronage_inv
+        }
+        ai_enact_law = {
+            name = scholarly_pursuits_law
+        }
+    }
+    else_if = {
+        limit = {
+            # No law enacted in the group
+            NOR = {
+                has_law = increased_citizenship_quotas # global_citizen_city_desired_pop_ratio
+                has_law = established_courts_for_landholders # global_freemen_city_desired_pop_ratio
+            }
+            # Conditions of the law itself
+            invention = citizen_promotion_cost_modifier_inv
+        }
+        ai_enact_law = {
+            name = increased_citizenship_quotas
+        }
+    }
+}
+
+ai_choose_and_enact_law_monarchy_low_priority = {
+    if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = elevate_monarch_monarchy # ruler_popularity_gain, agressive_expansion_impact
+            }
+            # Conditions of the law itself
+            NOT = {
+                religion = judaism
+            }
+            current_ruler = {
+				zeal >= 8
+				popularity >= 95
+			}
+			legitimacy >= 95
+			stability >= 70
+            # Additional conditions we want to match
+            rank_by_num_territories >= great_power
+        }
+        ai_enact_law = {
+            name = elevate_monarch_monarchy
+        }
+    }
+    else_if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = elevate_prophet_monarch_monarchy # ruler_popularity_gain, agressive_expansion_impact
+            }
+            # Conditions of the law itself
+            religion = judaism
+            current_ruler = {
+				zeal >= 8
+				popularity >= 95
+			}
+			legitimacy >= 95
+			stability >= 70
+            # Additional conditions we want to match
+            rank_by_num_territories >= great_power
+        }
+        ai_enact_law = {
+            name = elevate_prophet_monarch_monarchy
+        }
+    }
+}
+
+# ------------- #
+# REPUBLIC LAWS #
+# ------------- #
+
+ai_choose_and_enact_law_republic_extreme_priority = {}
+
+ai_choose_and_enact_law_republic_high_priority = {
+    if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = republican_recruitment_4 # legions in any region
+            }
+            # Conditions of the law itself
+            invention = discipline_inv_5
+            OR = {
+				rank >= major_power
+				custom_tooltip = {
+					text = marian_event_fired
+					has_variable = had_military_reforms 
+				}
+			}
+            # Additional conditions we want to match
+            trigger_if = {
+                limit = {
+                    OR = {
+                        # Auxiliary Recruitment
+                        invention = global_manpower_modifier_inv_1
+                        # Levy size is at least base + highest size law + 2.5%
+                        modifier:levy_size_multiplier >= 0.15
+                    }
+                }
+                non_capital_regions_levy_population >= country_levy_population_30_percent
+            }
+            trigger_else = {
+                non_capital_regions_levy_population >= country_levy_population_35_percent
+            }
+        }
+        ai_enact_law = {
+            name = republican_recruitment_4
+        }
+    }
+    else_if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = republican_recruitment_2 # legions in capital only
+            }
+            # Conditions of the law itself
+            invention = global_cohort_recruit_speed_inv
+			rank >= regional_power
+            # Additional conditions we want to match
+            num_of_territories_svalue >= 50 # Small countries are too poor for legions + we are losing levy size
+            trigger_if = {
+                limit = {
+                    has_law = republican_recruitment_4
+                }
+                # Switch from legions in any region only if you gain nothing from them and only lose levy size
+                capital_region_levy_population >= country_levy_population_90_percent
+            }
+            trigger_else = {
+                # Switch only if gains from capital legion outweight losing levy size for all regions
+                trigger_if = {
+                    limit = {
+                        OR = {
+                            # Auxiliary Recruitment
+                            invention = global_manpower_modifier_inv_1
+                            # Levy size is at least base + highest size law + 2.5%
+                            modifier:levy_size_multiplier >= 0.15
+                        }
+                    }
+                    capital_region_levy_population >= country_levy_population_30_percent
+                }
+                trigger_else = {
+                    capital_region_levy_population >= country_levy_population_35_percent
+                }
+            }
+        }
+        ai_enact_law = {
+            name = republican_recruitment_2
+        }
+    }
+    else_if = {
+        limit = {
+            # Has a weaker base law from AI perspective
+            has_law = republican_recruitment_1
+            # Conditions of the law itself
+            # None
+        }
+        ai_enact_law = {
+            name = republican_recruitment_3
+        }
+    }
+}
+
+ai_choose_and_enact_law_republic_medium_priority = {}
+
+ai_choose_and_enact_law_republic_low_priority = {}
+
+# ------------------ #
+# REPUBLIC ROME LAWS #
+# ------------------ #
+
+ai_choose_and_enact_law_republic_rome_extreme_priority = {}
+
+ai_choose_and_enact_law_republic_rome_high_priority = {
+    if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = marian_reforms # legions in any region
+            }
+            # Conditions of the law itself
+            invention = discipline_inv_5
+			OR = {
+				rank >= great_power
+				custom_tooltip = {
+					text = marian_event_fired
+					has_variable = had_military_reforms
+				}
+			}
+            # Additional conditions we want to match
+            trigger_if = {
+                limit = {
+                    OR = {
+                        # Auxiliary Recruitment
+                        invention = global_manpower_modifier_inv_1
+                        # Levy size is at least base + highest size law + 2.5%
+                        modifier:levy_size_multiplier >= 0.175
+                    }
+                }
+                non_capital_regions_levy_population >= country_levy_population_35_percent
+            }
+            trigger_else = {
+                non_capital_regions_levy_population >= country_levy_population_40_percent
+            }
+        }
+        ai_enact_law = {
+            name = marian_reforms
+        }
+    }
+    else_if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = punic_reforms # legions in capital only
+            }
+            # Conditions of the law itself
+            invention = global_cohort_recruit_speed_inv
+			rank >= regional_power
+            # Additional conditions we want to match
+            num_of_territories_svalue >= 75 # Small countries are too poor for legions + we are losing levy size
+            trigger_if = {
+                limit = {
+                    has_law = marian_reforms
+                }
+                # Switch from legions in any region only if you gain nothing from them and only lose levy size
+                capital_region_levy_population >= country_levy_population_90_percent
+            }
+            trigger_else = {
+                # Switch only if gains from capital legion outweight losing levy size for all regions
+                trigger_if = {
+                    limit = {
+                        OR = {
+                            # Auxiliary Recruitment
+                            invention = global_manpower_modifier_inv_1
+                            # Levy size is at least base + highest size law + 2.5%
+                            modifier:levy_size_multiplier >= 0.175
+                        }
+                    }
+                    capital_region_levy_population >= country_levy_population_35_percent
+                }
+                trigger_else = {
+                    capital_region_levy_population >= country_levy_population_40_percent
+                }
+            }
+        }
+        ai_enact_law = {
+            name = punic_reforms
+        }
+    }
+    else_if = {
+        limit = {
+            # Has a weaker base law from AI perspective
+            has_law = testamentum_militis
+            # Conditions of the law itself
+            # None
+        }
+        ai_enact_law = {
+            name = lex_porcia
+        }
+    }
+}
+
+ai_choose_and_enact_law_republic_rome_medium_priority = {}
+
+ai_choose_and_enact_law_republic_rome_low_priority = {}
+
+# ---------------------- #
+# REPUBLIC CARTHAGE LAWS #
+# ---------------------- #
+
+ai_choose_and_enact_law_republic_carthage_extreme_priority = {}
+
+ai_choose_and_enact_law_republic_carthage_high_priority = {
+    if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = republic_military_recruitment_car_4 # legions_in_any_region
+            }
+            # Conditions of the law itself
+            invention = discipline_inv_5
+			rank >= great_power
+            # Additional conditions we want to match
+            trigger_if = {
+                limit = {
+                    OR = {
+                        # Auxiliary Recruitment
+                        invention = global_manpower_modifier_inv_1
+                        # Levy size is at least base + highest size law + 2.5%
+                        modifier:levy_size_multiplier >= 0.15
+                    }
+                }
+                non_capital_regions_levy_population >= country_levy_population_30_percent
+            }
+            trigger_else = {
+                non_capital_regions_levy_population >= country_levy_population_35_percent
+            }
+        }
+        ai_enact_law = {
+            name = republic_military_recruitment_car_4
+        }
+    }
+    else_if = {
+        limit = {
+            # The law is not enacted
+            NOT = {
+                has_law = republic_military_recruitment_car_2 # legions_in_any_region
+            }
+            # Conditions of the law itself
+            invention = global_cohort_recruit_speed_inv
+			rank >= regional_power
+            # Additional conditions we want to match
+            num_of_territories_svalue >= 50 # Small countries are too poor for legions + we are losing levy size
+            trigger_if = {
+                limit = {
+                    has_law = republic_military_recruitment_car_4
+                }
+                # Switch from legions in any region only if you gain nothing from them and only lose levy size
+                capital_region_levy_population >= country_levy_population_90_percent
+            }
+            trigger_else = {
+                # Switch only if gains from capital legion outweight losing levy size for all regions
+                trigger_if = {
+                    limit = {
+                        OR = {
+                            # Auxiliary Recruitment
+                            invention = global_manpower_modifier_inv_1
+                            # Levy size is at least base + highest size law + 2.5%
+                            modifier:levy_size_multiplier >= 0.15
+                        }
+                    }
+                    capital_region_levy_population >= country_levy_population_30_percent
+                }
+                trigger_else = {
+                    capital_region_levy_population >= country_levy_population_35_percent
+                }
+            }
+        }
+        ai_enact_law = {
+            name = republic_military_recruitment_car_2
+        }
+    }
+    else_if = {
+        limit = {
+            # Has a weaker base law from AI perspective
+            has_law = republic_military_recruitment_car_1
+            # Conditions of the law itself
+            # None
+        }
+        ai_enact_law = {
+            name = republic_military_recruitment_car_3
+        }
+    }
+}
+
+ai_choose_and_enact_law_republic_carthage_medium_priority = {}
+
+ai_choose_and_enact_law_republic_carthage_low_priority = {}

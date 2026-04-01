@@ -24,7 +24,7 @@ ai_important_state_requirements = {
         
         # For small countries consider all states to be important
         owner = {
-            rank <= local_power
+            rank_by_num_territories <= local_power
         }
 
         # Owning the entire area as performant alternative to % of territories
@@ -213,7 +213,7 @@ ai_needs_giga_fort_in_territory = {
 
     OR = {
         # Already has giga fort, ignore requirements and keep it
-        num_of_fortress_building_projected >= level_of_giga_fort_wanted
+        fort_level_projected >= level_of_giga_fort_wanted
         # Large major power if civilized, great power if tribal
         owner = {
             trigger_if = {
@@ -223,7 +223,7 @@ ai_needs_giga_fort_in_territory = {
                 num_of_territories_svalue >= 300
             }
             trigger_else = {
-                rank >= great_power
+                rank_by_num_territories >= great_power
             }
         }
         # Very developed capital, probably OPM, needs more defences
@@ -282,11 +282,11 @@ ai_wants_single_fort_in_territory = {
 # }
 
 ai_fort_level_is_higher_than_wanted = {
-    num_of_fortress_building_projected > ai_fort_level_wanted_in_territory
+    fort_level_projected > ai_fort_level_wanted_in_territory
 }
 
 ai_fort_level_is_lower_than_wanted = {
-    num_of_fortress_building_projected < ai_fort_level_wanted_in_territory
+    fort_level_projected < ai_fort_level_wanted_in_territory
 }
 
 # TODO Declutter
@@ -379,7 +379,7 @@ ai_territory_can_have_fort = {
     num_of_total_building_slots > 0
     OR = {
         # If it has fort already, it probably can have it?
-        num_of_fortress_building_projected > 0
+        fort_level_projected > 0
         # Ports are not occupying all building slots - they are higher in priority
         can_have_port = no
         port_level_including_construction < num_of_total_building_slots
@@ -430,6 +430,15 @@ ai_should_rebuild_territory_fort = {
         has_variable = recently_rebuilt_fort_to_territory
     }
 
+    # Never optimize last fort level of capital redoubt
+    NAND = {
+        state = {
+            is_capital_state = yes
+        }
+        ai_territory_is_redoubt_of_state = yes
+        fort_level_projected <= 1
+    }
+
     # There's a territory where we can rebuild fort to
     has_non_empty_local_variable_list = {
         name = territories_allowed_to_build_fort
@@ -475,7 +484,7 @@ ai_should_rebuild_territory_fort = {
                 AND = {
                     has_specific_construction = fortress_building
                     OR = {
-                        num_of_fortress_building_projected > 1
+                        fort_level_projected > 1
                         ai_fort_level_wanted_in_territory = 0
                     }
                 }
@@ -484,7 +493,7 @@ ai_should_rebuild_territory_fort = {
             # Only rebuild if either...
             OR = {
                 # ...this is high level fort so it won't be left unprotected...
-                num_of_fortress_building_projected > 1
+                fort_level_projected > 1
 
                 # ...or it's not a perimeter state so it can do without forts...
                 ai_territory_state_is_perimeter = no
@@ -499,7 +508,7 @@ ai_should_rebuild_territory_fort = {
                     ai_can_rebuild_fort_to_territory = yes
                     # Triggers to guarantee it won't be out-prioritized by other territories, except fort-less capital
                     ai_fort_level_is_lower_than_wanted = yes
-                    num_of_fortress_building_projected < level_of_mega_fort_wanted
+                    fort_level_projected < level_of_mega_fort_wanted
                 }
             }
         }
@@ -513,6 +522,16 @@ ai_should_rebuild_territory_fort = {
 # forts again, leading to a waste of money.
 # Is checked only if rebuilding trigger is false. Prioritization is done via order_by in ordered_state_province.
 ai_should_reduce_territory_fort = {
+
+    # Never optimize last fort level of capital redoubt
+    NAND = {
+        state = {
+            is_capital_state = yes
+        }
+        ai_territory_is_redoubt_of_state = yes
+        fort_level_projected <= 1
+    }
+
     OR = {
         # State is above fort limit - often problematic with vanilla AI, so avoid entirely
         state = {
@@ -538,7 +557,7 @@ ai_should_reduce_territory_fort = {
                 # Downgrade all newly acquired high level forts to single ignoring any conditions
                 AND = {
                     has_variable = ai_acquired_territory_with_fort
-                    num_of_fortress_building > 1
+                    fort_level_projected > 1
                 }
 
                 # Reduce all non-perimeter forts to wanted levels if affected by perimeter shifting
@@ -579,14 +598,14 @@ ai_territory_state_has_other_fort = {
                     NOT = {
                         this = scope:initial_territory_of_checked_state
                     }
-                    num_of_fortress_building > 0
+                    fort_level > 0
                 }
             }
             any_state_province = {
                 NOT = {
                     this = scope:initial_territory_of_checked_state
                 }
-                num_of_fortress_building > 0
+                fort_level > 0
             }
         }
     }
@@ -597,11 +616,22 @@ ai_can_rebuild_fort_to_territory = {
         this = scope:territory_under_fort_optimization
     }
 
-    # Don't exceed state fort limit as it's very expensive
-    state.state_fort_limit_svalue >= state_fort_limit_after_rebuilding
-    
-    # Currently optimized territory has lower priority than scoped territory
-    territory_priority_for_building_fort > scope:territory_under_fort_optimization.territory_priority_for_building_fort
+    OR = {
+        # Capital redoubt with no fort levels
+        AND = {
+            state = {
+                is_capital_state = yes
+            }
+            ai_territory_is_redoubt_of_state = yes
+            fort_level_projected < 1
+        }
+        AND = {
+            # Don't exceed state fort limit as it's very expensive
+            state.state_fort_limit_svalue >= state_fort_limit_after_rebuilding
+            # Currently optimized territory has lower priority than scoped territory
+            territory_priority_for_building_fort > scope:territory_under_fort_optimization.territory_priority_for_building_fort
+        }
+    }
 }
 
 # Covers gates, mountain passes, their desert alternatives, and probably various modifiers from missions etc.

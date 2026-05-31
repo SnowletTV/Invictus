@@ -1,0 +1,505 @@
+﻿namespace = paris_mission
+
+# === MISSION EVENTS ===
+
+# Event 1: The Boatmen of the Seine - Triggered by Mastery of the Seine Mission task
+paris_mission.1 = {
+    type = country_event
+    title = "paris_mission.1.t"
+    desc = "paris_mission.1.desc"
+    picture = trade_port
+    
+    option = {
+        name = "paris_mission.1.a"
+        p:2475 = { 
+            add_province_modifier = { name = lutetian_river_guilds duration = -1 } 
+        }
+        add_treasury = 50
+    }
+    
+    option = {
+        name = "paris_mission.1.b"
+        p:2475 = { 
+            add_province_modifier = { name = seine_river_tolls duration = -1 } 
+        }
+        add_political_influence = -5
+    }
+}
+
+# Event 2: Old Guard Ultimatum Starts
+paris_mission.2 = {
+    type = country_event
+    title = "paris_mission.2.t"
+    desc = "paris_mission.2.desc"
+    picture = celtic_chiefs
+    
+    option = { # Attempt to buy them off
+        name = "paris_mission.2.a" 
+        trigger = { treasury >= 50 }
+        add_treasury = -50
+        add_political_influence = -10
+        trigger_event = {
+            id = paris_mission.5
+            days = { 3 5 }
+        }
+    }
+    
+    option = { # Refuse to pay tribute. War!
+        name = "paris_mission.2.b"
+        add_stability = -5
+        trigger_event = {
+            id = paris_mission.6 
+            days = { 3 5 }
+        }
+    }
+}
+
+# Event 3: Sennonian Ultimatum Sent (The Timer Starts)
+paris_mission.3 = {
+    type = country_event
+    title = "paris_mission.3.t"
+    desc = "paris_mission.3.desc"
+    picture = celtic_diplomacy
+    left_portrait = current_ruler
+    right_portrait = scope:sennonian_rival.current_ruler
+    trigger = { always = yes }
+
+    option = {
+        name = "paris_mission.3.a"
+        set_variable = { name = sennonian_diplomatic_approach }
+        custom_tooltip = "paris_mission.3.a.tt"
+    }
+
+    option = {
+        name = "paris_mission.3.b"
+        set_variable = { name = sennonian_hostile_approach }
+        custom_tooltip = "paris_mission.3.b.tt"
+    }
+}
+
+# Event 5: The Final Price (Diabolical RNG)
+paris_mission.5 = {
+    type = country_event
+    title = "paris_mission.5.t" 
+    desc = "paris_mission.5.desc"
+    picture = celtic_diplomacy
+    
+    option = { # Pay the final exorbitant bribe
+        name = "paris_mission.5.a" 
+        trigger = { treasury >= 100 }
+        add_treasury = -100
+        add_political_influence = -25
+        add_stability = -10
+        
+        random_list = {
+            85 = { # They accept the bribe
+                modifier = {
+                    add = -20
+                    current_ruler = { popularity < 50 } 
+                }
+                set_variable = { name = parisii_old_guard_appeased }
+            }
+            15 = { # They take the money and revolt anyway!
+                modifier = {
+                    add = 20
+                    current_ruler = { popularity < 50 } 
+                }
+                trigger_event = {
+                    id = paris_mission.6 
+                    days = { 3 5 }
+                }
+            }
+        }
+    }
+    
+    option = { # The price is too high. War!
+        name = "paris_mission.5.b"
+        trigger_event = {
+            id = paris_mission.6 
+            days = { 3 5 }
+        }
+    }
+}
+
+# Event 6: The Hinterland Revolt (Civil War Spawns)
+paris_mission.6 = {
+    type = country_event
+    title = "paris_mission.6.t" 
+    desc = "paris_mission.6.desc"
+    picture = looting
+    
+    option = { 
+        name = "paris_mission.6.a" # "To arms!"
+        hidden_effect = {
+            # 1. Target a rural, rough province in Senonia
+            random_owned_province = {
+                limit = {
+                    is_in_area = senonia_area
+                    has_city_status = no
+                    OR = { terrain = forest terrain = hills terrain = mountain }
+                }
+                save_scope_as = rebel_capital
+            }
+            
+            # 2. Spawn the revolt
+            scope:rebel_capital = {
+                create_country = {
+                    name = { name = parisii_revolt_name adjective = parisii_revolt_name_adjective }
+                    change_country_color = dark_rust
+                    change_government = tribal_kingdom
+                    set_primary_culture = sennonian
+                    set_country_religion = druidism
+                    set_country_heritage = default_heritage
+                    save_scope_as = parisii_revolt_scope
+                }
+                set_owned_by = scope:parisii_revolt_scope
+                
+                # 3. Pull adjacent wild territories into the revolt
+                every_neighbor_province = {
+                    limit = {
+                        owner = root
+                        has_city_status = no
+                        is_in_area = senonia_area
+                        OR = { terrain = forest terrain = hills terrain = mountain }
+                    }
+                    set_owned_by = scope:parisii_revolt_scope
+                }
+            }
+            
+            # 4. Declare War
+            c:PRS = {
+                declare_war_with_wargoal = {
+                     war_goal = conquer_wargoal 
+                     province = scope:rebel_capital 
+                     target = scope:parisii_revolt_scope
+                }
+                # 5. Set the flag so the UI knows the war actually happened
+                set_global_variable = { name = old_guard_revolt_fired value = 1 }
+            }
+        }
+    }
+}
+
+# Event 7: The Trade Hub City Discount Hook
+paris_mission.7 = {
+    type = province_event
+    title = "paris_mission.7.t"
+    desc = "paris_mission.7.desc"
+    picture = city_construction
+    
+    option = {
+        name = "paris_mission.7.a" # Discounted Market
+        trigger = { owner = { treasury >= 30 } }
+        owner = { add_treasury = -30 }
+        add_building_level = commerce_building
+    }
+    option = {
+        name = "paris_mission.7.b" # Discounted Tax Office
+        trigger = { owner = { treasury >= 30 } }
+        owner = { add_treasury = -30 }
+        add_building_level = town_hall_building
+    }
+    option = {
+        name = "paris_mission.7.c" # Discounted Port (If navigable)
+        trigger = { can_have_port = yes owner = { treasury >= 30 } }
+        owner = { add_treasury = -30 }
+        add_building_level = port_building
+    }
+}
+
+# Event 8: The Sennonian Ultimatum Response (Target receives this)
+paris_mission.8 = {
+    type = country_event
+    title = "paris_mission.8.t"
+    desc = "paris_mission.8.desc"
+    picture = celtic_diplomacy
+    left_portrait = current_ruler
+    right_portrait = scope:parisii_overlord.current_ruler
+    is_triggered_only = yes 
+    
+    option = { # Recipient Accepts Vassalage
+        name = "paris_mission.8.a"
+        ai_chance = { 
+            base = 40 
+            modifier = { add = 40 opinion = { target = scope:parisii_overlord value >= 50 } }
+            modifier = { add = 20 scope:parisii_overlord = { num_of_cities >= 10 } }
+        } 
+        save_scope_as = submitting_sennones
+        scope:parisii_overlord = {
+            trigger_event = { id = paris_mission.9 days = 1 }
+        }
+    }
+    
+    option = { # They Refuse!
+        name = "paris_mission.8.b"
+        ai_chance = {
+            base = 60
+            modifier = { add = 40 opinion = { target = scope:parisii_overlord value < 0 } }
+        }
+        every_owned_province = {
+            scope:parisii_overlord = { add_claim = prev }
+        }
+    }
+}
+
+# Event 9: Ping back to the Parisii Player for Sennonian Submission
+paris_mission.9 = { 
+    type = country_event
+    title = "paris_mission.9.t"
+    desc = "paris_mission.9.desc"
+    picture = celtic_chiefs
+    left_portrait = current_ruler
+
+    option = {
+        name = "paris_mission.9.a"
+        make_subject = {
+            target = scope:submitting_sennones
+            type = feudatory
+        }
+        add_political_influence = 10
+    }
+}
+
+# Event 10: The Confederation Finale
+paris_mission.10 = {
+    type = country_event
+    title = "paris_mission.10.t"
+    desc = "paris_mission.10.desc"
+    picture = throneroom
+    left_portrait = current_ruler
+    
+    trigger = { always = yes }
+    
+    option = {
+        name = "paris_mission.10.a"
+        
+        # Flags the state for your Triggered Modifiers
+        set_variable = { name = seine_confederation_formed value = 1 }
+        
+        add_innovation = 8
+        add_political_influence = 80
+        add_treasury = 500
+        add_centralization = 15
+        
+        if = {
+            limit = { var:seine_forts_built >= 3 }
+            add_country_modifier = { name = seine_engineering_tier_3 duration = 3650 }
+            add_country_modifier = { name = seine_levies_tier_3 duration = 1825 }
+        }
+        else_if = {
+            limit = { var:seine_forts_built = 2 }
+            add_country_modifier = { name = seine_engineering_tier_2 duration = 3650 }
+            add_country_modifier = { name = seine_levies_tier_2 duration = 1825 }
+        }
+        else_if = {
+            limit = { var:seine_forts_built = 1 }
+            add_country_modifier = { name = seine_engineering_tier_1 duration = 3650 }
+            add_country_modifier = { name = seine_levies_tier_1 duration = 1825 }
+        }
+
+        p:2475 = { add_province_modifier = { name = parisii_confederation_capital duration = -1 } }
+        
+        current_ruler = {
+            add_trait = founder
+            add_nickname = NICKNAME_SEINE_FOUNDER
+            add_martial = 1
+            add_finesse = 1
+            add_charisma = 1
+            add_zeal = 1
+        }
+        change_country_name = SEINE_CONFEDERATION
+        
+        # Instant Law Rewards (The permanent stuff is handled by the Triggered Modifiers)
+        if = {
+            limit = { 
+                OR = { has_law = increased_council_powers is_republic = yes }
+            }
+            add_stability = 15
+        }
+        else_if = {
+            limit = { 
+                OR = { has_law = absolute_authority is_monarchy = yes }
+            }
+            current_ruler = { add_popularity = 25 }
+        }
+    }
+}
+
+# Event 11: Parisii Sends the Belgae Ultimatum
+paris_mission.11 = {
+    type = country_event
+    title = "paris_mission.11.t"
+    desc = "paris_mission.11.desc"
+    picture = celtic_chiefs
+    
+    option = {
+        name = "paris_mission.11.a" 
+        every_country = {
+            limit = {
+                primary_culture = belgae 
+                is_subject = no
+                NOT = { this = root } # Ensures you don't target yourself
+            }
+            trigger_event = { id = paris_mission.12 }
+        }
+    }
+}
+
+# Event 12: Belgae Target Receives the Ultimatum
+paris_mission.12 = {
+    type = country_event
+    title = "paris_mission.12.t"
+    desc = "paris_mission.12.desc"
+    picture = celtic_diplomacy
+    left_portrait = current_ruler
+    right_portrait = FROM.current_ruler
+    
+    trigger = { always = yes }
+    
+    # OPTION A: They Submit
+    option = {
+        name = "paris_mission.12.a"
+        
+        ai_chance = {
+            base = 40
+            modifier = { add = 30 opinion = { target = FROM value >= 50 } }
+            modifier = { add = 30 FROM = { num_of_cities >= 15 } }
+        }
+        
+        FROM = {
+            make_subject = {
+                target = root
+                type = feudatory
+            }
+        }
+
+        random_country_culture = {
+            limit = { is_culture = root.primary_culture }
+            FROM = { integrate_country_culture = prev }
+        }
+
+        FROM = { add_opinion = { target = root modifier = appeased_us } }
+    }
+    
+    # OPTION B: They Refuse
+    option = {
+        name = "paris_mission.12.b"
+        
+        ai_chance = {
+            base = 60
+            modifier = { add = 40 opinion = { target = FROM value < 0 } }
+        }
+        
+        FROM = {
+            set_variable = { name = belgae_defied_ultimatum value = 1 }
+            add_opinion = { target = root modifier = insulted_us }
+        }
+    }
+}
+
+# Event 20: Coinage & Commerce Choice
+paris_mission.20 = {
+    type = country_event
+    title = "paris_mission.20.t"
+    desc = "paris_mission.20.desc"
+    picture = celtic_village
+    
+    trigger = { always = yes }
+    
+    option = { # Opt for Coinage
+        name = "paris_mission.20.a"
+        custom_tooltip = "paris_mission.20.a.tt"
+        p:2475 = { add_province_modifier = { name = parisii_stater_mint duration = -1 } }
+        if = {
+            limit = { has_law = coin_minting_law }
+            add_treasury = 100 
+        }
+        else = {
+            change_law = coin_minting_law
+        }
+    }
+    
+    option = { # Opt for Barter
+        name = "paris_mission.20.b"
+        custom_tooltip = "paris_mission.20.b.tt"
+        p:2475 = { add_province_modifier = { name = parisii_barter_network duration = -1 } }
+        if = {
+            limit = { has_law = barter_economy_law }
+            add_political_influence = 20 
+        }
+        else = {
+            change_law = barter_economy_law
+        }
+    }
+}
+
+#monthly pulses - could be made annual
+
+# Event 100: Pulse for Urbanized Hubs
+paris_mission.100 = {
+    type = country_event
+    hidden = yes
+    trigger = {
+        any_owned_province = {
+            has_province_modifier = parisii_protected_trade_hub
+            has_city_status = yes
+        }
+    }
+    immediate = {
+        every_owned_province = {
+            limit = {
+                has_province_modifier = parisii_protected_trade_hub
+                has_city_status = yes
+            }
+            remove_province_modifier = parisii_protected_trade_hub
+            add_province_modifier = { name = parisii_urban_crossing duration = -1 }
+            trigger_event = { id = paris_mission.7 } 
+        }
+    }
+}
+
+paris_mission.101 = {
+    type = country_event
+    hidden = yes
+
+    # This acts as your "potential" block
+    trigger = {
+        has_variable = seine_confederation_formed
+    }
+
+    immediate = {
+        # Check and apply/remove Council Harmony
+        if = {
+            limit = {
+                OR = {
+                    is_republic = yes
+                    has_law = increased_council_powers 
+                }
+            }
+            add_country_modifier = {
+                name = seine_council_harmony
+                duration = -1 # -1 means it lasts until manually removed
+            }
+        }
+        else = {
+            remove_country_modifier = seine_council_harmony
+        }
+
+        # Check and apply/remove Autocratic Grip
+        if = {
+            limit = {
+                OR = { 
+                    is_monarchy = yes 
+                    has_law = absolute_authority 
+                }
+            }
+            add_country_modifier = {
+                name = seine_autocratic_grip
+                duration = -1
+            }
+        }
+        else = {
+            remove_country_modifier = seine_autocratic_grip
+        }
+    }
+}

@@ -1,0 +1,431 @@
+﻿parisii_lutetia_mission = {
+    header = "parisii_lutetia_mission_header"
+    icon = "cde_gallic_chiefs_council"
+    
+    repeatable = no
+    
+    chance = {
+        factor = 5000
+    }
+
+    potential = {
+        NOT = { has_variable = parisii_mission_cooldown }
+        OR = {
+            tag = PRS
+            AND = {
+                primary_culture = sennonian
+                owns = 2475 # Lutetia
+            }
+        }
+    }
+
+    on_start = {
+        save_scope_as = parisii_mission_scope
+        start_mission_ai_effect = yes
+
+        # Dynamically target the inland martial warlords
+        if = {
+            limit = {
+                any_country_character = {
+                    family = { NOT = { this = root.current_ruler.family } }
+                    any_character_holding = {
+                        has_port = no
+                        OR = {
+                            num_of_tribesmen >= 5
+                            num_of_freemen >= 5
+                        }
+                    }
+                }
+            }
+            random_country_character = {
+                limit = {
+                    family = { NOT = { this = root.current_ruler.family } }
+                    any_character_holding = {
+                        has_port = no
+                        OR = { num_of_tribesmen >= 5 num_of_freemen >= 5 }
+                    }
+                }
+                family = { save_scope_as = parisii_old_guard_family }
+            }
+        }
+        else_if = {
+            limit = { any_country_character = { family = { NOT = { this = root.current_ruler.family } } } }
+            random_country_character = {
+                limit = { family = { NOT = { this = root.current_ruler.family } } }
+                family = { save_scope_as = parisii_old_guard_family }
+            }
+        }
+        
+        set_variable = { name = seine_forts_built value = 0 }
+    }
+
+    on_abort = {
+        custom_tooltip = general_mission_cooldown_tt
+        set_variable = {
+            name = parisii_mission_cooldown
+            days = 7300
+        }
+    }
+
+    abort = { ai_mission_back_out_trigger = yes }
+    on_completion = { complete_mission_effect = yes }
+
+    # TASK 1: Mastery of the Seine
+    mastery_of_the_seine_task = {
+        icon = "task_battle"
+        highlight = { scope:province = { province_id = 2475 } }
+        allow = {
+            political_influence >= 25
+        }
+        on_completion = {
+            show_as_tooltip = { custom_tooltip = mastery_of_the_seine_tt }
+            add_political_influence = -25
+            trigger_event = { id = paris_mission.1 }
+        }
+    }
+
+    # TASK 2: Sennonian Unification (Diplomatic Timer)
+    sennonian_unification_task = {
+        icon = "task_diplomatic"
+        duration = 180
+        allow = { }
+        on_start = {
+            random_country = {
+                limit = {
+                    primary_culture = sennonian
+                    is_subject = no
+                    NOT = { this = root }
+                    capital_scope = {
+                        OR = {
+                            is_in_region = central_gaul_region
+                            is_in_region = belgica_region
+                            is_in_region = armorica_region
+                        }
+                    }
+                }
+                save_scope_as = sennonian_rival
+            }
+            trigger_event = { id = paris_mission.3 }
+        }
+        on_completion = {
+            add_political_influence = 15
+            save_scope_as = parisii_overlord
+
+            every_country = {
+                limit = {
+                    primary_culture = sennonian
+                    is_subject = no
+                    NOT = { this = root }
+                }
+                if = {
+                    limit = { 
+                        scope:parisii_overlord = { has_variable = sennonian_diplomatic_approach }
+                        opinion = { target = scope:parisii_overlord value >= 50 } 
+                    }
+                    save_scope_as = sennonian_target
+                    trigger_event = { id = paris_mission.8 }
+                }
+                else = {
+                    every_owned_province = {
+                        add_claim = scope:parisii_overlord 
+                    }
+                }
+            }
+            remove_variable = sennonian_diplomatic_approach
+            remove_variable = sennonian_hostile_approach
+        }
+    }
+
+    # MANDATORY TASK: Fortify Lutetia (The Capital Hub)
+    fortify_lutetia_crossing = {
+        icon = "task_political"
+        requires = { mastery_of_the_seine_task }
+        highlight = { scope:province = { province_id = 2475 } }
+        allow = {
+            p:2475 = {
+                owner = root
+                has_building = fortress_building
+                has_building = port_building
+                has_building = commerce_building
+                has_building = town_hall_building
+            }
+        }
+        on_completion = {
+            add_centralization = 5
+            change_variable = { name = seine_forts_built add = 1 }
+            
+            p:2475 = { 
+                add_province_modifier = { name = parisii_urban_crossing duration = -1 } 
+                create_state_pop = nobles
+                create_state_pop = nobles
+                create_state_pop = citizen
+                create_state_pop = citizen
+                create_state_pop = freemen
+                create_state_pop = freemen
+            }
+        }
+    }
+
+    # TASK 3: Coinage and Commerce (The Law Shift)
+    parisii_coinage_task = {
+        icon = "task_economical"
+        requires = { mastery_of_the_seine_task }
+        allow = {
+            centralization >= 25
+            political_influence >= 25
+        }
+        on_completion = {
+            add_innovation = 1
+            add_political_influence = -25
+            trigger_event = { id = paris_mission.20 }
+        }
+    }
+
+    # TASK 4: Belgae Ultimatum
+    belgae_ultimatum_task = {
+        icon = "task_diplomatic"
+        requires = { sennonian_unification_task } 
+        
+        allow = {
+            political_influence >= 25
+        }
+        
+        on_completion = {
+            trigger_event = { id = paris_mission.11 }
+        }
+    }
+
+    # TASK 5: Subdue the Old Guard
+    subdue_the_old_guard_task = {
+        icon = "task_political"
+        requires = { parisii_coinage_task }
+        
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 2486
+                    province_id = 2490
+                    province_id = 2489
+                    province_id = 2487
+                }
+            }
+        }
+
+        allow = {
+            political_influence >= 50
+        }
+        
+        on_completion = {
+            # Clicking the task kicks off the Ultimatum chain (Event 2)
+            trigger_event = { id = paris_mission.2 }
+        }
+    }
+
+    # OPTIONAL TASK A: Agedincum (Sens)
+    fortify_agedincum_crossing = {
+        icon = "task_political"
+        requires = { fortify_lutetia_crossing }
+        highlight = { scope:province = { province_id = 2448 } }
+        allow = {
+            trigger_if = {
+                limit = { p:2448 = { owner = root has_building = fortress_building } }
+                treasury >= 25
+            }
+            trigger_else = {
+                treasury >= 50
+                p:2448 = { owner = root }
+            }
+        }
+        on_completion = {
+            change_variable = { name = seine_forts_built add = 1 }
+            if = {
+                limit = { NOT = { p:2448 = { has_building = fortress_building } } }
+                add_treasury = -50
+                p:2448 = { 
+                    add_building_level = fortress_building 
+                    add_province_modifier = { name = crossing_construction_effort duration = 720 }
+                }
+            }
+            else = { add_treasury = -25 }
+            
+            p:2448.state = {
+                add_state_modifier = {
+                    name = state_improvement_military
+                    duration = -1
+                    mode = add
+                }
+            }
+            p:2448 = { 
+                add_province_modifier = { name = parisii_protected_trade_hub duration = -1 } 
+            }
+        }
+    }
+
+    # OPTIONAL TASK B: Caracotinum (Coastal Gateway)
+    fortify_caracotinum_crossing = {
+        icon = "task_political"
+        requires = { fortify_lutetia_crossing }
+        highlight = { scope:province = { province_id = 2468 } }
+        allow = {
+            trigger_if = {
+                limit = { p:2468 = { owner = root has_building = fortress_building } }
+                treasury >= 25
+            }
+            trigger_else = {
+                treasury >= 50
+                p:2468 = { owner = root }
+            }
+        }
+        on_completion = {
+            change_variable = { name = seine_forts_built add = 1 }
+            if = {
+                limit = { NOT = { p:2468 = { has_building = fortress_building } } }
+                add_treasury = -50
+                p:2468 = { 
+                    add_building_level = fortress_building 
+                    add_province_modifier = { name = crossing_construction_effort duration = 720 }
+                }
+            }
+            else = { add_treasury = -25 }
+            
+            p:2468.state = {
+                add_state_modifier = {
+                    name = state_improvement_military
+                    duration = -1
+                    mode = add
+                }
+            }
+            p:2468 = { 
+                add_province_modifier = { name = parisii_protected_trade_hub duration = -1 } 
+            }
+        }
+    }
+
+    # OPTIONAL TASK C: Durocatalaunum (Eastern Approach)
+    fortify_durocatalaunum_crossing = {
+        icon = "task_political"
+        requires = { fortify_lutetia_crossing }
+        highlight = { scope:province = { province_id = 2450 } }
+        allow = {
+            trigger_if = {
+                limit = { p:2450 = { owner = root has_building = fortress_building } }
+                treasury >= 25
+            }
+            trigger_else = {
+                treasury >= 50
+                p:2450 = { owner = root }
+            }
+        }
+        on_completion = {
+            change_variable = { name = seine_forts_built add = 1 }
+            if = {
+                limit = { NOT = { p:2450 = { has_building = fortress_building } } }
+                add_treasury = -50
+                p:2450 = {
+                    add_building_level = fortress_building 
+                    add_province_modifier = { name = crossing_construction_effort duration = 720 }
+                }
+            }
+            else = { add_treasury = -25 }
+            
+            p:2450.state = {
+                add_state_modifier = {
+                    name = state_improvement_military
+                    duration = -1
+                    mode = add
+                }
+            }
+            p:2450 = { 
+                add_province_modifier = { name = parisii_protected_trade_hub duration = -1 } 
+            }
+        }
+    }
+
+    # TASK 6: Secure Watersheds
+    secure_watersheds_task = {
+        icon = "task_conquest"
+        requires = { fortify_lutetia_crossing sennonian_unification_task }
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 2475
+                    province_id = 2448
+                    province_id = 2486
+                    province_id = 2489
+                    province_id = 2487
+                    province_id = 2468
+                    province_id = 2450
+                }
+            }
+        }
+        allow = {
+            owns_or_subject_owns = 2475
+            owns_or_subject_owns = 2448
+            
+            calc_true_if = {
+                amount >= 3
+                owns_or_subject_owns = 2486
+                owns_or_subject_owns = 2489
+                owns_or_subject_owns = 2487
+                owns_or_subject_owns = 2468
+                owns_or_subject_owns = 2450
+            }
+        }
+        on_completion = {
+            add_stability = 10
+            add_treasury = 150
+            add_2_free_province_investments = yes
+        }
+    }
+
+    # FINALE: The Seine Confederation
+    seine_confederation_task = {
+        icon = "task_atlas"
+        requires = { secure_watersheds_task subdue_the_old_guard_task }
+        final = yes
+        allow = {
+            custom_tooltip = {
+                text = "seine_forts_req_tt" 
+                var:seine_forts_built >= 1
+            }
+            custom_tooltip = {
+                text = "subdue_old_guard_tt" 
+                OR = {
+                    has_variable = parisii_old_guard_appeased
+                    AND = {
+                        has_global_variable = old_guard_revolt_fired
+                        NOT = { exists = c:P69 } # The revolt tag is dead
+                        owns_or_subject_owns = 2486
+                        owns_or_subject_owns = 2490
+                        owns_or_subject_owns = 2489
+                        owns_or_subject_owns = 2487
+                    }
+                }
+            }
+            trigger_if = {
+                limit = { is_tribal = yes }
+                OR = {
+                    has_law = increased_council_powers
+                    has_law = absolute_authority
+                }
+                job_holder:office_arbitrator = { loyalty >= 60 }
+                job_holder:office_elder = { loyalty >= 60 }
+                job_holder:office_warchief = { loyalty >= 60 }
+                job_holder:office_bodyguard = { loyalty >= 60 }
+                job_holder:office_high_priest = { loyalty >= 60 }
+                job_holder:office_wise_person = { loyalty >= 60 }
+                job_holder:office_magistrate = { loyalty >= 60 }
+                job_holder:office_apothecary = { loyalty >= 60 }
+            }
+            trigger_else = {
+                political_influence >= 100
+                stability >= 65
+            }
+        }
+        on_completion = {
+            # Reward for ending the civil war and unifying the state
+            add_stability = 10
+            trigger_event = { id = paris_mission.10 }
+        }
+    }
+}

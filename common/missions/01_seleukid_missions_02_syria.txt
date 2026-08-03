@@ -1,6 +1,7 @@
-﻿seleukid_mission_02_syria = {
+﻿seleukid_mission_02_syria = {#Finishing is 11 tasks (same as vanilla)
     header = "mission_image_seleukid"
-    icon = "seleukid_2"
+    #icon = "seleukid_2"
+    icon = "cde_greek_soldiers_marching"
 
     repeatable = no
 
@@ -41,18 +42,57 @@
     }
 
     on_start = {
-        start_mission_ai_effect = yes
-        if = {
-            limit = {
-                owns_or_subject_owns_area = syria_area
+        hidden_effect = {
+            start_mission_ai_effect = yes
+            random_list = { # roll whether the AI may release subjects in this tree (25% yes) #this is further diluted by ai_will_do #this is further diluted by ai_will_do
+                25 = { set_variable = { name = seleukid_syria_ai_release value = 1 } }
+                75 = { set_variable = { name = seleukid_syria_ai_release value = 0 } }
             }
-            set_variable = seleukid_mission_02_owns_syria_start
-        }
-        if = {
-            limit = {
-                owns_or_subject_owns_area = syria_cyrrestice_area
+            seleukid_roll_mission_pace_effect = yes
+            if = { # scale this tree's gate timers to the pace
+                limit = { is_ai = yes }
+                if = {
+                    limit = { var:seleukid_mission_pace = 5 }
+                    set_variable = { name = seleukid_syria_bypass_gate_1 days = 912 }
+                    set_variable = { name = seleukid_syria_bypass_gate_2 days = 1825 }
+                }
+                else_if = {
+                    limit = { var:seleukid_mission_pace = 10 }
+                    set_variable = { name = seleukid_syria_bypass_gate_1 days = 1825 }
+                    set_variable = { name = seleukid_syria_bypass_gate_2 days = 3650 }
+                }
+                else = {
+                    set_variable = { name = seleukid_syria_bypass_gate_1 days = 2737 }
+                    set_variable = { name = seleukid_syria_bypass_gate_2 days = 5475 }
+                }
             }
-            set_variable = seleukid_mission_02_owns_syria_cyrrestice_start
+            if = {
+                limit = {
+                    owns_or_subject_owns_area = syria_area
+                }
+                set_variable = seleukid_mission_02_owns_syria_start
+            }
+            if = {
+                limit = {
+                    owns_or_subject_owns_area = syria_cyrrestice_area
+                }
+                set_variable = seleukid_mission_02_owns_syria_cyrrestice_start
+            }
+            if = {
+                limit = {
+                    OR = {
+                        NOT = { exists = c:OBE }
+                        c:OBE = { has_land = no }
+                        c:OBE = {
+                            is_subject = yes
+                            overlord = {
+                                this = root
+                            }
+                        }
+                    }
+                }
+                set_variable = skip_olbe
+            }         
         }
     }
 
@@ -110,8 +150,7 @@
     }
 
     seleukid_mission_02_syria_task_1 = { # Syrian Dreams
-        icon = "task_diplomatic"
-
+        icon = "task_heracles"
         duration = 180
 
         highlight = {
@@ -149,6 +188,13 @@
         on_completion = {
             trigger_event = me_seleukid_02_syria.2
             show_as_tooltip = {
+                if = {
+                    limit = { has_completed_mission = seleukid_mission_01_babylonia }
+                    add_country_modifier = { name = seleukid_syrian_expansion_modifier duration = 1825 }
+                }
+                else = {
+                    add_country_modifier = { name = seleukid_syrian_expansion_modifier duration = 90 }
+                }
                 if = {
                     limit = {
                         NOT = { owns_or_subject_owns_area = syria_area }
@@ -191,7 +237,6 @@
 
     seleukid_mission_02_syria_task_2 = { # Home of the Antigonids
         requires = { seleukid_mission_02_syria_task_1 }
-
         icon = "task_conquest"
 
         highlight = {
@@ -227,8 +272,7 @@
 
     seleukid_mission_02_syria_task_3 = { # By the Amanos Mountains
         requires = { seleukid_mission_02_syria_task_1 }
-
-        icon = "task_expansion"
+        icon = "task_artemis"
 
         highlight = {
             scope:province = {
@@ -263,8 +307,7 @@
 
     seleukid_mission_02_syria_task_4 = { # Syrian Governance
         requires = { seleukid_mission_02_syria_task_2 seleukid_mission_02_syria_task_3 }
-
-        icon = "task_economical"
+        icon = "task_political"
 
         highlight = {
             scope:province = {
@@ -303,6 +346,16 @@
             }
         }
 
+        bypass = { # AI: bypass once the gate_1 timer expires
+            is_ai = yes
+            owns_or_subject_owns_area = syria_area
+            owns_or_subject_owns_area = syria_cyrrestice_area
+            NOT = { has_variable = seleukid_syria_bypass_gate_1 }
+        }
+        on_bypass = {
+            trigger_event = me_seleukid_02_syria.5
+        }
+
         on_completion = {
             trigger_event = me_seleukid_02_syria.5
             show_as_tooltip = {
@@ -322,45 +375,44 @@
         }
     }
 
-    seleukid_mission_02_syria_task_5 = { # Seleukeia in the West
+    seleukid_mission_02_syria_task_5 = { # Antioch on the Orontes
         requires = { seleukid_mission_02_syria_task_4 }
-
-        icon = "task_expansion"
+        icon = "task_zeus_cornucopia"
 
         highlight = {
             scope:province = {
-                province_id = 789
+                province_id = 790
             }
         }
 
         allow = {
             trigger_if = {
                 limit = {
-                    NOT = { owns = 789 }
+                    NOT = { owns = 790 }
                 }
-                owns = 789
+                owns = 790
             }
             trigger_if = {
                 limit = { is_ai = no }
-                hidden:p:789 = { has_city_status = yes }
+                hidden:p:790 = { has_city_status = yes }
             }
             trigger_else = { # AI fallback.
                 OR = {
                     can_pay_price = price_found_city
-                    p:789 = { has_city_status = yes }
+                    p:790 = { has_city_status = yes }
                 }
             }
         }
 
         on_completion = {
-            ai_build_city_pay_price_effect = { CITY = p:789 } # AI fallback.
-            trigger_event = me_seleukid_02_syria.6
+            ai_build_city_pay_price_effect = { CITY = p:790 } # AI fallback.
+            trigger_event = me_seleukid_02_syria.45
             show_as_tooltip = {
-                p:789 = {
+                p:790 = {
                     if = {
                         limit = {
-                            NOR = { 
-                                has_province_modifier = seleukid_royal_city_modifier 
+                            NOR = {
+                                has_province_modifier = seleukid_royal_city_modifier
                                 has_province_modifier = seleukid_royal_city_upgraded_modifier
                             }
                         }
@@ -370,27 +422,32 @@
                         }
                     }
                     if = {
-                        limit = {
-                            NOT = { has_road_towards = p:790 }
+                        limit = { NOT = { has_province_modifier = syrian_tetrapolis_modifier } }
+                        add_province_modifier = {
+                            name = syrian_tetrapolis_modifier
+                            duration = -1
                         }
-                        add_road_towards = p:790
                     }
                 }
                 if = {
-                    limit = {
-                        p:790.total_population > p:789.total_population
-                        p:790.total_population > 20
+                    limit = { owns = 789 }
+                    p:789 = {
+                        change_province_name = "Seleukeia"
+                        if = { limit = { NOT = { has_province_modifier = syrian_tetrapolis_modifier } } add_province_modifier = { name = syrian_tetrapolis_modifier duration = -1 } }
                     }
-                    custom_tooltip = seleukid_mission_02_syria_task_5_effect_tt
-                    hidden_effect = {
-                        p:790 = {
-                            while = {
-                                count = seleukid_mission_02_syria_task_5_population_effect_svalue
-                                random_pops_in_province = {
-                                    move_pop = p:789
-                                }
-                            }
-                        }
+                }
+                if = {
+                    limit = { owns = 786 }
+                    p:786 = {
+                        change_province_name = "Laodikeia"
+                        if = { limit = { NOT = { has_province_modifier = syrian_tetrapolis_modifier } } add_province_modifier = { name = syrian_tetrapolis_modifier duration = -1 } }
+                    }
+                }
+                if = {
+                    limit = { owns = 782 }
+                    p:782 = {
+                        change_province_name = "Apameia"
+                        if = { limit = { NOT = { has_province_modifier = syrian_tetrapolis_modifier } } add_province_modifier = { name = syrian_tetrapolis_modifier duration = -1 } }
                     }
                 }
             }
@@ -399,39 +456,38 @@
 
     seleukid_mission_02_syria_task_6 = { # A Mediterranean Capital
         requires = { seleukid_mission_02_syria_task_5 }
-
-        icon = "task_political"
+        icon = "task_athena"
 
         highlight = {
             scope:province = {
-                province_id = 789
+                province_id = 790
             }
         }
 
         allow = {
             trigger_if = {
                 limit = {
-                    NOT = { owns = 789 }
+                    NOT = { owns = 790 }
                 }
-                owns = 789
+                owns = 790
             }
             trigger_if = {
                 limit = {
                     has_completed_mission_task = seleukid_mission_02_syria_task_5
                     is_ai = no
-                    p:789 = { has_city_status = no }
+                    p:790 = { has_city_status = no }
                 }
-                hidden:p:789 = { has_city_status = yes }
+                hidden:p:790 = { has_city_status = yes }
             }
             trigger_if = {
                 limit = {
                     has_completed_mission_task = seleukid_mission_02_syria_task_5
                     is_ai = yes
-                    p:789 = { has_city_status = no }
+                    p:790 = { has_city_status = no }
                 }
                 can_pay_price = price_found_city
             }
-            hidden:p:789 = {
+            hidden:p:790 = {
                 custom_tooltip = {
                     text = seleukid_mission_02_syria_task_6_population_trigger_tt
                     seleukid_mission_02_syria_task_6_population_current >= seleukid_mission_02_syria_task_6_population_total
@@ -450,11 +506,17 @@
                     has_completed_mission_task = seleukid_mission_02_syria_task_5
                     is_ai = yes
                 }
-                ai_build_city_pay_price_effect = { CITY = p:789 }
+                ai_build_city_pay_price_effect = { CITY = p:790 }
             }
-            trigger_event = me_seleukid_02_syria.7
+                if = {
+                    limit = {
+                        p:790 = { is_capital = no }
+                    }
+                    custom_tooltip = seleukid_mission_02_syria_task_6_effect_tt
+                }
+            trigger_event = me_seleukid_02_syria.46
             show_as_tooltip = {
-                p:789 = {
+                p:790 = {
                     if = {
                         limit = {
                             NOT = { has_province_modifier = seleukid_royal_city_upgraded_modifier }
@@ -464,19 +526,15 @@
                             duration = -1
                         }
                     }
-                    if = {
-                        limit = { is_capital = no }
-                        custom_tooltip = seleukid_mission_02_syria_task_6_effect_tt
-                    }
                 }
             }
         }
     }
 
     seleukid_mission_02_syria_task_7 = { # Ensuring Control
+        duration = 180
         requires = { seleukid_mission_02_syria_task_8 }
-
-        icon = "task_conquest"
+        icon = "task_battle"
 
         highlight = {
             scope:province = {
@@ -529,6 +587,16 @@
             }
         }
 
+        bypass = { # AI: bypass once the gate_2 timer expires
+            is_ai = yes
+            owns_or_subject_owns_area = syria_area
+            owns_or_subject_owns_area = syria_cyrrestice_area
+            NOT = { has_variable = seleukid_syria_bypass_gate_2 }
+        }
+        on_bypass = {
+            trigger_event = me_seleukid_02_syria.10
+        }
+
         on_completion = {
             trigger_event = me_seleukid_02_syria.10
             show_as_tooltip = {
@@ -560,10 +628,8 @@
 
     seleukid_mission_02_syria_task_8 = { # Greek Settlers
         requires = { seleukid_mission_02_syria_task_4 }
-
         duration = 180
-
-        icon = "task_diplomatic"
+        icon = "task_expansion"
 
         allow = {
             trigger_if = {
@@ -607,17 +673,24 @@
 
     seleukid_mission_02_syria_task_9 = { # Through the Syrian Gates
         requires = { seleukid_mission_02_syria_task_3 }
-
         icon = "task_conquest"
 
         highlight = {
             scope:province = {
-                is_in_area = cilicia_pedias_area
+                OR = {
+                    province_id = 1873
+                    province_id = 1874
+                    province_id = 1879
+                    province_id = 795
+                }
             }
         }
 
         allow = {
-            owns_or_subject_owns_area = cilicia_pedias_area
+            owns_or_subject_owns = 1873
+            owns_or_subject_owns = 1874
+            owns_or_subject_owns = 1879
+            owns_or_subject_owns = 795
         }
 
         on_completion = {
@@ -638,9 +711,9 @@
     }
 
     seleukid_mission_02_syria_task_10 = { # The Lands of Mopsus
+        duration = 30
         requires = { seleukid_mission_02_syria_task_9 }
-
-        icon = "task_economical"
+        icon = "task_diplomatic"
 
         highlight = {
             scope:province = {
@@ -684,8 +757,7 @@
 
     seleukid_mission_02_syria_task_11 = { # The Oracle of Mallos
         requires = { seleukid_mission_02_syria_task_9 }
-
-        icon = "task_political"
+        icon = "task_apollo"
 
         highlight = {
             scope:province = {
@@ -734,11 +806,564 @@
         }
     }
 
-    seleukid_mission_02_syria_task_final = { # Home of our Nation
-        requires = { seleukid_mission_02_syria_task_6 seleukid_mission_02_syria_task_7 }
+    seleukid_mission_02_syria_task_12 = { # The Temple of Atargatis
+        requires = { seleukid_mission_02_syria_task_3 }
+        icon = "task_religion"
 
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 807
+            }
+        }
+
+        bypass = {
+            is_ai = no
+            owns_or_subject_owns = 807
+            NOT = { owns = 807 }
+        }
+
+        allow = {
+            owns_or_subject_owns = 807
+            treasury >= seleukid_temple_endowment_cost_svalue
+            war = no
+            p:807 = { has_city_status = yes }
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                add_treasury = {
+                    value = seleukid_temple_endowment_cost_svalue
+                    multiply = -1
+                }
+                custom_tooltip = seleukid_mission_02_syria_task_12_effect_tt
+                p:807 = {
+                    if = {
+                        limit = { NOT = { has_province_modifier = atargatis_temple_modifier } }
+                        add_province_modifier = { name = atargatis_temple_modifier duration = -1 }
+                    }
+                }
+            }
+            trigger_event = me_seleukid_02_syria.30
+        }
+    }
+
+    seleukid_mission_02_syria_task_13 = { # The Priests of Olba
+        requires = { seleukid_mission_02_syria_task_9 }
+        icon = "task_calm"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 1894
+            }
+        }
+
+        bypass = {
+            OR = {
+                has_variable = skip_olbe 
+                AND = {
+                    is_ai = no
+                    owns_or_subject_owns = 1894
+                    NOT = { owns = 1894 }                    
+                }
+            }
+        }
+
+        allow = {
+            owns_or_subject_owns = 1894
+            treasury >= seleukid_temple_endowment_cost_svalue
+            war = no
+            p:1894 = { has_city_status = yes }
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                add_treasury = {
+                    value = seleukid_temple_endowment_cost_svalue
+                    multiply = -1
+                }
+                custom_tooltip = seleukid_mission_02_syria_task_13_effect_tt
+                p:1894 = {
+                    if = {
+                        limit = { NOT = { has_province_modifier = olba_temple_modifier } }
+                        add_province_modifier = { name = olba_temple_modifier duration = -1 }
+                    }
+                }
+            }
+            trigger_event = me_seleukid_02_syria.31
+        }
+    }
+
+    seleukid_mission_02_syria_task_14 = { # The Treasury at Kyinda
+        requires = { seleukid_mission_02_syria_task_17 }
         icon = "task_economical"
 
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 7968
+            }
+        }
+
+        allow = {
+            owns = 7968
+            treasury >= 100
+        }
+
+        on_completion = {
+            add_treasury = -100
+            trigger_event = me_seleukid_02_syria.32
+            show_as_tooltip = {
+                add_treasury = 300
+                p:7968 = {
+                    if = {
+                        limit = { NOT = { has_province_modifier = kyinda_treasury_modifier } }
+                        add_province_modifier = {
+                            name = kyinda_treasury_modifier
+                            duration = -1
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    seleukid_mission_02_syria_task_15 = { # An Ituraean at Arca
+        requires = { seleukid_mission_02_syria_task_26 }
+        icon = "task_political"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 771
+            }
+        }
+
+        bypass = {
+            is_ai = no
+            owns_or_subject_owns = 771
+            NOT = { owns = 771 }
+        }
+
+        allow = {
+            owns_or_subject_owns = 771
+            war = no
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                custom_tooltip = seleukid_mission_02_syria_task_15_effect_tt
+                p:771 = {
+                    if = {
+                        limit = { NOT = { has_province_modifier = arca_frontier_modifier } }
+                        add_province_modifier = { name = arca_frontier_modifier duration = -1 }
+                    }
+                }
+            }
+            trigger_event = me_seleukid_02_syria.33
+        }
+    }
+
+    seleukid_mission_02_syria_task_16 = { # The Temple of Artemis Perasia at Castabala
+        requires = { seleukid_mission_02_syria_task_13 }
+        icon = "task_artemis"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 1875
+            }
+        }
+
+        bypass = {
+            is_ai = no
+            owns_or_subject_owns = 1875
+            NOT = { owns = 1875 }
+        }
+
+        allow = {
+            owns_or_subject_owns = 1875
+            treasury >= seleukid_temple_endowment_cost_svalue
+            war = no
+            p:1875 = { has_city_status = yes }
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                add_treasury = {
+                    value = seleukid_temple_endowment_cost_svalue
+                    multiply = -1
+                }
+                custom_tooltip = seleukid_mission_02_syria_task_16_effect_tt
+                p:1875 = {
+                    if = {
+                        limit = { NOT = { has_province_modifier = castabala_temple_modifier } }
+                        add_province_modifier = { name = castabala_temple_modifier duration = -1 }
+                    }
+                }
+            }
+            trigger_event = me_seleukid_02_syria.34
+        }
+    }
+
+    seleukid_mission_02_syria_task_17 = { # The Free Cities of Cilicia
+        requires = { seleukid_mission_02_syria_task_16 }
+        icon = "task_diplomatic"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 1887
+                province_id = 1881
+            }
+        }
+
+        allow = {
+            owns = 1887
+            owns = 1881
+            war = no
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                custom_tooltip = seleukid_mission_02_syria_task_17_effect_tt
+            }
+            trigger_event = me_seleukid_02_syria.35
+        }
+    }
+
+    seleukid_mission_02_syria_task_18 = { # The Elephants of Apamea
+        requires = { seleukid_mission_02_syria_task_5 }
+        icon = "task_heracles"
+        duration = 365
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 782
+            }
+        }
+
+        allow = {
+            owns = 782
+            treasury >= 350
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                add_treasury = {
+                    value = seleukid_elephants_apamea_cost_svalue
+                    multiply = -1
+                }
+                p:782 = {
+                    if = {
+                        limit = { NOT = { has_province_modifier = refounded_city_seleukid_modifier } }
+                        add_province_modifier = { name = refounded_city_seleukid_modifier duration = -1 }
+                    }
+                    set_trade_goods = elephants
+                }
+                add_country_modifier = {
+                    name = elephants_of_apamea_modifier
+                    duration = -1
+                }
+            }
+            trigger_event = me_seleukid_02_syria.36
+        }
+    }
+
+    seleukid_mission_02_syria_task_19 = { # The Moon-Temple of Carrhae
+        requires = { seleukid_mission_02_syria_task_12 }
+        icon = "task_religion"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 819
+            }
+        }
+
+        bypass = {
+            is_ai = no
+            owns_or_subject_owns = 819
+            NOT = { owns = 819 }
+        }
+
+        allow = {
+            owns_or_subject_owns = 819
+            treasury >= seleukid_temple_endowment_cost_svalue
+            war = no
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                add_treasury = {
+                    value = seleukid_temple_endowment_cost_svalue
+                    multiply = -1
+                }
+                custom_tooltip = seleukid_mission_02_syria_task_19_effect_tt
+                p:819 = {
+                    if = {
+                        limit = { NOT = { has_province_modifier = carrhae_temple_modifier } }
+                        add_province_modifier = { name = carrhae_temple_modifier duration = -1 }
+                    }
+                }
+            }
+            trigger_event = me_seleukid_02_syria.37
+        }
+    }
+
+    seleukid_mission_02_syria_task_20 = { # The Grant to Zeus of Baetocaece
+        requires = { seleukid_mission_02_syria_task_19 }
+        icon = "task_zeus_cornucopia"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 8011
+            }
+        }
+
+        bypass = {
+            is_ai = no
+            owns_or_subject_owns = 8011
+            NOT = { owns = 8011 }
+        }
+
+        allow = {
+            owns_or_subject_owns = 8011
+            treasury >= seleukid_temple_endowment_cost_svalue
+            war = no
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                add_treasury = {
+                    value = seleukid_temple_endowment_cost_svalue
+                    multiply = -1
+                }
+                custom_tooltip = seleukid_mission_02_syria_task_20_effect_tt
+                p:8011 = {
+                    if = {
+                        limit = { NOT = { has_province_modifier = baetocaece_temple_modifier } }
+                        add_province_modifier = { name = baetocaece_temple_modifier duration = -1 }
+                    }
+                }
+            }
+            trigger_event = me_seleukid_02_syria.38
+        }
+    }
+
+    seleukid_mission_02_syria_task_21 = { # The Royal Fleet
+        requires = { seleukid_mission_02_syria_task_5 }
+        icon = "task_battle"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 789
+            }
+        }
+
+        allow = {
+            owns = 789
+            treasury >= 500
+        }
+
+        on_completion = {
+            trigger_event = me_seleukid_02_syria.39
+            show_as_tooltip = {
+                add_treasury = -250
+                add_country_modifier = {
+                    name = royal_fleet_modifier
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    seleukid_mission_02_syria_task_22 = { # The Thessalians of Syria
+        duration = 120
+        requires = { seleukid_mission_02_syria_task_24 }
+        icon = "task_happiness"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                OR = {
+                    province_id = 781
+                    province_id = 811
+                }
+            }
+        }
+
+        allow = {
+            owns = 781
+            owns = 811
+        }
+
+        on_completion = {
+            trigger_event = me_seleukid_02_syria.40
+            show_as_tooltip = {
+                p:781 = { seleukid_thessalian_colony_effect = yes }
+                p:811 = { seleukid_thessalian_colony_effect = yes }
+                add_country_modifier = {
+                    name = thessalian_settlers_modifier
+                    duration = -1
+                }
+            }
+        }
+    }
+
+    seleukid_mission_02_syria_task_23 = { # The Vineyards of Chalybon
+        duration = 180
+        requires = { seleukid_mission_02_syria_task_22 }
+        icon = "task_economical"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 797
+            }
+        }
+
+        allow = {
+            owns = 797
+        }
+
+        on_completion = {
+            trigger_event = me_seleukid_02_syria.41
+            show_as_tooltip = {
+                p:797 = {
+                    set_trade_goods = wine
+                    if = {
+                        limit = { NOT = { has_province_modifier = chalybon_vineyards_modifier } }
+                        add_province_modifier = {
+                            name = chalybon_vineyards_modifier
+                            duration = -1
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    seleukid_mission_02_syria_task_24 = { # The Field of Triparadeisos
+        requires = { seleukid_mission_02_syria_task_2 }
+        icon = "task_dying_gaul"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 761
+            }
+        }
+
+        allow = {
+            owns = 761
+        }
+
+        on_completion = {
+            trigger_event = me_seleukid_02_syria.42
+            show_as_tooltip = {
+                add_legitimacy = 15
+                p:761 = {
+                    if = {
+                        limit = { NOT = { has_province_modifier = triparadeisos_modifier } }
+                        add_province_modifier = {
+                            name = triparadeisos_modifier
+                            duration = -1
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    seleukid_mission_02_syria_task_25 = { # Founding Cyrrhus
+        duration = 120
+        requires = { seleukid_mission_02_syria_task_2 }
+        icon = "task_expansion"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 794
+            }
+        }
+
+        allow = {
+            owns = 794
+        }
+
+        on_completion = {
+            trigger_event = me_seleukid_02_syria.43
+            show_as_tooltip = {
+                p:794 = {
+                    if = {
+                        limit = { NOT = { has_province_modifier = refounded_city_seleukid_modifier } }
+                        add_province_modifier = {
+                            name = refounded_city_seleukid_modifier
+                            duration = -1
+                        }
+                    }
+                    change_province_name = "Kyrrhos"
+                    seleukid_macedonian_colony_effect = yes
+                    establish_city_effect = yes
+                }
+            }
+        }
+    }
+
+    seleukid_mission_02_syria_task_26 = { # A Dynast of Cyrrhestica
+        requires = { seleukid_mission_02_syria_task_25 }
+        icon = "task_political"
+
+        potential = { is_ai = no }
+
+        highlight = {
+            scope:province = {
+                province_id = 794
+            }
+        }
+
+        bypass = {
+            is_ai = no
+            owns_or_subject_owns = 794
+            NOT = { owns = 794 }
+        }
+
+        allow = {
+            owns_or_subject_owns = 794
+            war = no
+        }
+
+        on_completion = {
+            show_as_tooltip = {
+                custom_tooltip = seleukid_mission_02_syria_task_26_effect_tt
+                add_legitimacy = 10
+            }
+            trigger_event = me_seleukid_02_syria.44
+        }
+    }
+
+    seleukid_mission_02_syria_task_final = { # Home of our Nation
+        requires = { seleukid_mission_02_syria_task_6 seleukid_mission_02_syria_task_7 }
+        icon = "task_atlas"
         final = yes
 
         allow = {
@@ -767,6 +1392,7 @@
         on_completion = {
             trigger_event = me_seleukid_02_syria.14
             show_as_tooltip = {
+                custom_tooltip = seleukid_mission_02_syria_finish_tt
                 add_2_free_province_investments = yes
             }
         }

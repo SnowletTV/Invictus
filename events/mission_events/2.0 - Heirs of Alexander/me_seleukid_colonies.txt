@@ -1,0 +1,128 @@
+﻿namespace = seleukid_colony
+
+##############################################################################
+# Shared "Hellenising colony" maturation events.
+# Scheduled by seleukid_colony_seed_hellenization_effect, 5-25 years after a
+# colony is planted. seleukid_colony.1 is a hidden province_event (its root is
+# the colony province, so it survives the timer without saved scopes); it does
+# the conversion, then shows the player a flavour popup via seleukid_colony.2.
+##############################################################################
+
+# The colony has come of age. Root = the colony province.
+seleukid_colony.1 = {
+    type = province_event
+    hidden = yes
+    is_triggered_only = yes
+
+    trigger = {
+        exists = owner
+        has_city_status = yes
+        any_pops_in_province = { NOT = { pop_culture_group = hellenic } }
+    }
+
+    immediate = {
+        owner = { save_scope_as = polis_owner }
+        # the town itself: every Hellenic-rite local, plus a few leading holdouts of any faith
+        seleukid_greco_persian_convert_pops_effect = yes
+        # the matured polis radiates once more into the surrounding country
+        every_neighbor_province = {
+            limit = {
+                is_inhabitable = yes
+                exists = owner
+                OR = { owner = scope:polis_owner  owner = { is_subject_of = scope:polis_owner } }
+            }
+            ordered_pops_in_province = {
+                order_by = pop_hapiness
+                limit = {
+                    OR = { pop_type = citizen  pop_type = freemen }
+                    NOT = { pop_culture_group = hellenic }
+                }
+                set_pop_culture = greco_persian
+                max = 1
+                check_range_bounds = no
+            }
+        }
+        # tell the player, if this colony is theirs
+        if = {
+            limit = { scope:polis_owner = { is_ai = no } }
+            save_scope_as = polis_province
+            scope:polis_owner = { trigger_event = { id = seleukid_colony.2 } }
+        }
+    }
+}
+
+# Flavour popup shown to a human owner when one of their colonies matures. Root = the owner country.
+seleukid_colony.2 = {
+    type = country_event
+    is_triggered_only = yes
+
+    title = seleukid_colony.2.t
+    desc = seleukid_colony.2.desc
+    picture = greek_city
+    goto_location = scope:polis_province
+
+    left_portrait = current_ruler
+
+    option = {
+        name = seleukid_colony.2.a
+        custom_tooltip = seleukid_colony_hellenise_tt
+    }
+}
+
+# The syriote colony has come of age. Root = the colony province. (Western twin of seleukid_colony.1)
+seleukid_colony.11 = {
+    type = province_event
+    hidden = yes
+    is_triggered_only = yes
+
+    trigger = {
+        exists = owner
+        has_city_status = yes
+        any_pops_in_province = { NOT = { pop_culture_group = hellenic } }
+    }
+
+    immediate = {
+        owner = { save_scope_as = polis_owner }
+        seleukid_syriote_convert_pops_effect = yes
+        every_neighbor_province = {
+            limit = {
+                is_inhabitable = yes
+                exists = owner
+                OR = { owner = scope:polis_owner  owner = { is_subject_of = scope:polis_owner } }
+            }
+            ordered_pops_in_province = {
+                order_by = pop_hapiness
+                limit = {
+                    OR = { pop_type = citizen  pop_type = freemen }
+                    NOT = { pop_culture_group = hellenic }
+                }
+                set_pop_culture = syriote
+                max = 1
+                check_range_bounds = no
+            }
+        }
+        if = {
+            limit = { scope:polis_owner = { is_ai = no } }
+            save_scope_as = polis_province
+            scope:polis_owner = { trigger_event = { id = seleukid_colony.12 } }
+        }
+    }
+}
+
+# Flavour popup shown to a human owner when one of their syriote colonies matures. Root = the owner country.
+seleukid_colony.12 = {
+    type = country_event
+    is_triggered_only = yes
+
+    title = seleukid_colony.2.t
+    desc = seleukid_colony.12.desc
+    picture = greek_city
+    goto_location = scope:polis_province
+
+    left_portrait = current_ruler
+
+    option = {
+        name = seleukid_colony.12.a
+        custom_tooltip = seleukid_colony_syriotise_tt
+    }
+}

@@ -16,21 +16,14 @@ galatian_invasion.1 = { # Barbarian Rumblings
 	picture = celtic_chiefs
 
 	fire_only_once = yes
-
 	trigger = {
 		NOT = { has_global_variable = galation_invasion_game_rule }
 		NOT = { has_global_variable = celtic_invasion_occurred }
 		OR = {
+			# The player decision has already checked its own availability.
+			has_variable = player_invasion_eligible
 			AND = {
-				is_ai = no
-				any_owned_province = {
-					is_in_region = galatia_region
-				}
-			}
-			is_diadochus_trigger = yes
-		}
-		OR = {
-			AND = {
+				is_diadochus_trigger = yes
 				trigger_if = {
 					limit = { c:DND = { exists = yes } }
 					c:DND = { is_ai = yes }
@@ -55,38 +48,35 @@ galatian_invasion.1 = { # Barbarian Rumblings
 					limit = { c:CEL = { exists = yes } }
 					c:CEL = { is_ai = yes }
 				}
-			}
-			has_variable = player_invasion_eligible
-		}
-		AND = {
-			current_date > 460.1.1
-			OR = {
-				c:MAC = { NOT = { owns = 379 } }
-				c:SEL = {
-					any_owned_province = {
-						is_in_region = galatia_region
-						count >= 5
+				current_date > 460.1.1
+				OR = {
+					p:379 = { NOT = { owner = c:MAC } }
+					c:SEL = {
+						any_owned_province = {
+							is_in_region = galatia_region
+							count >= 5
+						}
 					}
-				}
-				c:EGY = {
-					any_owned_province = {
-						is_in_region = galatia_region
-						count >= 5
+					c:EGY = {
+						any_owned_province = {
+							is_in_region = galatia_region
+							count >= 5
+						}
 					}
-				}
-				c:TRE = {
-					any_owned_province = {
-						is_in_region = galatia_region
-						count >= 5
+					c:TRE = {
+						any_owned_province = {
+							is_in_region = galatia_region
+							count >= 5
+						}
 					}
-				}
-				c:MAC = {
-					any_owned_province = {
-						is_in_region = galatia_region
-						count >= 5
+					c:MAC = {
+						any_owned_province = {
+							is_in_region = galatia_region
+							count >= 5
+						}
 					}
+					current_date > 475.1.1
 				}
-				current_date > 475.1.1
 			}
 		}
 	}
@@ -233,9 +223,11 @@ galatian_invasion.2 = { # Volcae Brethren
 
 	option = {
 		name = galatian_invasion.2.a
+		custom_tooltip = galatian_invasion.2.a.tt
 
 		add_political_influence = -40
 		add_treasury = -20
+		current_ruler = { add_martial = 1 }
 
 		set_variable = {
 			name = volcae_brethren
@@ -266,6 +258,38 @@ galatian_invasion.2 = { # Volcae Brethren
 				}
 				force_white_peace = THIS
 			}
+		}
+	}
+
+	option = {
+		name = galatian_invasion.2.b
+		custom_tooltip = galatian_invasion.2.b.tt
+
+		add_political_influence = -15
+		add_treasury = -5
+		current_ruler = { add_finesse = 1 }
+
+		# The tribes support the migration, but Tectosagia does not pay to
+		# settle their existing conflicts before the expedition begins.
+		set_variable = {
+			name = volcae_brethren
+			value = 1
+		}
+	}
+
+	option = {
+		name = galatian_invasion.2.c
+		custom_tooltip = galatian_invasion.2.c.tt
+
+		add_political_influence = -5
+		add_aggressive_expansion = 2
+		current_ruler = { add_charisma = 1 }
+
+		# A public promise of future land is enough to keep the three tribes
+		# coordinated, but it advertises our intentions to the Anatolian states.
+		set_variable = {
+			name = volcae_brethren
+			value = 1
 		}
 	}
 
@@ -495,6 +519,9 @@ galatian_invasion.10 = {
 			}
 			save_scope_as = first_galatian_war_scope
 		}
+		c:TEC = {
+			trigger_event = { id = galatian_invasion.13 days = 1 }
+		}
 	}
 
 	option = {
@@ -539,7 +566,7 @@ galatian_invasion.11 = { # Help from Thrace
 
 		if = {
 			limit = {
-				NOT = { war_with = scope:first_galatian_war_scope }
+				NOT = { war_with = scope:pella_attacker }
 			}
 			add_to_war = {
 				target = scope:first_galatian_war_scope
@@ -552,6 +579,25 @@ galatian_invasion.11 = { # Help from Thrace
 	option = {
 		name = galatian_invasion.11.b
 	}
+}
+
+galatian_invasion.13 = { # Player update - Pella
+	type = country_event
+	title = galatian_invasion.13.t
+	desc = galatian_invasion.13.desc
+
+	left_portrait = scope:pella_attacker.current_ruler
+	right_portrait = scope:pella_defender.current_ruler
+	picture = city_siege
+	goto_location = p:379
+
+	trigger = {
+		tag = TEC
+		is_ai = no
+		has_variable = player_invasion_eligible
+	}
+
+	option = { name = galatian_invasion.13.a }
 }
 
 galatian_invasion.12 = { # Hellenic Notification of Invasion
@@ -672,25 +718,13 @@ galatian_invasion.20 = { # Second Wave
 			}
 			save_scope_as = second_galatian_war_scope
 		}
+		c:TEC = {
+			trigger_event = { id = galatian_invasion.23 days = 1 }
+		}
 	}
 
 	option = {
 		name = galatian_invasion.20.a
-
-		random_country = {
-			limit = {
-				capital_scope = {
-					OR = {
-						is_in_area = boeotia_area
-						is_in_area = central_greece_area
-						is_in_area = aetolia_area
-					}
-				}
-				is_subject = no
-				NOT = { owns = 424 }
-			}
-			trigger_event = { id = galatian_invasion.21 days = 1 }
-		}
 	}
 
 	after = {
@@ -804,6 +838,25 @@ galatian_invasion.22 = { # Hellenic Notification of Invasion
 	}
 }
 
+galatian_invasion.23 = { # Player update - Delphi
+	type = country_event
+	title = galatian_invasion.23.t
+	desc = galatian_invasion.23.desc
+
+	left_portrait = scope:delphi_attacker.current_ruler
+	right_portrait = scope:delphi_defender.current_ruler
+	picture = city_siege
+	goto_location = p:424
+
+	trigger = {
+		tag = TEC
+		is_ai = no
+		has_variable = player_invasion_eligible
+	}
+
+	option = { name = galatian_invasion.23.a }
+}
+
 galatian_invasion.30 = {
 	type = country_event
 	title = "galatian_invasion.30.t"
@@ -847,6 +900,9 @@ galatian_invasion.30 = {
 			}
 			save_scope_as = tylis_war_scope
 		}
+		c:TEC = {
+			trigger_event = { id = galatian_invasion.33 days = 1 }
+		}
 	}
 
 	option = {
@@ -883,7 +939,24 @@ galatian_invasion.32 = { # Hellenic Notification of Invasion
 	}
 }
 
-# .33 reserved for scripted peace
+galatian_invasion.33 = { # Player update - Mesembria
+	type = country_event
+	title = galatian_invasion.33.t
+	desc = galatian_invasion.33.desc
+
+	left_portrait = scope:tylis_attacker.current_ruler
+	right_portrait = scope:tylis_defender.current_ruler
+	picture = city_siege
+	goto_location = p:480
+
+	trigger = {
+		tag = TEC
+		is_ai = no
+		has_variable = player_invasion_eligible
+	}
+
+	option = { name = galatian_invasion.33.a }
+}
 
 galatian_invasion.34 = { # Thracian Gauls - Start Migration
 	type = country_event
@@ -1084,7 +1157,14 @@ galatian_invasion.40 = { # Anatolia Invasion - Trocmeria
 			limit = {
 				scope:tavium_attacker = { is_ai = yes }
 				NOT = {
-					any_country = { has_variable = volcae_brethren }
+					any_country = {
+						OR = {
+							tag = TEC
+							tag = TOL
+							tag = TOI
+						}
+						has_variable = volcae_brethren
+					}
 				}
 			}
 			scope:tavium_defender = {
@@ -1156,8 +1236,16 @@ galatian_invasion.43 = { # Special Peace - Trocmeria
 		owns = 194
 	}
 
-	option = { # Give land and make subject
+	option = { # End the war and grant settlement land
 		name = galatian_invasion.43.a
+
+		every_current_war = {
+			limit = {
+				any_war_attacker = { this = scope:tavium_attacker }
+				any_war_defender = { this = ROOT }
+			}
+			force_white_peace = THIS
+		}
 
 		if = {
 			limit = { has_global_variable = phrygian_invasion_flag }
@@ -1410,7 +1498,14 @@ galatian_invasion.50 = { # Anatolia Invasion - Tectosagia
 			limit = {
 				scope:ankyra_attacker = { is_ai = yes }
 				NOT = {
-					any_country = { has_variable = volcae_brethren }
+					any_country = {
+						OR = {
+							tag = TEC
+							tag = TOL
+							tag = TOI
+						}
+						has_variable = volcae_brethren
+					}
 				}
 			}
 			scope:ankyra_defender = {
@@ -1433,8 +1528,16 @@ galatian_invasion.53 = { # Special Peace - Tectosagia
 		war_with = scope:ankyra_attacker
 	}
 
-	option = { # Give land and make subject
+	option = { # End the war and grant settlement land
 		name = galatian_invasion.53.a
+
+		every_current_war = {
+			limit = {
+				any_war_attacker = { this = scope:ankyra_attacker }
+				any_war_defender = { this = ROOT }
+			}
+			force_white_peace = THIS
+		}
 
 		if = {
 			limit = { has_global_variable = phrygian_invasion_flag }
@@ -1535,7 +1638,14 @@ galatian_invasion.60 = { # Anatolia Invasion - Tolistobogia
 			limit = {
 				scope:pessinous_attacker = { is_ai = yes }
 				NOT = {
-					any_country = { has_variable = volcae_brethren }
+					any_country = {
+						OR = {
+							tag = TEC
+							tag = TOL
+							tag = TOI
+						}
+						has_variable = volcae_brethren
+					}
 				}
 			}
 			scope:pessinous_defender = {
@@ -1558,8 +1668,16 @@ galatian_invasion.63 = { # Special Peace - Tolistobogia
 		war_with = scope:pessinous_attacker
 	}
 
-	option = { # Give land and make subject
+	option = { # End the war and grant settlement land
 		name = galatian_invasion.63.a
+
+		every_current_war = {
+			limit = {
+				any_war_attacker = { this = scope:pessinous_attacker }
+				any_war_defender = { this = ROOT }
+			}
+			force_white_peace = THIS
+		}
 
 		if = {
 			limit = { has_global_variable = phrygian_invasion_flag }
@@ -1712,6 +1830,7 @@ galatian_invasion.71 = { # Forming Galatia for AI
 
 	trigger = {
 		NOT = { has_global_variable = galation_invasion_game_rule }
+		NOT = { exists = c:GLT }
 		OR = {
 			country_culture_group = gallic
 			primary_culture = galatian
@@ -1893,8 +2012,6 @@ galatian_invasion.72 = { # Notification of Galatia
 	left_portrait = scope:new_galatians.current_ruler
 	right_portrait = current_ruler
 	picture = celtic_village
-
-	fire_only_once = yes
 
 	option = {
 		name = galatian_invasion.72.a
@@ -2167,6 +2284,7 @@ galatian_invasion.90 = { # Mercenary State
 					province_id = 1941
 				}
 			}
+			save_scope_as = merc_st_city
 		}
 		scope:player = {
 			pay_price = create_merc_state_price

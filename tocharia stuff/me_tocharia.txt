@@ -1,13 +1,13 @@
-# TOCHARIAN MISSION EVENTS
-
 namespace = TOC
 
+
+#task_10's on_completion.
 
 country_event = {
     id = TOC_Toad_Conquest_Choice
     title = TOC_Toad_Conquest_Choice.t
     desc = TOC_Toad_Conquest_Choice.desc
-    picture = GENERIC_EVENT_BG    
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
 
     diplomatic
 
@@ -15,20 +15,57 @@ country_event = {
 
     immediate = {}
 
-    option = { # Option A
+    option = { # Warriors of the highlands
         name = TOC_Toad_Conquest_Choice.a
+        add_country_modifier = {
+            name = TOC_Mountain_Warfare
+            duration = -1
+        }
     }
 
-    option = { # Option B
+    option = { # Settle the mountain
         name = TOC_Toad_Conquest_Choice.b
+
+        # Annexation happens first, before any modifier/variable effects,
+        # since applying province modifiers to a subject's territory can
+        # cause issues.
+        P:6771 = {
+            set_conquered_by = ROOT
+        }
+
+        P:6771 = {
+            add_permanent_province_modifier = {
+                name = TOC_mountain_life
+                duration = -1
+            }
+        }
+
+        area:Pamir_area = {
+            every_area_province = {
+                limit = {
+                    terrain = mountain
+                    NOT = { province_id = 6771 }
+                }
+                add_permanent_province_modifier = {
+                    name = TOC_mountain_life_small
+                    duration = -1
+                }
+            }
+        }
+
+        set_variable = {
+            name = TOC_me_mountain_cities
+        }
     }
 }
+
+#task_18's on_completion.
 
 country_event = {
     id = TOC_Tayuan_Choice
     title = TOC_Tayuan_Choice.t
     desc = TOC_Tayuan_Choice.desc
-    picture = GENERIC_EVENT_BG    
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
 
     diplomatic
 
@@ -36,21 +73,190 @@ country_event = {
 
     immediate = {}
 
-    option = { # Option A
+    option = { # Attempt to buy
+        trigger = {
+            P:6772 = {
+                has_owner = yes
+                owner = {
+                    owns = 6773
+                    owns = 6774
+                    owns = 6775
+                }
+            }
+        }
         name = TOC_Tayuan_Choice.a
+        P:6772 = {
+            owner = {
+                trigger_event = {
+                    id = TOC_Tayuan_Buy
+                }
+            }
+        }
     }
 
-    option = { # Option B
+    option = { # March directly 
+        trigger = {
+            P:6772 = {
+                has_owner = yes
+                owner = {
+                    owns = 6773
+                    owns = 6774
+                    owns = 6775
+                }
+            }
+        }
         name = TOC_Tayuan_Choice.b
+        P:6772 = {
+            owner = {
+                save_scope_as = toc_former_tayuan_owner
+            }
+        }
+        scope:toc_former_tayuan_owner = {
+            trigger_event = {
+                id = TOC_Invasion
+            }
+        }
+        P:6772 = {
+            set_conquered_by = ROOT
+        }
+    }
+
+    option = { # No single clear owner 
+        trigger = {
+            NOT = {
+                P:6772 = {
+                    has_owner = yes
+                    owner = {
+                        owns = 6773
+                        owns = 6774
+                        owns = 6775
+                    }
+                }
+            }
+        }
+        name = TOC_Tayuan_Choice.c
+        add_country_modifier = {
+            name = TOC_Tayuan_Messy
+            duration = 1825
+        }
     }
 }
 
+country_event = {
+    id = TOC_Tayuan_Buy
+    title = TOC_Tayuan_Buy.t
+    desc = TOC_Tayuan_Buy.desc
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
+
+    diplomatic
+
+    trigger = {}
+
+    immediate = {}
+
+    option = { # Accept
+        name = TOC_Tayuan_Buy.a
+        add_treasury = 150
+        c:TOC = {
+            add_treasury = -150
+        }
+        region:himalaya_region = {
+            every_region_province = {
+                limit = {
+                    owner = ROOT
+                }
+                set_conquered_by = c:TOC
+            }
+        }
+    }
+
+    option = { # Refuse
+        name = TOC_Tayuan_Buy.b
+        c:TOC = {
+            trigger_event = {
+                id = TOC_Tayuan_Buy_Refusal
+            }
+        }
+    }
+}
+
+country_event = {
+    id = TOC_Tayuan_Buy_Refusal
+    title = TOC_Tayuan_Buy_Refusal.t
+    desc = TOC_Tayuan_Buy_Refusal.desc
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
+
+    diplomatic
+
+    trigger = {}
+
+    immediate = {}
+
+    option = { # Let it go
+        name = TOC_Tayuan_Buy_Refusal.a
+    }
+
+    option = { # March on it 
+        name = TOC_Tayuan_Buy_Refusal.b
+        P:6772 = {
+            owner = {
+                save_scope_as = toc_former_tayuan_owner
+            }
+        }
+        scope:toc_former_tayuan_owner = {
+            trigger_event = {
+                id = TOC_Invasion
+            }
+        }
+        P:6772 = {
+            set_conquered_by = ROOT
+        }
+    }
+}
+
+country_event = {
+    id = TOC_Invasion
+    title = TOC_Invasion.t
+    desc = TOC_Invasion.desc
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
+
+    diplomatic
+
+    trigger = {}
+
+    immediate = {}
+
+    option = { # Capitulate
+        name = TOC_Invasion.a
+        region:himalaya_region = {
+            every_region_province = {
+                limit = {
+                    owner = ROOT
+                }
+                set_conquered_by = c:TOC
+            }
+        }
+        add_legitimacy = -10
+    }
+
+    option = { # Declare war
+        name = TOC_Invasion.b
+        declare_war_with_wargoal = {
+            war_goal = conquer_wargoal
+            province = 6772
+            target = c:TOC
+        }
+    }
+}
+
+
+# task_12's on_completion. 
 
 country_event = {
     id = TOC_Bactria_Choice
     title = TOC_Bactria_Choice.t
     desc = TOC_Bactria_Choice.desc
-    picture = GENERIC_EVENT_BG    
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
 
     diplomatic
 
@@ -58,20 +264,217 @@ country_event = {
 
     immediate = {}
 
-    option = { # Option A
+    option = { # Attempt to buy
+        trigger = {
+            P:6720 = { has_owner = yes }
+        }
         name = TOC_Bactria_Choice.a
+        P:6720 = {
+            owner = {
+                trigger_event = {
+                    id = TOC_Bactria_Buy
+                }
+            }
+        }
     }
 
-    option = { # Option B
+    option = { # Seize directly 
+        trigger = {
+            P:6720 = { has_owner = yes }
+        }
         name = TOC_Bactria_Choice.b
+        P:6720 = {
+            owner = {
+                save_scope_as = toc_former_bactria_owner
+            }
+        }
+        scope:toc_former_bactria_owner = {
+            trigger_event = {
+                id = TOC_Bactria_Invasion
+            }
+        }
+        P:6720 = {
+            set_conquered_by = ROOT
+        }
+    }
+
+    option = { # Not owned 
+        trigger = {
+            NOT = {
+                P:6720 = { has_owner = yes }
+            }
+        }
+        name = TOC_Bactria_Choice.c
+        P:6720 = {
+            set_conquered_by = ROOT
+        }
     }
 }
+
+country_event = {
+    id = TOC_Bactria_Buy
+    title = TOC_Bactria_Buy.t
+    desc = TOC_Bactria_Buy.desc
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
+
+    diplomatic
+
+    trigger = {}
+
+    immediate = {}
+
+    option = { # Accept the offer
+        name = TOC_Bactria_Buy.a
+        add_treasury = 100
+        c:TOC = {
+            add_treasury = -100
+        }
+        region:himalaya_region = {
+            every_region_province = {
+                limit = {
+                    owner = ROOT
+                }
+                set_conquered_by = c:TOC
+            }
+        }
+    }
+
+    option = { # Refuse
+        name = TOC_Bactria_Buy.b
+        c:TOC = {
+            trigger_event = {
+                id = TOC_Bactria_Buy_Refusal
+            }
+        }
+    }
+}
+
+country_event = {
+    id = TOC_Bactria_Buy_Refusal
+    title = TOC_Bactria_Buy_Refusal.t
+    desc = TOC_Bactria_Buy_Refusal.desc
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
+
+    diplomatic
+
+    trigger = {}
+
+    immediate = {}
+
+    option = { # Let it go
+        name = TOC_Bactria_Buy_Refusal.a
+    }
+
+    option = { # Seize 6720 
+        name = TOC_Bactria_Buy_Refusal.b
+        P:6720 = {
+            owner = {
+                save_scope_as = toc_former_bactria_owner
+            }
+        }
+        scope:toc_former_bactria_owner = {
+            trigger_event = {
+                id = TOC_Bactria_Invasion
+            }
+        }
+        P:6720 = {
+            set_conquered_by = ROOT
+        }
+    }
+}
+
+country_event = {
+    id = TOC_Bactria_Invasion
+    title = TOC_Bactria_Invasion.t
+    desc = TOC_Bactria_Invasion.desc
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
+
+    diplomatic
+
+    trigger = {}
+
+    immediate = {
+        overlord = {
+            save_scope_as = bactria_overlord
+        }
+    }
+
+    option = { # Give it up
+        name = TOC_Bactria_Invasion.a
+        region:himalaya_region = {
+            every_region_province = {
+                limit = {
+                    owner = ROOT
+                }
+                set_conquered_by = c:TOC
+            }
+        }
+        add_legitimacy = -10
+    }
+
+    option = { # Declare war directly 
+        trigger = {
+            is_subject = no
+        }
+        name = TOC_Bactria_Invasion.b
+        declare_war_with_wargoal = {
+            war_goal = conquer_wargoal
+            province = 6720
+            target = c:TOC
+        }
+    }
+
+    option = { # Appeal to the overlord 
+        trigger = {
+            is_subject = yes
+        }
+        name = TOC_Bactria_Invasion.c
+        save_scope_as = toc_bactria_subject
+        scope:bactria_overlord = {
+            trigger_event = {
+                id = TOC_Bactria_Overlord_Response
+                days = 5
+            }
+        }
+    }
+}
+
+country_event = {
+    id = TOC_Bactria_Overlord_Response
+    title = TOC_Bactria_Overlord_Response.t
+    desc = TOC_Bactria_Overlord_Response.desc
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
+
+    diplomatic
+
+    trigger = {}
+
+    immediate = {}
+
+    option = { # Refuse to help 
+        name = TOC_Bactria_Overlord_Response.a
+    }
+
+    option = { # Back the subject 
+        name = TOC_Bactria_Overlord_Response.b
+        scope:toc_bactria_subject = {
+            declare_war_with_wargoal = {
+                war_goal = conquer_wargoal
+                province = 6720
+                target = c:TOC
+            }
+        }
+    }
+}
+
+
+# task_11's on_completion.
 
 country_event = {
     id = TOC_Tibet_Conquest_Choice
     title = TOC_Tibet_Conquest_Choice.t
     desc = TOC_Tibet_Conquest_Choice.desc
-    picture = GENERIC_EVENT_BG    
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
 
     diplomatic
 
@@ -79,21 +482,97 @@ country_event = {
 
     immediate = {}
 
-    option = { # Option A
+    option = { # Extractive approach
         name = TOC_Tibet_Conquest_Choice.a
+        area:gilgit_area = {
+            every_area_province = {
+                limit = {
+                    has_minable_trade_good_trigger = yes
+                }
+                add_permanent_province_modifier = {
+                    name = TOC_tibet_mines
+                    duration = -1
+                }
+            }
+        }
+        area:suvarna_gotra_area = {
+            every_area_province = {
+                limit = {
+                    has_minable_trade_good_trigger = yes
+                }
+                add_permanent_province_modifier = {
+                    name = TOC_tibet_mines
+                    duration = -1
+                }
+            }
+        }
+        area:zhangzhung_area = {
+            every_area_province = {
+                limit = {
+                    has_minable_trade_good_trigger = yes
+                }
+                add_permanent_province_modifier = {
+                    name = TOC_tibet_mines
+                    duration = -1
+                }
+            }
+        }
     }
 
-    option = { # Option B
+    option = { # Commercial approach
         name = TOC_Tibet_Conquest_Choice.b
+        P:5557 = {
+            if = {
+                limit = {
+                    NOR = {
+                        has_province_rank = city
+                        has_province_rank = city_metropolis
+                    }
+                }
+                custom_tooltip = "time_to_complete_city_tt"
+                hidden_effect = {
+                    add_permanent_province_modifier = {
+                        name = founding_city_in_progress
+                        duration = 730
+                    }
+                }
+            }
+        }
+        area:gilgit_area = {
+            every_area_state = {
+                add_state_modifier = {
+                    name = TOC_Tibet_trade
+                    duration = -1
+                }
+            }
+        }
+        area:suvarna_gotra_area = {
+            every_area_state = {
+                add_state_modifier = {
+                    name = TOC_Tibet_trade
+                    duration = -1
+                }
+            }
+        }
+        area:zhangzhung_area = {
+            every_area_state = {
+                add_state_modifier = {
+                    name = TOC_Tibet_trade
+                    duration = -1
+                }
+            }
+        }
     }
 }
 
+
+# task_17's on_completion, if tribal.
 
 country_event = {
     id = TOC_Tribe_Choice
     title = TOC_Tribe_Choice.t
     desc = TOC_Tribe_Choice.desc
-    picture = GENERIC_EVENT_BG    
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
 
     diplomatic
 
@@ -101,20 +580,52 @@ country_event = {
 
     immediate = {}
 
-    option = { # Option A
+    option = { # Remain a tribe
         name = TOC_Tribe_Choice.a
+        current_ruler = {
+            add_popularity = 25
+        }
+        add_stability = 20
     }
 
-    option = { # Option B
+    option = { # Become a monarchy
         name = TOC_Tribe_Choice.b
+        change_government = aristocratic_monarchy
+        add_stability = -10
+    }
+
+    option = { # Become a republic
+        name = TOC_Tribe_Choice.c
+        change_government = democratic_republic
+        add_stability = -10
+    }
+
+    option = { # Decentralize further - hidden unless the ruler is unstable enough to attempt it
+        trigger = {
+            current_ruler = {
+                OR = {
+                    has_trait = lunatic
+                    has_trait = reckless
+                    has_trait = rash
+                    has_trait = foolish
+                }
+            }
+        }
+        name = TOC_Tribe_Choice.d
+        change_government = tribal_chiefdom
+        add_stability = -15
+        add_centralization = -75
     }
 }
+
+
+# task_14's on_completion.
 
 country_event = {
-    id = TOC_Saka_Situation
-    title = TOC_Saka_Situation.t
-    desc = TOC_Saka_Situation.desc
-    picture = GENERIC_EVENT_BG    
+    id = TOC_Saka_Choice
+    title = TOC_Saka_Choice.t
+    desc = TOC_Saka_Choice.desc
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
 
     diplomatic
 
@@ -122,21 +633,123 @@ country_event = {
 
     immediate = {}
 
-    option = { # Option A
-        name = TOC_Saka_Situation.a
+    option = { # Suppress
+        name = TOC_Saka_Choice.suppress
+        set_variable = {
+            name = TOC_Reject_Nomads
+        }
+        random_country_culture = {
+            limit = {
+                is_culture = saka
+            }
+            set_country_culture_right = slaves
+        }
+        random_country_culture = {
+            limit = {
+                is_culture = culture:saka
+            }
+            add_country_culture_modifier = {
+                name = rights_revoked
+                duration = 7300 #20 years
+            }
+        }
+        area:north_tarim_area = {
+            every_area_province = {
+                add_province_modifier = {
+                    name = TOC_Cultural_Supremacy
+                    duration = 10950 #30 years
+                }
+            }
+        }
+        area:south_tarim_area = {
+            every_area_province = {
+                add_province_modifier = {
+                    name = TOC_Cultural_Supremacy
+                    duration = 10950 #30 years
+                }
+            }
+        }
+        area:tarim_area = {
+            every_area_province = {
+                add_province_modifier = {
+                    name = TOC_Cultural_Supremacy
+                    duration = 10950 #30 years
+                }
+            }
+        }
     }
 
-    option = { # Option B
-        name = TOC_Saka_Situation.b
+    option = { # Ignore
+        name = TOC_Saka_Choice.ignore
+        add_country_modifier = {
+            name = TOC_Saka_Ignored
+            duration = 10950
+        }
+    }
+
+    option = { # Accept - Saka not yet citizen-status
+        trigger = {
+            any_country_culture = {
+                count >= 1
+                is_culture = saka
+                is_integrated = no
+            }
+        }
+        name = TOC_Saka_Choice.accept
+        random_country_culture = {
+            limit = {
+                is_culture = saka
+                is_integrated = no
+            }
+            set_country_culture_right = citizen
+        }
+    }
+
+    option = { # Accept - Saka already citizen-status
+        trigger = {
+            any_country_culture = {
+                count >= 1
+                is_culture = saka
+                is_integrated = yes
+            }
+        }
+        name = TOC_Saka_Choice.accept
+        add_stability = 20
+    }
+
+    option = { # Integrate
+        name = TOC_Saka_Choice.integrate
+        set_variable = {
+            name = TOC_Nomad_Influence
+        }
+        random_country_culture = {
+            limit = {
+                is_culture = saka
+                is_integrated = no
+            }
+            set_country_culture_right = citizen
+        }
+        add_stability = -5
+        random_country_culture = {
+            limit = {
+                is_culture = culture:saka
+            }
+            add_country_culture_modifier = {
+                name = SakaChoice_integration_modifier
+                duration = -1
+            }
+        }
     }
 }
 
+
+#task_15's on_completion.
 
 country_event = {
     id = TOC_Language_Event
     title = TOC_Language_Event.t
     desc = TOC_Language_Event.desc
-    picture = GENERIC_EVENT_BG    
+    picture = GENERIC_EVENT_BG    # swap for a theme in gfx/interface/illustrations/events
 
     diplomatic
 
@@ -144,11 +757,9 @@ country_event = {
 
     immediate = {}
 
-    option = { # Option A
+    option = {
         name = TOC_Language_Event.a
-    }
-
-    option = { # Option B
-        name = TOC_Language_Event.b
+        add_innovation = 3
     }
 }
+

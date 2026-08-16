@@ -1,6 +1,7 @@
 ﻿# Parisii Seine Missions Event Script File
 # Standardized Sequential Event Map: 
 # Mission Tree 1 has events me_parisii.1 thru me_parisii.18
+# Mission Tree 2 pending
 
 namespace = me_parisii
 
@@ -22,7 +23,7 @@ me_parisii.1 = {
             add_province_modifier = { name = lutetian_river_guilds duration = -1 }
         }
         add_treasury = 100
-        add_centralization = -3
+        add_centralization = -5
     }
 
     option = {
@@ -31,7 +32,7 @@ me_parisii.1 = {
             add_province_modifier = { name = seine_river_tolls duration = -1 }
         }
         add_political_influence = -5
-        add_centralization = 3
+        add_centralization = 5
     }
 }
 
@@ -227,6 +228,7 @@ me_parisii.5 = {
 
     option = {
         name = me_parisii.5.a # We will not submit!
+        save_scope_as = unifying_neighbor
         scope:parisii_player_scope = {
             trigger_event = { id = me_parisii.7 days = 2 }
         }
@@ -262,15 +264,20 @@ me_parisii.7 = {
 
     option = {
         name = me_parisii.7.a # To arms!
-        area:senonia_area = {
-            every_area_province = {
-                if = {
-                    limit = {
-                        has_owner = yes
-                        owner = scope:parisii_player_scope
-                    }
-                    add_claim = root
-                }
+        if = {
+            limit = {
+                scope:unifying_neighbor = { tag = SNN }
+            }
+            area:senonia_area = {
+                add_provincial_claim_effect = yes
+            }
+        }
+        if = {
+            limit = {
+                scope:unifying_neighbor = { tag = CTL }
+            }
+            area:suaeuconia_area = {
+                add_provincial_claim_effect = yes
             }
         }
     }
@@ -408,7 +415,10 @@ me_parisii.9 = {
                 set_variable = is_generated_hero
             }
         }
-    }
+
+        # Save traditionalist_spokesperson as a country variable to persist across event borders safely
+        set_variable = { name = traditionalist_spokesperson_var value = scope:traditionalist_spokesperson }
+    }    
 
     option = {
         name = me_parisii.9.a # Buy loyalty via concessions
@@ -436,7 +446,12 @@ me_parisii.10 = {
     picture = throneroom
     left_portrait = current_ruler
     right_portrait = scope:traditionalist_spokesperson
-
+    
+    immediate = {
+        # Restore character scope from country variable across delayed border
+        var:traditionalist_spokesperson_var = { save_scope_as = traditionalist_spokesperson }
+    }
+    
     option = {
         name = me_parisii.10.a # Pay up
         add_stability = -10
@@ -451,6 +466,7 @@ me_parisii.10 = {
                         current_ruler = { popularity < 50 }
                     }
                     set_variable = parisii_old_guard_appeased
+                        trigger_event = { id = me_parisii.10_success days = 1 }
                 }
                 55 = { # Bribe fails, war fires anyway lol
                     modifier = {
@@ -470,6 +486,26 @@ me_parisii.10 = {
     }
 }
 
+# me_parisii.10_success - Traditionalists Pacified
+me_parisii.10_success = {
+    type = country_event
+    title = me_parisii.10_success.t
+    desc = me_parisii.10_success.desc
+    picture = celtic_chiefs
+    left_portrait = current_ruler
+    right_portrait = scope:traditionalist_spokesperson
+    
+    immediate = {
+        # Restore character scope from country variable across delayed border
+        var:traditionalist_spokesperson_var = { save_scope_as = traditionalist_spokesperson }
+    }
+
+    option = {
+        name = me_parisii.10_success.a # The peace is bought - gold solves most issues.
+        custom_tooltip = appease_old_guard_success_tt
+    }
+}
+
 # me_parisii.11 - Secession War (Old Guard Breaks Away)
 # Secedes forest/hill/mountains. Dynamically establishes capital at existing fort.
 # Instantly builds a fort in the rebel capital if none exists.
@@ -482,22 +518,8 @@ me_parisii.11 = {
     right_portrait = scope:traditionalist_spokesperson
 
     immediate = {
-        # Dynamic rebel capital fortress check
-        if = {
-            limit = {
-                p:2448 = { has_building = fortress_building }
-            }
-            p:2448 = { save_scope_as = parisii_rebel_capital }
-        }
-        else_if = {
-            limit = {
-                p:2486 = { has_building = fortress_building }
-            }
-            p:2486 = { save_scope_as = parisii_rebel_capital }
-        }
-        else = {
-            p:2448 = { save_scope_as = parisii_rebel_capital }
-        }
+        p:2448 = { save_scope_as = rebel_capital }
+        var:traditionalist_spokesperson_var = { save_scope_as = traditionalist_spokesperson }
     }
 
     option = {
@@ -505,7 +527,7 @@ me_parisii.11 = {
         add_stability = -10
 
         # Secession war logic nested inside Option Click
-        set_global_variable = { name = parisii_old_guard_revolt_fired value = yes }
+        set_variable = { name = parisii_old_guard_revolt_fired value = yes }
 
         # INSTANT FORT FAILSAFE: Ensure the capital tile has a fort
         scope:rebel_capital = {
@@ -541,7 +563,6 @@ me_parisii.11 = {
                 OR = {
                     province_id = 2486
                     province_id = 2490
-                    province_id = 2489
                     province_id = 2487
                 }
                 OR = {
@@ -549,7 +570,7 @@ me_parisii.11 = {
                     civilization_value < 35
                 }
             }
-            set_owned_by = scope:old_guard_revolt_scope
+            set_owned_by = c:P69
         }
 
         # Proportional threat army spawning based on spokesperson class
@@ -572,7 +593,7 @@ me_parisii.11 = {
                 sub_unit = light_cavalry
                 sub_unit = light_infantry
                 sub_unit = light_infantry
-                sub_unit = light_infantry
+                sub_unit = archers
                 sub_unit = archers
             }
         }
@@ -593,7 +614,6 @@ me_parisii.11 = {
                 sub_unit = light_infantry
                 sub_unit = spearmen
                 sub_unit = spearmen
-                sub_unit = spearmen #need to check unit names in invictus
                 sub_unit = archers
                 sub_unit = archers
             }
@@ -642,12 +662,12 @@ me_parisii.12 = {
         custom_tooltip = me_parisii.12.a.tt
         if = {
             limit = {
-                has_law = coin_minting_initiative
+                has_law = coin_minting_law
             }
             add_treasury = 150 # High-value alternate gold
         }
         else = {
-            change_law = coin_minting_initiative
+            change_law = coin_minting_law
             add_country_modifier = {
                 name = parisii_stater_mint
                 duration = -1
@@ -660,12 +680,12 @@ me_parisii.12 = {
         custom_tooltip = me_parisii.12.b.tt
         if = {
             limit = {
-                has_law = barter_economy_statutes
+                has_law = barter_economy_law
             }
             add_political_influence = 50 # High-value alternate PI
         }
         else = {
-            change_law = barter_economy_statutes
+            change_law = barter_economy_law
             add_country_modifier = {
                 name = parisii_barter_network
                 duration = -1
@@ -703,9 +723,11 @@ me_parisii.13 = {
             add_charisma = 1
             add_zeal = 1
         }
-        change_country_name = SEINE_CONFEDERATION
-        change_country_adjective = SEINE_CONFEDERATION_ADJ
-
+        change_country_name = "SEINE_CONFEDERATION"
+        change_country_adjective = "SEINE_CONFEDERATION_ADJ"
+        hidden_effect = {
+            change_country_color = ocean_blue
+        }
         # Apply capital city permanent modifier
         p:2475 = {
             add_permanent_province_modifier = {
@@ -803,14 +825,19 @@ me_parisii.14 = {
         always = yes
     }
 
+    immediate = {
+        current_ruler = { save_scope_as = tribal_ruler }
+    }
+
     option = {
         name = me_parisii.14.a # Reform into a Plutocratic Merchant Republic (Nautae Parisii Senate)
         add_stability = -10
         add_political_influence = 50
         change_government = plutocratic_republic
         switch_government_type_event_clearup_effect = yes
+        set_as_ruler = scope:tribal_ruler 
 
-        ai_will_do = {
+        ai_chance = {
             base = 30
             modifier = {
                 factor = 2.0
@@ -848,7 +875,9 @@ me_parisii.14 = {
         name = me_parisii.14.b # Reform into an Oligarchic Noble Republic (Rule of the Tribal Council)
         change_government = oligarchic_republic
         switch_government_type_event_clearup_effect = yes
-        ai_will_do = {
+        set_as_ruler = scope:tribal_ruler 
+
+        ai_chance = {
             base = 45
             modifier = {
                 factor = 1.8
@@ -873,7 +902,7 @@ me_parisii.14 = {
         add_political_influence = -40
         change_government = aristocratic_monarchy
         switch_government_type_event_clearup_effect = yes
-        ai_will_do = {
+        ai_chance = {
             base = 20
             modifier = {
                 factor = 1.5
@@ -894,7 +923,7 @@ me_parisii.14 = {
         add_political_influence = -80
         change_government = autocratic_monarchy
         switch_government_type_event_clearup_effect = yes
-        ai_will_do = {
+        ai_chance = {
             base = 25
             modifier = {
                 factor = 2.5
@@ -915,7 +944,6 @@ me_parisii.14 = {
 }
 
 # me_parisii.15 - The Springs of Sequana (Sacred River Deity Sanctuary)
-# Unlocks Sequana as a deity in your Druidic pantheon.
 me_parisii.15 = {
     type = country_event
     title = me_parisii.15.t
@@ -939,21 +967,9 @@ me_parisii.15 = {
             }
         }
     }
-
-    option = {
-        name = me_parisii.15.b # Merchant Toll Shrine (River Deity Tribute)
-        custom_tooltip = me_parisii.15.b.tt
-        add_treasury = -50
-        p:2448 = {
-            add_permanent_province_modifier = {
-                name = sekuana_toll_shrine duration = -1
-            }
-        }
-    }
 }
 
 # me_parisii.16 - The Belgae Ultimatum (Fires on Task 5 completion)
-# targets Suessiones (SUE).
 me_parisii.16 = {
     type = country_event
     title = me_parisii.16.t
@@ -965,20 +981,65 @@ me_parisii.16 = {
         always = yes
     }
 
+    immediate = {
+        # Robust Jomini Scope Safeguard: Saves the player scope so Event 17 can evaluate cities/portraits
+        save_scope_as = parisii_player_scope
+    }
     option = {
         name = me_parisii.16.a
-        every_neighbor_country = {
+
+        # 1. Seussonia (SSS)
+        if = {
             limit = {
-                is_subject = no
-                country_culture_group = belgae_group
+                exists = c:SSS
+                c:SSS = { is_subject = no }
             }
-            trigger_event = { id = me_parisii.17 days = 3 }
+            c:SSS = {
+                save_scope_as = unifying_belgae_neighbor
+                trigger_event = { id = me_parisii.17 days = 3}
+            }
+        }    
+
+        # 2. Veliocassia (VCL)
+        if = {
+            limit = {
+                exists = c:VCL
+                c:VCL = { is_subject = no }
+            }
+            c:VCL = {
+                save_scope_as = unifying_belgae_neighbor
+                trigger_event = { id = me_parisii.17 days = 3}
+            }
+        }
+
+        # 3. Remia (RMI)
+        if = {
+            limit = {
+                exists = c:RMI
+                c:RMI = { is_subject = no }
+            }
+            c:RMI = {
+                save_scope_as = unifying_belgae_neighbor
+                trigger_event = { id = me_parisii.17 days = 3}
+            }
+        }
+        
+        # 4. Bellovacia (BLV)
+        if = {
+            limit = {
+                exists = c:BLV
+                c:BLV = { is_subject = no }
+            }
+            c:BLV = {
+                save_scope_as = unifying_belgae_neighbor
+                trigger_event = { id = me_parisii.17 days = 3}
+            }
         }
     }
 }
 
 # =========================================================================
-# me_parisii.17 - The Sekuana Ultimatum (Fires for belgia)
+# me_parisii.17 - The Sekuana Ultimatum (Fires for belgians)
 # =========================================================================
 me_parisii.17 = {
     type = country_event
@@ -987,9 +1048,19 @@ me_parisii.17 = {
     picture = greeks_marching
     left_portrait = current_ruler # Belgic Rulers
     right_portrait = scope:parisii_player_scope.current_ruler # Parisii Ruler
+    
+    trigger = {
+        always = yes
+    }
 
     option = {
         name = me_parisii.17.a # Submit to Lutetia
+        scope:parisii_player_scope = {
+            make_subject = {
+                target = ROOT
+                type = feudatory}
+            trigger_event = { id = me_parisii.17_accept days = 1 }            
+            }
         ai_chance = {
             base = 10
             modifier = { factor = 1.5 opinion = { target = scope:parisii_player_scope value >= 50 } }
@@ -1014,14 +1085,7 @@ me_parisii.17 = {
                     }
                 }
             }
-        }
-        scope:parisii_player_scope = {
-            make_subject = {
-                target = ROOT
-                type = feudatory
-            }
-            add_opinion = { target = root modifier = appeased_us }
-        }
+        }        
     }
 
     option = {
@@ -1032,10 +1096,78 @@ me_parisii.17 = {
         }
         scope:parisii_player_scope = {
             set_variable = { name = belgae_defied_ultimatum value = 1 }
-            add_opinion = { target = root modifier = insulted_us }
+            trigger_event = { id = me_parisii.17_refuse days = 1 }
         }
     }
 }
+
+#results to Paris
+
+me_parisii.17_accept = {
+    type = country_event
+    title = me_parisii.17_accept.t
+    desc = me_parisii.17_accept.desc
+    picture = celtic_chiefs
+    left_portrait = current_ruler # Player Ruler
+    right_portrait = scope:unifying_belgae_neighbor.current_ruler # Submitting Belgic Ruler
+    trigger = {
+        always = yes
+    }
+
+    option = {
+        name = me_parisii.17_accept.a
+        current_ruler = {add_popularity = 5 }
+    }
+}
+
+me_parisii.17_refuse = {
+    type = country_event
+    title = me_parisii.17_refuse.t
+    desc = me_parisii.17_refuse.desc
+    picture = tribal_duel
+    left_portrait = current_ruler
+    right_portrait = scope:unifying_belgae_neighbor.current_ruler # Belgic Ruler
+
+    option = {
+        name = me_parisii.17_refuse.a
+        
+        # 1. Seussonia (SSS) Refusal -> Claims only on Suaeuconia and home Parisia
+        if = {
+            limit = {
+                scope:unifying_neighbor = { tag = SSS }
+            }
+            area:suaeuconia_area = { add_provincial_claim_effect = yes }
+            area:parisia_area = { add_provincial_claim_effect = yes }
+        }
+
+        # 2. Veliocassia (VCL) Refusal -> Claims only on Veliocassia and home Parisia
+        if = {
+            limit = {
+                scope:unifying_neighbor = { tag = VCL }
+            }
+            area:veliocassia_area = { add_provincial_claim_effect = yes }
+            area:parisia_area = { add_provincial_claim_effect = yes }
+        }
+
+        # 3. Bellovacia (BLV) Refusal -> Claims only on Bellovacia and home Parisia
+        if = {
+            limit = {
+                scope:unifying_neighbor = { tag = BLV }
+            }
+            area:bellovacia_area = { add_provincial_claim_effect = yes }
+            area:parisia_area = { add_provincial_claim_effect = yes }
+        }
+
+        # 4. Remia (RMI) Refusal -> Claims only on Suaeuconia / East border
+        if = {
+            limit = {
+                scope:unifying_neighbor = { tag = RMI }
+            }
+            area:suaeuconia_area = { add_provincial_claim_effect = yes }
+        }
+    }
+}
+
 
 # me_parisii.18 - The Fortification of the Crossings
 # Standardized Recycled Optional Fort Event
@@ -1043,16 +1175,29 @@ me_parisii.18 = {
     type = country_event
     title = me_parisii.18.t
     desc = me_parisii.18.desc
-    picture = city_construction
+    picture = road_construction
     left_portrait = current_ruler
 
-    trigger = {
-        always = yes
-    }
-
     option = {
-        name = me_parisii.18.a # Secure the crossing!
+        name = me_parisii.18.a # The river basin is secure!
+        
+        # 1. Country-Level Effects (Executed cleanly at TOP Country scope)
+        change_variable = { name = seine_forts_built add = 1 }
+        
+        # Treasury deduction: -25 gold if fort already exists, -50 gold if we had to build it
+        if = {
+            limit = {
+                scope:fortified_crossing_scope = { has_building = fortress_building }
+            }
+            add_treasury = -25
+        }
+        else = {
+            add_treasury = -50
+        }
+
+        # 2. Province-Level Effects (Scoped down cleanly exactly once)
         scope:fortified_crossing_scope = {
+            # Apply local trade hub modifiers
             add_province_modifier = { name = parisii_protected_trade_hub duration = -1 }
             state = {
                 add_state_modifier = {
@@ -1060,6 +1205,23 @@ me_parisii.18 = {
                     duration = -1
                     mode = add
                 }
+            }
+
+            # Safe port/building expansion safeguard for settlements
+            if = {
+                limit = {
+                    free_building_slots < 1
+                }
+                add_province_modifier = { name = parisii_crossing_expansion_effort duration = 7200 }
+            }
+
+            # Build the fortress if it's not already constructed
+            if = {
+                limit = {
+                    free_building_slots >= 1
+                }
+                add_building_level = fortress_building
+                add_province_modifier = { name = crossing_construction_effort duration = 720 }
             }
         }
     }

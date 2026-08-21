@@ -549,7 +549,7 @@ me_parisii.11 = {
                 change_country_color = dark_rust
                 change_government = tribal_chiefdom
                 set_country_heritage = default_heritage
-                save_scope_as = parisii_old_guard_revolt_scope
+                save_scope_as = old_guard_revolt_scope
                 change_country_tag = P69
             }
         }
@@ -582,8 +582,8 @@ me_parisii.11 = {
             }
             # Clan Chief revolt: heavy armor, war mounts (Strongest)
             create_unit = {
-                location = scope:parisii_rebel_capital
-                owner = scope:old_guard_revolt_scope
+                location = scope:rebel_capital
+                owner = scope:rebel_capital
                 army = yes
                 sub_unit = heavy_infantry
                 sub_unit = heavy_infantry
@@ -665,6 +665,7 @@ me_parisii.12 = {
                 has_law = coin_minting_law
             }
             add_treasury = 150 # High-value alternate gold
+            add_innovation = 1
         }
         else = {
             change_law = coin_minting_law
@@ -683,6 +684,7 @@ me_parisii.12 = {
                 has_law = barter_economy_law
             }
             add_political_influence = 50 # High-value alternate PI
+            add_innovation = 1
         }
         else = {
             change_law = barter_economy_law
@@ -710,10 +712,12 @@ me_parisii.13 = {
         name = me_parisii.13.a
         set_variable = { name = seine_confederation_formed value = 1 }
         add_innovation = 8
-        add_political_influence = 80
-        add_treasury = 500
+        add_political_influence = 120
+        add_treasury = 300
         add_centralization = 15
         add_stability = 10
+        change_government = tribal_federation
+        switch_government_type_event_clearup_effect = yes
 
         current_ruler = {
             add_trait = founder
@@ -959,7 +963,7 @@ me_parisii.15 = {
         name = me_parisii.15.a # Healer's Sanctuary
         custom_tooltip = me_parisii.15.a.tt
         add_treasury = -100
-        p:2448 = { # Agedincum (Seine headwaters)
+        p:2440 = { # Alisia (Seine headwaters)
             add_building_level = aqueduct_building
             add_building_level = temple_building # Dynamically built to bypass tech req
             add_permanent_province_modifier = {
@@ -995,7 +999,7 @@ me_parisii.16 = {
                 c:SSS = { is_subject = no }
             }
             c:SSS = {
-                save_scope_as = unifying_belgae_neighbor
+                set_variable = { name = parisii_player_country value = ROOT }
                 trigger_event = { id = me_parisii.17 days = 3}
             }
         }    
@@ -1007,7 +1011,7 @@ me_parisii.16 = {
                 c:VCL = { is_subject = no }
             }
             c:VCL = {
-                save_scope_as = unifying_belgae_neighbor
+                set_variable = { name = parisii_player_country value = ROOT }
                 trigger_event = { id = me_parisii.17 days = 3}
             }
         }
@@ -1019,7 +1023,7 @@ me_parisii.16 = {
                 c:RMI = { is_subject = no }
             }
             c:RMI = {
-                save_scope_as = unifying_belgae_neighbor
+                set_variable = { name = parisii_player_country value = ROOT }
                 trigger_event = { id = me_parisii.17 days = 3}
             }
         }
@@ -1031,16 +1035,14 @@ me_parisii.16 = {
                 c:BLV = { is_subject = no }
             }
             c:BLV = {
-                save_scope_as = unifying_belgae_neighbor
+                set_variable = { name = parisii_player_country value = ROOT }
                 trigger_event = { id = me_parisii.17 days = 3}
             }
         }
     }
 }
 
-# =========================================================================
 # me_parisii.17 - The Sekuana Ultimatum (Fires for belgians)
-# =========================================================================
 me_parisii.17 = {
     type = country_event
     title = me_parisii.17.t
@@ -1051,6 +1053,10 @@ me_parisii.17 = {
     
     trigger = {
         always = yes
+    }
+    
+    immediate = {
+        var:parisii_player_country = { save_scope_as = parisii_player_scope }
     }
 
     option = {
@@ -1085,7 +1091,8 @@ me_parisii.17 = {
                     }
                 }
             }
-        }        
+        }
+        remove_variable = parisii_player_country        
     }
 
     option = {
@@ -1098,6 +1105,7 @@ me_parisii.17 = {
             set_variable = { name = belgae_defied_ultimatum value = 1 }
             trigger_event = { id = me_parisii.17_refuse days = 1 }
         }
+        remove_variable = parisii_player_country
     }
 }
 
@@ -1108,15 +1116,20 @@ me_parisii.17_accept = {
     title = me_parisii.17_accept.t
     desc = me_parisii.17_accept.desc
     picture = celtic_chiefs
-    left_portrait = current_ruler # Player Ruler
+    left_portrait = current_ruler # Paris Ruler
     right_portrait = scope:unifying_belgae_neighbor.current_ruler # Submitting Belgic Ruler
     trigger = {
         always = yes
     }
 
+    immediate = {
+        var:active_submitting_neighbor = { save_scope_as = unifying_belgae_neighbor }
+    }
+
     option = {
         name = me_parisii.17_accept.a
         current_ruler = {add_popularity = 5 }
+        remove_variable = active_submitting_neighbor
     }
 }
 
@@ -1127,6 +1140,10 @@ me_parisii.17_refuse = {
     picture = tribal_duel
     left_portrait = current_ruler
     right_portrait = scope:unifying_belgae_neighbor.current_ruler # Belgic Ruler
+    
+    immediate = {
+        var:active_defying_neighbor = { save_scope_as = unifying_belgae_neighbor }
+    }
 
     option = {
         name = me_parisii.17_refuse.a
@@ -1134,7 +1151,7 @@ me_parisii.17_refuse = {
         # 1. Seussonia (SSS) Refusal -> Claims only on Suaeuconia and home Parisia
         if = {
             limit = {
-                scope:unifying_neighbor = { tag = SSS }
+                scope:unifying_belgae_neighbor = { tag = SSS }
             }
             area:suaeuconia_area = { add_provincial_claim_effect = yes }
             area:parisia_area = { add_provincial_claim_effect = yes }
@@ -1143,7 +1160,7 @@ me_parisii.17_refuse = {
         # 2. Veliocassia (VCL) Refusal -> Claims only on Veliocassia and home Parisia
         if = {
             limit = {
-                scope:unifying_neighbor = { tag = VCL }
+                scope:unifying_belgae_neighbor = { tag = VCL }
             }
             area:veliocassia_area = { add_provincial_claim_effect = yes }
             area:parisia_area = { add_provincial_claim_effect = yes }
@@ -1152,7 +1169,7 @@ me_parisii.17_refuse = {
         # 3. Bellovacia (BLV) Refusal -> Claims only on Bellovacia and home Parisia
         if = {
             limit = {
-                scope:unifying_neighbor = { tag = BLV }
+                scope:unifying_belgae_neighbor = { tag = BLV }
             }
             area:bellovacia_area = { add_provincial_claim_effect = yes }
             area:parisia_area = { add_provincial_claim_effect = yes }
@@ -1161,10 +1178,11 @@ me_parisii.17_refuse = {
         # 4. Remia (RMI) Refusal -> Claims only on Suaeuconia / East border
         if = {
             limit = {
-                scope:unifying_neighbor = { tag = RMI }
+                scope:unifying_belgae_neighbor = { tag = RMI }
             }
             area:suaeuconia_area = { add_provincial_claim_effect = yes }
         }
+        remove_variable = active_defying_neighbor
     }
 }
 

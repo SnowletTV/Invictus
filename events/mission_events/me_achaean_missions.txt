@@ -1,0 +1,1222 @@
+﻿namespace = me_achaean_missions
+
+# Fired from achaean_mission_01 on_start (when the player selects the mission tree)
+me_achaean_missions.1 = {
+	type = country_event
+
+	title = me_achaean_1_title
+	desc = me_achaean_1_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+
+	option = {
+		name = me_achaean_missions_1.a
+		custom_tooltip = me_achaean_1_opinion_tt
+
+		hidden_effect = {
+			every_country = {
+				limit = {
+					NOT = { this = ROOT }
+					is_republic = yes
+					NOT = { government = oligarchic_republic }
+					capital_scope = { is_in_region = greece_region }
+				}
+				add_opinion = {
+					target = ROOT
+					modifier = achaean_aspirations_opinion
+				}
+			}
+		}
+
+		current_ruler = {
+			add_character_modifier = {
+				name = achaean_aspirations
+				duration = -1
+			}
+		}
+	}
+}
+
+# Ultimatum succeeded - Pellene joins the League (from achaean_mission_01_task on_completion)
+me_achaean_missions.2 = {
+	type = country_event
+
+	title = me_achaean_2_title
+	desc = me_achaean_2_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+
+	option = {
+		name = me_achaean_missions_2.a
+		custom_tooltip = me_achaean_2_annex_tt
+
+		hidden_effect = {
+			if = {
+				limit = { exists = c:PLE }
+				c:PLE = {
+					every_owned_province = {
+						set_owned_by = ROOT
+					}
+				}
+			}
+		}
+
+		current_ruler = {
+			add_popularity = 20
+		}
+	}
+}
+
+# Ultimatum rejected - war with Pellene (from achaean_mission_01_task on_completion)
+me_achaean_missions.3 = {
+	type = country_event
+
+	title = me_achaean_3_title
+	desc = me_achaean_3_desc
+	picture = greek_siege
+	left_portrait = current_ruler
+	right_portrait = c:PLE.current_ruler
+
+	option = {
+		name = me_achaean_missions_3.a
+		custom_tooltip = me_achaean_3_war_tt
+
+		hidden_effect = {
+			if = {
+				limit = {
+					exists = c:PLE
+					NOT = { war_with = c:PLE }
+				}
+				declare_war_with_wargoal = {
+					war_goal = conquer_wargoal
+					province = c:PLE.capital_scope
+					target = c:PLE
+				}
+			}
+		}
+	}
+}
+
+# achaean_mission_08_task ("Choosing Sides") on_completion - pick a side in the Macedonian War of Succession
+me_achaean_missions.4 = {
+	type = country_event
+
+	title = me_achaean_4_title
+	desc = me_achaean_4_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	right_portrait = c:PRY.current_ruler
+	right_portrait = c:MAC.current_ruler
+
+	immediate = {
+		c:MAC = {
+			random_current_war = {
+				limit = { any_war_participant = { tag = PRY } }
+				save_scope_as = mac_succession_war
+			}
+		}
+	}
+
+	# Support the Antigonids (PRY) - fight the Antipatrids
+	option = {
+		name = me_achaean_missions_4.a
+		trigger = { exists = c:PRY }
+		custom_tooltip = me_achaean_4_antigonid_tt
+
+		add_political_influence = 20
+
+		hidden_effect = {
+			if = {
+				limit = {
+					exists = scope:mac_succession_war
+					scope:mac_succession_war = { any_war_attacker = { this = c:MAC } }
+				}
+				add_to_war = { target = scope:mac_succession_war  attacker = no  leader = no }
+			}
+			else_if = {
+				limit = { exists = scope:mac_succession_war }
+				add_to_war = { target = scope:mac_succession_war  attacker = yes  leader = no }
+			}
+			c:PRY = {
+				add_opinion = { target = ROOT  modifier = achaean_chose_your_side_opinion }
+			}
+			add_truce = {
+				target = c:PRY
+				duration = 7300 # 240 months
+			}
+			if = {
+				limit = { exists = c:MAC }
+				c:MAC = {
+					add_opinion = { target = ROOT  modifier = achaean_spurned_you_opinion }
+				}
+				area:achaea_area = {
+					every_area_province = { add_claim = c:MAC }
+				}
+			}
+		}
+	}
+
+	# Support the Antipatrids (MAC) - fight the Antigonids
+	option = {
+		name = me_achaean_missions_4.b
+		trigger = { exists = c:MAC }
+		custom_tooltip = me_achaean_4_antipatrid_tt
+
+		add_political_influence = 20
+
+		hidden_effect = {
+			if = {
+				limit = {
+					exists = scope:mac_succession_war
+					scope:mac_succession_war = { any_war_attacker = { this = c:MAC } }
+				}
+				add_to_war = { target = scope:mac_succession_war  attacker = yes  leader = no }
+			}
+			else_if = {
+				limit = { exists = scope:mac_succession_war }
+				add_to_war = { target = scope:mac_succession_war  attacker = no  leader = no }
+			}
+			c:MAC = {
+				add_opinion = { target = ROOT  modifier = achaean_chose_your_side_opinion }
+			}
+			add_truce = {
+				target = c:MAC
+				duration = 7300 # 240 months
+			}
+			if = {
+				limit = { exists = c:PRY }
+				c:PRY = {
+					add_opinion = { target = ROOT  modifier = achaean_spurned_you_opinion }
+				}
+				area:achaea_area = {
+					every_area_province = { add_claim = c:PRY }
+				}
+			}
+		}
+	}
+
+	# Declare Neutrality
+	option = {
+		name = me_achaean_missions_4.c
+		add_stability = 5
+	}
+}
+
+# Optional mission achaean_mission_05_task on_completion - Ptolemy cedes Sikyon
+me_achaean_missions.5 = {
+	type = country_event
+
+	title = me_achaean_5_title
+	desc = me_achaean_5_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	right_portrait = c:EGY.current_ruler
+
+	option = {
+		name = me_achaean_missions_5.a
+		custom_tooltip = me_achaean_5_annex_tt
+
+		hidden_effect = {
+			if = {
+				limit = { exists = c:SIC }
+				c:SIC = {
+					every_owned_province = {
+						set_owned_by = ROOT
+					}
+				}
+			}
+		}
+
+		add_political_influence = 20
+	}
+}
+
+# ACL copy of the Aratus of Sikyon chain (dhe_achaean_league.4). Currently fired from me_achaean_missions.8 (the coup route).
+# Differences from the stock event: Sikyon is NOT made a feudatory; both options grant +5 stability, +10 PI.
+me_achaean_missions.6 = {
+	type = country_event
+
+	title = me_achaean_6_title
+	desc = me_achaean_6_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	right_portrait = scope:aratus_scope
+	goto_location = p:8003
+
+	immediate = {
+		create_character = {
+			save_scope_as = aratus_scope
+			first_name = "Aratus"
+			family_name = "Kleinid"
+			age = 21
+			culture = achaean
+			religion = roman_pantheon
+			female = no
+			add_trait = orator
+			add_trait = ambitious
+			force_add_trait = blood_of_aratus
+			good_martial_effect = yes
+			good_finesse_effect = yes
+			great_charisma_effect = yes
+			good_zeal_effect = yes
+		}
+	}
+
+	option = {		### Let him earn his standing
+		name = me_achaean_missions_6.b
+		add_stability = 15
+		add_political_influence = 50
+		ai_chance = { factor = 10 }
+	}
+
+	option = {		### Make Aratus the League's Strategos
+		name = me_achaean_missions_6.c
+		set_as_ruler = scope:aratus_scope
+		add_political_influence = 10
+		ai_chance = { factor = 1 }
+	}
+}
+
+# achaean_mission_07_task ("Conspiracy in Sikyon") on_completion - the coup route to acquiring Sikyon
+me_achaean_missions.8 = {
+	type = country_event
+
+	title = me_achaean_8_title
+	desc = me_achaean_8_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	right_portrait = scope:sikyon_suzerain.current_ruler
+	goto_location = p:8003
+
+	immediate = {
+		if = {
+			limit = {
+				exists = c:SIC
+				c:SIC = { is_subject = yes }
+			}
+			c:SIC.overlord = { save_scope_as = sikyon_suzerain }
+		}
+	}
+
+	option = {
+		name = me_achaean_missions_8.a
+		custom_tooltip = me_achaean_8_tt
+
+		hidden_effect = {
+			if = {
+				limit = { exists = c:SIC }
+				c:SIC = {
+					every_owned_province = {
+						set_owned_by = ROOT
+					}
+				}
+			}
+			if = {
+				limit = { exists = scope:sikyon_suzerain }
+				scope:sikyon_suzerain = {
+					add_opinion = {
+						target = ROOT
+						modifier = sikyon_stolen_opinion
+					}
+				}
+				area:achaea_area = {
+					every_area_province = {
+						limit = { owner = ROOT }
+						add_claim = scope:sikyon_suzerain
+					}
+				}
+			}
+			trigger_event = {
+				id = me_achaean_missions.6
+				days = { 1 5 }
+			}
+		}
+	}
+}
+
+# achaean_mission_10_task ("Ptolemaic Overtures") on_completion - Egypt grants a favourable grain deal
+me_achaean_missions.9 = {
+	type = country_event
+
+	title = me_achaean_10_title
+	desc = me_achaean_10_desc
+	picture = greek_marketplace
+	left_portrait = current_ruler
+	right_portrait = c:EGY.current_ruler
+
+	option = {
+		name = me_achaean_missions_10.a
+		custom_tooltip = me_achaean_10_tt
+
+		hidden_effect = {
+			add_country_modifier = {
+				name = egyptian_grain
+				duration = 3650 # 10 years
+			}
+			if = {
+				limit = { exists = c:EGY }
+				c:EGY = {
+					add_opinion = {
+						target = ROOT
+						modifier = ptolemaic_overtures_opinion
+					}
+				}
+			}
+		}
+	}
+}
+
+# achaean_mission_11_task ("The Achaean Triobol") on_completion - a federal silver coinage
+me_achaean_missions.10 = {
+	type = country_event
+
+	title = me_achaean_11_title
+	desc = me_achaean_11_desc
+	picture = greek_marketplace
+	left_portrait = current_ruler
+
+	option = {
+		name = me_achaean_missions_11.a
+		custom_tooltip = me_achaean_11_tt
+
+		hidden_effect = {
+			add_country_modifier = {
+				name = achaean_triobol
+				duration = -1
+			}
+		}
+	}
+}
+
+# achaean_mission_12_task ("Helike Remembered") on_completion - re-consecrate the rites of Poseidon Helikonios
+me_achaean_missions.11 = {
+	type = country_event
+
+	title = me_achaean_12_title
+	desc = me_achaean_12_desc
+	picture = greek_religious_rite
+	left_portrait = current_ruler
+	goto_location = p:444
+
+	option = {
+		name = me_achaean_missions_12.a
+		custom_tooltip = me_achaean_12_tt
+
+		hidden_effect = {
+			p:444 = {
+				add_permanent_province_modifier = {
+					name = sanctuary_helikonios
+				}
+			}
+			add_country_modifier = {
+				name = rites_of_helikonios
+				duration = 3650 # 120 months
+			}
+		}
+		current_ruler = { add_zeal = 1 }
+	}
+}
+
+# Hidden watcher - started by achaean_mission_02_task on_completion, re-schedules itself until the
+# ruler is personally wealthy while Rapid Urbanization is active, then fires me_achaean_missions.12 once.
+me_achaean_missions.13 = {
+	type = country_event
+	hidden = yes
+
+	trigger = {
+		has_country_modifier = rapid_urbanization
+	}
+
+	immediate = {
+		if = {
+			limit = {
+				current_ruler = { wealth >= 150 }
+				NOT = { has_variable = achaean_ruler_donation_cooldown }
+			}
+			trigger_event = { id = me_achaean_missions.12 }
+		}
+		else = {
+			trigger_event = {
+				id = me_achaean_missions.13
+				days = { 90 180 }
+			}
+		}
+	}
+}
+
+# Flavor - the ruler may self-fund the League's urbanization from his own personal coffers.
+me_achaean_missions.12 = {
+	type = country_event
+
+	title = me_achaean_13_title
+	desc = me_achaean_13_desc
+	picture = greek_marketplace
+	left_portrait = current_ruler
+
+	trigger = {
+		has_country_modifier = rapid_urbanization
+		current_ruler = { wealth >= 150 }
+	}
+
+	# Donate 75 gold - treasury +75 gold, +20 PI, +10 corruption, ruler gains Benefactor; Oligarchs -20 approval
+	option = {
+		name = me_achaean_missions_13.a
+		custom_tooltip = me_achaean_13.a.tt
+
+		current_ruler = {
+			add_gold = -75
+			add_trait = benefactor
+			add_corruption = 10
+		}
+		add_treasury = 75
+		add_political_influence = 20
+		add_party_approval = {
+			party_type = oligarchic_party
+			value = -20
+		}
+		ai_chance = { factor = 1 }
+	}
+
+	# Donate 25 gold - treasury +25 gold
+	option = {
+		name = me_achaean_missions_13.b
+		current_ruler = { add_gold = -25 }
+		add_treasury = 25
+		ai_chance = { factor = 5 }
+	}
+
+	# Donate nothing
+	option = {
+		name = me_achaean_missions_13.c
+		ai_chance = { factor = 10 }
+	}
+
+	after = {
+		set_variable = {
+			name = achaean_ruler_donation_cooldown
+			days = 3650
+		}
+	}
+}
+
+# Hidden watcher - started by achaean_mission_01 on_start. Re-schedules itself; when an Achaean athlete
+# has won an Olympic victory (some country holds the olympic_victor opinion of us and we have a
+# not-yet-celebrated gold medallist), fires me_achaean_missions.15 once for that character.
+me_achaean_missions.14 = {
+	type = country_event
+	hidden = yes
+
+	trigger = { tag = ACL }
+
+	immediate = {
+		if = {
+			limit = {
+				any_country = {
+					has_opinion = {
+						modifier = olympic_victor
+						target = ROOT
+					}
+				}
+				any_character = {
+					is_alive = yes
+					has_variable = number_of_olympic_wins
+					NOT = { has_variable = achaean_curse_broken_personal }
+				}
+			}
+			random_character = {
+				limit = {
+					is_alive = yes
+					has_variable = number_of_olympic_wins
+					NOT = { has_variable = achaean_curse_broken_personal }
+				}
+				save_scope_as = olympic_victor_char
+				set_variable = achaean_curse_broken_personal
+			}
+			trigger_event = { id = me_achaean_missions.15 }
+		}
+		trigger_event = {
+			id = me_achaean_missions.14
+			days = { 90 180 }
+		}
+	}
+}
+
+# Flavor - The Curse of Oebotas: an Achaean Olympic victory, honoured at last.
+me_achaean_missions.15 = {
+	type = country_event
+
+	title = me_achaean_15_title
+	desc = me_achaean_15_desc
+	picture = greek_religious_rite
+	left_portrait = current_ruler
+	right_portrait = scope:olympic_victor_char
+
+	trigger = {
+		exists = scope:olympic_victor_char
+	}
+
+	option = {
+		name = me_achaean_missions_15.a
+		custom_tooltip = me_achaean_15.a.tt
+
+		add_stability = 15
+		add_political_influence = 20
+		scope:olympic_victor_char = {
+			add_popularity = popularity_medium
+			add_character_modifier = {
+				name = curse_breaker
+				duration = -1
+			}
+		}
+	}
+}
+
+# achaean_mission_14_task ("Invite the Korinthoi") - ultimatum SUCCEEDED
+me_achaean_missions.16 = {
+	type = country_event
+
+	title = me_achaean_16_title
+	desc = me_achaean_16_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	right_portrait = c:KOR.current_ruler
+	goto_location = p:418
+
+	option = {
+		name = me_achaean_missions_16.a
+		custom_tooltip = me_achaean_16_tt
+
+		hidden_effect = {
+			if = {
+				limit = {
+					exists = c:KOR
+					c:KOR = { is_subject = no }
+				}
+				make_subject = {
+					target = c:KOR
+					type = feudatory
+				}
+			}
+		}
+
+		add_political_influence = 30
+	}
+}
+
+# achaean_mission_14_task ("Invite the Korinthoi") - ultimatum REFUSED
+me_achaean_missions.17 = {
+	type = country_event
+
+	title = me_achaean_17_title
+	desc = me_achaean_17_desc
+	picture = greek_siege
+	left_portrait = current_ruler
+	right_portrait = c:KOR.current_ruler
+	goto_location = p:418
+
+	option = {		### War it is!
+		name = me_achaean_missions_17.a
+		custom_tooltip = me_achaean_17_war_tt
+
+		hidden_effect = {
+			if = {
+				limit = {
+					exists = c:KOR
+					NOT = { war_with = c:KOR }
+				}
+				declare_war_with_wargoal = {
+					war_goal = conquer_wargoal
+					province = c:KOR.capital_scope
+					target = c:KOR
+				}
+			}
+		}
+	}
+
+	option = {		### Leave it be.
+		name = me_achaean_missions_17.b
+		add_stability = 5
+	}
+}
+
+# achaean_mission_15_task ("Seize the Akrokorinthos") on_completion - the night raid succeeds
+me_achaean_missions.18 = {
+	type = country_event
+
+	title = me_achaean_18_title
+	desc = me_achaean_18_desc
+	picture = greek_siege
+	left_portrait = current_ruler
+	goto_location = p:418
+
+	immediate = {
+		if = {
+			limit = {
+				p:418.owner = { NOT = { this = ROOT } }
+			}
+			if = {
+				limit = { p:418.owner = { is_subject = yes } }
+				p:418.owner.overlord = { save_scope_as = akrokorinthos_wronged }
+			}
+			else = {
+				p:418.owner = { save_scope_as = akrokorinthos_wronged }
+			}
+		}
+	}
+
+	option = {
+		name = me_achaean_missions_18.a
+		custom_tooltip = me_achaean_18_tt
+
+		hidden_effect = {
+			p:418 = { set_owned_by = ROOT }
+			add_aggressive_expansion = 1
+			current_ruler = { add_popularity = 10 }
+			change_law = republican_election_4
+			if = {
+				limit = { exists = scope:akrokorinthos_wronged }
+				scope:akrokorinthos_wronged = {
+					add_opinion = {
+						target = ROOT
+						modifier = achaean_aggression_opinion
+					}
+				}
+				area:achaea_area = {
+					every_area_province = {
+						limit = { owner = ROOT }
+						add_claim = scope:akrokorinthos_wronged
+					}
+				}
+			}
+		}
+	}
+}
+
+################################################################
+# achaean_mission_16_task ("The Fall of Akrokorinthos")
+################################################################
+
+# achaea_corinth_fall - blasts the join / feudatory offers across the southern Greek states.
+me_achaean_missions.19 = {
+	type = country_event
+
+	title = me_achaean_19_title
+	desc = me_achaean_19_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+
+	option = {
+		name = me_achaean_missions_19.a
+		custom_tooltip = me_achaean_19_tt
+
+		hidden_effect = {
+			every_country = {
+				limit = {
+					OR = { tag = EPD  tag = TRN  tag = HRM  tag = MGA  tag = AGN }
+					NOT = { this = ROOT }
+					NOT = { is_subject_of = ROOT }
+				}
+				add_opinion = { target = ROOT  modifier = achaean_league_overture_opinion }
+				trigger_event = { id = me_achaean_missions.20  days = { 3 20 } }
+			}
+			every_country = {
+				limit = {
+					OR = {
+						tag = ARK
+						tag = ARG
+						tag = MGL
+						tag = ELI
+						capital_scope = { province_id = 438 } # Mantineia
+						capital_scope = { province_id = 449 } # Kleitor (Azania)
+						capital_scope = { province_id = 435 } # Heraia
+						capital_scope = { province_id = 433 } # Lepreon (Triphylia)
+						capital_scope = { province_id = 448 } # Stymphalos
+					}
+					NOT = { this = ROOT }
+					NOT = { is_subject_of = ROOT }
+				}
+				add_opinion = { target = ROOT  modifier = achaean_league_overture_opinion }
+				trigger_event = { id = me_achaean_missions.23  days = { 3 20 } }
+			}
+		}
+	}
+}
+
+# Join offer, sent to Epidauros / Troizen / Hermione / Megara / Aigina. ROOT = recipient.
+me_achaean_missions.20 = {
+	type = country_event
+
+	title = me_achaean_20_title
+	desc = me_achaean_20_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	right_portrait = c:ACL.current_ruler
+
+	trigger = {
+		exists = c:ACL
+		NOT = { is_subject_of = c:ACL }
+		NOT = { war_with = c:ACL }
+	}
+
+	option = {		### Accept terms
+		name = me_achaean_missions_20.a
+		ai_chance = {
+			base = 110
+			modifier = { add = -18  num_of_provinces >= 2 }
+			modifier = { add = -18  num_of_provinces >= 3 }
+			modifier = { add = -18  num_of_provinces >= 4 }
+			modifier = { add = -18  num_of_provinces >= 5 }
+			modifier = {   # hard cap: no more than 5 territories
+				factor = 0
+				num_of_provinces >= 6
+			}
+			modifier = { add = 60  opinion = { target = c:ACL  value >= 40 } }
+			modifier = {
+				add = 25
+				opinion = { target = c:ACL  value >= 0 }
+				opinion = { target = c:ACL  value < 40 }
+			}
+			modifier = {   # will never accept while it resents us
+				factor = 0
+				opinion = { target = c:ACL  value < 0 }
+			}
+		}
+
+		save_scope_as = achaean_joining_country
+		if = {
+			limit = { exists = overlord }
+			overlord = { save_scope_as = achaean_offended_suzerain }
+		}
+
+		hidden_effect = {
+			c:ACL = { add_political_influence = 20 }
+			# a former suzerain is aggrieved either way
+			if = {
+				limit = { exists = scope:achaean_offended_suzerain }
+				scope:achaean_offended_suzerain = {
+					add_opinion = { target = c:ACL  modifier = achaean_aggression_opinion }
+				}
+				c:ACL = {
+					every_owned_province = {
+						limit = {
+							OR = {
+								is_in_area = arcadia_area
+								is_in_area = central_greece_area
+							}
+						}
+						add_claim = scope:achaean_offended_suzerain
+					}
+				}
+			}
+			if = {
+				limit = { is_ai = no }
+				# a human keeps playing - join as a feudatory instead of being annexed
+				c:ACL = { make_subject = { target = ROOT  type = feudatory } }
+				c:ACL = { trigger_event = { id = me_achaean_missions.24 } }
+			}
+			else = {
+				c:ACL = { add_aggressive_expansion = root.num_of_provinces }
+				every_owned_province = { set_owned_by = c:ACL }
+				c:ACL = { trigger_event = { id = me_achaean_missions.21 } }
+			}
+		}
+	}
+
+	option = {		### Reject terms
+		name = me_achaean_missions_20.b
+		ai_chance = { factor = 100 }
+
+		save_scope_as = achaean_rejecting_country
+		hidden_effect = {
+			every_owned_province = { add_claim = c:ACL }
+			c:ACL = { trigger_event = { id = me_achaean_missions.22 } }
+		}
+	}
+}
+
+# A join offer was accepted. ROOT = ACL. scope:achaean_joining_country = the (now annexed) state.
+me_achaean_missions.21 = {
+	type = country_event
+
+	title = me_achaean_21_title
+	desc = me_achaean_21_desc
+	picture = greeks_marching
+	left_portrait = current_ruler
+
+	option = { name = me_achaean_missions_21.a }
+}
+
+# A join offer was refused. ROOT = ACL. scope:achaean_rejecting_country = the defiant state.
+me_achaean_missions.22 = {
+	type = country_event
+
+	title = me_achaean_22_title
+	desc = me_achaean_22_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+
+	option = { name = me_achaean_missions_22.a }
+}
+
+# Feudatory offer, sent to Arcadia / Argos / Megalopolis. ROOT = recipient.
+me_achaean_missions.23 = {
+	type = country_event
+
+	title = me_achaean_23_title
+	desc = me_achaean_23_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	right_portrait = c:ACL.current_ruler
+
+	trigger = {
+		exists = c:ACL
+		NOT = { is_subject_of = c:ACL }
+		NOT = { war_with = c:ACL }
+	}
+
+	option = {		### Accept terms
+		name = me_achaean_missions_23.a
+		ai_chance = {
+			base = 120
+			modifier = { add = -15  num_of_provinces >= 2 }
+			modifier = { add = -15  num_of_provinces >= 3 }
+			modifier = { add = -15  num_of_provinces >= 4 }
+			modifier = { add = -15  num_of_provinces >= 5 }
+			modifier = { add = 60  opinion = { target = c:ACL  value >= 40 } }
+			modifier = {
+				add = 25
+				opinion = { target = c:ACL  value >= 0 }
+				opinion = { target = c:ACL  value < 40 }
+			}
+			modifier = {   # will never accept while it resents us
+				factor = 0
+				opinion = { target = c:ACL  value < 0 }
+			}
+			# hard cap: no more than 5 territories (does not touch the MGL / ARG special cases)
+			modifier = {
+				factor = 0
+				num_of_provinces >= 6
+				NOT = { tag = ARG }
+			}
+			# Megalopolis: a tiny free non-oligarch, non-monarchy while Sparta looms - certain to accept
+			modifier = {
+				factor = 1000
+				tag = MGL
+				is_subject = no
+				is_monarchy = no
+				NOT = { government = oligarchic_republic }
+				num_of_provinces <= 1
+				exists = c:SPA
+			}
+			# Argos: a strong, aggrieved free state - will never accept
+			modifier = {
+				factor = 0
+				tag = ARG
+				is_subject = no
+				num_of_provinces >= 4
+				has_opinion = { modifier = achaean_aggression_opinion  target = c:ACL }
+			}
+		}
+
+		save_scope_as = achaean_joining_country
+		hidden_effect = {
+			c:ACL = {
+				make_subject = { target = scope:achaean_joining_country  type = feudatory }
+				add_political_influence = 20
+			}
+			if = {
+				limit = {
+					exists = c:SPA
+					c:SPA = {
+						any_owned_province = {
+							OR = {
+								is_in_area = south_peleponnesos_area
+								is_in_area = arcadia_area
+							}
+						}
+					}
+				}
+				every_owned_province = { add_claim = c:SPA }
+			}
+			c:ACL = { trigger_event = { id = me_achaean_missions.24 } }
+		}
+	}
+
+	option = {		### Reject terms
+		name = me_achaean_missions_23.b
+		ai_chance = { factor = 100 }
+
+		save_scope_as = achaean_rejecting_country
+		hidden_effect = {
+			area:arcadia_area = {
+				every_area_province = {
+					limit = { owner = scope:achaean_rejecting_country }
+					add_claim = c:ACL
+				}
+			}
+			c:ACL = { trigger_event = { id = me_achaean_missions.25 } }
+		}
+	}
+}
+
+# A feudatory offer was accepted. ROOT = ACL. scope:achaean_joining_country = the new feudatory.
+me_achaean_missions.24 = {
+	type = country_event
+
+	title = me_achaean_24_title
+	desc = me_achaean_24_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	right_portrait = scope:achaean_joining_country.current_ruler
+
+	option = { name = me_achaean_missions_24.a }
+}
+
+# A feudatory offer was refused. ROOT = ACL. scope:achaean_rejecting_country = the defiant state.
+me_achaean_missions.25 = {
+	type = country_event
+
+	title = me_achaean_25_title
+	desc = me_achaean_25_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	right_portrait = scope:achaean_rejecting_country.current_ruler
+
+	option = { name = me_achaean_missions_25.a }
+}
+
+################################################################
+# Missing-event pass (Snowlet feedback) - tasks that used to apply
+# their reward silently in on_completion now fire a flavor event.
+################################################################
+
+# achaean_mission_03_task ("The Cities of Achaea") on_completion
+me_achaean_missions.26 = {
+	type = country_event
+
+	title = me_achaean_26_title
+	desc = me_achaean_26_desc
+	picture = greek_marketplace
+	left_portrait = current_ruler
+
+	option = {
+		name = me_achaean_missions_26.a
+		custom_tooltip = me_achaean_26_tt
+
+		hidden_effect = {
+			if = {
+				limit = { has_country_modifier = rapid_urbanization }
+				remove_country_modifier = rapid_urbanization
+			}
+			add_manpower = 2
+			add_2_free_province_investments = yes
+			p:7890 = {
+				create_pop = freemen
+				create_pop = freemen
+				add_province_modifier = {
+					name = migrant_boom
+					duration = 7300 # 240 months
+				}
+			}
+			p:434 = {
+				create_pop = freemen
+				create_pop = freemen
+				add_province_modifier = {
+					name = migrant_boom
+					duration = 7300 # 240 months
+				}
+			}
+			p:444 = {
+				create_pop = freemen
+				create_pop = freemen
+				add_province_modifier = {
+					name = migrant_boom
+					duration = 7300 # 240 months
+				}
+			}
+			p:7893 = {
+				create_pop = freemen
+				create_pop = freemen
+				add_province_modifier = {
+					name = migrant_boom
+					duration = 7300 # 240 months
+				}
+			}
+		}
+	}
+}
+
+# achaean_mission_04_task ("Gate to the West") on_completion
+me_achaean_missions.27 = {
+	type = country_event
+
+	title = me_achaean_27_title
+	desc = me_achaean_27_desc
+	picture = greek_marketplace
+	left_portrait = current_ruler
+	goto_location = p:434
+
+	option = {
+		name = me_achaean_missions_27.a
+		custom_tooltip = me_achaean_27_tt
+
+		hidden_effect = {
+			p:434 = {
+				add_permanent_province_modifier = { name = gate_to_the_west }
+			}
+		}
+	}
+}
+
+# achaean_mission_06_task ("Sikyon Liberated") on_completion
+me_achaean_missions.28 = {
+	type = country_event
+
+	title = me_achaean_28_title
+	desc = me_achaean_28_desc
+	picture = greeks_marching
+	left_portrait = current_ruler
+	goto_location = p:8003
+
+	option = {
+		name = me_achaean_missions_28.a
+		custom_tooltip = me_achaean_28_tt
+
+		hidden_effect = {
+			add_political_influence = 40
+			area:achaea_area = {
+				every_area_province = {
+					limit = {
+						has_owner = yes
+						NOT = { owner = ROOT }
+					}
+					add_claim = ROOT
+				}
+			}
+		}
+	}
+}
+
+# achaean_mission_09_task ("Renovate the Amarion") on_completion
+me_achaean_missions.29 = {
+	type = country_event
+
+	title = me_achaean_29_title
+	desc = me_achaean_29_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	goto_location = p:444
+
+	option = {
+		name = me_achaean_missions_29.a
+		custom_tooltip = me_achaean_29_tt
+
+		hidden_effect = {
+			p:444 = {
+				create_pop = nobles
+				create_pop = citizen
+				add_permanent_province_modifier = { name = amarion }
+			}
+			add_country_modifier = { name = synodos  duration = -1 }
+		}
+	}
+}
+
+# achaean_mission_13_task ("Grain Storehouses") on_completion
+me_achaean_missions.30 = {
+	type = country_event
+
+	title = me_achaean_30_title
+	desc = me_achaean_30_desc
+	picture = greek_marketplace
+	left_portrait = current_ruler
+
+	option = {
+		name = me_achaean_missions_30.a
+		custom_tooltip = me_achaean_30_tt
+
+		hidden_effect = {
+			add_country_modifier = {
+				name = grain_storehouses
+				duration = 3650 # 10 years
+			}
+		}
+	}
+}
+
+# achaean_mission_17_task ("For Democracy!") on_completion
+me_achaean_missions.31 = {
+	type = country_event
+
+	title = me_achaean_31_title
+	desc = me_achaean_31_desc
+	picture = greeks_marching
+	left_portrait = current_ruler
+
+	option = {
+		name = me_achaean_missions_31.a
+		custom_tooltip = me_achaean_31_tt
+
+		hidden_effect = {
+			add_country_modifier = { name = protector_of_democracy  duration = -1 }
+			area:achaea_area = {
+				every_area_province = {
+					limit = {
+						has_owner = yes
+						owner = { is_subject = no  NOT = { this = ROOT } }
+					}
+					add_claim = ROOT
+				}
+			}
+			area:arcadia_area = {
+				every_area_province = {
+					limit = {
+						has_owner = yes
+						owner = { is_subject = no  NOT = { this = ROOT } }
+					}
+					add_claim = ROOT
+				}
+			}
+			area:south_peleponnesos_area = {
+				every_area_province = {
+					limit = {
+						has_owner = yes
+						owner = { is_subject = no  NOT = { this = ROOT } }
+					}
+					add_claim = ROOT
+				}
+			}
+		}
+	}
+}
+
+# achaean_mission_18_task ("Pasture Appropriations") on_completion
+me_achaean_missions.32 = {
+	type = country_event
+
+	title = me_achaean_32_title
+	desc = me_achaean_32_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	goto_location = p:7894
+
+	option = {
+		name = me_achaean_missions_32.a
+		custom_tooltip = me_achaean_32_tt
+
+		hidden_effect = {
+			add_treasury = -50
+			p:7894.owner = { save_scope_as = kleonai_subject }
+			p:7894 = { set_conquered_by = ROOT }
+			if = {
+				limit = { exists = scope:kleonai_subject }
+				scope:kleonai_subject = {
+					add_opinion = {
+						target = ROOT
+						modifier = pasture_appropriations_opinion
+					}
+				}
+			}
+		}
+	}
+}

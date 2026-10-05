@@ -202,6 +202,7 @@ me_achaean_missions.4 = {
 	}
 }
 
+<<<<<<< Updated upstream
 # Optional mission achaean_mission_05_task on_completion - Ptolemy cedes Sikyon
 me_achaean_missions.5 = {
 	type = country_event
@@ -233,6 +234,12 @@ me_achaean_missions.5 = {
 
 # ACL copy of the Aratus of Sikyon chain (dhe_achaean_league.4). Currently fired from me_achaean_missions.8 (the coup route).
 # Differences from the stock event: Sikyon is NOT made a feudatory; both options grant +5 stability, +10 PI.
+=======
+# ACL copy of the Aratus of Sikyon chain (dhe_achaean_league.4). Fired from me_achaean_missions.8 (the coup route), after Sikyon has
+# already been made a feudatory. Mirrors the stock event as closely as possible: Aratus is installed as Sikyon's ruler unconditionally,
+# then the option decides whether he's promoted to lead the whole League (moved to ROOT's court, set_as_ruler, Lifetime Elections)
+# or left to rule Sikyon alone (nothing happens, matching dhe_achaean_league.4.b).
+>>>>>>> Stashed changes
 me_achaean_missions.6 = {
 	type = country_event
 
@@ -243,6 +250,7 @@ me_achaean_missions.6 = {
 	right_portrait = scope:aratus_scope
 	goto_location = p:8003
 
+<<<<<<< Updated upstream
 	immediate = {
 		create_character = {
 			save_scope_as = aratus_scope
@@ -266,18 +274,168 @@ me_achaean_missions.6 = {
 		name = me_achaean_missions_6.b
 		add_stability = 15
 		add_political_influence = 50
+=======
+	# Fires by either route:
+	#  - coup route: ACL did Conspiracy in Sikyon (me_achaean_missions.8 -> here). He spawns early, so before 500.1.1 he gets a random name.
+	#  - date route: ACL never did the task; the watcher (me_achaean_missions.39) fires this on/after 500.1.1, and only if Sikyon is still
+	#    a subject of someone else or held directly by a Diadochi. He gets the Aratus name and Sikyon is liberated as our feudatory.
+	trigger = {
+		NOT = { has_variable = achaean_aratus_spawned }
+		OR = {
+			has_variable = achaean_conspiracy_started
+			AND = {
+				current_date >= 500.1.1
+				OR = {
+					AND = {
+						exists = c:SIC
+						c:SIC = {
+							is_subject = yes
+							NOT = { is_subject_of = ROOT }
+						}
+					}
+					p:8003.owner = { is_diadochi_trigger = yes }
+				}
+			}
+		}
+	}
+
+	immediate = {
+		set_variable = achaean_aratus_spawned
+		# date route: liberate Sikyon as our feudatory before Aratus appears
+		if = {
+			limit = { NOT = { has_variable = achaean_conspiracy_started } }
+			# whoever holds Sikyon now (its overlord, or the Diadochi owning it directly) is the wronged party
+			if = {
+				limit = {
+					exists = c:SIC
+					c:SIC = { is_subject = yes }
+				}
+				c:SIC.overlord = { save_scope_as = sikyon_wronged }
+			}
+			else_if = {
+				limit = { NOT = { exists = c:SIC } }
+				p:8003.owner = { save_scope_as = sikyon_wronged }
+			}
+			# directly owned: re-create Sikyon from its capital province (same setup as dhe_achaean_league.4)
+			if = {
+				limit = { NOT = { exists = c:SIC } }
+				p:8003 = {
+					create_country = {
+						name = {
+							name = SIKYON_NAME
+							adjective = SIKYON_ADJECTIVE
+						}
+						change_country_tag = SIC
+						set_country_religion = roman_pantheon
+						change_government = aristocratic_republic
+						change_country_color = sicyon_purple
+						change_country_flag = SIKYON_FLAG
+					}
+				}
+			}
+			# a subject must be released by its overlord before it can become ours
+			if = {
+				limit = {
+					exists = c:SIC
+					c:SIC = { is_subject = yes }
+				}
+				c:SIC.overlord = { release_subject = c:SIC }
+			}
+			if = {
+				limit = { exists = scope:sikyon_wronged }
+				scope:sikyon_wronged = {
+					add_opinion = { target = ROOT  modifier = sikyon_stolen_opinion }
+				}
+				area:achaea_area = {
+					every_area_province = {
+						limit = { owner = ROOT }
+						add_claim = scope:sikyon_wronged
+					}
+				}
+			}
+			make_subject = {
+				type = feudatory
+				target = c:SIC
+			}
+		}
+		c:SIC = {
+			if = {
+				limit = {
+					current_date >= 500.1.1
+				}
+				create_character = {
+					save_scope_as = aratus_scope
+					first_name = "Aratus"
+					family_name = "Aratid"
+					age = 21
+					culture = achaean
+					religion = roman_pantheon
+					female = no
+					add_trait = orator
+					add_trait = ambitious
+					force_add_trait = blood_of_aratus
+					good_martial_effect = yes
+					good_finesse_effect = yes
+					great_charisma_effect = yes
+					good_zeal_effect = yes
+				}
+			}
+			else = {
+				create_character = {
+					save_scope_as = aratus_scope
+					family_name = "Aratid"
+					age = 25
+					culture = achaean
+					religion = roman_pantheon
+					female = no
+					add_trait = orator
+					add_trait = ambitious
+					force_add_trait = blood_of_aratus
+					good_martial_effect = yes
+					good_finesse_effect = yes
+					great_charisma_effect = yes
+					good_zeal_effect = yes
+				}
+			}
+		}
+		c:SIC = {
+			set_as_ruler = scope:aratus_scope
+		}
+	}
+
+	option = {		### Let him lead Sikyon
+		name = me_achaean_missions_6.b
+>>>>>>> Stashed changes
 		ai_chance = { factor = 10 }
 	}
 
 	option = {		### Make Aratus the League's Strategos
 		name = me_achaean_missions_6.c
+<<<<<<< Updated upstream
 		set_as_ruler = scope:aratus_scope
 		add_political_influence = 10
+=======
+
+		hidden_effect = {
+			scope:aratus_scope = {
+				remove_all_positions = yes
+				move_country = ROOT
+				remove_character_modifier = foreign_citizen
+				set_home_country = ROOT
+			}
+		}
+		set_as_ruler = scope:aratus_scope
+		change_law = republican_election_4
+>>>>>>> Stashed changes
 		ai_chance = { factor = 1 }
 	}
 }
 
+<<<<<<< Updated upstream
 # achaean_mission_07_task ("Conspiracy in Sikyon") on_completion - the coup route to acquiring Sikyon
+=======
+# achaean_mission_07_task ("Conspiracy in Sikyon") on_completion - the coup route to vassalizing Sikyon (matches dhe_achaean_league.4's vassalage transfer)
+>>>>>>> Stashed changes
 me_achaean_missions.8 = {
 	type = country_event
 
@@ -304,6 +462,7 @@ me_achaean_missions.8 = {
 
 		hidden_effect = {
 			if = {
+<<<<<<< Updated upstream
 				limit = { exists = c:SIC }
 				c:SIC = {
 					every_owned_province = {
@@ -312,6 +471,8 @@ me_achaean_missions.8 = {
 				}
 			}
 			if = {
+=======
+>>>>>>> Stashed changes
 				limit = { exists = scope:sikyon_suzerain }
 				scope:sikyon_suzerain = {
 					add_opinion = {
@@ -326,6 +487,23 @@ me_achaean_missions.8 = {
 					}
 				}
 			}
+<<<<<<< Updated upstream
+=======
+			if = {
+				limit = { exists = c:SIC }
+				# make_subject fails on a country that already has an overlord, so the old suzerain must release it first
+				if = {
+					limit = { exists = scope:sikyon_suzerain }
+					scope:sikyon_suzerain = { release_subject = c:SIC }
+				}
+				make_subject = {
+					type = feudatory
+					target = c:SIC
+				}
+			}
+			# also set at task start; repeated here so saves where the task began earlier still qualify for the Aratus event
+			set_variable = achaean_conspiracy_started
+>>>>>>> Stashed changes
 			trigger_event = {
 				id = me_achaean_missions.6
 				days = { 1 5 }
@@ -410,7 +588,11 @@ me_achaean_missions.11 = {
 			}
 			add_country_modifier = {
 				name = rites_of_helikonios
+<<<<<<< Updated upstream
 				duration = 3650 # 120 months
+=======
+				duration = -1
+>>>>>>> Stashed changes
 			}
 		}
 		current_ruler = { add_zeal = 1 }
@@ -509,9 +691,25 @@ me_achaean_missions.14 = {
 	trigger = { tag = ACL }
 
 	immediate = {
+<<<<<<< Updated upstream
 		if = {
 			limit = {
 				any_country = {
+=======
+		# saves started before the Aratus date-watcher existed: start it now
+		if = {
+			limit = { NOT = { has_variable = achaean_aratus_watcher } }
+			set_variable = achaean_aratus_watcher
+			trigger_event = {
+				id = me_achaean_missions.39
+				days = { 20 30 }
+			}
+		}
+		if = {
+			limit = {
+				any_country = {
+					NOT = { this = ROOT }
+>>>>>>> Stashed changes
 					has_opinion = {
 						modifier = olympic_victor
 						target = ROOT
@@ -600,6 +798,13 @@ me_achaean_missions.16 = {
 		}
 
 		add_political_influence = 30
+<<<<<<< Updated upstream
+=======
+		add_country_modifier = {
+			name = achaean_benevolence
+			duration = 7300 # 20 years
+		}
+>>>>>>> Stashed changes
 	}
 }
 
@@ -672,7 +877,10 @@ me_achaean_missions.18 = {
 			p:418 = { set_owned_by = ROOT }
 			add_aggressive_expansion = 1
 			current_ruler = { add_popularity = 10 }
+<<<<<<< Updated upstream
 			change_law = republican_election_4
+=======
+>>>>>>> Stashed changes
 			if = {
 				limit = { exists = scope:akrokorinthos_wronged }
 				scope:akrokorinthos_wronged = {
@@ -696,7 +904,11 @@ me_achaean_missions.18 = {
 # achaean_mission_16_task ("The Fall of Akrokorinthos")
 ################################################################
 
+<<<<<<< Updated upstream
 # achaea_corinth_fall - blasts the join / feudatory offers across the southern Greek states.
+=======
+# achaea_corinth_fall - sends feudatory offers to Megara, Epidauros, Hermione, Troizen and Aigina (see achaean_feudatory_offer_effect).
+>>>>>>> Stashed changes
 me_achaean_missions.19 = {
 	type = country_event
 
@@ -716,6 +928,7 @@ me_achaean_missions.19 = {
 					NOT = { this = ROOT }
 					NOT = { is_subject_of = ROOT }
 				}
+<<<<<<< Updated upstream
 				add_opinion = { target = ROOT  modifier = achaean_league_overture_opinion }
 				trigger_event = { id = me_achaean_missions.20  days = { 3 20 } }
 			}
@@ -955,6 +1168,10 @@ me_achaean_missions.23 = {
 				}
 			}
 			c:ACL = { trigger_event = { id = me_achaean_missions.25 } }
+=======
+				achaean_feudatory_offer_effect = yes
+			}
+>>>>>>> Stashed changes
 		}
 	}
 }
@@ -1019,6 +1236,10 @@ me_achaean_missions.26 = {
 				}
 			}
 			p:434 = {
+<<<<<<< Updated upstream
+=======
+				set_trade_goods = fish
+>>>>>>> Stashed changes
 				create_pop = freemen
 				create_pop = freemen
 				add_province_modifier = {
@@ -1118,6 +1339,10 @@ me_achaean_missions.29 = {
 				add_permanent_province_modifier = { name = amarion }
 			}
 			add_country_modifier = { name = synodos  duration = -1 }
+<<<<<<< Updated upstream
+=======
+			add_2_free_province_investments = yes
+>>>>>>> Stashed changes
 		}
 	}
 }
@@ -1144,6 +1369,7 @@ me_achaean_missions.30 = {
 	}
 }
 
+<<<<<<< Updated upstream
 # achaean_mission_17_task ("For Democracy!") on_completion
 me_achaean_missions.31 = {
 	type = country_event
@@ -1185,11 +1411,254 @@ me_achaean_missions.31 = {
 					}
 					add_claim = ROOT
 				}
+=======
+# achaean_mission_19_task ("Arcadia Tamed") on_completion - decide how to integrate the Arcadians
+me_achaean_missions.33 = {
+	type = country_event
+
+	title = me_achaean_33_title
+	desc = me_achaean_33_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	goto_location = p:449
+
+	option = {
+		name = me_achaean_missions_33.a
+		custom_tooltip = me_achaean_33_a_tt
+
+		hidden_effect = {
+			random_country_culture = {
+				limit = { is_culture = arcadian }
+				add_country_culture_modifier = {
+					name = achaean_integration
+					duration = 3650 # 120 months (10 years)
+				}
+			}
+		}
+	}
+
+	option = {
+		name = me_achaean_missions_33.b
+		custom_tooltip = me_achaean_33_b_tt
+
+		hidden_effect = {
+			random_country_culture = {
+				limit = { is_culture = arcadian }
+				add_country_culture_modifier = {
+					name = achaean_assimilation
+					duration = 3650 # 120 months (10 years)
+				}
 			}
 		}
 	}
 }
 
+# achaean_mission_20_task ("Olympia Secured") on_completion - decide the fate of the Temple of Zeus
+me_achaean_missions.34 = {
+	type = country_event
+
+	title = me_achaean_34_title
+	desc = me_achaean_34_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	goto_location = p:439
+
+	option = {
+		name = me_achaean_missions_34.a
+		custom_tooltip = me_achaean_34_a_tt
+
+		add_treasury = 200
+
+		hidden_effect = {
+			p:439 = {
+				create_country = {
+					name = {
+						name = OLYMPIA_FEUDATORY_NAME
+						adjective = OLYMPIA_FEUDATORY_ADJECTIVE
+					}
+					change_country_color = olympian_white
+					set_primary_culture = peloponnesian
+					set_country_religion = roman_pantheon
+					change_government = theocratic_republic
+					set_country_heritage = religious_enclave_heritage
+					change_country_flag = OLYMPIA_FLAG
+					save_scope_as = olympia_country_scope
+				}
+			}
+			make_subject = {
+				target = scope:olympia_country_scope
+				type = temple_state
+			}
+			trigger_event = {
+				id = me_achaean_missions.35
+				days = { 5 15 }
+			}
+		}
+	}
+
+	option = {
+		name = me_achaean_missions_34.b
+		custom_tooltip = me_achaean_34_b_tt
+
+		add_political_influence = 50
+		add_country_modifier = {
+			name = stewards_of_olympia
+			duration = 3650 # 120 months
+		}
+
+		hidden_effect = {
+			trigger_event = {
+				id = me_achaean_missions.35
+				days = { 5 15 }
+			}
+		}
+	}
+}
+
+# Fires after either option of me_achaean_missions.34 ("A Divine Offer") - Aetolia reacts to losing Olympia
+me_achaean_missions.35 = {
+	type = country_event
+
+	title = me_achaean_35_title
+	desc = me_achaean_35_desc
+	picture = greek_siege
+	left_portrait = current_ruler
+	right_portrait = c:AET.current_ruler
+	goto_location = c:AET.capital_scope
+
+	trigger = {
+		exists = c:AET
+		owns_or_subject_owns = 439
+	}
+
+	option = {
+		name = me_achaean_missions_35.a
+		custom_tooltip = me_achaean_35_tt
+
+		hidden_effect = {
+			c:AET = {
+				every_owned_province = {
+					add_claim = ROOT
+				}
+			}
+		}
+	}
+}
+
+# achaean_mission_21_task ("Argos Subdued") on_completion
+me_achaean_missions.36 = {
+	type = country_event
+
+	title = me_achaean_36_title
+	desc = me_achaean_36_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+	goto_location = p:440
+
+	option = {
+		name = me_achaean_missions_36.a
+		custom_tooltip = me_achaean_36_tt
+
+		hidden_effect = {
+			p:441 = { add_claim = ROOT }
+			p:451 = { add_claim = ROOT }
+			p:7903 = { add_claim = ROOT }
+			add_political_influence = 50
+			current_ruler = {
+				add_character_modifier = {
+					name = victory_over_argos
+					duration = -1
+				}
+			}
+		}
+	}
+}
+
+# achaean_mission_22_task ("A Budding Federation") on_completion - Achaean federalism takes root beyond Achaea
+me_achaean_missions.37 = {
+	type = country_event
+
+	title = me_achaean_37_title
+	desc = me_achaean_37_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+
+	option = {
+		name = me_achaean_missions_37.a
+		custom_tooltip = me_achaean_37_tt
+
+		hidden_effect = {
+			add_country_modifier = {
+				name = achaean_federalism
+				duration = -1
+			}
+		}
+	}
+}
+
+# Fired 30 days after Megalopolis accepts in achaean_mission_23_task ("Invite Megalopolis") - Sparta reacts
+me_achaean_missions.38 = {
+	type = country_event
+
+	title = me_achaean_38_title
+	desc = me_achaean_38_desc
+	picture = greek_siege
+	left_portrait = current_ruler
+	right_portrait = c:SPA.current_ruler
+	goto_location = p:436
+
+	trigger = {
+		exists = c:SPA
+	}
+
+	option = {
+		name = me_achaean_missions_38.a
+		custom_tooltip = me_achaean_38_tt
+
+		hidden_effect = {
+			area:arcadia_area = {
+				every_area_province = {
+					limit = {
+						OR = {
+							owner = ROOT
+							owner = { is_subject_of = ROOT }
+						}
+					}
+					add_claim = c:SPA
+				}
+			}
+			c:SPA = {
+				add_opinion = { target = ROOT  modifier = achaean_megalopolis_opinion }
+			}
+			add_opinion = { target = c:SPA  modifier = achaean_megalopolis_opinion }
+		}
+	}
+}
+
+# Hidden watcher - started by the mission's on_start (or by me_achaean_missions.14 in older saves). Checks about monthly until
+# 500.1.1, then hands over to me_achaean_missions.6, whose trigger decides whether Aratus actually appears (date route) and stops.
+me_achaean_missions.39 = {
+	type = country_event
+	hidden = yes
+
+	trigger = { tag = ACL }
+
+	immediate = {
+		if = {
+			limit = { current_date >= 500.1.1 }
+			trigger_event = { id = me_achaean_missions.6 }
+		}
+		else = {
+			trigger_event = {
+				id = me_achaean_missions.39
+				days = { 20 30 }
+>>>>>>> Stashed changes
+			}
+		}
+	}
+}
+
+<<<<<<< Updated upstream
 # achaean_mission_18_task ("Pasture Appropriations") on_completion
 me_achaean_missions.32 = {
 	type = country_event
@@ -1216,6 +1685,69 @@ me_achaean_missions.32 = {
 						modifier = pasture_appropriations_opinion
 					}
 				}
+=======
+# Fired 5-15 days after achaean_mission_01 completes, if our ruler is Aratus. Founds the Aratid family around him and gives him a wife
+# and two children (a son aged 3 and a daughter aged 0) who carry the Blood of Aratus. Following dhe's diadochi_effects.txt pattern.
+me_achaean_missions.40 = {
+	type = country_event
+
+	title = me_achaean_40_title
+	desc = me_achaean_40_desc
+	picture = greek_political_discussion
+	left_portrait = current_ruler
+
+	trigger = {
+		tag = ACL
+		NOT = { has_variable = achaean_aratid_family_founded }
+		current_ruler = {
+			has_trait = blood_of_aratus
+			is_minor_character = yes # i.e. he belongs to no family yet; if the game already gave him one, this event does not fire
+		}
+	}
+
+	immediate = {
+		set_variable = achaean_aratid_family_founded
+		current_ruler = { save_scope_as = aratus_scope }
+	}
+
+	option = {
+		name = me_achaean_missions_40.a
+		custom_tooltip = me_achaean_40_tt
+
+		hidden_effect = {
+			# clears "Fallen from Grace" if a vanilla family event already dissolved an earlier family of his (deliberately not in the tooltip)
+			scope:aratus_scope = {
+				remove_triggered_character_modifier = was_once_great
+			}
+			create_family = scope:aratus_scope
+			create_character = {
+				female = yes
+				age = 24
+				culture = achaean
+				religion = roman_pantheon
+				marry_character = scope:aratus_scope
+				save_scope_as = aratus_wife
+			}
+			create_character = {
+				female = no
+				age = 3
+				culture = achaean
+				religion = roman_pantheon
+				father = scope:aratus_scope
+				mother = scope:aratus_wife
+				set_family = scope:aratus_scope.family
+				force_add_trait = blood_of_aratus
+			}
+			create_character = {
+				female = yes
+				age = 0
+				culture = achaean
+				religion = roman_pantheon
+				father = scope:aratus_scope
+				mother = scope:aratus_wife
+				set_family = scope:aratus_scope.family
+				force_add_trait = blood_of_aratus
+>>>>>>> Stashed changes
 			}
 		}
 	}

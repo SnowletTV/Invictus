@@ -1,0 +1,867 @@
+﻿achaean_mission_01 = { # Achaean League - test mission tree
+	icon = cde_greek_house
+	header = mission_image_macedon
+
+	repeatable = no
+
+	chance = {
+		factor = 10
+	}
+
+	ai_chance = { factor = 10 }
+
+	potential = {
+		tag = ACL
+		NOT = { has_completed_mission = achaean_mission_01 }
+	}
+
+	abort = {
+		ai_mission_back_out_trigger = yes
+	}
+
+	on_start = {
+		start_mission_ai_effect = yes
+		trigger_event = { id = me_achaean_missions.1 }
+		# Start the watcher for the "Curse of Oebotas" Olympic-victory flavour event.
+		trigger_event = {
+			id = me_achaean_missions.14
+			days = { 30 90 }
+		}
+		# Start the watcher that spawns Aratus on 500.1.1 if ACL never did Conspiracy in Sikyon.
+		set_variable = achaean_aratus_watcher
+		trigger_event = {
+			id = me_achaean_missions.39
+			days = { 20 30 }
+		}
+	}
+
+	on_completion = {
+		complete_mission_effect = yes
+		# if Aratus (the only bearer of the Blood of Aratus at this point) is our ruler, he founds the Aratid family
+		if = {
+			limit = { current_ruler = { has_trait = blood_of_aratus } }
+			trigger_event = {
+				id = me_achaean_missions.40
+				days = { 5 15 }
+			}
+		}
+	}
+
+	achaean_mission_01_task = { # An Ultimatum for Pellene
+		icon = task_political
+
+		duration = 30
+
+		requires = {}
+
+		allow = {
+			political_influence >= 20
+		}
+
+		on_start = {
+			add_political_influence = -20
+		}
+
+		highlight = {
+			scope:province = { province_id = 7893 }
+		}
+
+		on_completion = {
+			custom_tooltip = achaean_mission_01_task_ultimatum_tt
+			hidden_effect = {
+				if = {
+					limit = { exists = c:PLE }
+					random = {
+						chance = achaean_pellene_ultimatum_svalue
+						set_variable = pel_ultimatum_won
+					}
+					if = {
+						limit = { has_variable = pel_ultimatum_won }
+						remove_variable = pel_ultimatum_won
+						trigger_event = { id = me_achaean_missions.2 }
+					}
+					else = {
+						trigger_event = { id = me_achaean_missions.3 }
+					}
+				}
+			}
+			hidden_effect = {
+				area:achaea_area = {
+					every_area_province = {
+						limit = {
+							has_owner = yes
+							NOT = { owner = ROOT }
+						}
+						add_claim = ROOT
+					}
+				}
+				p:449 = { # Kleitor
+					if = {
+						limit = {
+							has_owner = yes
+							NOT = { owner = ROOT }
+						}
+						add_claim = ROOT
+					}
+				}
+			}
+		}
+	}
+
+	achaean_mission_02_task = { # Achaean Developments - main required branch, start
+		icon = task_economical
+
+		requires = { achaean_mission_01_task }
+
+		allow = {
+			hidden:current_ruler = {
+				custom_tooltip = {
+					text = achaean_mission_02_task_pop_tt
+					popularity >= 60
+				}
+			}
+			owns_or_subject_owns = 7890
+			owns_or_subject_owns = 434
+			owns_or_subject_owns = 444
+			owns_or_subject_owns = 7893
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 7890
+					province_id = 434
+					province_id = 444
+					province_id = 7893
+				}
+			}
+		}
+
+		on_completion = {
+			add_tyranny = 10
+			add_party_approval = {
+				party_type = oligarchic_party
+				value = -20
+			}
+			add_country_modifier = {
+				name = rapid_urbanization
+				duration = 3650 # 120 months
+			}
+			# Start the watcher for the optional "self-fund the cities" flavour event.
+			trigger_event = {
+				id = me_achaean_missions.13
+				days = { 30 90 }
+			}
+		}
+	}
+
+	achaean_mission_03_task = { # The Cities of Achaea - main required branch, continues from Achaean Developments
+		icon = task_economical
+
+		requires = { achaean_mission_02_task }
+
+		allow = {
+			owns_or_subject_owns = 7890
+			owns_or_subject_owns = 434
+			owns_or_subject_owns = 444
+			owns_or_subject_owns = 7893
+			custom_tooltip = {
+				text = achaean_mission_03_task_cities_tt
+				p:7890 = { has_city_status = yes }
+				p:434 = { has_city_status = yes }
+				p:444 = { has_city_status = yes }
+				p:7893 = { has_city_status = yes }
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 7890
+					province_id = 434
+					province_id = 444
+					province_id = 7893
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.26 }
+			show_as_tooltip = {
+				if = {
+					limit = { has_country_modifier = rapid_urbanization }
+					remove_country_modifier = rapid_urbanization
+				}
+				add_manpower = 2
+				add_2_free_province_investments = yes
+				p:7890 = {
+					create_pop = freemen
+					create_pop = freemen
+					add_province_modifier = { name = migrant_boom  duration = 7300 }
+				}
+				p:434 = {
+					set_trade_goods = fish
+					create_pop = freemen
+					create_pop = freemen
+					add_province_modifier = { name = migrant_boom  duration = 7300 }
+				}
+				p:444 = {
+					create_pop = freemen
+					create_pop = freemen
+					add_province_modifier = { name = migrant_boom  duration = 7300 }
+				}
+				p:7893 = {
+					create_pop = freemen
+					create_pop = freemen
+					add_province_modifier = { name = migrant_boom  duration = 7300 }
+				}
+			}
+		}
+	}
+
+	achaean_mission_04_task = { # Gate to the West - optional, branches off The Cities of Achaea
+		icon = task_expansion
+
+		duration = 240
+
+		requires = { achaean_mission_03_task }
+
+		allow = {
+			owns_or_subject_owns = 434
+			custom_tooltip = {
+				text = achaean_mission_04_task_infra_tt
+				p:434 = { has_building = port_building }
+				p:434 = { has_building = fortress_building }
+			}
+		}
+
+		highlight = {
+			scope:province = { province_id = 434 }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.27 }
+			show_as_tooltip = {
+				p:434 = {
+					add_permanent_province_modifier = { name = gate_to_the_west }
+				}
+			}
+		}
+	}
+
+	achaean_mission_06_task = { # Sikyon Liberated - follows Conspiracy in Sikyon
+		icon = task_diplomatic
+
+		duration = 30
+
+		requires = { achaean_mission_07_task }
+
+		allow = {
+			owns_or_subject_owns = 8003
+		}
+
+		highlight = {
+			scope:province = { province_id = 8003 }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.28 }
+			show_as_tooltip = {
+				add_political_influence = 40
+				area:achaea_area = {
+					every_area_province = {
+						limit = {
+							has_owner = yes
+							NOT = { owner = ROOT }
+						}
+						add_claim = ROOT
+					}
+				}
+			}
+		}
+	}
+
+	achaean_mission_07_task = { # Conspiracy in Sikyon - optional, branches off An Ultimatum for Pellene; leads the whole Sikyon/Corinth branch
+		icon = task_diplomatic
+
+		duration = 60
+
+		requires = { achaean_mission_01_task }
+
+		allow = {
+			manpower >= 1
+			any_owned_province = { count >= 5 }
+			exists = c:SIC
+			c:SIC = {
+				is_subject = yes
+				NOT = { is_subject_of = ROOT }
+			}
+		}
+
+		on_start = {
+			add_manpower = -1
+			set_variable = achaean_conspiracy_started
+		}
+
+		bypass = {
+			owns_or_subject_owns = 8003
+		}
+
+		highlight = {
+			scope:province = { province_id = 8003 }
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = me_achaean_missions.8
+				days = { 1 5 }
+			}
+			show_as_tooltip = {
+				if = {
+					limit = {
+						exists = c:SIC
+						c:SIC = { is_subject = yes }
+					}
+					c:SIC.overlord = {
+						add_opinion = { target = ROOT  modifier = sikyon_stolen_opinion }
+					}
+				}
+				if = {
+					limit = { exists = c:SIC }
+					make_subject = {
+						type = feudatory
+						target = c:SIC
+					}
+				}
+			}
+		}
+	}
+
+	achaean_mission_08_task = { # Choosing Sides - standalone side task, not connected to the main spine
+		icon = task_diplomatic
+
+		duration = 30
+
+		requires = {}
+
+		potential = {
+			exists = c:MAC
+			exists = c:PRY
+		}
+
+		allow = {
+			custom_tooltip = {
+				text = achaean_mission_08_task_war_tt
+				has_global_variable = fourth_war_triggered # the scripted Fourth War of the Diadochi has begun
+				c:MAC = { war_with = c:PRY }
+			}
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					this = c:MAC.capital_scope
+					this = c:PRY.capital_scope
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.4 }
+			custom_tooltip = achaean_mission_08_task_reward_tt
+		}
+	}
+
+	achaean_mission_09_task = { # Renovate the Amarion - main required branch, end; gates the Sikyon/Corinth spine (tasks 05-16); FINAL node
+		icon = task_religion
+		final = yes
+
+		duration = 240
+
+		requires = { achaean_mission_12_task }
+
+		allow = {
+			owns_or_subject_owns = 444
+			treasury >= 50
+			p:444 = { num_of_court_building >= 1 }
+			invention = global_citizen_output_inv_1
+			has_law = republic_corruption_1
+			custom_tooltip = {
+				text = achaean_mission_09_task_religious_tt
+				p:444.state = { state_improvement_religious_trigger = yes }
+			}
+		}
+
+		on_start = {
+			add_treasury = -50
+		}
+
+		highlight = {
+			scope:province = { province_id = 444 }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.29 }
+			show_as_tooltip = {
+				p:444 = {
+					create_pop = nobles
+					create_pop = citizen
+					add_permanent_province_modifier = { name = amarion }
+				}
+				add_country_modifier = { name = synodos  duration = -1 }
+				add_2_free_province_investments = yes
+			}
+		}
+	}
+
+	achaean_mission_10_task = { # Ptolemaic Overtures - optional, branches off The Cities of Achaea
+		icon = task_economical
+
+		duration = 30
+
+		requires = { achaean_mission_03_task }
+
+		allow = {
+			treasury >= 25
+			custom_tooltip = {
+				text = achaean_mission_10_task_grain_tt
+				capital_scope = { is_importing_trade_good = grain }
+				imports_from = c:EGY
+			}
+		}
+
+		on_start = {
+			add_treasury = -25
+		}
+
+		highlight = {
+			scope:province = { this = c:EGY.capital_scope }
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = me_achaean_missions.9
+				days = { 1 5 }
+			}
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = egyptian_grain
+					duration = 3650 # 10 years
+				}
+				if = {
+					limit = { exists = c:EGY }
+					c:EGY = {
+						add_opinion = { target = ROOT  modifier = ptolemaic_overtures_opinion }
+					}
+				}
+			}
+		}
+	}
+
+	achaean_mission_11_task = { # The Achaean Triobol - main required branch, between The Cities of Achaea and Helike Remembered
+		icon = task_economical
+
+		duration = 120
+
+		requires = { achaean_mission_03_task }
+
+		allow = {
+			custom_tooltip = {
+				text = achaean_mission_11_task_cities_tt
+				any_owned_province = {
+					count >= 3
+					is_in_area = achaea_area
+					has_city_status = yes
+				}
+			}
+			custom_tooltip = {
+				text = achaean_mission_11_task_metals_tt
+				any_owned_province = {
+					is_in_area = achaea_area
+					is_importing_trade_good = precious_metals
+				}
+			}
+		}
+
+		on_start = {
+			add_stability = -5
+		}
+
+		highlight = {
+			scope:province = { is_in_area = achaea_area }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.10 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = achaean_triobol
+					duration = -1
+				}
+			}
+		}
+	}
+
+	achaean_mission_12_task = { # Helike Remembered - main required branch, between The Achaean Triobol and Renovate the Amarion
+		icon = task_religion
+
+		duration = 120
+
+		requires = { achaean_mission_11_task }
+
+		allow = {
+			invention = happiness_for_wrong_group_modifier_inv_1
+			political_influence >= 40
+		}
+
+		on_start = {
+			add_political_influence = -40
+		}
+
+		highlight = {
+			scope:province = { province_id = 444 }
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = me_achaean_missions.11
+				days = { 1 5 }
+			}
+			show_as_tooltip = {
+				p:444 = {
+					add_permanent_province_modifier = { name = sanctuary_helikonios }
+				}
+				add_country_modifier = {
+					name = rites_of_helikonios
+					duration = -1
+				}
+				current_ruler = { add_zeal = 1 }
+			}
+		}
+	}
+
+	achaean_mission_13_task = { # Grain Storehouses - optional, branches off Ptolemaic Overtures
+		icon = task_economical
+
+		duration = 120
+
+		requires = { achaean_mission_10_task }
+
+		allow = {
+			custom_tooltip = {
+				text = achaean_mission_13_task_granary_tt
+				any_owned_province = {
+					count >= 3
+					is_in_area = achaea_area
+					has_city_status = yes
+					num_of_population_building >= 1
+				}
+			}
+		}
+
+		highlight = {
+			scope:province = { is_in_area = achaea_area }
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.30 }
+			show_as_tooltip = {
+				add_country_modifier = {
+					name = grain_storehouses
+					duration = 3650 # 10 years
+				}
+			}
+		}
+	}
+
+	achaean_mission_14_task = { # Invite the Korinthoi - branch 1 under Sikyon Liberated; do one branch, the other bypasses on holding Korinthos
+		icon = task_diplomatic
+
+		duration = 30
+
+		requires = { achaean_mission_06_task }
+
+		prevented_by = { achaean_mission_15_task }
+
+		allow = {
+			political_influence >= 50
+			exists = c:KOR
+			c:KOR = {
+				is_subject = no
+				owns = 418
+				any_owned_province = { count <= 2 }
+			}
+		}
+
+		on_start = {
+			add_political_influence = -50
+		}
+
+		bypass = {
+			owns_or_subject_owns = 418
+		}
+
+		highlight = {
+			scope:province = { province_id = 418 }
+		}
+
+		on_completion = {
+			custom_tooltip = achaean_mission_14_task_ultimatum_tt
+			hidden_effect = {
+				if = {
+					limit = { exists = c:KOR }
+					random = {
+						chance = achaean_korinthos_ultimatum_svalue
+						set_variable = kor_ultimatum_won
+					}
+					if = {
+						limit = { has_variable = kor_ultimatum_won }
+						remove_variable = kor_ultimatum_won
+						trigger_event = { id = me_achaean_missions.16 }
+					}
+					else = {
+						trigger_event = { id = me_achaean_missions.17 }
+					}
+				}
+			}
+		}
+	}
+
+	achaean_mission_15_task = { # Seize the Akrokorinthos - branch 2 under Sikyon Liberated; do one branch, the other bypasses on holding Korinthos
+		icon = task_battle
+
+		duration = 60
+
+		requires = { achaean_mission_06_task }
+
+		prevented_by = { achaean_mission_14_task }
+
+		allow = {
+			manpower >= 4
+			NOT = { char:37 = { is_alive = yes } } # Antigonos I Monophthalmos must be dead
+			OR = {
+				AND = {
+					exists = c:KOR
+					c:KOR = { is_subject = yes }
+				}
+				p:418.owner = { is_diadochi_trigger = yes }
+			}
+		}
+
+		on_start = {
+			add_manpower = -2
+		}
+
+		bypass = {
+			owns_or_subject_owns = 418
+		}
+
+		highlight = {
+			scope:province = { province_id = 418 }
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = me_achaean_missions.18
+				days = { 1 5 }
+			}
+			show_as_tooltip = {
+				p:418 = { set_owned_by = ROOT }
+				add_aggressive_expansion = 1
+				current_ruler = { add_popularity = 10 }
+				if = {
+					limit = { p:418.owner = { is_subject = yes } }
+					p:418.owner.overlord = {
+						add_opinion = { target = ROOT  modifier = achaean_aggression_opinion }
+					}
+				}
+				else = {
+					p:418.owner = {
+						add_opinion = { target = ROOT  modifier = achaean_aggression_opinion }
+					}
+				}
+			}
+		}
+	}
+
+	achaean_mission_16_task = { # The Fall of Akrokorinthos - links from both Corinth branches. Do one, the other bypasses on holding Korinthos.
+		icon = task_diplomatic
+
+		duration = 60
+
+		requires = { achaean_mission_14_task achaean_mission_15_task }
+
+		allow = {
+			owns_or_subject_owns = 418
+			political_influence >= 50
+		}
+
+		on_start = {
+			add_political_influence = -50
+		}
+
+		highlight = {
+			scope:province = { province_id = 418 }
+		}
+
+		on_completion = {
+			trigger_event = {
+				id = me_achaean_missions.19
+				days = { 1 5 }
+			}
+		}
+	}
+
+	achaean_mission_19_task = { # Arcadia Tamed - optional, branches off An Ultimatum for Pellene
+		icon = task_expansion
+
+		duration = 30
+
+		requires = { achaean_mission_01_task }
+
+		allow = {
+			owns_or_subject_owns = 449
+			owns_or_subject_owns = 435
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 449
+					province_id = 435
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.33 }
+			add_political_influence = 10
+			custom_tooltip = achaean_mission_19_task_reward_tt
+		}
+	}
+
+	achaean_mission_20_task = { # Olympia Secured - optional, branches off An Ultimatum for Pellene
+		icon = task_religion
+
+		duration = 60
+
+		requires = { achaean_mission_01_task }
+
+		allow = {
+			owns = 446
+			owns = 439
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 446
+					province_id = 439
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.34 }
+			add_political_influence = 10
+			custom_tooltip = achaean_mission_20_task_reward_tt
+		}
+	}
+
+	achaean_mission_21_task = { # Argos Subdued - optional, branches off An Ultimatum for Pellene
+		icon = task_diplomatic
+
+		duration = 60
+
+		requires = { achaean_mission_01_task }
+
+		allow = {
+			owns = 7894
+			owns = 440
+		}
+
+		highlight = {
+			scope:province = {
+				OR = {
+					province_id = 7894
+					province_id = 440
+				}
+			}
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.36 }
+			add_political_influence = 10
+			custom_tooltip = achaean_mission_21_task_reward_tt
+		}
+	}
+
+	achaean_mission_22_task = { # A Budding Federation - optional, free-floating (not tied to any branch)
+		icon = task_diplomatic
+
+		duration = 30
+
+		requires = {}
+
+		allow = {
+			political_influence >= 20
+			any_subject = { count >= 3 }
+		}
+
+		on_start = {
+			add_political_influence = -20
+			add_stability = -10
+		}
+
+		on_completion = {
+			trigger_event = { id = me_achaean_missions.37 }
+			show_as_tooltip = {
+				add_country_modifier = { name = achaean_federalism  duration = -1 }
+			}
+		}
+	}
+
+	achaean_mission_23_task = { # Invite Megalopolis - optional, requires Arcadia Tamed and The Fall of Akrokorinthos
+		icon = task_diplomatic
+
+		duration = 30
+
+		requires = { achaean_mission_19_task achaean_mission_16_task }
+
+		allow = {
+			political_influence >= 20
+			manpower >= 0.5
+			exists = c:MGL
+			c:MGL = {
+				alliance_with = ROOT
+				NOT = { is_subject_of = ROOT }
+				opinion = { target = ROOT  value > 0 }
+				num_of_provinces <= 3
+			}
+		}
+
+		on_start = {
+			add_political_influence = -20
+			add_manpower = -0.5
+		}
+
+		on_completion = {
+			hidden_effect = {
+				if = {
+					limit = { exists = c:MGL }
+					c:MGL = { achaean_mgl_offer_effect = yes }
+				}
+				# if Megalopolis accepted (it is now our subject), Sparta reacts 30 days later
+				if = {
+					limit = {
+						exists = c:MGL
+						c:MGL = { is_subject_of = ROOT }
+					}
+					trigger_event = { id = me_achaean_missions.38  days = 30 }
+				}
+			}
+			custom_tooltip = achaean_mission_23_task_reward_tt
+		}
+	}
+
+}

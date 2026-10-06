@@ -1,0 +1,154 @@
+﻿# Feudatory offer fired from me_achaean_missions.19 (achaean_mission_16_task, "The Fall of Akrokorinthos").
+# Scope: the target state (EPD / TRN / HRM / MGA / AGN). ACL = c:ACL.
+# Eligible only if the state holds more than 0 opinion of ACL, has 3 or fewer territories, isn't at war with ACL and ACL can
+# pay the 500 manpower cost (0.5 in script units - mission manpower values are in thousands, see the -0.245 / -1.235 costs
+# elsewhere in the mod). An ineligible state still gets the offer but refuses it automatically (see the else_if at the end).
+# Success chance: 25% base, +15% at 25+ opinion, +30% at 50+ opinion, +15% per territory below 3.
+achaean_feudatory_offer_effect = {
+	if = {
+		limit = {
+			exists = c:ACL
+			NOT = { is_subject_of = c:ACL }
+			NOT = { war_with = c:ACL }
+			opinion = { target = c:ACL  value > 0 }
+			num_of_provinces <= 3
+			c:ACL = { manpower >= 0.5 }
+		}
+		c:ACL = { add_manpower = -0.5 }
+		if = {
+			limit = { opinion = { target = c:ACL  value >= 50 } }
+			if = {
+				limit = { num_of_provinces <= 1 }
+				achaean_feudatory_roll_effect = { CHANCE = 85  FAIL = 15 }
+			}
+			else_if = {
+				limit = { num_of_provinces <= 2 }
+				achaean_feudatory_roll_effect = { CHANCE = 70  FAIL = 30 }
+			}
+			else = {
+				achaean_feudatory_roll_effect = { CHANCE = 55  FAIL = 45 }
+			}
+		}
+		else_if = {
+			limit = { opinion = { target = c:ACL  value >= 25 } }
+			if = {
+				limit = { num_of_provinces <= 1 }
+				achaean_feudatory_roll_effect = { CHANCE = 70  FAIL = 30 }
+			}
+			else_if = {
+				limit = { num_of_provinces <= 2 }
+				achaean_feudatory_roll_effect = { CHANCE = 55  FAIL = 45 }
+			}
+			else = {
+				achaean_feudatory_roll_effect = { CHANCE = 40  FAIL = 60 }
+			}
+		}
+		else = {
+			if = {
+				limit = { num_of_provinces <= 1 }
+				achaean_feudatory_roll_effect = { CHANCE = 55  FAIL = 45 }
+			}
+			else_if = {
+				limit = { num_of_provinces <= 2 }
+				achaean_feudatory_roll_effect = { CHANCE = 40  FAIL = 60 }
+			}
+			else = {
+				achaean_feudatory_roll_effect = { CHANCE = 25  FAIL = 75 }
+			}
+		}
+	}
+	# a state that doesn't meet the requirements still receives the offer, but refuses it automatically (no manpower is spent)
+	else_if = {
+		limit = {
+			exists = c:ACL
+			NOT = { is_subject_of = c:ACL }
+		}
+		achaean_feudatory_refuse_effect = yes
+	}
+}
+
+# Scope: the target state. The refusal outcome shared by a failed roll and an automatic refusal:
+# ACL gains a claim on every one of its provinces and gets the "Stands Apart" event (me_achaean_missions.25).
+achaean_feudatory_refuse_effect = {
+	save_scope_as = achaean_rejecting_country
+	every_owned_province = { add_claim = c:ACL }
+	c:ACL = { trigger_event = { id = me_achaean_missions.25 } }
+}
+
+# Scope: the target state. Success makes it a feudatory of ACL (flavor event me_achaean_missions.24);
+# failure gives ACL a claim on it (me_achaean_missions.25).
+achaean_feudatory_roll_effect = {
+	random_list = {
+		$CHANCE$ = {
+			save_scope_as = achaean_joining_country
+			# make_subject fails on a country that already has an overlord, so its current overlord must release it first
+			if = {
+				limit = { exists = overlord }
+				overlord = { release_subject = scope:achaean_joining_country }
+			}
+			c:ACL = {
+				make_subject = { target = scope:achaean_joining_country  type = feudatory }
+				add_political_influence = 20
+				trigger_event = { id = me_achaean_missions.24 }
+			}
+		}
+		$FAIL$ = {
+			achaean_feudatory_refuse_effect = yes
+		}
+	}
+}
+
+# Megalopolis feudatory request fired from achaean_mission_23_task ("Invite Megalopolis").
+# Scope: the target state (MGL). Same weighting as achaean_feudatory_offer_effect but 15 points lower at every tier
+# (10% base, +15% at 25+ opinion, +30% at 50+ opinion, +15% per territory below 3). The 500 manpower cost (0.5) and the
+# opinion > 0 floor are enforced by the task itself (allow / on_start), not here.
+# Success / failure reuse achaean_feudatory_roll_effect (events me_achaean_missions.24 / .25; failure gives ACL a claim).
+achaean_mgl_offer_effect = {
+	if = {
+		limit = {
+			exists = c:ACL
+			NOT = { is_subject_of = c:ACL }
+		}
+		if = {
+			limit = { opinion = { target = c:ACL  value >= 50 } }
+			if = {
+				limit = { num_of_provinces <= 1 }
+				achaean_feudatory_roll_effect = { CHANCE = 70  FAIL = 30 }
+			}
+			else_if = {
+				limit = { num_of_provinces <= 2 }
+				achaean_feudatory_roll_effect = { CHANCE = 55  FAIL = 45 }
+			}
+			else = {
+				achaean_feudatory_roll_effect = { CHANCE = 40  FAIL = 60 }
+			}
+		}
+		else_if = {
+			limit = { opinion = { target = c:ACL  value >= 25 } }
+			if = {
+				limit = { num_of_provinces <= 1 }
+				achaean_feudatory_roll_effect = { CHANCE = 55  FAIL = 45 }
+			}
+			else_if = {
+				limit = { num_of_provinces <= 2 }
+				achaean_feudatory_roll_effect = { CHANCE = 40  FAIL = 60 }
+			}
+			else = {
+				achaean_feudatory_roll_effect = { CHANCE = 25  FAIL = 75 }
+			}
+		}
+		else = {
+			if = {
+				limit = { num_of_provinces <= 1 }
+				achaean_feudatory_roll_effect = { CHANCE = 40  FAIL = 60 }
+			}
+			else_if = {
+				limit = { num_of_provinces <= 2 }
+				achaean_feudatory_roll_effect = { CHANCE = 25  FAIL = 75 }
+			}
+			else = {
+				achaean_feudatory_roll_effect = { CHANCE = 10  FAIL = 90 }
+			}
+		}
+	}
+}

@@ -56,6 +56,10 @@ brc_port = {
         limit = {
             # State borders change very rapidly in the first years
             current_date >= 460.1.1
+            # NAVAL AI: never demolish capital or historic harbor ports
+            brc_port_never_destroy = no
+            # NAVAL AI: never demolish ports in cities, only settlements get pruned
+            has_city_status = no
             # Don't destroy anything while at war
             owner = {
                 war = no
@@ -66,10 +70,10 @@ brc_port = {
                 num_of_port_building > 1
             }
             OR = {
-                # Handle non-city territories where state has too much ports
+                # Handle non-city territories where state has too many ports
                 AND = {
                     has_city_status = no
-                    # If mine or farm, destroy if more than enough ports or can build it somewhere without mine or farm
+                    # If mine or farm, destroy if more than enough ports, or can build it somewhere without a mine or farm
                     trigger_if = {
                         limit = {
                             territory_eligible_for_mine_or_farm = yes
@@ -114,43 +118,45 @@ brc_port = {
                         }
                     }
                 }
-                # Rebuild mega and giga ports from capital to another capital region territory
-                AND = {
-                    is_capital = yes
-                    save_temporary_scope_as = current_territory
-                    trigger_if = {
-                        limit = {
-                            port_level_including_construction >= 2
-                            port_level_including_construction <= 3
-                        }
-                        owner.capital_scope.state.region = {
-                            any_region_province = {
-                                owner = scope:current_territory.owner
-                                is_capital = no
-                                is_eligible_for_building_high_tier_port = {
-                                    tier = mega
-                                }
-                            }
-                        }
-                    }
-                    trigger_else_if = {
-                        limit = {
-                            port_level_including_construction >= 4
-                        }
-                        owner.capital_scope.state.region = {
-                            any_region_province = {
-                                owner = scope:current_territory.owner
-                                is_capital = no
-                                is_eligible_for_building_high_tier_port = {
-                                    tier = giga
-                                }
-                            }
-                        }
-                    }
-                    trigger_else = {
-                        always = no
-                    }
-                }
+                # NAVAL AI: disabled. The AI demolished working level 2+ capital ports to rebuild them
+                # elsewhere in the capital region, losing several port levels in the process.
+                # # Rebuild mega and giga ports from capital to another capital region territory
+#                 AND = {
+#                     is_capital = yes
+#                     save_temporary_scope_as = current_territory
+#                     trigger_if = {
+#                         limit = {
+#                             port_level_including_construction >= 2
+#                             port_level_including_construction <= 3
+#                         }
+#                         owner.capital_scope.state.region = {
+#                             any_region_province = {
+#                                owner = scope:current_territory.owner
+#                                 is_capital = no
+#                                 is_eligible_for_building_high_tier_port = {
+#                                     tier = mega
+#                                 }
+#                             }
+#                         }
+#                     }
+#                     trigger_else_if = {
+#                         limit = {
+#                             port_level_including_construction >= 4
+#                         }
+#                         owner.capital_scope.state.region = {
+#                             any_region_province = {
+#                                 owner = scope:current_territory.owner
+#                                 is_capital = no
+#                                 is_eligible_for_building_high_tier_port = {
+#                                     tier = giga
+#                                 }
+#                             }
+#                         }
+#                     }
+#                     trigger_else = {
+#                         always = no
+#                     }
+#                 }
             }
         }
         value = -1
@@ -167,10 +173,29 @@ brc_port = {
     else = {
         if = {
             limit = {
-                brc_needs_port = yes
+                # brc_needs_port = yes
+                # NAVAL AI: only new ports keep brc_100, high tier upgrades get their own weight below
+                brc_needs_new_port = yes
             }
             value = brc_territory_importance
             multiply = brc_100
+        }
+        # NAVAL AI: mega/giga upgrades compete with other buildings instead of using brc_100
+        # 29: above a city's first port (brc_80 = 28), below granary (brc_85) and ramparts (brc_90)
+        else_if = {
+            limit = {
+                brc_needs_high_tier_port = yes
+            }
+            value = brc_territory_importance
+            multiply = 29
+        }
+        # NAVAL AI: historic harbors keep upgrading until level 3
+        else_if = {
+            limit = {
+                brc_port_wants_upgrade = yes
+            }
+            value = brc_territory_importance
+            multiply = brc_80
         }
         else_if = {
             limit = {
@@ -1244,7 +1269,7 @@ level_of_mega_port_wanted = 3
 num_of_mega_ports_wanted = {
     value = 0
 
-    # 1 per every 35 coastal territories
+    # 1 per every 15 coastal territories  (was 35 before)
     every_owned_province = {
         limit = {
             OR = {
@@ -1254,7 +1279,8 @@ num_of_mega_ports_wanted = {
         }
         add = 1
     }
-    divide = 35
+    # divide = 35
+    divide = 15 # NAVAL AI
     floor = yes
 
     # Base value depending on rank so they always want at least some

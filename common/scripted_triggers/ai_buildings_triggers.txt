@@ -7,39 +7,77 @@
 # --------------------- #
 
 # Port
-brc_needs_port = {
-    trigger_if = {
-        limit = {
-            territory_state_has_enough_ports = no
-        }
-        is_best_territory_for_new_port_in_state = yes
-    }
-    trigger_else = {
-        # OR instead of trigger_else_if so they don't block each other in edge cases
-        OR = {
-            AND = {
-                NOT = {
-                    owner = {
-                        has_wanted_num_of_high_tier_ports = {
-                            tier = mega
-                        }
+# NAVAL AI: original trigger, no longer used cuz it got reworked.
+# brc_needs_port = {
+#     trigger_if = {
+#         limit = {
+#             territory_state_has_enough_ports = no
+#         }
+#         is_best_territory_for_new_port_in_state = yes
+#     }
+#     trigger_else = {
+#         # OR instead of trigger_else_if so they don't block each other in edge cases
+#         OR = {
+#             AND = {
+#                 NOT = {
+#                     owner = {
+#                         has_wanted_num_of_high_tier_ports = {
+#                             tier = mega
+#                         }
+#                     }
+#                 }
+#                 is_best_territory_for_high_tier_port = {
+#                     tier = mega
+#                 }
+#             }
+#             AND = {
+#                 NOT = {
+#                     owner = {
+#                         has_wanted_num_of_high_tier_ports = {
+#                             tier = giga
+#                         }
+#                     }
+#                 }
+#                 is_best_territory_for_high_tier_port = {
+#                     tier = giga
+#                 }
+#             }
+#         }
+#     }
+# }
+# NAVAL AI: brc_needs_port split into a new port trigger and a high tier upgrade trigger
+# so they can use different weights in brc_port. In order to get out of the level 1 => level 2 loop 
+# the AI would get caught in.
+brc_needs_new_port = {
+    territory_state_has_enough_ports = no
+    is_best_territory_for_new_port_in_state = yes
+}
+brc_needs_high_tier_port = {
+    territory_state_has_enough_ports = yes
+    # OR instead of trigger_else_if so they don't block each other in edge cases
+    OR = {
+        AND = {
+            NOT = {
+                owner = {
+                    has_wanted_num_of_high_tier_ports = {
+                        tier = mega
                     }
-                }
-                is_best_territory_for_high_tier_port = {
-                    tier = mega
                 }
             }
-            AND = {
-                NOT = {
-                    owner = {
-                        has_wanted_num_of_high_tier_ports = {
-                            tier = giga
-                        }
+            is_best_territory_for_high_tier_port = {
+                tier = mega
+            }
+        }
+        AND = {
+            NOT = {
+                owner = {
+                    has_wanted_num_of_high_tier_ports = {
+                        tier = giga
                     }
                 }
-                is_best_territory_for_high_tier_port = {
-                    tier = giga
-                }
+            }
+            is_best_territory_for_high_tier_port = {
+                tier = giga
             }
         }
     }
@@ -47,6 +85,54 @@ brc_needs_port = {
 brc_wants_port = {
     has_city_status = yes
     has_or_is_building_port = no
+}
+# NAVAL AI: port protection and historic harbor upgrades
+brc_port_never_destroy = {
+    OR = {
+        is_capital = yes
+        brc_port_is_historic_harbor = yes
+    }
+}
+brc_port_wants_upgrade = {
+    brc_port_is_historic_harbor = yes
+    # Settlement harbors stay protected but are not pushed past level 1
+    has_city_status = yes
+    port_level_including_construction < 3
+    free_building_slots > 0
+}
+
+# Historic ports I figured should be protected even if completely destroyed due to most being IRL deep harbor ports.
+brc_port_is_historic_harbor = { 
+    OR = {
+        province_id = 3256 # Carthago
+        province_id = 3257 # Utica
+        province_id = 1344 # Gadir
+        province_id = 1036 # Carthago Nova
+        province_id = 1000 # Emporiae
+        province_id = 2325 # Massalia
+        province_id = 15 # Ostia
+        province_id = 7 # Neapolis
+        province_id = 56 # Tarentum
+        province_id = 57 # Brundisium
+        province_id = 84 # Syracusae
+        province_id = 94 # Lilybaeum
+        province_id = 416 # Athens
+        province_id = 418 # Korinthos
+        province_id = 266 # Rhodos
+        province_id = 1453 # Byzantion
+        province_id = 252 # Kyzikos
+        province_id = 1812 # Sinope
+        province_id = 4549 # Pantikapaion
+        province_id = 290 # Ephesos
+        province_id = 1973 # Miletos
+        province_id = 7902 # Salamis (on Cyprus)
+        province_id = 332 # Kition (also on Cyprus)
+        province_id = 516 # Alexandria (Ptolemaic one)
+        province_id = 743 # Tyre
+        province_id = 747 # Sidon
+        province_id = 766 # Byblos
+        province_id = 779 # Arados
+    }
 }
 
 # Academy
@@ -518,8 +604,10 @@ is_best_territory_for_high_tier_port = {
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
-                    port_level_including_construction > scope:territory.port_level_including_construction
-                    free_building_slots > scope:territory.free_building_slots
+                    # port_level_including_construction > scope:territory.port_level_including_construction
+                    # free_building_slots > scope:territory.free_building_slots
+                    # NAVAL AI: strict ordering instead of 'higher level AND more slots'
+                    brc_port_site_beats_territory = yes
                 }
             }
         }
@@ -556,8 +644,10 @@ is_best_territory_for_high_tier_port = {
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
-                    port_level_including_construction > scope:territory.port_level_including_construction
-                    free_building_slots > scope:territory.free_building_slots
+                    # port_level_including_construction > scope:territory.port_level_including_construction
+                    # free_building_slots > scope:territory.free_building_slots
+                    # NAVAL AI: strict ordering instead of 'higher level AND more slots'
+                    brc_port_site_beats_territory = yes
                 }
             }
         }
@@ -586,16 +676,46 @@ is_best_territory_for_high_tier_port = {
                     is_eligible_for_building_high_tier_port = {
                         tier = $tier$
                     }
-                    port_level_including_construction > scope:territory.port_level_including_construction
-                    free_building_slots > scope:territory.free_building_slots
+                    # port_level_including_construction > scope:territory.port_level_including_construction
+                    # free_building_slots > scope:territory.free_building_slots
+                    # NAVAL AI: strict ordering instead of 'higher level AND more slots'
+                    brc_port_site_beats_territory = yes
                 }
             }
         }
     }
 }
 
+# NAVAL AI: strict site ordering for mega/giga ports, evaluated in the competing province's scope
+# Higher port level wins, then more free slots, then capital or historic harbor
+brc_port_site_beats_territory = {
+    OR = {
+        port_level_including_construction > scope:territory.port_level_including_construction
+        AND = {
+            port_level_including_construction = scope:territory.port_level_including_construction
+            free_building_slots > scope:territory.free_building_slots
+        }
+        AND = {
+            port_level_including_construction = scope:territory.port_level_including_construction
+            free_building_slots = scope:territory.free_building_slots
+            brc_port_is_preferred_site = yes
+            scope:territory = {
+                brc_port_is_preferred_site = no
+            }
+        }
+    }
+}
+brc_port_is_preferred_site = {
+    OR = {
+        is_capital = yes
+        brc_port_is_historic_harbor = yes
+    }
+}
+
 is_eligible_for_building_high_tier_port = {
     can_have_port = yes
+    # NAVAL AI: only cities big enough that the port takes at most half the slots
+    num_of_total_building_slots >= 6
     # Enough building slots for wanted levels
     free_building_slots >= port_levels_to_$tier$_tier
     # Is not port of this or higher tier already

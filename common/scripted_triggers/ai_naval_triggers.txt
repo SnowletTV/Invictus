@@ -1,0 +1,155 @@
+﻿# =====================================
+# AI SHIP TYPE RATIO
+# =====================================
+
+# Keep in sync with the allow blocks in common/units/navy_*.txt
+# Wood is always checked here: if a ship does not need wood, this only makes the ratio
+# easier (fails open) so it never blocks a type the tag could not replace
+
+# Ship wood is checked per state: the state with the port must have the wood itself
+# State scope
+state_has_ship_wood = {
+    OR = {
+        trade_good_surplus = { target = wood value > 0 }
+        trade_good_surplus = { target = cedar value > 0 }
+    }
+}
+
+# Country scope: some state has both a level 3+ port and its own wood
+can_build_medium_ships = {
+    any_country_state = {
+        state_has_ship_wood = yes
+        any_state_province = {
+            num_of_port_building >= 3
+        }
+    }
+}
+
+# Country scope: heavy type unlocked and some state has both the needed port level and its own wood
+can_build_heavy_ships = {
+    OR = {
+        AND = {
+            has_octere_unlocked = yes
+            any_country_state = {
+                state_has_ship_wood = yes
+                any_state_province = {
+                    num_of_port_building >= 5
+                }
+            }
+        }
+        AND = {
+            has_mega_galley_unlocked = yes
+            any_country_state = {
+                state_has_ship_wood = yes
+                any_state_province = {
+                    num_of_port_building >= 5
+                }
+            }
+        }
+    }
+}
+
+# Military traditions with allow_unit_type = octere
+has_octere_unlocked = {
+    OR = {
+        has_military_bonus = nubian_path_13
+        has_military_bonus = lydian_path_12
+        has_military_bonus = greek_antigonid_path_2_octere
+        has_military_bonus = illyrian_path_3
+        has_military_bonus = levantine_arabian_path_5
+        has_military_bonus = mauryan_coastal_path_end_bonus
+        has_military_bonus = persian_achaemenid_path_3
+    }
+}
+
+# Military traditions with allow_unit_type = mega_galley
+has_mega_galley_unlocked = {
+    OR = {
+        has_military_bonus = greek_states_path_5
+        has_military_bonus = levantine_egyptian_path_2
+    }
+}
+
+# =====================================
+# AI WOOD IMPORT FOR NAVIES
+# =====================================
+
+# Country scope, the country that would import
+wants_to_import_ship_wood = {
+    is_ai = yes
+    OR = {
+        wood_import_big_navy = yes
+        # Small countries: capital territory must be developed enough
+        capital_scope = {
+            total_population >= wood_import_min_capital_pops
+        }
+    }
+    any_country_state = {
+        is_valid_wood_import_state = yes
+    }
+}
+
+# Country scope: regional power (25+ territories) with an actual navy, gets a bigger yearly cap
+wood_import_big_navy = {
+    rank_by_num_territories >= regional_power
+    has_variable = ship_light
+    ship_total >= wood_import_min_ships
+}
+
+# State scope: has a port, no wood of its own, and a free trade route
+is_valid_wood_import_state = {
+    unused_trade_routes > 0
+    state_has_ship_wood = no
+    any_state_province = {
+        num_of_port_building >= 1
+    }
+}
+
+# Country scope, a possible exporter; requires scope:importing_country
+# Same rules as ai_can_import_from_this_country, but for wood and cedar instead of food.
+# Each good is checked on its own, so a country that bans cedar can still export wood.
+can_import_wood_from_this_country = {
+    has_land = yes
+    OR = {
+        this = scope:importing_country
+        AND = {
+            can_export_ship_goods_to_importing_country = yes
+            is_trade_goods_allowed = wood
+        }
+    }
+}
+can_import_cedar_from_this_country = {
+    has_land = yes
+    OR = {
+        this = scope:importing_country
+        AND = {
+            can_export_ship_goods_to_importing_country = yes
+            is_trade_goods_allowed = cedar
+        }
+    }
+}
+
+# Country scope, a foreign exporter; requires scope:importing_country
+# Shared part of the two triggers above
+can_export_ship_goods_to_importing_country = {
+    is_ai = yes
+    scope:importing_country = {
+        in_diplomatic_range = prev
+    }
+    NOT = {
+        war_with = scope:importing_country
+    }
+    trigger_if = {
+        limit = {
+            is_subject_that_only_exports_to_overlord = yes
+        }
+        overlord = scope:importing_country
+    }
+    trigger_else = {
+        always = yes
+    }
+    opinion = {
+        target = scope:importing_country
+        value > -120
+    }
+}

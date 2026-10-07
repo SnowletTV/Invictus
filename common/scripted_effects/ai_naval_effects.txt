@@ -1,0 +1,231 @@
+﻿# ======================================================================================================================
+# AI SHIP TYPE RATIO
+# Country scope. Runs every month from ai_monthly_pulse (common/on_action/ai_pulse.txt).
+# Blocks light ships once there are enough of them for the current mediums, and blocks mediums once there are
+# enough of them for the current heavies, but only when the next tier up can actually be built.
+# Checked in the allow blocks of common/units/navy_*.txt, players are never affected.
+# ======================================================================================================================
+
+ai_update_ship_ratio = {
+    remove_variable = block_light_ships
+    remove_variable = block_medium_ships
+    if = {
+        limit = {
+            is_ai = yes
+        }
+        ai_update_ship_ratio_counts = yes
+    }
+}
+
+# Country scope, only called from ai_update_ship_ratio
+ai_update_ship_ratio_counts = {
+    if = {
+        limit = {
+            num_of_ports > 0
+        }
+        set_variable = {
+            name = ship_light
+            value = count_light_ships
+        }
+        set_variable = {
+            name = ship_medium
+            value = count_medium_ships
+        }
+        set_variable = {
+            name = ship_heavy
+            value = count_heavy_ships
+        }
+
+        # Enough lights for current mediums (1 light per 3 mediums) and mediums are buildable: stop lights
+        # No minimum fleet size here
+        if = {
+            limit = {
+                ship_light_excess >= 0
+                can_build_medium_ships = yes
+            }
+            set_variable = block_light_ships
+        }
+
+        if = {
+            limit = {
+                ship_total >= ship_ratio_min_fleet
+            }
+            # Enough mediums for current heavies and heavies are buildable: stop mediums
+            if = {
+                limit = {
+                    ship_medium_excess >= 0
+                    can_build_heavy_ships = yes
+                }
+                set_variable = block_medium_ships
+            }
+        }
+    }
+}
+
+# ======================================================================================================================
+# AI WOOD IMPORT FOR NAVIES
+# Country scope. Runs once a year from ai_q1_pulse (common/on_action/ai_pulse.txt).
+# Ship wood is checked per state, so every port state without its own wood is a target.
+# Only uses free trade routes, never resets or removes existing routes.
+# ======================================================================================================================
+
+ai_import_ship_wood = {
+    if = {
+        limit = {
+            wants_to_import_ship_wood = yes
+        }
+        save_scope_as = importing_country
+
+        # Yearly cap for this country
+        if = {
+            limit = {
+                wood_import_big_navy = yes
+            }
+            set_local_variable = {
+                name = wood_routes_left
+                value = wood_import_cap_big_navy
+            }
+        }
+        else = {
+            set_local_variable = {
+                name = wood_routes_left
+                value = wood_import_cap_other
+            }
+        }
+
+        # Collect exporters once per country, reused for every target state
+        collect_ship_goods_exporters = {
+            goods = wood
+        }
+        collect_ship_goods_exporters = {
+            goods = cedar
+        }
+
+        # Target states: highest port level first, capital state breaks ties
+        ordered_country_state = {
+            limit = {
+                is_valid_wood_import_state = yes
+            }
+            order_by = wood_import_state_priority
+            min = 0
+            max = 10
+            check_range_bounds = no
+
+            if = {
+                limit = {
+                    local_var:wood_routes_left > 0
+                }
+                save_scope_as = wood_importing_state
+                set_local_variable = {
+                    name = routes_before_import
+                    value = unused_trade_routes
+                }
+
+                import_one_route_of = {
+                    goods = wood
+                }
+                if = {
+                    limit = {
+                        unused_trade_routes = local_var:routes_before_import
+                    }
+                    import_one_route_of = {
+                        goods = cedar
+                    }
+                }
+
+                # Count it against the cap only if a route was actually created
+                if = {
+                    limit = {
+                        unused_trade_routes < local_var:routes_before_import
+                    }
+                    change_local_variable = {
+                        name = wood_routes_left
+                        add = -1
+                    }
+                }
+
+                remove_local_variable = routes_before_import
+                clear_saved_scope = wood_importing_state
+            }
+        }
+
+        clear_local_variable_list = states_to_import_wood_from
+        clear_local_variable_list = states_to_import_cedar_from
+        remove_local_variable = wood_routes_left
+        clear_saved_scope = importing_country
+    }
+}
+
+# Country scope, requires scope:importing_country
+# Builds local list states_to_import_$goods$_from with exporting states that have 2+ surplus of their own
+collect_ship_goods_exporters = {
+    every_country = {
+        limit = {
+            can_import_$goods$_from_this_country = yes
+        }
+        every_country_state = {
+            limit = {
+                state_is_disloyal = no
+                trade_good_surplus = {
+                    target = $goods$
+                    value >= 2
+                }
+            }
+            add_to_local_variable_list = {
+                name = states_to_import_$goods$_from
+                target = this
+            }
+        }
+    }
+}
+
+# Requires scope:wood_importing_state and local list states_to_import_$goods$_from
+# Creates at most one route of $goods$ into the importing state
+import_one_route_of = {
+    ordered_in_local_list = {
+        variable = states_to_import_$goods$_from
+        limit = {
+            # Re-checked live, exporters lose surplus as routes are created
+            trade_good_surplus = {
+                target = $goods$
+                value >= 2
+            }
+            scope:wood_importing_state = {
+                can_create_trade_route = {
+                    target = prev
+                    goods = $goods$
+                }
+            }
+        }
+        # Mirrors food import: more surplus first, foreign exporters preferred,
+        # own trade-limited subjects preferred most
+        order_by = {
+            value = trade_good_surplus_$goods$
+            if = {
+                limit = {
+                    owner = scope:wood_importing_state.owner
+                }
+                multiply = 0.10
+            }
+            else_if = {
+                limit = {
+                    owner = {
+                        is_subject_that_only_exports_to_overlord = yes
+                        exists = overlord
+                        overlord = scope:wood_importing_state.owner
+                    }
+                }
+                multiply = 10
+            }
+        }
+        min = 0
+        max = 1
+        check_range_bounds = no
+        scope:wood_importing_state = {
+            add_trade_route = {
+                target = prev
+                goods = $goods$
+            }
+        }
+    }
+}

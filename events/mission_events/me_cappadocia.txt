@@ -11,6 +11,15 @@ cappadocia_event.1 = { # eumenes' kids start rebellion
 	right_portrait = char:431 # Eumenes
 	right_portrait = char:432 # Artonis
 
+	trigger = {
+		OR = {
+			char:432 = { is_alive = yes }
+			char:433 = { is_alive = yes }
+			char:434 = { is_alive = yes }
+			char:435 = { is_alive = yes }
+		}
+	}
+
 	immediate = {
 		custom_tooltip = eumenes_heirs_rise_up_tt
 		hidden_effect = {
@@ -501,6 +510,23 @@ cappadocia_event.7 = { # Ariarathes tries to seize the throne
 		declare_war_with_wargoal = { # should call overlord in
 			target = scope:ariarathes_rebellion_scope
 			war_goal = imperial_conquest_wargoal
+		}
+		hidden_effect = {
+			set_variable = {
+				name = ariarathid_war_watch
+				days = 1825
+			}
+			if = {
+				limit = { is_subject = yes }
+				set_variable = {
+					name = ariarathid_war_overlord
+					value = overlord
+				}
+			}
+			trigger_event = {
+				id = cappadocia_event.128
+				days = 14
+			}
 		}
 	}
 
@@ -2179,8 +2205,11 @@ cappadocia_event.43 = { # Ariarathes' Rebellion; you take over
 	right_portrait = char:50
 
 	immediate = {
-		overlord = {
-			save_scope_as = overlord_scope
+		if = {
+			limit = { is_subject = yes }
+			overlord = {
+				save_scope_as = overlord_scope
+			}
 		}
 		hidden_effect = {
 			char:50 = {
@@ -2231,11 +2260,18 @@ cappadocia_event.43 = { # Ariarathes' Rebellion; you take over
 					set_country_culture_right = citizen
 				}
 			}
-			scope:overlord_scope = {
-				release_subject = scope:new_country
-				make_subject = {
-					target = scope:old_country
-					type = satrapy
+			set_global_variable = {
+				name = ARI_tag
+				value = scope:new_country
+			}
+			if = {
+				limit = { exists = scope:overlord_scope }
+				scope:overlord_scope = {
+					release_subject = scope:new_country
+					make_subject = {
+						target = scope:old_country
+						type = satrapy
+					}
 				}
 			}
 			add_alliance = c:ARM
@@ -2279,6 +2315,23 @@ cappadocia_event.43 = { # Ariarathes' Rebellion; you take over
 			declare_war_with_wargoal = {
 				war_goal = imperial_conquest_wargoal
 				target = scope:new_country
+			}
+			hidden_effect = {
+				set_variable = {
+					name = ariarathid_war_watch
+					days = 1825
+				}
+				if = {
+					limit = { is_subject = yes }
+					set_variable = {
+						name = ariarathid_war_overlord
+						value = overlord
+					}
+				}
+				trigger_event = {
+					id = cappadocia_event.128
+					days = 14
+				}
 			}
 		}
 		# every_current_war = {
@@ -4913,5 +4966,72 @@ cappadocia_event.127 = { # Little Corinth  cappadocia_mission_inv_23D_task
 			type = temple_state
 		}
 		add_political_influence = -50 
+	}
+}
+
+cappadocia_event.128 = { # Ariarathid war watchdog - the Cappadocian subject re-declares if an overlord transfer removed it from the war
+	type = country_event
+	hidden = yes
+
+	trigger = {
+		has_variable = ariarathid_war_watch
+	}
+
+	immediate = {
+		if = {
+			limit = {
+				has_land = yes
+				has_global_variable = ARI_tag
+				global_var:ARI_tag = { has_land = yes }
+			}
+			if = {
+				limit = {
+					NOT = { war_with = global_var:ARI_tag }
+					trigger_if = {
+						limit = { has_variable = ariarathid_war_overlord }
+						NOT = { is_subject_of = var:ariarathid_war_overlord }
+					}
+					trigger_else = {
+						is_subject = yes
+					}
+				}
+				declare_war_with_wargoal = {
+					war_goal = imperial_conquest_wargoal
+					target = global_var:ARI_tag
+				}
+			}
+			if = {
+				limit = { war_with = global_var:ARI_tag }
+				if = {
+					limit = { is_subject = yes }
+					set_variable = {
+						name = ariarathid_war_overlord
+						value = overlord
+					}
+				}
+				else_if = {
+					limit = { has_variable = ariarathid_war_overlord }
+					remove_variable = ariarathid_war_overlord
+				}
+				trigger_event = {
+					id = cappadocia_event.128
+					days = 14
+				}
+			}
+			else = {
+				remove_variable = ariarathid_war_watch
+				if = {
+					limit = { has_variable = ariarathid_war_overlord }
+					remove_variable = ariarathid_war_overlord
+				}
+			}
+		}
+		else = {
+			remove_variable = ariarathid_war_watch
+			if = {
+				limit = { has_variable = ariarathid_war_overlord }
+				remove_variable = ariarathid_war_overlord
+			}
+		}
 	}
 }

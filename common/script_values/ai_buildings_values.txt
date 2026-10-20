@@ -56,10 +56,8 @@ brc_port = {
         limit = {
             # State borders change very rapidly in the first years
             current_date >= 460.1.1
-            # NAVAL AI: never demolish capital or historic harbor ports
+            # Never demolish capital or historic harbor ports
             brc_port_never_destroy = no
-            # NAVAL AI: never demolish ports in cities, only settlements get pruned
-            has_city_status = no
             # Don't destroy anything while at war
             owner = {
                 war = no
@@ -91,6 +89,8 @@ brc_port = {
                 }
                 # Tier >=2 ports in countries that don't want any mega ports
                 AND = {
+                    # Non-city territories only, city ports are handled by the woodless state branch below
+                    has_city_status = no
                     port_level_including_construction >= 2
                     owner = {
                         num_of_mega_ports_wanted = 0
@@ -99,6 +99,7 @@ brc_port = {
                 }
                 # Tier 2 ports that won't turn mega anytime soon but are taking up building slots
                 AND = {
+                    has_city_status = no # Non-city territories only
                     port_level_including_construction = 2
                     owner = {
                         has_wanted_num_of_high_tier_ports = {
@@ -111,6 +112,7 @@ brc_port = {
                 }
                 # Tier 4 ports that won't turn giga anytime soon but are taking up building slots
                 AND = {
+                    has_city_status = no # Non-city territories only
                     port_level_including_construction = 4
                     owner = {
                         has_wanted_num_of_high_tier_ports = {
@@ -118,7 +120,18 @@ brc_port = {
                         }
                     }
                 }
-                # NAVAL AI: disabled. The AI demolished working level 2+ capital ports to rebuild them
+                # City ports of level 2 or higher in a state without ship wood (no wood or cedar surplus in
+                # the owner's part of the area, produced or imported) cannot build mediums or heavies, so they are cut back
+                # (down to level 1, which keeps a harbor for when the wood tile is conquered). Capitals and historic
+                # harbors are excluded above. The same state wood test gates mega/giga construction, so nothing is rebuilt.
+                AND = {
+                    has_city_status = yes
+                    port_level_including_construction >= 2
+                    state = {
+                        NOT = { state_has_ship_wood = yes }
+                    }
+                }
+                # Disabled. The AI demolished working level 2+ capital ports to rebuild them
                 # elsewhere in the capital region, losing several port levels in the process.
                 # # Rebuild mega and giga ports from capital to another capital region territory
 #                 AND = {
@@ -161,6 +174,24 @@ brc_port = {
         }
         value = -1
     }
+    # Capitals and historic harbors are never demolished, except to cap them at level 3 when their state has no
+    # ship wood (no wood or cedar surplus). Level 4 and 5 ports there cannot build octeres or megas, and the high tier
+    # build gate does not rebuild them. A demolition removes one level at a time, so this stops at level 3.
+    else_if = {
+        limit = {
+            current_date >= 460.1.1
+            brc_port_never_destroy = yes
+            has_city_status = yes
+            port_level_including_construction >= 4
+            owner = {
+                war = no
+            }
+            state = {
+                NOT = { state_has_ship_wood = yes }
+            }
+        }
+        value = -1
+    }
     else_if = {
         limit = {
             owner = {
@@ -174,22 +205,23 @@ brc_port = {
         if = {
             limit = {
                 # brc_needs_port = yes
-                # NAVAL AI: only new ports keep brc_100, high tier upgrades get their own weight below
+                # Only new ports keep brc_100, high tier upgrades get their own weight below
                 brc_needs_new_port = yes
             }
             value = brc_territory_importance
             multiply = brc_100
         }
-        # NAVAL AI: mega/giga upgrades compete with other buildings instead of using brc_100
-        # 29: above a city's first port (brc_80 = 28), below granary (brc_85) and ramparts (brc_90)
+        # Mega/giga upgrades compete with other buildings instead of using brc_100
+        # 60 (was 29): above a city's first port (brc_80 = 28) and granary (brc_85 = 39.7), just below ramparts (brc_90 = 63)
+        # Raised so countries that want a high tier port actually finish the L3 to L5 upgrade
         else_if = {
             limit = {
                 brc_needs_high_tier_port = yes
             }
             value = brc_territory_importance
-            multiply = 29
+            multiply = 60
         }
-        # NAVAL AI: historic harbors keep upgrading until level 3
+        # Historic harbors keep upgrading until level 3
         else_if = {
             limit = {
                 brc_port_wants_upgrade = yes
@@ -1227,7 +1259,8 @@ num_of_giga_ports_wanted = {
     value = 0
     if = {
         limit = {
-            rank_by_num_territories >= regional_power
+            # Was regional_power. Local powers with an octere or mega tradition now also want a level 5 port.
+            rank_by_num_territories >= local_power
             OR = {
                 # Military traditions that unlock Octere
                 has_military_bonus = nubian_path_13
@@ -1279,8 +1312,22 @@ num_of_mega_ports_wanted = {
         }
         add = 1
     }
+    # Round up instead of down for countries that own a port capable province in a state with its own wood,
+    # so any such country wants at least one mega port (+14 before the divide turns the floor into a ceiling.
+	# I don't think my math is bad here.)
+    if = {
+        limit = {
+            any_owned_province = {
+                can_have_port = yes
+                state = {
+                    state_has_ship_wood = yes
+                }
+            }
+        }
+        add = 14
+    }
     # divide = 35
-    divide = 15 # NAVAL AI
+    divide = 25 
     floor = yes
 
     # Base value depending on rank so they always want at least some

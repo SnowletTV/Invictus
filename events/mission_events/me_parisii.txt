@@ -68,7 +68,7 @@ me_parisii.2 = {
         set_variable = sennonian_diplomatic_approach
         trigger_event = {
             id = me_parisii.3
-            days = { 10 20 } # Envoys ride out
+            days = { 5 10 } # Envoys ride out
         }
     }
 
@@ -95,30 +95,21 @@ me_parisii.3 = {
     right_portrait = scope:parisii_player_scope.current_ruler # Paris ruler
 
     option = {
-        name = me_parisii.3.a # Peaceful Path
-        add_treasury = -50
-        add_political_influence = -15
+        name = me_parisii.3.a # Peaceful Path - Approach Catalauni First
+        add_treasury = -25
+        add_political_influence = -10
         custom_tooltip = concessions_sent_tt
         
-        if = {
-            limit = {
-                exists = c:SNN
-                c:SNN = { is_subject = no }
-            }
-            c:SNN = {
-                set_variable = offered_concessions_var                
-                trigger_event = { id = me_parisii.4 days = { 12 16 } }
-            }
-        }
         if = {
             limit = {
                 exists = c:CTL
                 c:CTL = { is_subject = no }
             }
-            c:CTL = {
-                set_variable = offered_concessions_var
-                trigger_event = { id = me_parisii.4 days = { 3 7 } }
+            trigger_event = { id = me_parisii.3_ctl_rider days = 2 }
             }
+        else = {
+            # CTL is gone or already subject, proceed directly to Sennones
+            trigger_event = { id = me_parisii.3_snn days = { 3 5 } }
         }
     }
 
@@ -141,9 +132,80 @@ me_parisii.3 = {
     }
 }
 
-# me_parisii.4 - Fealty Demanded: Peaceful (SNN/CTL AI receives this)
-# Dynamic submission evaluation (base + size/opinion/trait multipliers).
-me_parisii.4 = {
+# me_parisii.3_ctl_rider - The Marne-Sekuana Accord & Catalaunian Demands (Parisii Player decides)
+me_parisii.3_ctl_rider = {
+    type = country_event
+    title = me_parisii.3_ctl_rider.t
+    desc = me_parisii.3_ctl_rider.desc
+    picture = celtic_diplomacy
+    left_portrait = current_ruler
+    right_portrait = c:CTL.current_ruler
+
+    trigger = {
+        exists = c:CTL
+        c:CTL = { is_subject = no }
+    }
+
+    # Option A: Favored Toll Status along the Sekuana
+    option = {
+        name = me_parisii.3_ctl_rider.a
+        add_country_modifier = {
+            name = seine_tolls_concession
+            duration = -1
+        }
+        c:CTL = {
+            add_country_modifier = {
+                name = catalaunian_river_privilege
+                duration = -1
+            }
+            set_variable = ctl_granted_trade_privilege
+            trigger_event = { id = me_parisii.4_ctl days = { 3 5 } }
+        }
+    }
+
+    # Option B: Divert River Trade from Lutetia to Durocatalaunum
+    option = {
+        name = me_parisii.3_ctl_rider.b
+        add_treasury = -30
+        p:2475 = {
+            add_province_modifier = {
+                name = parisii_diverted_trade_route
+                duration = -1
+            }
+        }
+        p:2450 = {
+            add_province_modifier = {
+                name = catalaunian_trade_routes
+                duration = -1
+            }
+        }
+        c:CTL = {
+            add_country_modifier = {
+                name = sennonian_assurances_modifier
+                duration = -1
+            }
+            set_variable = ctl_granted_trade_privilege
+            trigger_event = { id = me_parisii.4_ctl days = { 3 5 } }
+        }
+    }
+
+    # Option C: Refuse Concessions (Strict Toll Enforcement)
+    option = {
+        name = me_parisii.3_ctl_rider.c
+        set_variable = CTL_bolster_OldGuard
+        c:CTL = {
+            add_opinion = {
+                modifier = sennonian_refused_assurances
+                target = root
+            }
+            set_variable = ctl_refused_trade_privilege
+            trigger_event = { id = me_parisii.4_ctl days = { 3 5 } }
+        }
+    }
+}
+
+# me_parisii.4_ctl - Catalauni Fealty Ultimatum (CTL AI receives this)
+me_parisii.4_ctl = {
     type = country_event
     title = me_parisii.4.t
     desc = me_parisii.4.desc
@@ -156,12 +218,16 @@ me_parisii.4 = {
         ai_chance = {
             base = 35
             modifier = {
-                factor = 2.0
-                num_of_cities < 5
+                factor = 3.0
+                has_variable = ctl_granted_trade_privilege
             }
             modifier = {
-                factor = 1.5
-                num_of_cities < 10
+                factor = 0.2
+                has_variable = ctl_refused_trade_privilege
+            }
+            modifier = {
+                factor = 2.0
+                num_of_cities < 5
             }
             modifier = {
                 factor = 2.0
@@ -170,10 +236,6 @@ me_parisii.4 = {
             modifier = {
                 factor = 1.5
                 opinion = { target = scope:parisii_player_scope value >= 50 }
-            }
-            modifier = {
-                factor = 2.5
-                has_variable = offered_concessions_var
             }
             modifier = {
                 factor = 2.0
@@ -186,7 +248,7 @@ me_parisii.4 = {
                 }
             }
             modifier = {
-                factor = 0.0 # Proud/brave/ambitious rulers always refuse
+                factor = 0.1 # Proud/brave/ambitious rulers rarely submit unless concessions granted
                 current_ruler = {
                     OR = {
                         has_trait = brave
@@ -196,45 +258,211 @@ me_parisii.4 = {
                 }
             }
         }
-        remove_variable = offered_concessions_var
                 
         scope:parisii_player_scope = {
             make_subject = {
                 target = ROOT
                 type = feudatory
             }
-            if = {
-                limit = { ROOT = { tag = SNN } }
+            trigger_event = { id = me_parisii.6_ctl days = 2 }
+        }
+    }
+
+    option = {
+        name = me_parisii.4.b # Fight!
+        ai_chance = {
+            base = 45
+            modifier = {
+                factor = 0.3
+                has_variable = ctl_granted_trade_privilege
+            }
+            modifier = {
+                factor = 2.5
+                has_variable = ctl_refused_trade_privilege
+            }
+        }
+        scope:parisii_player_scope = {
+            trigger_event = { id = me_parisii.7_ctl days = 2 }
+        }
+    }
+}
+
+# me_parisii.3_snn - The Sennones Question & Assurances (Parisii Player decides)
+me_parisii.3_snn = {
+    type = country_event
+    title = me_parisii.3_snn.t
+    desc = me_parisii.3_snn.desc
+    picture = celtic_diplomacy
+    left_portrait = current_ruler
+    right_portrait = c:SNN.current_ruler
+
+    trigger = {
+        exists = c:SNN
+        c:SNN = { is_subject = no }
+    }
+
+    # Option A: State Treasury Assurances
+    option = {
+        name = me_parisii.3_snn.a
+        add_treasury = -30
+        add_political_influence = -15
+        current_ruler = { add_popularity = -10 }
+        
+        # Discounts for persuasive rulers
+        if = {
+            limit = {
+                current_ruler = {
+                    OR = {
+                        has_trait = orator
+                        has_trait = silver_tongued
+                    }
+                }
+            }
+            add_political_influence = 10
+            current_ruler = { add_popularity = 5 }
+        }
+
+        set_variable = promised_sennonian_family_assurances
+        c:SNN = {
+            set_variable = sennonian_assurances_granted
+            trigger_event = { id = me_parisii.4_snn days = { 5 8 } }
+        }
+    }
+
+    # Option B: Ruler's Personal Wealth (Wealthy Ruler)
+    option = {
+        name = me_parisii.3_snn.b
+        trigger = {
+            current_ruler = {
+                wealth >= 50
+                NOT = { has_trait = greedy has_trait = miser }
+            }
+        }
+        current_ruler = {
+            add_gold = -50
+            make_friend = c:SNN.current_ruler
+        }
+        set_variable = promised_sennonian_family_assurances
+        c:SNN = {
+            set_variable = sennonian_assurances_granted
+            trigger_event = { id = me_parisii.4_snn days = { 5 8 } }
+        }
+    }
+
+    # Option C: Refuse Assurances
+    option = {
+        name = me_parisii.3_snn.c
+        set_variable = SNN_bolster_OldGuard
+        c:SNN = {
+            add_opinion = {
+                modifier = sennonian_refused_assurances
+                target = root
+            }
+            set_variable = refused_sennonian_assurances
+            trigger_event = { id = me_parisii.4_snn days = { 5 8 } }
+        }
+    }
+}
+
+# me_parisii.4_snn - Sennones Fealty Decision (SNN AI receives this)
+me_parisii.4_snn = {
+    type = country_event
+    title = me_parisii.4.t
+    desc = me_parisii.4.desc
+    picture = council_country
+    left_portrait = current_ruler # SNN Ruler
+    right_portrait = scope:parisii_player_scope.current_ruler # Parisii Ruler
+
+    option = {
+        name = me_parisii.4.a # Submit to Lutetia
+        ai_chance = {
+            base = 25
+            modifier = {
+                factor = 2.5
+                has_variable = sennonian_assurances_granted
+            }
+            modifier = {
+                factor = 2.0
+                scope:parisii_player_scope = {
+                    any_subject = { tag = CTL }
+                }
+            }
+            modifier = {
+                factor = 1.5
+                scope:parisii_player_scope = {
+                    any_allied_country = { count >= 1 }
+                }
+            }
+            modifier = {
+                factor = 0.5
+                has_variable = refused_sennonian_assurances
+            }
+            modifier = {
+                factor = 0.0 # Equal or stronger neighbors refuse if Parisii is isolated
+                num_of_cities >= scope:parisii_player_scope.num_of_cities
+                NOT = {
+                    scope:parisii_player_scope = {
+                        any_subject = { count >= 1 }
+                    }
+                }
+            }
+            modifier = {
+                factor = 2.0
+                opinion = { target = scope:parisii_player_scope value >= 100 }
+            }
+            modifier = {
+                factor = 1.5
+                opinion = { target = scope:parisii_player_scope value >= 50 }
+            }
+            modifier = {
+                factor = 0.0 # Proud/brave/ambitious rulers refuse
+                current_ruler = {
+                    OR = {
+                        has_trait = brave
+                        has_trait = ambitious
+                        has_trait = proud
+                    }
+                }
+            }
+        }
+                
+        scope:parisii_player_scope = {
+            make_subject = {
+                target = ROOT
+                type = feudatory
+            }
                 trigger_event = { id = me_parisii.6_snn days = 2 }
             }
+
+        # Guaranteed standing for SNN royal dynasty
+        current_ruler.family = {
+            add_prestige = 30
+            every_family_member = {
+                add_prominence = 30
+            }
+        }
+
             if = {
-                limit = { ROOT = { tag = CTL } }
-                trigger_event = { id = me_parisii.6_ctl days = 2 }
+            limit = { has_variable = sennonian_assurances_granted }
+            add_country_modifier = {
+                name = sennonian_assurances_modifier
+                duration = -1
             }
         }
     }
 
     option = {
-        remove_variable = offered_concessions_var
         name = me_parisii.4.b # Fight!
         ai_chance = {
-            factor = 55
+            factor = 50
         }
         scope:parisii_player_scope = {
-            if = {
-                limit = { ROOT = { tag = SNN } }
                 trigger_event = { id = me_parisii.7_snn days = 2 }
             }
-            if = {
-                limit = { ROOT = { tag = CTL } }
-                trigger_event = { id = me_parisii.7_ctl days = 2 }
-            }
-        }
     }
 }
 
 # me_parisii.5 - Fealty Demanded: Aggressive (SNN/CTL AI receives this)
-# Rulers in war footing will defy.
 me_parisii.5 = {
     type = country_event
     title = me_parisii.5.t
@@ -290,6 +518,13 @@ me_parisii.6_ctl = {
         current_ruler.family = {
             add_prestige = 20
         }
+        # Proceed to Sennones after Catalauni submission
+        if = {
+            limit = {
+                exists = c:SNN
+                c:SNN = { is_subject = no }
+            }
+            trigger_event = { id = me_parisii.3_snn days = 3 }
     }
 }
 }
@@ -320,6 +555,14 @@ me_parisii.7_ctl = {
     option = {
         name = me_parisii.7.a
         area:suaeuconia_area = { add_provincial_claim_effect = yes }
+        # Still proceed to Sennones even if Catalauni refused
+        if = {
+            limit = {
+                exists = c:SNN
+                c:SNN = { is_subject = no }
+            }
+            trigger_event = { id = me_parisii.3_snn days = 3 }
+        }
     }
 }
 
@@ -379,6 +622,14 @@ me_parisii.9 = {
         first_valid = {
             triggered_desc = {
                 trigger = {
+                    has_variable = dispossessed_sennonian_noble_var
+                    exists = scope:traditionalist_spokesperson
+                    scope:traditionalist_spokesperson = var:dispossessed_sennonian_noble_var
+                }
+                desc = me_parisii.9.desc_sennonian_exile
+            }
+            triggered_desc = {
+                trigger = {
                     scope:traditionalist_spokesperson = {
                         is_clan_chief = yes
                     }
@@ -403,7 +654,17 @@ me_parisii.9 = {
     }
 
     immediate = {
+        # Priority 1: Check for dispossessed Sennonian noble if SNN was absorbed without assurances
+        if = {
+            limit = {
+                has_variable = dispossessed_sennonian_noble_var
+                var:dispossessed_sennonian_noble_var = { is_alive = yes }
+            }
+            var:dispossessed_sennonian_noble_var = { save_scope_as = traditionalist_spokesperson }
+        }
         # Fallback 1: Look for disloyal traditionalist clan chiefs
+        if = {
+            limit = { NOT = { exists = scope:traditionalist_spokesperson } }
         random_character = {
             limit = {
                 is_alive = yes
@@ -412,6 +673,7 @@ me_parisii.9 = {
                 loyalty < 50
             }
             save_scope_as = traditionalist_spokesperson
+            }
         }
         # Fallback 2: Look for ambitious minor nobles with a power base
         if = {
@@ -445,6 +707,7 @@ me_parisii.9 = {
             }
             scope:traditionalist_spokesperson = {
                 set_variable = is_generated_hero
+                add_loyalty = scorned_claimant_loyalty
             }
         }
 
@@ -486,27 +749,85 @@ me_parisii.10 = {
     
     # Option A: Full Capitulation (Guaranteed peace, heavy cost)
     option = {
-        name = me_parisii.10.a # Pay up
-        add_stability = -10
-        add_treasury = -100
-        add_political_influence = -25
+        name = me_parisii.10.a
+        add_stability = -15
+        add_treasury = -120
+        add_political_influence = -35
+        add_centralization = -20
+        current_ruler = {
+            add_popularity = -20
+            add_prominence = -25
+        }
+        current_ruler.family = {
+            add_prestige = -30
+        }
+        set_variable = parisii_old_guard_appeased
+        trigger_event = { id = me_parisii.10_success days = 1 }
+    }
+
+    # Option B: Negotiated Compromise (Moderate cost, scaling risk)
+    option = {
+        name = me_parisii.10.b
+        add_stability = -5
+        add_treasury = -60
+        add_political_influence = -15
         add_centralization = -5
         hidden_effect = {
             random_list = {
-                45 = { # Bribe succeeds
+                60 = { # Concessions accepted
+                    modifier = {
+                        add = 25
+                        current_ruler = { popularity >= 70 }
+                    }
+                    modifier = {
+                        add = 15
+                        stability >= 60
+                    }
+                    modifier = {
+                        add = -25
+                        current_ruler = { popularity < 45 }
+                    }
                     modifier = {
                         add = -20
-                        current_ruler = { popularity < 50 }
+                        stability < 40
+                    }
+                    modifier = {
+                        add = -15
+                        has_variable = SNN_bolster_OldGuard
+                    }
+                    modifier = {
+                        add = -15
+                        has_variable = CTL_bolster_OldGuard
                     }
                     set_variable = parisii_old_guard_appeased
                         trigger_event = { id = me_parisii.10_success days = 1 }
                 }
-                55 = { # Bribe fails, war fires anyway lol
+                40 = { # Chiefs reject half-measures and revolt!
+                    modifier = {
+                        add = -25
+                        current_ruler = { popularity >= 70 }
+                    }
+                    modifier = {
+                        add = -15
+                        stability >= 60
+                    }
+                    modifier = {
+                        add = 25
+                        current_ruler = { popularity < 45 }
+                    }
                     modifier = {
                         add = 20
-                        current_ruler = { popularity < 50 }
+                        stability < 40
                     }
-                    trigger_event = { id = me_parisii.11 days = 3 }
+                    modifier = {
+                        add = 15
+                        has_variable = SNN_bolster_OldGuard
+                    }
+                    modifier = {
+                        add = 15
+                        has_variable = CTL_bolster_OldGuard
+                    }
+                    trigger_event = { id = me_parisii.11 days = 2 }
                 }
             }
         }
@@ -552,7 +873,22 @@ me_parisii.11 = {
     right_portrait = scope:traditionalist_spokesperson
 
     immediate = {
+        if = {
+            limit = { owns = 2448 }
         p:2448 = { save_scope_as = rebel_capital }
+        }
+        else = {
+            random_owned_province = {
+                limit = {
+                    NOT = { province_id = 2475 }
+                }
+                save_scope_as = rebel_capital
+            }
+        }
+        if = {
+            limit = { NOT = { exists = scope:rebel_capital } }
+            p:2475 = { save_scope_as = rebel_capital }
+        }
         var:traditionalist_spokesperson_var = { save_scope_as = traditionalist_spokesperson }
     }
 
@@ -591,11 +927,13 @@ me_parisii.11 = {
         every_owned_province = {
             limit = {
                 has_city_status = no
+                NOT = { province_id = 2475 }
                 OR = {
                     is_in_area = senonia_area
                     province_id = 2486
                     province_id = 2490
                     province_id = 2487
+                    province_id = 2489
                 }
                 OR = {
                     total_population < 15
@@ -605,79 +943,85 @@ me_parisii.11 = {
             set_owned_by = scope:old_guard_revolt_scope
         }
 
+        # Supply the rebel warlords with treasury and manpower to raise levies from rebellious territories
+        scope:old_guard_revolt_scope = {
+            add_treasury = 75
+            add_manpower = 5
+        }
+
 #commented out but fun idea - was trying to have a threat that is dynamic based on the enemy - clan chief has most resources while random dude the least
         # Proportional threat army spawning based on spokesperson class
-    #    if = {
-    #        limit = {
-    #            scope:traditionalist_spokesperson = {
-    #                is_clan_chief = yes
-    #            }
-    #        }
-    #        # Clan Chief revolt: heavy armor, war mounts (Strongest)
-    #        scope:old_guard_revolt_scope = {
-    #            create_unit = {
-    #            location = p:2448        
-    #            name = "The Old Guard"
-    #            hidden_effect = {
-    #                add_subunit = heavy_infantry
-    #                add_subunit = heavy_infantry
-    #                add_subunit = heavy_infantry
-    #                add_subunit = light_cavalry
-    #                add_subunit = light_cavalry
-    #                add_subunit = light_cavalry
-    #                add_subunit = light_infantry
-    #                add_subunit = light_infantry
-    #                add_subunit = archers
-    #                add_subunit = archers
-    #would add food and morale if kept
-    #            }
-     #           
-    #        }
-    #    }
-    #}    
-    #    else_if = {
-    #        limit = {
-    #            scope:traditionalist_spokesperson = {
-    #                has_variable = is_generated_hero
-    #            }
-    #        }
-    #        # Generated commoner hero: light spearmen, no mounts, no heavy armor (Weaker)
-    #        scope:old_guard_revolt_scope = {
-    #            create_unit = {     
-    #                location = p:2448
-    #                name = "The Old Guard"
-    #                hidden_effect = {    
-    #                    add_subunit = light_infantry
-    #                    add_subunit = light_infantry
-    #                    add_subunit = light_infantry
-    #                    add_subunit = light_infantry
-    #                    add_subunit = spearmen
-    #                    add_subunit = spearmen
-    #                    add_subunit = archers
-    #                    add_subunit = archers }
-    #                }
-    #            }
-    #    }    
-    #    else = {
-    #        # Ambitious minor noble: mixed force, few mounts, moderate spearmen (Middling)
-    #        scope:old_guard_revolt_scope = {
-    #            create_unit = {
-    #                location = p:2448
-    #                name = "The Old Guard"
-    #                hidden_effect = {
-    #                    add_subunit = heavy_infantry
-    #                    add_subunit = light_cavalry
-    #                    add_subunit = light_cavalry
-    #                    add_subunit = light_infantry
-    #                    add_subunit = light_infantry
-    #                    add_subunit = spearmen
-    #                    add_subunit = spearmen
-    #                    add_subunit = archers
-    #                    add_subunit = archers
-    #                }           
-    #            }
-    #        }
-    #    }    
+        # if = {
+        #     limit = {
+        #         scope:traditionalist_spokesperson = {
+        #             is_clan_chief = yes
+        #         }
+        #     }
+        #     # Clan Chief revolt: heavy armor, war mounts (Strongest)
+        #     scope:old_guard_revolt_scope = {
+        #         create_unit = {
+        #             location = scope:rebel_capital        
+        #             name = "The Old Guard"
+        #             hidden_effect = {
+        #                 add_subunit = heavy_infantry
+        #                 add_subunit = heavy_infantry
+        #                 add_subunit = heavy_infantry
+        #                 add_subunit = light_cavalry
+        #                 add_subunit = light_cavalry
+        #                 add_subunit = light_cavalry
+        #                 add_subunit = light_infantry
+        #                 add_subunit = light_infantry
+        #                 add_subunit = archers
+        #                 add_subunit = archers
+        #                 #would add food and morale if kept
+        #             }           
+        #         }
+        #     }
+        # }    
+        # else_if = {
+        #     limit = {
+        #         scope:traditionalist_spokesperson = {
+        #             has_variable = is_generated_hero
+        #         }
+        #     }
+        #     # Generated commoner hero: light spearmen, no mounts, no heavy armor (Weaker)
+        #     scope:old_guard_revolt_scope = {
+        #         create_unit = {     
+        #             location = scope:rebel_capital
+        #             name = "The Old Guard"
+        #             hidden_effect = {    
+        #                 add_subunit = light_infantry
+        #                 add_subunit = light_infantry
+        #                 add_subunit = light_infantry
+        #                 add_subunit = light_infantry
+        #                 add_subunit = spearmen
+        #                 add_subunit = spearmen
+        #                 add_subunit = archers
+        #                 add_subunit = archers
+        #             }
+        #         }
+        #     }
+        # }    
+        # else = {
+        #     # Ambitious minor noble: mixed force, few mounts, moderate spearmen (Middling)
+        #     scope:old_guard_revolt_scope = {
+        #         create_unit = {
+        #             location = scope:rebel_capital
+        #             name = "The Old Guard"
+        #             hidden_effect = {
+        #                 add_subunit = heavy_infantry
+        #                 add_subunit = light_cavalry
+        #                 add_subunit = light_cavalry
+        #                 add_subunit = light_infantry
+        #                 add_subunit = light_infantry
+        #                 add_subunit = spearmen
+        #                 add_subunit = spearmen
+        #                 add_subunit = archers
+        #                 add_subunit = archers
+        #             }           
+        #         }
+        #     }
+        # }
 
         # Declare Reclamation War
         declare_war_with_wargoal = {

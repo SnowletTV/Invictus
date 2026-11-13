@@ -1,4 +1,4 @@
-﻿# Parisii Seine Missions Event Script File
+# Parisii Seine Missions Event Script File
 # Standardized Sequential Event Map: 
 # Mission Tree 1 has events me_parisii.1 thru me_parisii.45
 # Mission Tree 2 pending
@@ -45,30 +45,39 @@ me_parisii.2 = {
     title = me_parisii.2.t
     desc = me_parisii.2.desc
     picture = council_country
+    left_portrait = current_ruler
 
     immediate = {
-        # Dynamically representative neighbors for portraits
-        if = {
-            limit = { exists = c:SNN } # Sennones
-            c:SNN = { save_scope_as = sennonian_unification_representative }
-        }
-        else_if = {
-            limit = { exists = c:CTL } # Catalauni Tag
-            c:CTL = { save_scope_as = sennonian_unification_representative }
-        }
         save_scope_as = parisii_player_scope
+        set_global_variable = {
+            name = parisii_unification_leader
+            value = root
+        }
     }
-
-    left_portrait = current_ruler
-    right_portrait = scope:sennonian_unification_representative.current_ruler
 
     option = {
         name = me_parisii.2.a # Diplomatic approach
         custom_tooltip = me_parisii.2.a.tt
         set_variable = sennonian_diplomatic_approach
-        trigger_event = {
-            id = me_parisii.3
-            days = { 5 10 } # Envoys ride out
+        if = {
+            limit = {
+                exists = c:CTL
+                c:CTL = { is_subject = no }
+            }
+            trigger_event = {
+                id = me_parisii.3
+                days = { 3 5 }
+            }
+        }
+        else_if = {
+            limit = {
+                exists = c:SNN
+                c:SNN = { is_subject = no }
+            }
+            trigger_event = {
+                id = me_parisii.5
+                days = { 3 5 }
+            }
         }
     }
 
@@ -82,61 +91,22 @@ me_parisii.2 = {
         area:suaeuconia_area = {
             add_provincial_claim_effect = yes
         }
+        if = {
+            limit = { exists = c:CTL c:CTL = { is_subject = no } }
+            c:CTL = { trigger_event = { id = me_parisii.50 days = { 2 4 } } }
+        }
+        if = {
+            limit = { exists = c:SNN c:SNN = { is_subject = no } }
+            c:SNN = { trigger_event = { id = me_parisii.50 days = { 2 4 } } }
+        }
     }
 }
 
-# me_parisii.3 - Sovereignty over the Seine (Decision Council)
+# me_parisii.3 - The Marne-Sekuana Accord & Catalaunian Demands (Parisii Player decides)
 me_parisii.3 = {
     type = country_event
     title = me_parisii.3.t
     desc = me_parisii.3.desc
-    picture = celtic_chiefs
-    left_portrait = current_ruler
-    right_portrait = scope:parisii_player_scope.current_ruler # Paris ruler
-
-    option = {
-        name = me_parisii.3.a # Peaceful Path - Approach Catalauni First
-        add_treasury = -25
-        add_political_influence = -10
-        custom_tooltip = concessions_sent_tt
-        
-        if = {
-            limit = {
-                exists = c:CTL
-                c:CTL = { is_subject = no }
-            }
-            trigger_event = { id = me_parisii.3_ctl_rider days = 2 }
-        }
-        else = {
-            # CTL is gone or already subject, proceed directly to Sennones
-            trigger_event = { id = me_parisii.3_snn days = { 3 5 } }
-        }
-    }
-
-    option = {
-        name = me_parisii.3.b # Aggressive Path
-        add_political_influence = 15
-        current_ruler = {
-            add_popularity = 10
-        }
-        if = {
-            limit = { exists = c:SNN }
-            area:senonia_area = { add_provincial_claim_effect = yes }
-            c:SNN = { trigger_event = { id = me_parisii.5 days = { 3 7 } } }
-        }
-        if = {
-            limit = { exists = c:CTL }
-            area:suaeuconia_area = { add_provincial_claim_effect = yes }
-            c:CTL = { trigger_event = { id = me_parisii.5 days = { 3 7 } } }
-        }
-    }
-}
-
-# me_parisii.3_ctl_rider - The Marne-Sekuana Accord & Catalaunian Demands (Parisii Player decides)
-me_parisii.3_ctl_rider = {
-    type = country_event
-    title = me_parisii.3_ctl_rider.t
-    desc = me_parisii.3_ctl_rider.desc
     picture = celtic_diplomacy
     left_portrait = current_ruler
     right_portrait = c:CTL.current_ruler
@@ -148,7 +118,7 @@ me_parisii.3_ctl_rider = {
 
     # Option A: Favored Toll Status along the Sekuana
     option = {
-        name = me_parisii.3_ctl_rider.a
+        name = me_parisii.3.a
         add_country_modifier = {
             name = seine_tolls_concession
             duration = -1
@@ -159,13 +129,13 @@ me_parisii.3_ctl_rider = {
                 duration = -1
             }
             set_variable = ctl_granted_trade_privilege
-            trigger_event = { id = me_parisii.4_ctl days = { 3 5 } }
+            trigger_event = { id = me_parisii.4 days = { 3 5 } }
         }
     }
 
     # Option B: Divert River Trade from Lutetia to Durocatalaunum
     option = {
-        name = me_parisii.3_ctl_rider.b
+        name = me_parisii.3.b
         add_treasury = -30
         p:2475 = {
             add_province_modifier = {
@@ -180,18 +150,14 @@ me_parisii.3_ctl_rider = {
             }
         }
         c:CTL = {
-            add_country_modifier = {
-                name = sennonian_assurances_modifier
-                duration = -1
-            }
             set_variable = ctl_granted_trade_privilege
-            trigger_event = { id = me_parisii.4_ctl days = { 3 5 } }
+            trigger_event = { id = me_parisii.4 days = { 3 5 } }
         }
     }
 
     # Option C: Refuse Concessions (Strict Toll Enforcement)
     option = {
-        name = me_parisii.3_ctl_rider.c
+        name = me_parisii.3.c
         set_variable = CTL_bolster_OldGuard
         c:CTL = {
             add_opinion = {
@@ -199,19 +165,19 @@ me_parisii.3_ctl_rider = {
                 target = root
             }
             set_variable = ctl_refused_trade_privilege
-            trigger_event = { id = me_parisii.4_ctl days = { 3 5 } }
+            trigger_event = { id = me_parisii.4 days = { 3 5 } }
         }
     }
 }
 
-# me_parisii.4_ctl - Catalauni Fealty Ultimatum (CTL AI receives this)
-me_parisii.4_ctl = {
+# me_parisii.4 - Catalauni Fealty Ultimatum (CTL AI receives this)
+me_parisii.4 = {
     type = country_event
     title = me_parisii.4.t
     desc = me_parisii.4.desc
     picture = council_country
     left_portrait = current_ruler # Recipient of Ultimatum
-    right_portrait = scope:parisii_player_scope.current_ruler # Parisii
+    right_portrait = var:parisii_unification_leader.current_ruler # Parisii Overlord
 
     option = {
         name = me_parisii.4.a # Submit to Lutetia
@@ -231,11 +197,13 @@ me_parisii.4_ctl = {
             }
             modifier = {
                 factor = 2.0
-                opinion = { target = scope:parisii_player_scope value >= 100 }
+                exists = var:parisii_unification_leader
+                opinion = { target = var:parisii_unification_leader value >= 100 }
             }
             modifier = {
                 factor = 1.5
-                opinion = { target = scope:parisii_player_scope value >= 50 }
+                exists = var:parisii_unification_leader
+                opinion = { target = var:parisii_unification_leader value >= 50 }
             }
             modifier = {
                 factor = 2.0
@@ -259,12 +227,12 @@ me_parisii.4_ctl = {
             }
         }
                 
-        scope:parisii_player_scope = {
+        var:parisii_unification_leader = {
             make_subject = {
                 target = ROOT
                 type = feudatory
             }
-            trigger_event = { id = me_parisii.6_ctl days = 2 }
+            trigger_event = { id = me_parisii.6 days = 2 }
         }
     }
 
@@ -281,17 +249,17 @@ me_parisii.4_ctl = {
                 has_variable = ctl_refused_trade_privilege
             }
         }
-        scope:parisii_player_scope = {
-            trigger_event = { id = me_parisii.7_ctl days = 2 }
+        var:parisii_unification_leader = {
+            trigger_event = { id = me_parisii.7 days = 2 }
         }
     }
 }
 
-# me_parisii.3_snn - The Sennones Question & Assurances (Parisii Player decides)
-me_parisii.3_snn = {
+# me_parisii.5 - The Sennones Question & Assurances (Parisii Player decides)
+me_parisii.5 = {
     type = country_event
-    title = me_parisii.3_snn.t
-    desc = me_parisii.3_snn.desc
+    title = me_parisii.5.t
+    desc = me_parisii.5.desc
     picture = celtic_diplomacy
     left_portrait = current_ruler
     right_portrait = c:SNN.current_ruler
@@ -303,7 +271,7 @@ me_parisii.3_snn = {
 
     # Option A: State Treasury Assurances
     option = {
-        name = me_parisii.3_snn.a
+        name = me_parisii.5.a
         add_treasury = -30
         add_political_influence = -15
         current_ruler = { add_popularity = -10 }
@@ -325,17 +293,17 @@ me_parisii.3_snn = {
         set_variable = promised_sennonian_family_assurances
         c:SNN = {
             set_variable = sennonian_assurances_granted
-            trigger_event = { id = me_parisii.4_snn days = { 5 8 } }
+            trigger_event = { id = me_parisii.47 days = { 3 5 } }
         }
     }
 
     # Option B: Ruler's Personal Wealth (Wealthy Ruler)
     option = {
-        name = me_parisii.3_snn.b
+        name = me_parisii.5.b
         trigger = {
             current_ruler = {
                 wealth >= 50
-                NOT = { has_trait = greedy has_trait = miser }
+                NOT = { has_trait = selfish has_trait = miserly }
             }
         }
         current_ruler = {
@@ -345,13 +313,13 @@ me_parisii.3_snn = {
         set_variable = promised_sennonian_family_assurances
         c:SNN = {
             set_variable = sennonian_assurances_granted
-            trigger_event = { id = me_parisii.4_snn days = { 5 8 } }
+            trigger_event = { id = me_parisii.47 days = { 3 5 } }
         }
     }
 
     # Option C: Refuse Assurances
     option = {
-        name = me_parisii.3_snn.c
+        name = me_parisii.5.c
         set_variable = SNN_bolster_OldGuard
         c:SNN = {
             add_opinion = {
@@ -359,22 +327,77 @@ me_parisii.3_snn = {
                 target = root
             }
             set_variable = refused_sennonian_assurances
-            trigger_event = { id = me_parisii.4_snn days = { 5 8 } }
+            trigger_event = { id = me_parisii.47 days = { 3 5 } }
         }
     }
 }
 
-# me_parisii.4_snn - Sennones Fealty Decision (SNN AI receives this)
-me_parisii.4_snn = {
+# me_parisii.6 - Catalaunian Submission (Player is notified of submission)
+me_parisii.6 = {
     type = country_event
-    title = me_parisii.4.t
-    desc = me_parisii.4.desc
-    picture = council_country
-    left_portrait = current_ruler # SNN Ruler
-    right_portrait = scope:parisii_player_scope.current_ruler # Parisii Ruler
+    title = me_parisii.6.t
+    desc = me_parisii.6.desc
+    picture = celtic_chiefs
+    left_portrait = current_ruler
+    right_portrait = c:CTL.current_ruler
 
     option = {
-        name = me_parisii.4.a # Submit to Lutetia
+        name = me_parisii.6.a
+        add_political_influence = 15
+        current_ruler.family = {
+            add_prestige = 20
+        }
+        # Proceed to Sennones after Catalauni submission
+        if = {
+            limit = {
+                exists = c:SNN
+                c:SNN = { is_subject = no }
+            }
+            trigger_event = { id = me_parisii.5 days = 3 }
+        }
+        else = {
+            remove_global_variable = parisii_unification_leader
+        }
+    }
+}
+
+# me_parisii.7 - Catalaunian Defiance (Player is notified of refusal)
+me_parisii.7 = {
+    type = country_event
+    title = me_parisii.7.t
+    desc = me_parisii.7.desc
+    picture = celtic_diplomacy
+    left_portrait = current_ruler
+    right_portrait = c:CTL.current_ruler
+
+    option = {
+        name = me_parisii.7.a
+        area:suaeuconia_area = { add_provincial_claim_effect = yes }
+        # Still proceed to Sennones even if Catalauni refused
+        if = {
+            limit = {
+                exists = c:SNN
+                c:SNN = { is_subject = no }
+            }
+            trigger_event = { id = me_parisii.5 days = 3 }
+        }
+        else = {
+            remove_global_variable = parisii_unification_leader
+        }
+    }
+}
+
+# me_parisii.47 - Sennones Fealty Decision (SNN AI receives this)
+me_parisii.47 = {
+    type = country_event
+    title = me_parisii.47.t
+    desc = me_parisii.47.desc
+    picture = council_country
+    left_portrait = current_ruler # SNN Ruler
+    right_portrait = var:parisii_unification_leader.current_ruler # Parisii Ruler
+
+    option = {
+        name = me_parisii.47.a # Submit to Lutetia
         ai_chance = {
             base = 25
             modifier = {
@@ -383,13 +406,15 @@ me_parisii.4_snn = {
             }
             modifier = {
                 factor = 2.0
-                scope:parisii_player_scope = {
+                exists = var:parisii_unification_leader
+                var:parisii_unification_leader = {
                     any_subject = { tag = CTL }
                 }
             }
             modifier = {
                 factor = 1.5
-                scope:parisii_player_scope = {
+                exists = var:parisii_unification_leader
+                var:parisii_unification_leader = {
                     any_allied_country = { count >= 1 }
                 }
             }
@@ -399,20 +424,23 @@ me_parisii.4_snn = {
             }
             modifier = {
                 factor = 0.0 # Equal or stronger neighbors refuse if Parisii is isolated
-                num_of_cities >= scope:parisii_player_scope.num_of_cities
+                exists = var:parisii_unification_leader
+                num_of_cities >= var:parisii_unification_leader.num_of_cities
                 NOT = {
-                    scope:parisii_player_scope = {
+                    var:parisii_unification_leader = {
                         any_subject = { count >= 1 }
                     }
                 }
             }
             modifier = {
                 factor = 2.0
-                opinion = { target = scope:parisii_player_scope value >= 100 }
+                exists = var:parisii_unification_leader
+                opinion = { target = var:parisii_unification_leader value >= 100 }
             }
             modifier = {
                 factor = 1.5
-                opinion = { target = scope:parisii_player_scope value >= 50 }
+                exists = var:parisii_unification_leader
+                opinion = { target = var:parisii_unification_leader value >= 50 }
             }
             modifier = {
                 factor = 0.0 # Proud/brave/ambitious rulers refuse
@@ -426,12 +454,12 @@ me_parisii.4_snn = {
             }
         }
                 
-        scope:parisii_player_scope = {
+        var:parisii_unification_leader = {
             make_subject = {
                 target = ROOT
                 type = feudatory
             }
-            trigger_event = { id = me_parisii.6_snn days = 2 }
+            trigger_event = { id = me_parisii.48 days = 2 }
         }
 
         # Guaranteed standing for SNN royal dynasty
@@ -452,116 +480,71 @@ me_parisii.4_snn = {
     }
 
     option = {
-        name = me_parisii.4.b # Fight!
+        name = me_parisii.47.b # Fight!
         ai_chance = {
             factor = 50
         }
-        scope:parisii_player_scope = {
-            trigger_event = { id = me_parisii.7_snn days = 2 }
+        var:parisii_unification_leader = {
+            trigger_event = { id = me_parisii.49 days = 2 }
         }
     }
 }
 
-# me_parisii.5 - Fealty Demanded: Aggressive (SNN/CTL AI receives this)
-me_parisii.5 = {
+# me_parisii.48 - Sennonian Submission (Player is notified of submission)
+me_parisii.48 = {
     type = country_event
-    title = me_parisii.5.t
-    desc = me_parisii.5.desc
-    picture = council_country
+    title = me_parisii.48.t
+    desc = me_parisii.48.desc
+    picture = celtic_chiefs
     left_portrait = current_ruler
-    right_portrait = scope:parisii_player_scope.current_ruler
+    right_portrait = c:SNN.current_ruler
 
     option = {
-        name = me_parisii.5.a # We will not submit!
-        scope:parisii_player_scope = {
+        name = me_parisii.48.a
+        add_political_influence = 15
+        current_ruler.family = {
+            add_prestige = 20
+        }
+        remove_global_variable = parisii_unification_leader
+    }
+}
+
+# me_parisii.49 - Sennonian Defiance (Player is notified of refusal)
+me_parisii.49 = {
+    type = country_event
+    title = me_parisii.49.t
+    desc = me_parisii.49.desc
+    picture = celtic_diplomacy
+    left_portrait = current_ruler
+    right_portrait = c:SNN.current_ruler
+
+    option = {
+        name = me_parisii.49.a
+        area:senonia_area = { add_provincial_claim_effect = yes }
+        remove_global_variable = parisii_unification_leader
+    }
+}
+
+# me_parisii.50 - Fealty Demanded: Aggressive (SNN/CTL AI receives this)
+me_parisii.50 = {
+    type = country_event
+    title = me_parisii.50.t
+    desc = me_parisii.50.desc
+    picture = council_country
+    left_portrait = current_ruler
+    right_portrait = var:parisii_unification_leader.current_ruler
+
+    option = {
+        name = me_parisii.50.a # We will not submit!
+        var:parisii_unification_leader = {
             if = {
                 limit = { ROOT = { tag = SNN } }
-                trigger_event = { id = me_parisii.7_snn days = 2 }
+                trigger_event = { id = me_parisii.49 days = 2 }
             }
             if = {
                 limit = { ROOT = { tag = CTL } }
-                trigger_event = { id = me_parisii.7_ctl days = 2 }
+                trigger_event = { id = me_parisii.7 days = 2 }
             }
-        }
-    }
-}
-
-# me_parisii.6 - Sennonian Submission (Player is notified of submission)
-me_parisii.6_snn = {
-    type = country_event
-    title = me_parisii.6.t
-    desc = me_parisii.6_snn.desc
-    picture = celtic_chiefs
-    left_portrait = current_ruler
-    right_portrait = c:SNN.current_ruler
-
-    option = {
-        name = me_parisii.6.a
-        add_political_influence = 15
-        current_ruler.family = {
-            add_prestige = 20
-        }
-    }
-}
-
-me_parisii.6_ctl = {
-    type = country_event
-    title = me_parisii.6.t
-    desc = me_parisii.6_ctl.desc
-    picture = celtic_chiefs
-    left_portrait = current_ruler
-    right_portrait = c:CTL.current_ruler
-
-    option = {
-        name = me_parisii.6.a
-        add_political_influence = 15
-        current_ruler.family = {
-            add_prestige = 20
-        }
-        # Proceed to Sennones after Catalauni submission
-        if = {
-            limit = {
-                exists = c:SNN
-                c:SNN = { is_subject = no }
-            }
-            trigger_event = { id = me_parisii.3_snn days = 3 }
-        }
-    }
-}
-
-# me_parisii.7 - Other Sennonians Refuse (Player is notified of refusal)
-me_parisii.7_snn = {
-    type = country_event
-    title = me_parisii.7.t
-    desc = me_parisii.7_snn.desc
-    picture = celtic_diplomacy
-    left_portrait = current_ruler
-    right_portrait = c:SNN.current_ruler
-
-    option = {
-        name = me_parisii.7.a
-        area:senonia_area = { add_provincial_claim_effect = yes }
-    }
-}
-
-me_parisii.7_ctl = {
-    type = country_event
-    title = me_parisii.7.t
-    desc = me_parisii.7_ctl.desc
-    picture = celtic_diplomacy
-    left_portrait = current_ruler
-    right_portrait = c:CTL.current_ruler
-
-    option = {
-        name = me_parisii.7.a
-        area:suaeuconia_area = { add_provincial_claim_effect = yes }
-        # Still proceed to Sennones even if Catalauni refused
-        if = {
-            limit = {
-                exists = c:SNN
-                c:SNN = { is_subject = no }
-            }
-            trigger_event = { id = me_parisii.3_snn days = 3 }
         }
     }
 }
@@ -759,7 +742,7 @@ me_parisii.10 = {
             add_prestige = -30
         }
         set_variable = parisii_old_guard_appeased
-        trigger_event = { id = me_parisii.10_success days = 1 }
+        trigger_event = { id = me_parisii.51 days = 1 }
     }
 
     # Option B: Negotiated Compromise (Moderate cost, scaling risk)
@@ -797,7 +780,7 @@ me_parisii.10 = {
                         has_variable = CTL_bolster_OldGuard
                     }
                     set_variable = parisii_old_guard_appeased
-                    trigger_event = { id = me_parisii.10_success days = 1 }
+                    trigger_event = { id = me_parisii.51 days = 1 }
                 }
                 40 = { # Chiefs reject half-measures and revolt!
                     modifier = {
@@ -838,8 +821,8 @@ me_parisii.10 = {
     }
 }
 
-# me_parisii.10_success - Traditionalists Pacified
-me_parisii.10_success = {
+# me_parisii.51 - Traditionalists Pacified
+me_parisii.51 = {
     type = country_event
     title = me_parisii.10_success.t
     desc = me_parisii.10_success.desc
@@ -1394,12 +1377,12 @@ me_parisii.16 = {
             if = {
                 limit = { c:SSS = { is_ai = yes } }
                 c:SSS = { save_scope_as = belgic_target }
-                trigger_event = { id = me_parisii.17_eval days = 2 }
+                trigger_event = { id = me_parisii.53 days = 2 }
             }
             if = {
                 limit = { c:SSS = { is_ai = no } }
                 save_scope_as = lutetia_overlord
-                c:SSS = { trigger_event = { id = me_parisii.17_human days = 2 } }
+                c:SSS = { trigger_event = { id = me_parisii.52 days = 2 } }
             }
         }  
 
@@ -1409,12 +1392,12 @@ me_parisii.16 = {
             if = {
                 limit = { c:VCL = { is_ai = yes } }
                 c:VCL = { save_scope_as = belgic_target }
-                trigger_event = { id = me_parisii.17_eval days = 4 }
+                trigger_event = { id = me_parisii.53 days = 4 }
             }
             if = {
                 limit = { c:VCL = { is_ai = no } }
                 save_scope_as = lutetia_overlord
-                c:VCL = { trigger_event = { id = me_parisii.17_human days = 4 } }
+                c:VCL = { trigger_event = { id = me_parisii.52 days = 4 } }
             }
         }
 
@@ -1424,12 +1407,12 @@ me_parisii.16 = {
             if = {
                 limit = { c:RMI = { is_ai = yes } }
                 c:RMI = { save_scope_as = belgic_target }
-                trigger_event = { id = me_parisii.17_eval days = 6 }
+                trigger_event = { id = me_parisii.53 days = 6 }
             }
             if = {
                 limit = { c:RMI = { is_ai = no } }
                 save_scope_as = lutetia_overlord
-                c:RMI = { trigger_event = { id = me_parisii.17_human days = 6 } }
+                c:RMI = { trigger_event = { id = me_parisii.52 days = 6 } }
             }
         }
         
@@ -1439,19 +1422,19 @@ me_parisii.16 = {
             if = {
                 limit = { c:BLV = { is_ai = yes } }
                 c:BLV = { save_scope_as = belgic_target }
-                trigger_event = { id = me_parisii.17_eval days = 8 }
+                trigger_event = { id = me_parisii.53 days = 8 }
             }
             if = {
                 limit = { c:BLV = { is_ai = no } }
                 save_scope_as = lutetia_overlord
-                c:BLV = { trigger_event = { id = me_parisii.17_human days = 8 } }
+                c:BLV = { trigger_event = { id = me_parisii.52 days = 8 } }
             }
         }
     }
 }
 
-# me_parisii.17 - The Sekuana Ultimatum (Fires for belgians)
-me_parisii.17_human = {
+# me_parisii.52 - The Sekuana Ultimatum (Fires for belgians)
+me_parisii.52 = {
     type = country_event
     title = me_parisii.17.t
     desc = me_parisii.17_human.desc
@@ -1468,7 +1451,7 @@ me_parisii.17_human = {
             }
             # Save the human player scope as submitting and trigger accept popup
             ROOT = { save_scope_as = submitting_belgic_tribe }
-            trigger_event = { id = me_parisii.17_accept days = 1 }
+            trigger_event = { id = me_parisii.54 days = 1 }
         }
     }
 
@@ -1477,12 +1460,12 @@ me_parisii.17_human = {
         scope:lutetia_overlord = {
             # Save the human player scope as defying and trigger refusal popup
             ROOT = { save_scope_as = defying_belgic_tribe }
-            trigger_event = { id = me_parisii.17_refuse days = 1 }
+            trigger_event = { id = me_parisii.55 days = 1 }
         }
     }
 }
 
-me_parisii.17_eval = {
+me_parisii.53 = {
     type = country_event
     title = me_parisii.17.t
     desc = me_parisii.17_eval.desc
@@ -1517,7 +1500,7 @@ me_parisii.17_eval = {
             }
             # On Success: Flag submission and enforce feudatory status
             set_variable = { name = belgic_submitted value = yes }
-            make_subject = { target = ROOT type = feudatory }
+            make_subject = { target = scope:belgic_target type = feudatory }
         }
     }
 
@@ -1526,17 +1509,17 @@ me_parisii.17_eval = {
         if = {
             limit = { has_variable = belgic_submitted }
             scope:belgic_target = { save_scope_as = submitting_belgic_tribe }
-            trigger_event = { id = me_parisii.17_accept days = 1 }
+            trigger_event = { id = me_parisii.54 days = 1 }
         }
         if = {
             limit = { NOT = { has_variable = belgic_submitted } }
             scope:belgic_target = { save_scope_as = defying_belgic_tribe }
-            trigger_event = { id = me_parisii.17_refuse days = 1 }
+            trigger_event = { id = me_parisii.55 days = 1 }
         }
     }
 }
 
-me_parisii.17_accept = {
+me_parisii.54 = {
     type = country_event
     title = me_parisii.17_accept.t
     desc = me_parisii.17_accept.desc
@@ -1556,7 +1539,7 @@ me_parisii.17_accept = {
     }
 }
 
-me_parisii.17_refuse = {
+me_parisii.55 = {
     type = country_event
     title = me_parisii.17_refuse.t
     desc = me_parisii.17_refuse.desc
@@ -1717,22 +1700,7 @@ me_parisii.21 = {
 me_parisii.22 = {
     type = country_event
     title = me_parisii.22.t
-    desc = {
-        first_valid = {
-            triggered_desc = {
-                trigger = {
-                    p:2485 = { has_building = latifundia_building }
-                }
-                desc = me_parisii.22.desc_slave
-            }
-            triggered_desc = {
-                trigger = {
-                    always = yes
-                }
-                desc = me_parisii.22.desc_tribal
-            }
-        }
-    }
+    desc = me_parisii.22.desc
     picture = celtic_village
     left_portrait = current_ruler
 
@@ -1751,7 +1719,7 @@ me_parisii.22 = {
                 add_province_modifier = { name = riobe_tribal_apiaries duration = -1 }
             }
         }
-        p:2485 = { add_food = 30 }
+        p:2485 = { state = { add_state_food = 30 } }
         add_treasury = 25
     }
 }
@@ -1785,7 +1753,7 @@ me_parisii.24 = {
     option = {
         name = me_parisii.24.a
         add_country_modifier = { name = sekuana_ferry_network duration = -1 }
-        p:2475 = { add_food = 50 }
+        p:2475 = { state = { add_state_food = 50 } }
         add_political_influence = 15
     }
 }
@@ -1858,11 +1826,11 @@ me_parisii.25 = {
         }
         p:2475 = {
             if = {
-                limit = { has_deity_in_pantheon = deity:omen_smertrios }
+                limit = { root = { has_deity_in_pantheon = deity:omen_smertrios } }
                 set_province_deity = deity:omen_smertrios
             }
             else_if = {
-                limit = { has_deity_in_pantheon = deity:omen_esus }
+                limit = { root = { has_deity_in_pantheon = deity:omen_esus } }
                 set_province_deity = deity:omen_esus
             }
             add_province_modifier = {
@@ -1984,7 +1952,7 @@ me_parisii.27 = {
                 add_province_modifier = { name = parisian_market_gardens duration = -1 }
             }
         }
-        p:2475 = { add_food = 50 }
+        p:2475 = { state = { add_state_food = 50 } }
         add_treasury = 20
     }
 }
@@ -2002,7 +1970,7 @@ me_parisii.28 = {
         p:2473 = {
             add_province_modifier = { name = belsa_cereal_heartland duration = -1 }
         }
-        p:2475 = { add_food = 75 }
+        p:2475 = { state = { add_state_food = 75 } }
         add_political_influence = 10
     }
 }
@@ -2497,7 +2465,7 @@ me_parisii.37 = {
     option = {
         name = me_parisii.37.b
         add_centralization = 5
-        add_popularity = 10
+        current_ruler = { add_popularity = 10 }
     }
 }
 
@@ -2518,7 +2486,7 @@ me_parisii.38 = {
             }
             create_state_pop = slaves
         }
-        add_prestige = 10
+        current_ruler.family = { add_prestige = 10 }
     }
 }
 
@@ -2666,8 +2634,6 @@ me_parisii.46 = {
     picture = event_dancing_party_wine
     left_portrait = current_ruler
     right_portrait = scope:parisii_merchants.current_ruler
-
-    is_triggered_only = yes
 
     option = {
         name = me_parisii.46.a

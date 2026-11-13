@@ -1,4 +1,4 @@
-﻿# Parisii Seine Missions Event Script File
+# Parisii Seine Missions Event Script File
 # Standardized Sequential Event Map: 
 # Mission Tree 1 has events me_parisii.1 thru me_parisii.45
 # Mission Tree 2 pending
@@ -2161,7 +2161,7 @@ me_parisii.34 = {
     type = country_event
     title = me_parisii.34.t
     desc = me_parisii.34.desc
-    picture = latin_tribal_path_6_event
+    picture = city_construction
     left_portrait = current_ruler
 
     # Already a city
@@ -2181,20 +2181,13 @@ me_parisii.34 = {
         }
         if = {
             limit = {
-                p:2448 = {
-                    state = {
-                        has_governor = yes
-                    }
-                }
+                exists = p:2448.governor
+                NOT = { root.current_ruler = p:2448.governor }
             }
-            p:2448 = {
-                state = {
-                    governor = {
-                        add_character_modifier = {
-                            name = senonian_march_magistrate
-                            duration = 7300
-                        }
-                    }
+            p:2448.governor = {
+                add_character_modifier = {
+                    name = senonian_march_magistrate
+                    duration = 7300
                 }
             }
         }
@@ -2256,7 +2249,7 @@ me_parisii.35 = {
     type = country_event
     title = me_parisii.35.t
     desc = me_parisii.35.desc
-    picture = latin_tribal_path_6_event
+    picture = city_construction
     left_portrait = current_ruler
 
     # Already a city
@@ -2310,7 +2303,7 @@ me_parisii.36 = {
     type = country_event
     title = me_parisii.36.t
     desc = me_parisii.36.desc
-    picture = latin_tribal_path_6_event
+    picture = city_construction
     left_portrait = current_ruler
 
     # Already a city
@@ -2373,15 +2366,126 @@ me_parisii.36 = {
     }
 }
 
-# me_parisii.37 - The Vines of Massalia (Task 7 follow-up / Massalia Viticulture Trade)
+# me_parisii.37 - The Vines of the South (Task 7 follow-up / Southern Viticulture Trade)
 me_parisii.37 = {
     type = country_event
     title = me_parisii.37.t
     desc = me_parisii.37.desc
     picture = event_dancing_party_wine
     left_portrait = current_ruler
+    right_portrait = scope:southern_trade_partner.current_ruler
 
-    # Option A: Accept Massaliote exchange
+    immediate = {
+        save_scope_as = parisii_merchants
+        # Priority 1: Greek Massalia owning Massalia (2325)
+        if = {
+            limit = {
+                p:2325 = {
+                    exists = owner
+                    OR = {
+                        owner = { tag = MAS }
+                        owner = { primary_culture_group = hellenic }
+                    }
+                }
+            }
+            p:2325 = {
+                save_scope_as = southern_trade_port
+                owner = {
+                    save_scope_as = southern_trade_partner
+                }
+            }
+        }
+        # Priority 2: MAS still exists with capital elsewhere (e.g. Antipolis, Agatha)
+        else_if = {
+            limit = {
+                c:MAS = { exists = yes }
+            }
+            c:MAS = {
+                save_scope_as = southern_trade_partner
+                capital_scope = {
+                    save_scope_as = southern_trade_port
+                }
+            }
+        }
+        # Priority 3: Agatha (2260) owned by a Hellenic power
+        else_if = {
+            limit = {
+                p:2260 = {
+                    exists = owner
+                    owner = { primary_culture_group = hellenic }
+                }
+            }
+            p:2260 = {
+                save_scope_as = southern_trade_port
+                owner = {
+                    save_scope_as = southern_trade_partner
+                }
+            }
+        }
+        # Priority 4: Antipolis (3543) owned by a Hellenic power
+        else_if = {
+            limit = {
+                p:3543 = {
+                    exists = owner
+                    owner = { primary_culture_group = hellenic }
+                }
+            }
+            p:3543 = {
+                save_scope_as = southern_trade_port
+                owner = {
+                    save_scope_as = southern_trade_partner
+                }
+            }
+        }
+        # Priority 5: Emporion (1000) owned by a Hellenic power
+        else_if = {
+            limit = {
+                p:1000 = {
+                    exists = owner
+                    owner = { primary_culture_group = hellenic }
+                }
+            }
+            p:1000 = {
+                save_scope_as = southern_trade_port
+                owner = {
+                    save_scope_as = southern_trade_partner
+                }
+            }
+        }
+        # Priority 6: Current controller of Massalia (2325) (e.g. Rome or local conqueror)
+        else_if = {
+            limit = {
+                p:2325 = {
+                    exists = owner
+                }
+            }
+            p:2325 = {
+                save_scope_as = southern_trade_port
+                owner = {
+                    save_scope_as = southern_trade_partner
+                }
+            }
+        }
+        # Priority 7: Current controller of Agatha (2260) or Antipolis (3543)
+        else = {
+            if = {
+                limit = { p:2260 = { exists = owner } }
+                p:2260 = {
+                    save_scope_as = southern_trade_port
+                    owner = { save_scope_as = southern_trade_partner }
+                }
+            }
+            else_if = {
+                limit = { p:3543 = { exists = owner } }
+                p:3543 = {
+                    save_scope_as = southern_trade_port
+                    owner = { save_scope_as = southern_trade_partner }
+                }
+            }
+        }
+    }
+
+    # Option A: Accept Mediterranean exchange
     option = {
         name = me_parisii.37.a
         custom_tooltip = me_parisii.37.a.tt
@@ -2393,20 +2497,15 @@ me_parisii.37 = {
         p:2475 = {
             add_1_free_province_investments = yes
         }
-        save_scope_as = parisii_merchants
-        # Transfer captive slaves to Massalia tile owner if they exist
+        # Transfer captive slaves to southern trade partner if they exist
         if = {
             limit = {
-                p:2325 = {
-                    exists = owner
-                }
+                exists = scope:southern_trade_partner
             }
-            p:2325 = {
-                owner = {
-                    trigger_event = {
-                        id = me_parisii.46
-                        days = { 7 14 }
-                    }
+            scope:southern_trade_partner = {
+                trigger_event = {
+                    id = me_parisii.46
+                    days = { 7 14 }
                 }
             }
         }
@@ -2474,7 +2573,7 @@ me_parisii.38 = {
     type = country_event
     title = me_parisii.38.t
     desc = me_parisii.38.desc
-    picture = latin_tribal_path_3_event
+    picture = event_dancing_party_wine
     left_portrait = current_ruler
 
     option = {
@@ -2542,7 +2641,7 @@ me_parisii.41 = {
     type = country_event
     title = me_parisii.41.t
     desc = me_parisii.41.desc
-    picture = latin_tribal_path_6_event
+    picture = city_construction
     left_portrait = current_ruler
 
     option = {
@@ -2626,7 +2725,7 @@ me_parisii.45 = {
     }
 }
 
-# me_parisii.46 - Northern Captives in Massalia (Tile 2325 Owner Event)
+# me_parisii.46 - Northern Captives in the South (Southern Trade Partner Event)
 me_parisii.46 = {
     type = country_event
     title = me_parisii.46.t
@@ -2638,9 +2737,20 @@ me_parisii.46 = {
     option = {
         name = me_parisii.46.a
         custom_tooltip = me_parisii.46.a.tt
-        p:2325 = {
-            create_state_pop = slaves
-            create_state_pop = slaves
+        if = {
+            limit = {
+                exists = scope:southern_trade_port
+            }
+            scope:southern_trade_port = {
+                create_state_pop = slaves
+                create_state_pop = slaves
+            }
+        }
+        else = {
+            capital_scope = {
+                create_state_pop = slaves
+                create_state_pop = slaves
+            }
         }
     }
 }

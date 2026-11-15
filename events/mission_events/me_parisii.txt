@@ -1,4 +1,4 @@
-﻿# Parisii Seine Missions Event Script File
+# Parisii Seine Missions Event Script File
 # Standardized Sequential Event Map: 
 # Mission Tree 1 has events me_parisii.1 thru me_parisii.45
 # Mission Tree 2 pending
@@ -62,7 +62,13 @@ me_parisii.2 = {
         if = {
             limit = {
                 exists = c:CTL
-                c:CTL = { is_subject = no }
+                c:CTL = {
+                    OR = {
+                        is_subject = no
+                        is_subject_type = vassal_tribe
+                        is_subject_type = tributary
+                    }
+                }
             }
             trigger_event = {
                 id = me_parisii.3
@@ -82,8 +88,24 @@ me_parisii.2 = {
             add_provincial_claim_effect = yes
         }
         if = {
-            limit = { exists = c:CTL c:CTL = { is_subject = no } }
-            c:CTL = { trigger_event = { id = me_parisii.50 days = { 2 4 } } }
+            limit = {
+                exists = c:CTL
+                c:CTL = {
+                    OR = {
+                        is_subject = no
+                        is_subject_type = vassal_tribe
+                        is_subject_type = tributary
+                    }
+                }
+            }
+            if = {
+                limit = { c:CTL = { is_ai = yes } }
+                trigger_event = { id = me_parisii.7 days = 2 }
+            }
+            if = {
+                limit = { c:CTL = { is_ai = no } }
+                c:CTL = { trigger_event = { id = me_parisii.50 days = { 2 4 } } }
+            }
         }
         else = {
             remove_global_variable = parisii_unification_leader
@@ -102,7 +124,13 @@ me_parisii.3 = {
 
     trigger = {
         exists = c:CTL
-        c:CTL = { is_subject = no }
+        c:CTL = {
+            OR = {
+                is_subject = no
+                is_subject_type = vassal_tribe
+                is_subject_type = tributary
+            }
+        }
     }
 
     # Option A: Favored Toll Status along the Sekuana
@@ -118,7 +146,14 @@ me_parisii.3 = {
                 duration = -1
             }
             set_variable = ctl_granted_trade_privilege
-            trigger_event = { id = me_parisii.4 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:CTL = { is_ai = yes } }
+            trigger_event = { id = me_parisii.58 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:CTL = { is_ai = no } }
+            c:CTL = { trigger_event = { id = me_parisii.4 days = { 3 5 } } }
         }
     }
 
@@ -139,8 +174,19 @@ me_parisii.3 = {
             }
         }
         c:CTL = {
+            add_country_modifier = {
+                name = catalaunian_trade_covenant
+                duration = -1
+            }
             set_variable = ctl_granted_trade_privilege
-            trigger_event = { id = me_parisii.4 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:CTL = { is_ai = yes } }
+            trigger_event = { id = me_parisii.58 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:CTL = { is_ai = no } }
+            c:CTL = { trigger_event = { id = me_parisii.4 days = { 3 5 } } }
         }
     }
 
@@ -154,7 +200,14 @@ me_parisii.3 = {
                 target = root
             }
             set_variable = ctl_refused_trade_privilege
-            trigger_event = { id = me_parisii.4 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:CTL = { is_ai = yes } }
+            trigger_event = { id = me_parisii.58 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:CTL = { is_ai = no } }
+            c:CTL = { trigger_event = { id = me_parisii.4 days = { 3 5 } } }
         }
     }
 }
@@ -216,6 +269,18 @@ me_parisii.4 = {
             }
         }
                 
+        if = {
+            limit = {
+                has_variable = ctl_granted_trade_privilege
+                p:2450 = { has_province_modifier = catalaunian_trade_routes }
+                NOT = { has_country_modifier = catalaunian_trade_covenant }
+            }
+            add_country_modifier = {
+                name = catalaunian_trade_covenant
+                duration = -1
+            }
+        }
+
         global_var:parisii_unification_leader = {
             make_subject = {
                 target = ROOT
@@ -244,6 +309,67 @@ me_parisii.4 = {
     }
 }
 
+# me_parisii.58 - Catalaunian Response Evaluation (Hidden AI Evaluation)
+me_parisii.58 = {
+    type = country_event
+    hidden = yes
+
+    immediate = {
+        random = {
+            chance = 40
+            modifier = {
+                factor = 2.5
+                c:CTL = { has_variable = ctl_granted_trade_privilege }
+            }
+            modifier = {
+                factor = 0.2
+                c:CTL = { has_variable = ctl_refused_trade_privilege }
+            }
+            modifier = {
+                factor = 1.5
+                c:CTL = { num_of_cities < 5 }
+            }
+            modifier = {
+                factor = 2.0
+                opinion = { target = c:CTL value >= 100 }
+            }
+            modifier = {
+                factor = 1.5
+                opinion = { target = c:CTL value >= 50 }
+            }
+            modifier = {
+                factor = 2.0
+                c:CTL.current_ruler = {
+                    OR = {
+                        has_trait = humble
+                        has_trait = submissive
+                        has_trait = weak_willed
+                    }
+                }
+            }
+            modifier = {
+                factor = 0.1
+                c:CTL.current_ruler = {
+                    OR = {
+                        has_trait = brave
+                        has_trait = ambitious
+                        has_trait = proud
+                    }
+                }
+            }
+            set_variable = ctl_submitted
+        }
+        if = {
+            limit = { has_variable = ctl_submitted }
+            remove_variable = ctl_submitted
+            trigger_event = { id = me_parisii.6 }
+        }
+        else = {
+            trigger_event = { id = me_parisii.7 }
+        }
+    }
+}
+
 # me_parisii.56 - Envoys to Agedincon (Fires on Task 2b start)
 me_parisii.56 = {
     type = country_event
@@ -267,7 +393,13 @@ me_parisii.56 = {
         if = {
             limit = {
                 exists = c:SNN
-                c:SNN = { is_subject = no }
+                c:SNN = {
+                    OR = {
+                        is_subject = no
+                        is_subject_type = vassal_tribe
+                        is_subject_type = tributary
+                    }
+                }
             }
             trigger_event = {
                 id = me_parisii.5
@@ -287,8 +419,24 @@ me_parisii.56 = {
             add_provincial_claim_effect = yes
         }
         if = {
-            limit = { exists = c:SNN c:SNN = { is_subject = no } }
-            c:SNN = { trigger_event = { id = me_parisii.50 days = { 2 4 } } }
+            limit = {
+                exists = c:SNN
+                c:SNN = {
+                    OR = {
+                        is_subject = no
+                        is_subject_type = vassal_tribe
+                        is_subject_type = tributary
+                    }
+                }
+            }
+            if = {
+                limit = { c:SNN = { is_ai = yes } }
+                trigger_event = { id = me_parisii.49 days = 2 }
+            }
+            if = {
+                limit = { c:SNN = { is_ai = no } }
+                c:SNN = { trigger_event = { id = me_parisii.50 days = { 2 4 } } }
+            }
         }
         else = {
             remove_global_variable = parisii_unification_leader
@@ -307,15 +455,25 @@ me_parisii.5 = {
 
     trigger = {
         exists = c:SNN
-        c:SNN = { is_subject = no }
+        c:SNN = {
+            OR = {
+                is_subject = no
+                is_subject_type = vassal_tribe
+                is_subject_type = tributary
+            }
+        }
     }
 
     # Option A: State Treasury Assurances
     option = {
         name = me_parisii.5.a
-        add_treasury = -30
-        add_political_influence = -15
+        add_treasury = -40
+        add_political_influence = -20
         current_ruler = { add_popularity = -10 }
+        add_country_modifier = {
+            name = sennonian_dynastic_stipends
+            duration = -1
+        }
         
         # Discounts for persuasive rulers
         if = {
@@ -333,9 +491,24 @@ me_parisii.5 = {
         }
 
         set_variable = promised_sennonian_family_assurances
+        show_as_tooltip = {
+            c:SNN = {
+                add_country_modifier = {
+                    name = sennonian_assurances_modifier
+                    duration = -1
+                }
+            }
+        }
         c:SNN = {
             set_variable = sennonian_assurances_granted
-            trigger_event = { id = me_parisii.47 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:SNN = { is_ai = yes } }
+            trigger_event = { id = me_parisii.59 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:SNN = { is_ai = no } }
+            c:SNN = { trigger_event = { id = me_parisii.47 days = { 3 5 } } }
         }
     }
 
@@ -344,18 +517,37 @@ me_parisii.5 = {
         name = me_parisii.5.b
         trigger = {
             current_ruler = {
-                wealth >= 50
+                wealth >= 75
                 NOT = { has_trait = selfish has_trait = miserly }
             }
         }
         current_ruler = {
-            add_gold = -50
+            add_gold = -75
             add_friend = c:SNN.current_ruler
         }
+        add_country_modifier = {
+            name = sennonian_dynastic_stipends
+            duration = 3650
+        }
         set_variable = promised_sennonian_family_assurances
+        show_as_tooltip = {
+            c:SNN = {
+                add_country_modifier = {
+                    name = sennonian_assurances_modifier
+                    duration = -1
+                }
+            }
+        }
         c:SNN = {
             set_variable = sennonian_assurances_granted
-            trigger_event = { id = me_parisii.47 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:SNN = { is_ai = yes } }
+            trigger_event = { id = me_parisii.59 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:SNN = { is_ai = no } }
+            c:SNN = { trigger_event = { id = me_parisii.47 days = { 3 5 } } }
         }
     }
 
@@ -369,7 +561,14 @@ me_parisii.5 = {
                 target = root
             }
             set_variable = refused_sennonian_assurances
-            trigger_event = { id = me_parisii.47 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:SNN = { is_ai = yes } }
+            trigger_event = { id = me_parisii.59 days = { 3 5 } }
+        }
+        if = {
+            limit = { c:SNN = { is_ai = no } }
+            c:SNN = { trigger_event = { id = me_parisii.47 days = { 3 5 } } }
         }
     }
 }
@@ -385,11 +584,37 @@ me_parisii.6 = {
 
     option = {
         name = me_parisii.6.a
+        make_subject = {
+            target = c:CTL
+            type = feudatory
+        }
+        show_as_tooltip = {
+            make_subject = {
+                target = c:CTL
+                type = feudatory
+            }
+        }
         add_political_influence = 15
         current_ruler.family = {
             add_prestige = 20
         }
         remove_global_variable = parisii_unification_leader
+        if = {
+            limit = {
+                exists = c:CTL
+                c:CTL = {
+                    is_subject_of = root
+                    NOT = { has_country_modifier = catalaunian_trade_covenant }
+                }
+                p:2450 = { has_province_modifier = catalaunian_trade_routes }
+            }
+            c:CTL = {
+                add_country_modifier = {
+                    name = catalaunian_trade_covenant
+                    duration = -1
+                }
+            }
+        }
     }
 }
 
@@ -484,7 +709,7 @@ me_parisii.47 = {
             trigger_event = { id = me_parisii.48 days = 2 }
         }
 
-        # Guaranteed standing for SNN royal dynasty
+        # Guaranteed standing for SNN ruling clan
         current_ruler.family = {
             add_prestige = 30
             every_family_member = {
@@ -512,6 +737,66 @@ me_parisii.47 = {
     }
 }
 
+# me_parisii.59 - Sennonian Response Evaluation (Hidden AI Evaluation)
+me_parisii.59 = {
+    type = country_event
+    hidden = yes
+
+    immediate = {
+        random = {
+            chance = 30
+            modifier = {
+                factor = 2.5
+                c:SNN = { has_variable = sennonian_assurances_granted }
+            }
+            modifier = {
+                factor = 2.0
+                any_subject = { tag = CTL }
+            }
+            modifier = {
+                factor = 1.5
+                any_allied_country = { count >= 1 }
+            }
+            modifier = {
+                factor = 0.5
+                c:SNN = { has_variable = refused_sennonian_assurances }
+            }
+            modifier = {
+                factor = 0.0
+                c:SNN = { num_of_cities >= root.num_of_cities }
+                NOT = { any_subject = { count >= 1 } }
+            }
+            modifier = {
+                factor = 2.0
+                opinion = { target = c:SNN value >= 100 }
+            }
+            modifier = {
+                factor = 1.5
+                opinion = { target = c:SNN value >= 50 }
+            }
+            modifier = {
+                factor = 0.0
+                c:SNN.current_ruler = {
+                    OR = {
+                        has_trait = brave
+                        has_trait = ambitious
+                        has_trait = proud
+                    }
+                }
+            }
+            set_variable = snn_submitted
+        }
+        if = {
+            limit = { has_variable = snn_submitted }
+            remove_variable = snn_submitted
+            trigger_event = { id = me_parisii.48 }
+        }
+        else = {
+            trigger_event = { id = me_parisii.49 }
+        }
+    }
+}
+
 # me_parisii.48 - Sennonian Submission (Player is notified of submission)
 me_parisii.48 = {
     type = country_event
@@ -523,9 +808,36 @@ me_parisii.48 = {
 
     option = {
         name = me_parisii.48.a
+        make_subject = {
+            target = c:SNN
+            type = feudatory
+        }
+        show_as_tooltip = {
+            make_subject = {
+                target = c:SNN
+                type = feudatory
+            }
+        }
         add_political_influence = 15
         current_ruler.family = {
             add_prestige = 20
+        }
+        if = {
+            limit = {
+                c:SNN = { has_variable = sennonian_assurances_granted }
+            }
+            c:SNN = {
+                add_country_modifier = {
+                    name = sennonian_assurances_modifier
+                    duration = -1
+                }
+                current_ruler.family = {
+                    add_prestige = 30
+                    every_family_member = {
+                        add_prominence = 30
+                    }
+                }
+            }
         }
         remove_global_variable = parisii_unification_leader
     }
@@ -1394,13 +1706,26 @@ me_parisii.16 = {
         name = me_parisii.16.a
         custom_tooltip = me_parisii.16.a.tt
 
+        area:veliocassia_area = { add_provincial_claim_effect = yes }
+        area:bellovacia_area = { add_provincial_claim_effect = yes }
+        area:suaeuconia_area = { add_provincial_claim_effect = yes }
+        area:remia_area = { add_provincial_claim_effect = yes }
+
         # 1. Seussonia (SSS)
         if = {
-            limit = { exists = c:SSS c:SSS = { is_subject = no } }
+            limit = {
+                exists = c:SSS
+                c:SSS = {
+                    OR = {
+                        is_subject = no
+                        is_subject_type = vassal_tribe
+                        is_subject_type = tributary
+                    }
+                }
+            }
             if = {
                 limit = { c:SSS = { is_ai = yes } }
-                c:SSS = { save_scope_as = belgic_target }
-                trigger_event = { id = me_parisii.53 days = 2 }
+                trigger_event = { id = me_parisii.60 days = 2 }
             }
             if = {
                 limit = { c:SSS = { is_ai = no } }
@@ -1411,11 +1736,19 @@ me_parisii.16 = {
 
         # 2. Veliocassia (VCL)
         if = {
-            limit = { exists = c:VCL c:VCL = { is_subject = no } }
+            limit = {
+                exists = c:VCL
+                c:VCL = {
+                    OR = {
+                        is_subject = no
+                        is_subject_type = vassal_tribe
+                        is_subject_type = tributary
+                    }
+                }
+            }
             if = {
                 limit = { c:VCL = { is_ai = yes } }
-                c:VCL = { save_scope_as = belgic_target }
-                trigger_event = { id = me_parisii.53 days = 4 }
+                trigger_event = { id = me_parisii.61 days = 4 }
             }
             if = {
                 limit = { c:VCL = { is_ai = no } }
@@ -1426,11 +1759,19 @@ me_parisii.16 = {
 
         # 3. Remia (RMI)
         if = {
-            limit = { exists = c:RMI c:RMI = { is_subject = no } }
+            limit = {
+                exists = c:RMI
+                c:RMI = {
+                    OR = {
+                        is_subject = no
+                        is_subject_type = vassal_tribe
+                        is_subject_type = tributary
+                    }
+                }
+            }
             if = {
                 limit = { c:RMI = { is_ai = yes } }
-                c:RMI = { save_scope_as = belgic_target }
-                trigger_event = { id = me_parisii.53 days = 6 }
+                trigger_event = { id = me_parisii.62 days = 6 }
             }
             if = {
                 limit = { c:RMI = { is_ai = no } }
@@ -1441,11 +1782,19 @@ me_parisii.16 = {
         
         # 4. Bellovacia (BLV)
         if = {
-            limit = { exists = c:BLV c:BLV = { is_subject = no } }
+            limit = {
+                exists = c:BLV
+                c:BLV = {
+                    OR = {
+                        is_subject = no
+                        is_subject_type = vassal_tribe
+                        is_subject_type = tributary
+                    }
+                }
+            }
             if = {
                 limit = { c:BLV = { is_ai = yes } }
-                c:BLV = { save_scope_as = belgic_target }
-                trigger_event = { id = me_parisii.53 days = 8 }
+                trigger_event = { id = me_parisii.63 days = 8 }
             }
             if = {
                 limit = { c:BLV = { is_ai = no } }
@@ -1456,7 +1805,7 @@ me_parisii.16 = {
     }
 }
 
-# me_parisii.52 - The Sekuana Challenge (Fires for Belgoi)
+# me_parisii.52 - The Sekuana Challenge (Fires for Belgoi Human Player)
 me_parisii.52 = {
     type = country_event
     title = me_parisii.17.t
@@ -1466,123 +1815,329 @@ me_parisii.52 = {
     right_portrait = scope:lutetia_overlord.current_ruler 
 
     option = {
-        name = me_parisii.17.a # Submit to Lutetia but also like why lol
+        name = me_parisii.17.a # Submit to Lutetia
         scope:lutetia_overlord = {
             make_subject = {
                 target = ROOT
                 type = feudatory
             }
-            # Save the human player scope as submitting and trigger accept popup
-            ROOT = { save_scope_as = submitting_belgic_tribe }
-            trigger_event = { id = me_parisii.54 days = 1 }
+            set_variable = { name = submitting_belgic_tribe_var value = ROOT }
+            trigger_event = { id = me_parisii.54 }
         }
     }
 
     option = {
         name = me_parisii.17.b # Fight!
         scope:lutetia_overlord = {
-            # Save the human player scope as defying and trigger refusal popup
-            ROOT = { save_scope_as = defying_belgic_tribe }
-            trigger_event = { id = me_parisii.55 days = 1 }
+            set_variable = { name = defying_belgic_tribe_var value = ROOT }
+            trigger_event = { id = me_parisii.55 }
         }
     }
 }
 
-me_parisii.53 = {
+# me_parisii.60 - Suessiones Evaluation (Hidden AI Evaluation)
+me_parisii.60 = {
     type = country_event
-    title = me_parisii.17.t
-    desc = me_parisii.17_eval.desc
-    picture = celtic_diplomacy
-    left_portrait = current_ruler
-    right_portrait = scope:belgic_target.current_ruler
+    hidden = yes
+
+    trigger = {
+        exists = c:SSS
+        c:SSS = {
+            NOT = { is_subject_of = root }
+        }
+    }
 
     immediate = {
-        # Roll submission chance on the player machine using target parameters
-        set_variable = { name = submitting_belgic_tribe_var value = scope:belgic_target }
         random = {
-            chance = 15
+            chance = 20
             modifier = { 
                 factor = 1.5 
-                opinion = { target = scope:belgic_target value >= 50 } 
+                opinion = { target = c:SSS value >= 50 } 
             }
             modifier = { 
-                factor = 3.0 
+                factor = 2.0 
                 num_of_cities >= 30 
             }
             modifier = {
                 factor = 2.0
-                scope:belgic_target.current_ruler = { 
+                c:SSS.current_ruler = { 
                     OR = { has_trait = humble has_trait = submissive has_trait = weak_willed } 
                 }
             }
             modifier = {
                 factor = 0.0
-                scope:belgic_target.current_ruler = { 
+                c:SSS.current_ruler = { 
                     OR = { has_trait = brave has_trait = ambitious has_trait = proud } 
                 }
             }
-            # On Success: Flag submission and enforce feudatory status
-            set_variable = { name = belgic_submitted value = yes }
-            make_subject = { target = scope:belgic_target type = feudatory }
+            # Eastern Approach (Task 13) borders SSS
+            modifier = {
+                factor = 2.5
+                has_completed_mission_task = parisii_lutetia_task_13
+            }
+            # Agedincon Bulwark (Task 11)
+            modifier = {
+                factor = 1.3
+                has_completed_mission_task = parisii_lutetia_task_11
+            }
+            # Island Citadel (Task 3b)
+            modifier = {
+                factor = 1.3
+                has_completed_mission_task = parisii_lutetia_task_3b
+            }
+            set_variable = sss_submitted
         }
-    }
-
-    option = {
-        name = me_parisii_await.a # We wait for their envoys...
         if = {
-            limit = { has_variable = belgic_submitted }
-            scope:belgic_target = { save_scope_as = submitting_belgic_tribe }
-            trigger_event = { id = me_parisii.54 days = 1 }
+            limit = { has_variable = sss_submitted }
+            remove_variable = sss_submitted
+            make_subject = { target = c:SSS type = feudatory }
+            set_variable = { name = submitting_belgic_tribe_var value = c:SSS }
+            trigger_event = { id = me_parisii.54 }
         }
-        if = {
-            limit = { NOT = { has_variable = belgic_submitted } }
-            scope:belgic_target = { save_scope_as = defying_belgic_tribe }
-            trigger_event = { id = me_parisii.55 days = 1 }
+        else = {
+            set_variable = { name = defying_belgic_tribe_var value = c:SSS }
+            trigger_event = { id = me_parisii.55 }
         }
     }
 }
 
+# me_parisii.61 - Veliocasses Evaluation (Hidden AI Evaluation)
+me_parisii.61 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        exists = c:VCL
+        c:VCL = {
+            NOT = { is_subject_of = root }
+        }
+    }
+
+    immediate = {
+        random = {
+            chance = 20
+            modifier = { 
+                factor = 1.5 
+                opinion = { target = c:VCL value >= 50 } 
+            }
+            modifier = { 
+                factor = 2.0 
+                num_of_cities >= 30 
+            }
+            modifier = {
+                factor = 2.0
+                c:VCL.current_ruler = { 
+                    OR = { has_trait = humble has_trait = submissive has_trait = weak_willed } 
+                }
+            }
+            modifier = {
+                factor = 0.0
+                c:VCL.current_ruler = { 
+                    OR = { has_trait = brave has_trait = ambitious has_trait = proud } 
+                }
+            }
+            # Caracotinon Watch (Task 12) borders VCL
+            modifier = {
+                factor = 2.5
+                has_completed_mission_task = parisii_lutetia_task_12
+            }
+            # Agedincon Bulwark (Task 11)
+            modifier = {
+                factor = 1.3
+                has_completed_mission_task = parisii_lutetia_task_11
+            }
+            # Island Citadel (Task 3b)
+            modifier = {
+                factor = 1.3
+                has_completed_mission_task = parisii_lutetia_task_3b
+            }
+            set_variable = vcl_submitted
+        }
+        if = {
+            limit = { has_variable = vcl_submitted }
+            remove_variable = vcl_submitted
+            make_subject = { target = c:VCL type = feudatory }
+            set_variable = { name = submitting_belgic_tribe_var value = c:VCL }
+            trigger_event = { id = me_parisii.54 }
+        }
+        else = {
+            set_variable = { name = defying_belgic_tribe_var value = c:VCL }
+            trigger_event = { id = me_parisii.55 }
+        }
+    }
+}
+
+# me_parisii.62 - Remi Evaluation (Hidden AI Evaluation)
+me_parisii.62 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        exists = c:RMI
+        c:RMI = {
+            NOT = { is_subject_of = root }
+        }
+    }
+
+    immediate = {
+        random = {
+            chance = 20
+            modifier = { 
+                factor = 1.5 
+                opinion = { target = c:RMI value >= 50 } 
+            }
+            modifier = { 
+                factor = 2.0 
+                num_of_cities >= 30 
+            }
+            modifier = {
+                factor = 2.0
+                c:RMI.current_ruler = { 
+                    OR = { has_trait = humble has_trait = submissive has_trait = weak_willed } 
+                }
+            }
+            modifier = {
+                factor = 0.0
+                c:RMI.current_ruler = { 
+                    OR = { has_trait = brave has_trait = ambitious has_trait = proud } 
+                }
+            }
+            # Eastern Approach (Task 13) borders RMI
+            modifier = {
+                factor = 2.5
+                has_completed_mission_task = parisii_lutetia_task_13
+            }
+            # Agedincon Bulwark (Task 11)
+            modifier = {
+                factor = 1.3
+                has_completed_mission_task = parisii_lutetia_task_11
+            }
+            # Island Citadel (Task 3b)
+            modifier = {
+                factor = 1.3
+                has_completed_mission_task = parisii_lutetia_task_3b
+            }
+            set_variable = rmi_submitted
+        }
+        if = {
+            limit = { has_variable = rmi_submitted }
+            remove_variable = rmi_submitted
+            make_subject = { target = c:RMI type = feudatory }
+            set_variable = { name = submitting_belgic_tribe_var value = c:RMI }
+            trigger_event = { id = me_parisii.54 }
+        }
+        else = {
+            set_variable = { name = defying_belgic_tribe_var value = c:RMI }
+            trigger_event = { id = me_parisii.55 }
+        }
+    }
+}
+
+# me_parisii.63 - Bellovaci Evaluation (Hidden AI Evaluation)
+me_parisii.63 = {
+    type = country_event
+    hidden = yes
+
+    trigger = {
+        exists = c:BLV
+        c:BLV = {
+            NOT = { is_subject_of = root }
+        }
+    }
+
+    immediate = {
+        random = {
+            chance = 20
+            modifier = { 
+                factor = 1.5 
+                opinion = { target = c:BLV value >= 50 } 
+            }
+            modifier = { 
+                factor = 2.0 
+                num_of_cities >= 30 
+            }
+            modifier = {
+                factor = 2.0
+                c:BLV.current_ruler = { 
+                    OR = { has_trait = humble has_trait = submissive has_trait = weak_willed } 
+                }
+            }
+            modifier = {
+                factor = 0.0
+                c:BLV.current_ruler = { 
+                    OR = { has_trait = brave has_trait = ambitious has_trait = proud } 
+                }
+            }
+            # Caracotinon Watch (Task 12) borders BLV
+            modifier = {
+                factor = 2.5
+                has_completed_mission_task = parisii_lutetia_task_12
+            }
+            # Agedincon Bulwark (Task 11)
+            modifier = {
+                factor = 1.3
+                has_completed_mission_task = parisii_lutetia_task_11
+            }
+            # Island Citadel (Task 3b)
+            modifier = {
+                factor = 1.3
+                has_completed_mission_task = parisii_lutetia_task_3b
+            }
+            set_variable = blv_submitted
+        }
+        if = {
+            limit = { has_variable = blv_submitted }
+            remove_variable = blv_submitted
+            make_subject = { target = c:BLV type = feudatory }
+            set_variable = { name = submitting_belgic_tribe_var value = c:BLV }
+            trigger_event = { id = me_parisii.54 }
+        }
+        else = {
+            set_variable = { name = defying_belgic_tribe_var value = c:BLV }
+            trigger_event = { id = me_parisii.55 }
+        }
+    }
+}
+
+# me_parisii.54 - Belgoi Submission
 me_parisii.54 = {
     type = country_event
     title = me_parisii.17_accept.t
     desc = me_parisii.17_accept.desc
     picture = celtic_chiefs
     left_portrait = current_ruler
-    right_portrait = scope:submitting_belgic_tribe.current_ruler
-
-    immediate = {
-        var:submitting_belgic_tribe_var = { save_scope_as = submitting_belgic_tribe }
-        remove_variable = belgic_submitted
-        remove_variable = submitting_belgic_tribe_var
-    }
+    right_portrait = var:submitting_belgic_tribe_var.current_ruler
 
     option = {
         name = me_parisii.17_accept.a
+        show_as_tooltip = {
+            make_subject = {
+                target = var:submitting_belgic_tribe_var
+                type = feudatory
+            }
+        }
         current_ruler = { add_popularity = 5 }
+        remove_variable = submitting_belgic_tribe_var
     }
 }
 
+# me_parisii.55 - Belgoi Defiance
 me_parisii.55 = {
     type = country_event
     title = me_parisii.17_refuse.t
     desc = me_parisii.17_refuse.desc
     picture = celtic_diplomacy
     left_portrait = current_ruler
-    right_portrait = scope:defying_belgic_tribe.current_ruler
-
-    immediate = {
-        var:defying_belgic_tribe_var = { save_scope_as = defying_belgic_tribe }
-        remove_variable = belgic_submitted
-        remove_variable = defying_belgic_tribe_var
-    }
+    right_portrait = var:defying_belgic_tribe_var.current_ruler
 
     option = {
         name = me_parisii.17_refuse.a
-        scope:defying_belgic_tribe = {
+        var:defying_belgic_tribe_var = {
             capital_scope = {
                 area = { add_provincial_claim_effect = yes }
             }
         }
+        remove_variable = defying_belgic_tribe_var
     }
 }
 
@@ -1693,25 +2248,70 @@ me_parisii.20 = {
     }
 }
 
-# me_parisii.21 - The Sennonian Dynasty Welcomed (Fires on diplomatic annexation if assurances were granted)
+# me_parisii.21 - The Sennonian Clan Welcomed (Fires on diplomatic annexation if assurances were granted)
 me_parisii.21 = {
     type = country_event
     title = me_parisii.21.t
     desc = me_parisii.21.desc
     picture = celtic_chiefs
     left_portrait = current_ruler
+    right_portrait = scope:first_family_head
 
     trigger = {
-        has_variable = promised_sennonian_family_assurances
+        NOT = { has_variable = refused_sennonian_assurances }
     }
 
     immediate = {
         remove_variable = promised_sennonian_family_assurances
+        every_in_list = {
+            list = annexed_treasures
+            transfer_treasure_to_country = ROOT
+        }
     }
 
     option = {
         name = me_parisii.21.a
         custom_tooltip = sennonian_dynasty_honored_tt
+        if = {
+            limit = { exists = scope:first_family_head }
+            scope:first_family_head = {
+                custom_tooltip = first_family_moves_to
+            }
+            scope:first_family_head.family = {
+                add_prestige = 50
+                every_family_member = {
+                    add_prominence = 30
+                }
+            }
+        }
+        hidden_effect = {
+            every_character = {
+                limit = { is_in_list = first_annex_family_list }
+                remove_from_list = first_annex_family_list
+                if = {
+                    limit = { has_character_modifier = foreign_citizen }
+                    remove_character_modifier = foreign_citizen
+                }
+                annexation_character_cleanup = yes
+            }
+            every_character = {
+                limit = {
+                    OR = {
+                        is_in_list = second_annex_family_list
+                        is_in_list = third_annex_family_list
+                        is_in_list = fourth_annex_family_list
+                    }
+                }
+                remove_from_list = second_annex_family_list
+                remove_from_list = third_annex_family_list
+                remove_from_list = fourth_annex_family_list
+                if = {
+                    limit = { has_character_modifier = foreign_citizen }
+                    remove_character_modifier = foreign_citizen
+                }
+                annexation_character_cleanup = yes
+            }
+        }
         add_political_influence = 15
         add_stability = 5
     }
@@ -1745,7 +2345,7 @@ me_parisii.22 = {
     }
 }
 
-# me_parisii.23 - The Woad Mills of Mellodunum
+# me_parisii.23 - The Woad Plantations of Melodunon
 me_parisii.23 = {
     type = country_event
     title = me_parisii.23.t
@@ -1755,6 +2355,26 @@ me_parisii.23 = {
 
     option = {
         name = me_parisii.23.a
+        p:2481 = {
+            add_province_modifier = { name = mellodunum_woad_plantations duration = -1 }
+            create_state_pop = slaves
+            create_state_pop = tribesmen
+        }
+        add_treasury = 10
+        current_ruler = { add_popularity = 5 }
+    }
+}
+
+# me_parisii.57 - The Woad Mills of Melodunon
+me_parisii.57 = {
+    type = country_event
+    title = me_parisii.57.t
+    desc = me_parisii.57.desc
+    picture = city_construction
+    left_portrait = current_ruler
+
+    option = {
+        name = me_parisii.57.a
         p:2481 = {
             add_province_modifier = { name = mellodunum_woad_mills duration = -1 }
         }
@@ -1776,6 +2396,13 @@ me_parisii.24 = {
         add_country_modifier = { name = sekuana_ferry_network duration = -1 }
         p:2475 = { state = { add_state_food = 50 } }
         add_political_influence = 15
+        if = {
+            limit = {
+                is_tribal = yes
+                has_law = nomadic_law_tribal
+            }
+            change_law = formalized_industry_law_tribal
+        }
     }
 }
 
@@ -1869,7 +2496,13 @@ me_parisii.25 = {
             has_deity_in_pantheon = deity:omen_ogmios
         }
         p:2475 = {
-            set_province_deity = deity:omen_ogmios
+            if = {
+                limit = {
+                    is_holy_site = no
+                    deity:omen_ogmios = { has_holy_site = no }
+                }
+                set_province_deity = deity:omen_ogmios
+            }
             add_province_modifier = {
                 name = pillar_ogmios_blessing
                 duration = -1
@@ -1905,6 +2538,13 @@ me_parisii.26 = {
         }
         if = {
             limit = {
+                exists = c:CTL
+                c:CTL = { has_country_modifier = catalaunian_trade_covenant }
+            }
+            c:CTL = { remove_country_modifier = catalaunian_trade_covenant }
+        }
+        if = {
+            limit = {
                 NOT = { has_variable = parisii_old_guard_appeased }
                 NOT = { has_variable = parisii_old_guard_defeated }
             }
@@ -1933,8 +2573,14 @@ me_parisii.26 = {
             has_country_modifier = seine_tolls_concession
         }
         remove_country_modifier = seine_tolls_concession
+        if = {
+            limit = {
+                exists = c:CTL
+                c:CTL = { has_country_modifier = catalaunian_river_privilege }
+            }
+            c:CTL = { remove_country_modifier = catalaunian_river_privilege }
+        }
         p:2450 = {
-            remove_province_modifier = catalaunian_river_privilege
             add_province_modifier = {
                 name = catalaunian_routes_revoked
                 duration = -1
@@ -2242,6 +2888,11 @@ me_parisii.34 = {
         trigger = {
             p:2448 = { has_city_status = no }
         }
+        show_as_tooltip = {
+            p:2448 = {
+                set_city_status = city
+            }
+        }
         if = {
             limit = {
                 p:2448 = {
@@ -2311,6 +2962,11 @@ me_parisii.35 = {
         trigger = {
             p:2481 = { has_city_status = no }
         }
+        show_as_tooltip = {
+            p:2481 = {
+                set_city_status = city
+            }
+        }
         add_treasury = -50
         add_political_influence = -20
         p:2481 = {
@@ -2364,6 +3020,11 @@ me_parisii.36 = {
         name = me_parisii.36.b
         trigger = {
             p:2450 = { has_city_status = no }
+        }
+        show_as_tooltip = {
+            p:2450 = {
+                set_city_status = city
+            }
         }
         if = {
             limit = {
@@ -2759,6 +3420,10 @@ me_parisii.45 = {
         name = me_parisii.45.a
         add_political_influence = 15
         current_ruler = { add_popularity = 10 }
+        area:veliocassia_area = { add_provincial_claim_effect = yes }
+        area:bellovacia_area = { add_provincial_claim_effect = yes }
+        area:suaeuconia_area = { add_provincial_claim_effect = yes }
+        area:remia_area = { add_provincial_claim_effect = yes }
     }
 }
 
